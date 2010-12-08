@@ -15,11 +15,11 @@
 */
 
 var sys = require("sys");
-var sqlite = require("./odbc_bindings");
+var odbc = require("./odbc_bindings");
 
 var Database = exports.Database = function () {
     var self = this;
-    var db = new sqlite.Database();
+    var db = new odbc.Database();
 
     db.__proto__ = Database.prototype;
 
@@ -56,7 +56,7 @@ var Database = exports.Database = function () {
 };
 
 Database.prototype = {
-    __proto__: sqlite.Database.prototype,
+    __proto__: odbc.Database.prototype,
     constructor: Database,
 };
 
