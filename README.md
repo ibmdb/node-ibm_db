@@ -1,7 +1,7 @@
 NAME
 ----
 
-node-odbc - An asynchronous Node interface to unixodbc and it's supported drivers
+node-odbc - An asynchronous Node interface to unixodbc and its supported drivers
 
 SYNOPSYS
 --------
