@@ -28,7 +28,9 @@ var Database = exports.Database = function () {
     });
 
     db.addListener("result", function () {
-        process.assert(db.currentQuery);
+        //process.assert(db.currentQuery).ok();
+        require('assert').ok(db.currentQuery);
+	
             var callback = db.currentQuery[1];
         var args = Array.prototype.slice.call(db.currentQuery[2]);
         args.shift();
