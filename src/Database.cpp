@@ -241,13 +241,13 @@ int Database::EIO_AfterQuery(eio_req *req) {
 
       for(int i = 0; i < colcount; i++)
         {
-          int len;
+          SQLLEN len;
 
 	  // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
 
           char buf[MAX_FIELD_SIZE];
           memset(buf,0,MAX_FIELD_SIZE);
-          int ret = SQLGetData(prep_req->dbo->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_FIELD_SIZE-1, (SQLINTEGER *) &len);
+          int ret = SQLGetData(prep_req->dbo->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_FIELD_SIZE-1, (SQLLEN *) &len);
 
           if(ret == SQL_NULL_DATA || len < 0)
             {
