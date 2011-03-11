@@ -29,7 +29,8 @@ using namespace node;
 typedef struct {
   unsigned char *name;
   unsigned int len;
-} ColumnLabel;
+  SQLLEN type;
+} Column;
 
 
 void Database::Init(v8::Handle<Object> target) {
@@ -191,8 +192,7 @@ Handle<Value> Database::Close(const Arguments& args) {
 
   if (!close_req) {
     V8::LowMemoryNotification();
-    return ThrowException(Exception::Error(
-                                           String::New("Could not allocate enough memory")));
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
   }
 
   close_req->cb = Persistent<Function>::New(cb);
@@ -216,91 +216,92 @@ int Database::EIO_AfterQuery(eio_req *req) {
   SQLSMALLINT buflen;
   SQLRETURN ret;
   SQLNumResultCols(prep_req->dbo->m_hStmt, &colcount);
+  
+  Column *columns = new Column[colcount];
 
-  SQLLEN nColumnType;
-  SQLLEN *aColumnTypes = (SQLLEN *)malloc(sizeof(SQLLEN) * colcount);
-    
-  ColumnLabel *labels = new ColumnLabel[colcount];
-
-  // retrieve and store column names to build the row object
+  // retrieve and store column attributes to build the row object
   for(int i = 0; i < colcount; i++)
   {
-    labels[i].name = new unsigned char[MAX_FIELD_SIZE];
-    memset(labels[i].name, 0, MAX_FIELD_SIZE);
-    ret = SQLColAttribute(prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, labels[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
-    labels[i].len = buflen;
+    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
     
-    //get the column type
-    ret = SQLColAttribute( prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &aColumnTypes[ i ] );
+    //zero out the space where the column name will be stored
+    memset(columns[i].name, 0, MAX_FIELD_SIZE);
     
+    //get the column name
+    ret = SQLColAttribute(prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
+    
+    //store the len attribute
+    columns[i].len = buflen;
+    
+    //get the column type and store it directly in column[i].type
+    ret = SQLColAttribute( prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
   }
 
   // i dont think odbc will tell how many rows are returned, loop until out...
   Local<Array> rows = Array::New();
   int count = 0;
+  
+  char buf[MAX_FIELD_SIZE];
+  
   while(true)
   {
     Local<Object> tuple = Object::New();
     ret = SQLFetch(prep_req->dbo->m_hStmt);
     if(ret) break; // error :|
-
+    
     for(int i = 0; i < colcount; i++)
     {
       SQLLEN len;
       
-      //get the column type;
-      nColumnType = aColumnTypes[i];
-      
       // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
-
-      char buf[MAX_FIELD_SIZE];
       memset(buf,0,MAX_FIELD_SIZE);
       int ret = SQLGetData(prep_req->dbo->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_FIELD_SIZE-1, (SQLLEN *) &len);
-
+      
       if(ret == SQL_NULL_DATA || len < 0)
       {
-        tuple->Set(String::New((const char *)labels[i].name), Null());
+        tuple->Set(String::New((const char *)columns[i].name), Null());
       }
       else
       { 
-        switch (nColumnType) {
+        switch (columns[i].type) {
           case SQL_NUMERIC :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_DECIMAL :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_INTEGER :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_SMALLINT :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_FLOAT :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_REAL :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           case SQL_DOUBLE :
-            tuple->Set(String::New((const char *)labels[i].name), Number::New(atof(buf)));
+            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
             break;
           default :
-            tuple->Set(String::New((const char *)labels[i].name), String::New(buf));
+            tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
             break;
         }
       }
     }
+    
     rows->Set(Integer::New(count), tuple);
     count++;
   }
 
   for(int i = 0; i < colcount; i++)
   {
-    delete [] labels[i].name;
+    delete [] columns[i].name;
   }
   
-  delete [] labels;
+  delete [] columns;
 
   TryCatch try_catch;
 
@@ -313,17 +314,14 @@ int Database::EIO_AfterQuery(eio_req *req) {
   SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
   SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
 
-
   Local<Value> args[2];
   args[0] = Local<Value>::New(Null());
   args[1] = rows;
 
   prep_req->dbo->Emit(String::New("result"), 2, args);
 
-  free(aColumnTypes);
   free(prep_req);
   scope.Close(Undefined());
-  
   
   return 0;
 }
