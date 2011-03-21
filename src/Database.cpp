@@ -18,6 +18,7 @@
 #include <v8.h>
 #include <node.h>
 #include <node_events.h>
+#include <time.h>
 
 #include "Database.h"
 
@@ -242,6 +243,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
   int count = 0;
   
   char buf[MAX_FIELD_SIZE];
+  struct tm timeInfo = { 0 };
   
   while(true)
   {
@@ -284,6 +286,16 @@ int Database::EIO_AfterQuery(eio_req *req) {
             break;
           case SQL_DOUBLE :
             tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+            break;
+          case SQL_DATETIME :
+          case SQL_TIMESTAMP :
+            //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
+            strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+            tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+            break;
+          case SQL_BIT :
+            //again, i'm not sure if this is cross database safe, but it works for MSSQL
+            tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
             break;
           default :
             tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
