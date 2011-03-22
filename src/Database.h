@@ -62,6 +62,7 @@ class Database : public EventEmitter {
   HENV m_hEnv;
   HDBC m_hDBC;
   HSTMT m_hStmt;
+  SQLUSMALLINT hasMoreResults;
 };
 
 enum ExecMode

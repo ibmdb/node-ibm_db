@@ -31,7 +31,7 @@ var Database = exports.Database = function () {
         //process.assert(db.currentQuery).ok();
         require('assert').ok(db.currentQuery);
 	
-            var callback = db.currentQuery[1];
+        var callback = db.currentQuery[1];
         var args = Array.prototype.slice.call(db.currentQuery[2]);
         args.shift();
         args.shift();
@@ -40,7 +40,11 @@ var Database = exports.Database = function () {
         {
             arguments[0].query = db.currentQuery[0];
         }
-
+        
+        
+console.log('result: arguments[2]: ' + arguments[2]);
+	
+	
         db.currentQuery = null;
         if (callback) {
             var newArgs = Array.prototype.slice.call(arguments);

@@ -103,6 +103,11 @@ int Database::EIO_Open(eio_req *req) {
         {
           ret = SQLAllocStmt( self->m_hDBC,&self->m_hStmt );
           if (ret != SQL_SUCCESS) printf("not connected\n");
+          
+          if ( !SQL_SUCCEEDED( SQLGetFunctions(self->m_hDBC, SQL_API_SQLMORERESULTS, &self->hasMoreResults)))
+          {
+            self->hasMoreResults = 0;
+          }
         }
       else
         {
@@ -208,130 +213,188 @@ Handle<Value> Database::Close(const Arguments& args) {
 }
 
 int Database::EIO_AfterQuery(eio_req *req) {
+  printf("----------------------------------\n");
+  printf("EIO_AfterQuery\n");
+  printf("----------------------------------\n");
+
   ev_unref(EV_DEFAULT_UC);
   struct query_request *prep_req = (struct query_request *)(req->data);
   HandleScope scope;
-
+  
+  Database *self = prep_req->dbo->self();
+  
+  printf("%s\n", prep_req->sql);
+  printf("----------------------------------\n");
+  
   // get column data
   short colcount;
   SQLSMALLINT buflen;
   SQLRETURN ret;
-  SQLNumResultCols(prep_req->dbo->m_hStmt, &colcount);
-  
-  Column *columns = new Column[colcount];
-
-  // retrieve and store column attributes to build the row object
-  for(int i = 0; i < colcount; i++)
-  {
-    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
-    
-    //zero out the space where the column name will be stored
-    memset(columns[i].name, 0, MAX_FIELD_SIZE);
-    
-    //get the column name
-    ret = SQLColAttribute(prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
-    
-    //store the len attribute
-    columns[i].len = buflen;
-    
-    //get the column type and store it directly in column[i].type
-    ret = SQLColAttribute( prep_req->dbo->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
-  }
-
-  // i dont think odbc will tell how many rows are returned, loop until out...
-  Local<Array> rows = Array::New();
-  int count = 0;
   
   char buf[MAX_FIELD_SIZE];
   struct tm timeInfo = { 0 };
   
-  while(true)
-  {
-    Local<Object> tuple = Object::New();
-    ret = SQLFetch(prep_req->dbo->m_hStmt);
-    if(ret) break; // error :|
+  do {
+printf("here1\n");
+    printf("m_hStmt: %i \n", self->m_hStmt);
+    printf("&m_hStmt: %i \n", &self->m_hStmt);
     
+    SQLNumResultCols(self->m_hStmt, &colcount);
+printf("here2\n");
+    
+    Column *columns = new Column[colcount];
+printf("here3\n");
+    // retrieve and store column attributes to build the row object
     for(int i = 0; i < colcount; i++)
     {
-      SQLLEN len;
+      columns[i].name = new unsigned char[MAX_FIELD_SIZE];
       
-      // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
-      memset(buf,0,MAX_FIELD_SIZE);
-      int ret = SQLGetData(prep_req->dbo->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_FIELD_SIZE-1, (SQLLEN *) &len);
+      //zero out the space where the column name will be stored
+      memset(columns[i].name, 0, MAX_FIELD_SIZE);
       
-      if(ret == SQL_NULL_DATA || len < 0)
+      //get the column name
+      ret = SQLColAttribute(self->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
+      
+      //store the len attribute
+      columns[i].len = buflen;
+      
+      //get the column type and store it directly in column[i].type
+      ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
+    }
+printf("here4\n");
+    // i dont think odbc will tell how many rows are returned, loop until out...
+    Local<Array> rows = Array::New();
+    int count = 0;
+    
+    while(true)
+    {
+      Local<Object> tuple = Object::New();
+      ret = SQLFetch(self->m_hStmt);
+      if(ret) break; // error :|
+      
+      for(int i = 0; i < colcount; i++)
       {
-        tuple->Set(String::New((const char *)columns[i].name), Null());
-      }
-      else
-      { 
-        switch (columns[i].type) {
-          case SQL_NUMERIC :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_DECIMAL :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_INTEGER :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_SMALLINT :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_FLOAT :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_REAL :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_DOUBLE :
-            tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-            break;
-          case SQL_DATETIME :
-          case SQL_TIMESTAMP :
-            //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-            strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-            tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
-            break;
-          case SQL_BIT :
-            //again, i'm not sure if this is cross database safe, but it works for MSSQL
-            tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
-            break;
-          default :
-            tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
-            break;
+        SQLLEN len;
+        
+        // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
+        memset(buf,0,MAX_FIELD_SIZE);
+        int ret = SQLGetData(self->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_FIELD_SIZE-1, (SQLLEN *) &len);
+        
+        if(ret == SQL_NULL_DATA || len < 0)
+        {
+          tuple->Set(String::New((const char *)columns[i].name), Null());
+        }
+        else
+        { 
+          switch (columns[i].type) {
+            case SQL_NUMERIC :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_DECIMAL :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_INTEGER :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_SMALLINT :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_FLOAT :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_REAL :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_DOUBLE :
+              tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+              break;
+            case SQL_DATETIME :
+            case SQL_TIMESTAMP :
+              //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
+              strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+              tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+              break;
+            case SQL_BIT :
+              //again, i'm not sure if this is cross database safe, but it works for MSSQL
+              tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
+              break;
+            default :
+              tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
+              break;
+          }
         }
       }
+      
+      rows->Set(Integer::New(count), tuple);
+      count++;
     }
     
-    rows->Set(Integer::New(count), tuple);
-    count++;
-  }
+printf("here5\n");
+    for(int i = 0; i < colcount; i++)
+    {
+      delete [] columns[i].name;
+    }
+printf("here6\n");
+    delete [] columns;
+    
+    //move to the next result set
+    ret = SQLMoreResults( self->m_hStmt );
+    
+    if (ret == SQL_NO_DATA_FOUND) {
+      printf("SQLMoreResults returned SQL_NO_DATA_FOUND\n");
+    }
+    
+    if (ret == SQL_SUCCESS) {
+      printf("SQLMoreResults returned SQL_SUCCESS\n");
+    }
+    
+    if (ret == SQL_SUCCESS_WITH_INFO) {
+      printf("SQLMoreResults returned SQL_SUCCESS_WITH_INFO\n");
+    }
+    
+    if (ret == SQL_STILL_EXECUTING) {
+      printf("SQLMoreResults returned SQL_STILL_EXECUTING\n");
+    }
+    
+    if (ret == SQL_ERROR) {
+      printf("SQLMoreResults returned SQL_ERROR\n");
+    }
 
-  for(int i = 0; i < colcount; i++)
-  {
-    delete [] columns[i].name;
+    if (ret == SQL_INVALID_HANDLE) {
+      printf("SQLMoreResults returned SQL_INVALID_HANDLE\n");
+    }
+
+    if (ret != SQL_SUCCESS) {
+      printf("No more result sets. Emitting what we have collected.\n");
+      
+      printf("calling SQLFreeStmt\n");
+      SQLFreeStmt( self->m_hStmt, NULL );
+      printf("calling SQLAllocHandle\n");
+      SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
+      
+      Local<Value> args[3];
+      args[0] = Local<Value>::New(Null());
+      args[1] = rows;
+      args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() );
+
+      printf("about to emit\n");
+      self->Emit(String::New("result"), 3, args);
+      printf("just emitted result\n");
+    }
+    else {
+      printf("More results sets, avoiding emit so we don't segfault.\n");
+    }
   }
+  while ( self->hasMoreResults && ret == SQL_SUCCESS );
   
-  delete [] columns;
-
   TryCatch try_catch;
-
-  prep_req->dbo->Unref();
-
+  
+  self->Unref();
+  
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-
-  SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
-  SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
-
-  Local<Value> args[2];
-  args[0] = Local<Value>::New(Null());
-  args[1] = rows;
-
-  prep_req->dbo->Emit(String::New("result"), 2, args);
-
+  
   free(prep_req);
   scope.Close(Undefined());
   
