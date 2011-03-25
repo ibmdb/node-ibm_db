@@ -12,7 +12,7 @@ SYNOPSYS
 	var db = new odbc.Database();
 	db.open("DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname", function(err)
 	{
-		db.query("select * from table", function(err, rows)
+		db.query("select * from table", function(err, rows, moreResultSets)
 		{
 			sys.debug(sys.inspect(rows));
 			db.close(function(){});
