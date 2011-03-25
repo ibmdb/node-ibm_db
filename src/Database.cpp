@@ -234,7 +234,6 @@ int Database::EIO_AfterQuery(eio_req *req) {
     colcount = 0; //always reset colcount to 0;
     
     SQLNumResultCols(self->m_hStmt, &colcount);
-    
     Column *columns = new Column[colcount];
     
     Local<Array> rows = Array::New();
@@ -266,7 +265,37 @@ int Database::EIO_AfterQuery(eio_req *req) {
         Local<Object> tuple = Object::New();
         ret = SQLFetch(self->m_hStmt);
         
-        if (ret) break; // error :|
+        
+        //TODO: Do something to enable/disable dumping these info messages to the console.
+        if (ret == SQL_SUCCESS_WITH_INFO ) {
+          char errorMessage[512];
+          char errorSQLState[128];
+          SQLError(prep_req->dbo->m_hEnv, prep_req->dbo->m_hDBC, prep_req->dbo->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+          
+          //printf("EIO_Query ret => %i\n", ret);
+          printf("EIO_Query => %s\n", errorMessage);
+          printf("EIO_Query => %s\n", errorSQLState);
+          //printf("EIO_Query sql => %s\n", prep_req->sql);
+        }
+        
+        if (ret == SQL_ERROR)  {
+          char errorMessage[512];
+          char errorSQLState[128];
+          SQLError(prep_req->dbo->m_hEnv, prep_req->dbo->m_hDBC, prep_req->dbo->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+          
+          //TODO: An actual error happened here which is going to prevent emitting the entire recordset.
+          //we need to make sure we are emitting this error message rather than dumping it to the console
+          printf("EIO_Query ret => %i\n", ret);
+          printf("EIO_Query => %s\n", errorMessage);
+          printf("EIO_Query => %s\n", errorSQLState);
+          printf("EIO_Query sql => %s\n", prep_req->sql);
+          
+          break;
+        }
+        
+        if (ret == SQL_NO_DATA) {
+          break;
+        }
         
         for(int i = 0; i < colcount; i++)
         {
@@ -397,6 +426,7 @@ int Database::EIO_Query(eio_req *req) {
       //TODO: we should probably emit an error here or something.
       printf("EIO_Query => %s\n", buf);
       printf("EIO_Query => %s\n", sqlstate);
+      printf("EIO_Query sql => %s\n", prep_req->sql);
     }
   
   req->result = ret;
