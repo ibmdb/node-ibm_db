@@ -221,7 +221,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
   Database *self = prep_req->dbo->self();
   
   //get column data
-  short colcount;
+  short colCount;
+  short emitCount = 0;
+  
   SQLSMALLINT buflen;
   SQLRETURN ret;
   
@@ -231,16 +233,16 @@ int Database::EIO_AfterQuery(eio_req *req) {
   struct tm timeInfo = { 0 };
   
   do {
-    colcount = 0; //always reset colcount to 0;
+    colCount = 0; //always reset colCount to 0;
     
-    SQLNumResultCols(self->m_hStmt, &colcount);
-    Column *columns = new Column[colcount];
+    SQLNumResultCols(self->m_hStmt, &colCount);
+    Column *columns = new Column[colCount];
     
     Local<Array> rows = Array::New();
     
-    if (colcount > 0) {
+    if (colCount > 0) {
       // retrieve and store column attributes to build the row object
-      for(int i = 0; i < colcount; i++)
+      for(int i = 0; i < colCount; i++)
       {
         columns[i].name = new unsigned char[MAX_FIELD_SIZE];
         
@@ -297,7 +299,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
           break;
         }
         
-        for(int i = 0; i < colcount; i++)
+        for(int i = 0; i < colCount; i++)
         {
           SQLLEN len;
           
@@ -357,7 +359,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
         count++;
       }
       
-      for(int i = 0; i < colcount; i++)
+      for(int i = 0; i < colCount; i++)
       {
         delete [] columns[i].name;
       }
@@ -376,10 +378,12 @@ int Database::EIO_AfterQuery(eio_req *req) {
       SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
     }
     
-    //Only trigger an emit if there are columns
+    //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
     //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
     //any columns. We don't want to emit those unless there are actually columns
-    if (colcount > 0) {
+    if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
+      emitCount++;
+      
       Local<Value> args[3];
       args[0] = Local<Value>::New(Null());
       args[1] = rows;
@@ -387,7 +391,6 @@ int Database::EIO_AfterQuery(eio_req *req) {
       
       self->Emit(String::New("result"), 3, args);
     }
-
   }
   while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
   
