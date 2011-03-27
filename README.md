@@ -12,7 +12,7 @@ SYNOPSYS
 	var db = new odbc.Database();
 	db.open("DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname", function(err)
 	{
-		db.query("select * from table", function(err, rows)
+		db.query("select * from table", function(err, rows, moreResultSets)
 		{
 			sys.debug(sys.inspect(rows));
 			db.close(function(){});
@@ -30,6 +30,13 @@ Installation
 
 - Make sure you have unixODBC installed and the drivers configured.
 - node-waf configure build
+
+TIPS
+----
+
+- If you are using the FreeTDS ODBC driver and you have column names longer than 30 characters, you should add "TDS_Version=7.0" to your connection string to retrive the full column name.
+  Example: "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname;TDS_Version=7.0"
+
 
 BUGS
 ----
