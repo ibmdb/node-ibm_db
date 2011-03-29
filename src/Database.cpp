@@ -215,25 +215,49 @@ Handle<Value> Database::Close(const Arguments& args) {
 
 int Database::EIO_AfterQuery(eio_req *req) {
   ev_unref(EV_DEFAULT_UC);
+  
   struct query_request *prep_req = (struct query_request *)(req->data);
+  
   HandleScope scope;
   
-  Database *self = prep_req->dbo->self();
+  Database *self = prep_req->dbo->self(); //an easy reference to the Database object
+  Local<Object> objError = Object::New(); //our error object which we will use if we discover errors while processing the result set
   
-  //get column data
-  short colCount;
-  short emitCount = 0;
+  short colCount = 0; //used to keep track of the number of columns received in a result set
+  short emitCount = 0; //used to keep track of the number of event emittions that have occurred
+  short errorCount = 0; //used to keep track of the number of errors that have been found
   
-  SQLSMALLINT buflen;
-  SQLRETURN ret;
+  SQLSMALLINT buflen; //used as a place holder for the length of column names
+  SQLRETURN ret; //used to capture the return value from various SQL function calls
   
-  char *buf = (char *) malloc(MAX_VALUE_SIZE);
-  memset(buf,0,MAX_VALUE_SIZE);
+  char *buf = (char *) malloc(MAX_VALUE_SIZE); //allocate a buffer for incoming column values
+  memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
   
-  struct tm timeInfo = { 0 };
+  struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
   
+  
+  //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
+  if(req->result == SQL_ERROR)
+  {
+    errorCount++;
+    
+    char errorMessage[512];
+    char errorSQLState[128];
+    SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+    
+    objError->Set(String::New("state"), String::New(errorSQLState));
+    objError->Set(String::New("error"), String::New(errorMessage));
+    objError->Set(String::New("query"), String::New(prep_req->sql));
+    
+    //emit an error event immidiately.
+    Local<Value> args[1];
+    args[0] = objError;
+    self->Emit(String::New("error"), 1, args);
+  }
+  
+  //loop through all result sets
   do {
-    colCount = 0; //always reset colCount to 0;
+    colCount = 0; //always reset colCount for the current result set to 0;
     
     SQLNumResultCols(self->m_hStmt, &colCount);
     Column *columns = new Column[colCount];
@@ -267,12 +291,11 @@ int Database::EIO_AfterQuery(eio_req *req) {
         Local<Object> tuple = Object::New();
         ret = SQLFetch(self->m_hStmt);
         
-        
         //TODO: Do something to enable/disable dumping these info messages to the console.
         if (ret == SQL_SUCCESS_WITH_INFO ) {
           char errorMessage[512];
           char errorSQLState[128];
-          SQLError(prep_req->dbo->m_hEnv, prep_req->dbo->m_hDBC, prep_req->dbo->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+          SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
           
           //printf("EIO_Query ret => %i\n", ret);
           printf("EIO_Query => %s\n", errorMessage);
@@ -283,14 +306,17 @@ int Database::EIO_AfterQuery(eio_req *req) {
         if (ret == SQL_ERROR)  {
           char errorMessage[512];
           char errorSQLState[128];
-          SQLError(prep_req->dbo->m_hEnv, prep_req->dbo->m_hDBC, prep_req->dbo->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+          SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
           
-          //TODO: An actual error happened here which is going to prevent emitting the entire recordset.
-          //we need to make sure we are emitting this error message rather than dumping it to the console
-          printf("EIO_Query ret => %i\n", ret);
-          printf("EIO_Query => %s\n", errorMessage);
-          printf("EIO_Query => %s\n", errorSQLState);
-          printf("EIO_Query sql => %s\n", prep_req->sql);
+          errorCount++;
+          objError->Set(String::New("state"), String::New(errorSQLState));
+          objError->Set(String::New("error"), String::New(errorMessage));
+          objError->Set(String::New("query"), String::New(prep_req->sql));
+          
+          //emit an error event immidiately.
+          Local<Value> args[1];
+          args[0] = objError;
+          self->Emit(String::New("error"), 1, args);
           
           break;
         }
@@ -385,7 +411,14 @@ int Database::EIO_AfterQuery(eio_req *req) {
       emitCount++;
       
       Local<Value> args[3];
-      args[0] = Local<Value>::New(Null());
+      
+      if (errorCount) {
+        args[0] = objError;
+      }
+      else {
+        args[0] = Local<Value>::New(Null());
+      }
+      
       args[1] = rows;
       args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
       
@@ -412,27 +445,15 @@ int Database::EIO_AfterQuery(eio_req *req) {
 int Database::EIO_Query(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
   
-  
   if(prep_req->dbo->m_hStmt)
-    {
-      SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
-      SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
-    }
+  {
+    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+  }
   
   SQLRETURN ret = SQLExecDirect( prep_req->dbo->m_hStmt,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
-  if(ret != 0)
-    {
-      char buf[512];
-      char sqlstate[128];
-      SQLError(prep_req->dbo->m_hEnv, prep_req->dbo->m_hDBC, prep_req->dbo->m_hStmt,(SQLCHAR *)sqlstate,NULL,(SQLCHAR *)buf, sizeof(buf), NULL);
-      
-      //TODO: we should probably emit an error here or something.
-      printf("EIO_Query => %s\n", buf);
-      printf("EIO_Query => %s\n", sqlstate);
-      printf("EIO_Query sql => %s\n", prep_req->sql);
-    }
   
-  req->result = ret;
+  req->result = ret; // this will be checked later in EIO_AfterQuery
   
   return 0;
 }

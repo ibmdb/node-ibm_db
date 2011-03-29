@@ -36,11 +36,6 @@ var Database = exports.Database = function () {
         args.shift();
         args.shift();
 
-        if(arguments[0])
-        {
-            arguments[0].query = db.currentQuery[0];
-        }
-        
         //check to see if this is the last result set returned
         if (!arguments[2]) {
             db.currentQuery = null;
