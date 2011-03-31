@@ -48,6 +48,7 @@ void Database::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
 }
@@ -332,6 +333,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
           // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
           int ret = SQLGetData(self->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_VALUE_SIZE-1, (SQLLEN *) &len);
           
+          //printf("%s %i\n", columns[i].name, columns[i].type);
+          
           if(ret == SQL_NULL_DATA || len < 0)
           {
             tuple->Set(String::New((const char *)columns[i].name), Null());
@@ -362,13 +365,16 @@ int Database::EIO_AfterQuery(eio_req *req) {
                 break;
               case SQL_DATETIME :
                 //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-                strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
-                break;
+                //strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                //tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                //break;
               case SQL_TIMESTAMP :
                 //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
                 strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
                 tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                
+                //strftime(buf, MAX_VALUE_SIZE, "%D %H:%M:%S", &timeInfo);
+                //tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
                 break;
               case SQL_BIT :
                 //again, i'm not sure if this is cross database safe, but it works for MSSQL
@@ -436,6 +442,11 @@ int Database::EIO_AfterQuery(eio_req *req) {
   }
   
   free(buf);
+  free(prep_req->sql);
+  free(prep_req->catalog);
+  free(prep_req->schema);
+  free(prep_req->table);
+  free(prep_req->type);
   free(prep_req);
   scope.Close(Undefined());
   
@@ -467,18 +478,95 @@ Handle<Value> Database::Query(const Arguments& args) {
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
   struct query_request *prep_req = (struct query_request *)
-    calloc(1, sizeof(struct query_request) + sql.length());
+    calloc(1, sizeof(struct query_request));
 
   if (!prep_req) {
     V8::LowMemoryNotification();
     return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
   }
 
+  prep_req->sql = (char *) malloc(sql.length());
   strcpy(prep_req->sql, *sql);
-
+  
   prep_req->dbo = dbo;
 
   eio_custom(EIO_Query, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
+
+  ev_ref(EV_DEFAULT_UC);
+  dbo->Ref();
+  scope.Close(Undefined());
+  return Undefined();
+}
+
+int Database::EIO_Tables(eio_req *req) {
+  struct query_request *prep_req = (struct query_request *)(req->data);
+  
+  if(prep_req->dbo->m_hStmt)
+  {
+    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+  }
+  
+  SQLRETURN ret = SQLTables( 
+    prep_req->dbo->m_hStmt, 
+    (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
+    (SQLCHAR *) prep_req->schema,   SQL_NTS, 
+    (SQLCHAR *) prep_req->table,   SQL_NTS, 
+    (SQLCHAR *) prep_req->type,   SQL_NTS
+  );
+  
+  req->result = ret; // this will be checked later in EIO_AfterQuery
+  
+  return 0;
+}
+
+Handle<Value> Database::Tables(const Arguments& args) {
+  printf("Database::Tables\n");
+  HandleScope scope;
+
+  REQ_STR_OR_NULL_ARG(0, catalog);
+  REQ_STR_OR_NULL_ARG(1, schema);
+  REQ_STR_OR_NULL_ARG(2, table);
+  REQ_STR_OR_NULL_ARG(3, type);
+  
+  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+
+  struct query_request *prep_req = (struct query_request *)
+    calloc(1, sizeof(struct query_request));
+  
+  if (!prep_req) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  prep_req->catalog = NULL;
+  prep_req->schema = NULL;
+  prep_req->table = NULL;
+  prep_req->type = NULL;
+
+  if (!String::New(*catalog)->Equals(String::New("null"))) {
+    prep_req->catalog = (char *) malloc(catalog.length());
+    strcpy(prep_req->catalog, *catalog);
+  }
+  
+  if (!String::New(*schema)->Equals(String::New("null"))) {
+    prep_req->schema = (char *) malloc(schema.length());
+    strcpy(prep_req->schema, *schema);
+  }
+  
+  if (!String::New(*table)->Equals(String::New("null"))) {
+    prep_req->table = (char *) malloc(table.length());
+    strcpy(prep_req->table, *table);
+  }
+  
+  if (!String::New(*type)->Equals(String::New("null"))) {
+    prep_req->type = (char *) malloc(type.length());
+    strcpy(prep_req->type, *type);
+  }
+  
+  prep_req->dbo = dbo;
+
+  eio_custom(EIO_Tables, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();

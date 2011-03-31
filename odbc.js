@@ -18,59 +18,97 @@ var sys = require("sys");
 var odbc = require("./odbc_bindings");
 
 var Database = exports.Database = function () {
-    var self = this;
-    var db = new odbc.Database();
-
-    db.__proto__ = Database.prototype;
-
-    db.addListener("ready", function () {
-        db.maybeDispatchQuery();
-    });
-
-    db.addListener("result", function () {
-        //process.assert(db.currentQuery).ok();
-        require('assert').ok(db.currentQuery);
-        
-        var callback = db.currentQuery[1];
-        var args = Array.prototype.slice.call(db.currentQuery[2]);
-        args.shift();
-        args.shift();
-
-        //check to see if this is the last result set returned
-        if (!arguments[2]) {
-            db.currentQuery = null;
-        }
-        
-        if (callback) {
-            var newArgs = Array.prototype.slice.call(arguments);
-
-            for(var i = 0; i < args.length; i++) {
-                newArgs.push(args[i]);
-            }
-
-            callback.apply(db, newArgs);
-        }
-        db.maybeDispatchQuery();
-    });
-
-    return db;
+  var self = this;
+  var db = new odbc.Database();
+  db.executing = false;
+  db.queue = [];
+  
+  db.__proto__ = Database.prototype;
+  
+  db.addListener("ready", function () {
+    self.processQueue();
+  });
+  
+  db.addListener("result", function () {
+    var currentQuery = this.queue[0];
+    
+    require('assert').ok(currentQuery);
+    
+    var callback = currentQuery.callback;
+    
+    var args = Array.prototype.slice.call(currentQuery.args);
+    args.shift(); //this is wrong for SQLTables
+    args.shift(); //this is wrong for SQLTables
+    
+    //check to see if this is the last result set returned
+    if (!arguments[2]) {
+      this.queue.shift();
+      this.executing = false;
+    }
+    
+    if (callback) {
+      var newArgs = Array.prototype.slice.call(arguments);
+      
+      for(var i = 0; i < args.length; i++) {
+        newArgs.push(args[i]);
+      }
+      
+      callback.apply(db, newArgs);
+    }
+    
+    db.processQueue();
+  });
+  
+  return db;
 };
 
 Database.prototype = {
-    __proto__: odbc.Database.prototype,
-    constructor: Database,
+  __proto__: odbc.Database.prototype,
+  constructor: Database,
 };
 
-Database.prototype.maybeDispatchQuery = function () {
-    if (!this._queries) return;
-    if (!this.currentQuery && this._queries.length > 0) {
-        this.currentQuery = this._queries.shift();
-        this.dispatchQuery(this.currentQuery[0]);
-    }
+Database.prototype.processQueue = function () {
+  var self = this;
+  
+  if (!self.queue) self.queue = [];
+  
+  if (!self.executing && self.queue.length) {
+    var currentQuery = self.queue[0];
+    self.executing = true;
+    
+    currentQuery.method.apply(currentQuery.context, currentQuery.args); //TODO: we need to make sure we aren't sending any extra arguments to the cpp method
+  }
 };
 
 Database.prototype.query = function(sql, callback) {
-    this._queries = this._queries || [];
-    this._queries.push([sql, callback, arguments]);
-    this.maybeDispatchQuery();
+  var self = this;
+  if (!self.queue) self.queue = [];
+  
+  self.queue.push({
+    context : self,
+    method : self.dispatchQuery,
+    sql : sql, 
+    callback : callback, 
+    args : arguments
+  });
+  
+  self.processQueue();
 };
+
+Database.prototype.tables = function(catalog, schema, table, type, callback) {
+  var self = this;
+  if (!self.queue) self.queue = [];
+  
+  self.queue.push({
+    context : self,
+    method : self.dispatchTables,
+    catalog : (arguments.length > 1) ? catalog : "",
+    schema : (arguments.length > 2) ? schema : "",
+    table : (arguments.length > 3) ? table : "",
+    type : (arguments.length > 4) ? type : "",
+    callback : (arguments.length == 5) ? callback : arguments[arguments.lengt - 1],
+    args : arguments
+  });
+  
+  self.processQueue();
+}
