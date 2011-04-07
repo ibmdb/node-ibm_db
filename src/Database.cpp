@@ -232,206 +232,228 @@ int Database::EIO_AfterQuery(eio_req *req) {
   SQLRETURN ret; //used to capture the return value from various SQL function calls
   
   char *buf = (char *) malloc(MAX_VALUE_SIZE); //allocate a buffer for incoming column values
-  memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
   
-  struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
-  
-  
-  //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
-  if(req->result == SQL_ERROR)
-  {
-    errorCount++;
-    
-    char errorMessage[512];
-    char errorSQLState[128];
-    SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-    
-    objError->Set(String::New("state"), String::New(errorSQLState));
-    objError->Set(String::New("error"), String::New(errorMessage));
-    objError->Set(String::New("query"), String::New(prep_req->sql));
+  //check to make sure malloc succeeded
+  if (buf == NULL) {
+    //malloc failed, set an error message
+    objError->Set(String::New("error"), String::New("[node-odbc] Failed Malloc"));
+    objError->Set(String::New("message"), String::New("An attempt to allocate memory failed. This allocation was for a value buffer of incoming recordset values."));
     
     //emit an error event immidiately.
-    Local<Value> args[1];
+    Local<Value> args[3];
     args[0] = objError;
-    self->Emit(String::New("error"), 1, args);
+    args[1] = Local<Value>::New(Null());
+    args[2] = Local<Boolean>::New(False());
+    
+    //emit an error event
+    self->Emit(String::New("error"), 3, args);
+    
+    //emit a result event
+    self->Emit(String::New("result"), 3, args);
   }
-  
-  //loop through all result sets
-  do {
-    colCount = 0; //always reset colCount for the current result set to 0;
+  else {
+    //malloc succeeded so let's continue -- I'm not too fond of having all this code in the else statement, but I don't know what else to do...
     
-    SQLNumResultCols(self->m_hStmt, &colCount);
-    Column *columns = new Column[colCount];
+    memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
     
-    Local<Array> rows = Array::New();
-    
-    if (colCount > 0) {
-      // retrieve and store column attributes to build the row object
-      for(int i = 0; i < colCount; i++)
-      {
-        columns[i].name = new unsigned char[MAX_FIELD_SIZE];
-        
-        //zero out the space where the column name will be stored
-        memset(columns[i].name, 0, MAX_FIELD_SIZE);
-        
-        //get the column name
-        ret = SQLColAttribute(self->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
-        
-        //store the len attribute
-        columns[i].len = buflen;
-        
-        //get the column type and store it directly in column[i].type
-        ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
-      }
+    struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
+
+    //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
+    if(req->result == SQL_ERROR)
+    {
+      errorCount++;
       
-      int count = 0;
+      char errorMessage[512];
+      char errorSQLState[128];
+      SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
       
-      // i dont think odbc will tell how many rows are returned, loop until out...
-      while(true)
-      {
-        Local<Object> tuple = Object::New();
-        ret = SQLFetch(self->m_hStmt);
-        
-        //TODO: Do something to enable/disable dumping these info messages to the console.
-        if (ret == SQL_SUCCESS_WITH_INFO ) {
-          char errorMessage[512];
-          char errorSQLState[128];
-          SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+      objError->Set(String::New("state"), String::New(errorSQLState));
+      objError->Set(String::New("error"), String::New(errorMessage));
+      objError->Set(String::New("query"), String::New(prep_req->sql));
+      
+      //emit an error event immidiately.
+      Local<Value> args[1];
+      args[0] = objError;
+      self->Emit(String::New("error"), 1, args);
+    }
+    
+    //loop through all result sets
+    do {
+      colCount = 0; //always reset colCount for the current result set to 0;
+      
+      SQLNumResultCols(self->m_hStmt, &colCount);
+      Column *columns = new Column[colCount];
+      
+      Local<Array> rows = Array::New();
+      
+      if (colCount > 0) {
+        // retrieve and store column attributes to build the row object
+        for(int i = 0; i < colCount; i++)
+        {
+          columns[i].name = new unsigned char[MAX_FIELD_SIZE];
           
-          //printf("EIO_Query ret => %i\n", ret);
-          printf("EIO_Query => %s\n", errorMessage);
-          printf("EIO_Query => %s\n", errorSQLState);
-          //printf("EIO_Query sql => %s\n", prep_req->sql);
+          //zero out the space where the column name will be stored
+          memset(columns[i].name, 0, MAX_FIELD_SIZE);
+          
+          //get the column name
+          ret = SQLColAttribute(self->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
+          
+          //store the len attribute
+          columns[i].len = buflen;
+          
+          //get the column type and store it directly in column[i].type
+          ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
         }
         
-        if (ret == SQL_ERROR)  {
-          char errorMessage[512];
-          char errorSQLState[128];
-          SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-          
-          errorCount++;
-          objError->Set(String::New("state"), String::New(errorSQLState));
-          objError->Set(String::New("error"), String::New(errorMessage));
-          objError->Set(String::New("query"), String::New(prep_req->sql));
-          
-          //emit an error event immidiately.
-          Local<Value> args[1];
-          args[0] = objError;
-          self->Emit(String::New("error"), 1, args);
-          
-          break;
-        }
+        int count = 0;
         
-        if (ret == SQL_NO_DATA) {
-          break;
+        // i dont think odbc will tell how many rows are returned, loop until out...
+        while(true)
+        {
+          Local<Object> tuple = Object::New();
+          ret = SQLFetch(self->m_hStmt);
+          
+          //TODO: Do something to enable/disable dumping these info messages to the console.
+          if (ret == SQL_SUCCESS_WITH_INFO ) {
+            char errorMessage[512];
+            char errorSQLState[128];
+            SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+            
+            //printf("EIO_Query ret => %i\n", ret);
+            printf("EIO_Query => %s\n", errorMessage);
+            printf("EIO_Query => %s\n", errorSQLState);
+            //printf("EIO_Query sql => %s\n", prep_req->sql);
+          }
+          
+          if (ret == SQL_ERROR)  {
+            char errorMessage[512];
+            char errorSQLState[128];
+            SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+            
+            errorCount++;
+            objError->Set(String::New("state"), String::New(errorSQLState));
+            objError->Set(String::New("error"), String::New(errorMessage));
+            objError->Set(String::New("query"), String::New(prep_req->sql));
+            
+            //emit an error event immidiately.
+            Local<Value> args[1];
+            args[0] = objError;
+            self->Emit(String::New("error"), 1, args);
+            
+            break;
+          }
+          
+          if (ret == SQL_NO_DATA) {
+            break;
+          }
+          
+          for(int i = 0; i < colCount; i++)
+          {
+            SQLLEN len;
+            
+            // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
+            int ret = SQLGetData(self->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_VALUE_SIZE-1, (SQLLEN *) &len);
+            
+            //printf("%s %i\n", columns[i].name, columns[i].type);
+            
+            if(ret == SQL_NULL_DATA || len < 0)
+            {
+              tuple->Set(String::New((const char *)columns[i].name), Null());
+            }
+            else
+            { 
+              switch (columns[i].type) {
+                case SQL_NUMERIC :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_DECIMAL :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_INTEGER :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_SMALLINT :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_FLOAT :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_REAL :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_DOUBLE :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_DATETIME :
+                  //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
+                  //strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                  //tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                  //break;
+                case SQL_TIMESTAMP :
+                  //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
+                  strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                  tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                  
+                  //strftime(buf, MAX_VALUE_SIZE, "%D %H:%M:%S", &timeInfo);
+                  //tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
+                  break;
+                case SQL_BIT :
+                  //again, i'm not sure if this is cross database safe, but it works for MSSQL
+                  tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
+                  break;
+                default :
+                  tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
+                  break;
+              }
+            }
+          }
+          
+          rows->Set(Integer::New(count), tuple);
+          count++;
         }
         
         for(int i = 0; i < colCount; i++)
         {
-          SQLLEN len;
-          
-          // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
-          int ret = SQLGetData(self->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_VALUE_SIZE-1, (SQLLEN *) &len);
-          
-          //printf("%s %i\n", columns[i].name, columns[i].type);
-          
-          if(ret == SQL_NULL_DATA || len < 0)
-          {
-            tuple->Set(String::New((const char *)columns[i].name), Null());
-          }
-          else
-          { 
-            switch (columns[i].type) {
-              case SQL_NUMERIC :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_DECIMAL :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_INTEGER :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_SMALLINT :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_FLOAT :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_REAL :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_DOUBLE :
-                tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                break;
-              case SQL_DATETIME :
-                //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-                //strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                //tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
-                //break;
-              case SQL_TIMESTAMP :
-                //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-                strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
-                
-                //strftime(buf, MAX_VALUE_SIZE, "%D %H:%M:%S", &timeInfo);
-                //tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
-                break;
-              case SQL_BIT :
-                //again, i'm not sure if this is cross database safe, but it works for MSSQL
-                tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
-                break;
-              default :
-                tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
-                break;
-            }
-          }
+          delete [] columns[i].name;
+        }
+
+        delete [] columns;
+      }
+      
+      //move to the next result set
+      ret = SQLMoreResults( self->m_hStmt );
+      
+      if ( ret != SQL_SUCCESS ) {
+        //there are no more recordsets so free the statement now before we emit
+        //because as soon as we emit the last recordest, we are clear to submit another query
+        //which could cause a race condition with freeing and allocating handles.
+        SQLFreeStmt( self->m_hStmt, NULL );
+        SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
+      }
+      
+      //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
+      //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
+      //any columns. We don't want to emit those unless there are actually columns
+      if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
+        emitCount++;
+        
+        Local<Value> args[3];
+        
+        if (errorCount) {
+          args[0] = objError;
+        }
+        else {
+          args[0] = Local<Value>::New(Null());
         }
         
-        rows->Set(Integer::New(count), tuple);
-        count++;
+        args[1] = rows;
+        args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
+        
+        self->Emit(String::New("result"), 3, args);
       }
-      
-      for(int i = 0; i < colCount; i++)
-      {
-        delete [] columns[i].name;
-      }
-
-      delete [] columns;
     }
-    
-    //move to the next result set
-    ret = SQLMoreResults( self->m_hStmt );
-    
-    if ( ret != SQL_SUCCESS ) {
-      //there are no more recordsets so free the statement now before we emit
-      //because as soon as we emit the last recordest, we are clear to submit another query
-      //which could cause a race condition with freeing and allocating handles.
-      SQLFreeStmt( self->m_hStmt, NULL );
-      SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
-    }
-    
-    //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
-    //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
-    //any columns. We don't want to emit those unless there are actually columns
-    if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
-      emitCount++;
-      
-      Local<Value> args[3];
-      
-      if (errorCount) {
-        args[0] = objError;
-      }
-      else {
-        args[0] = Local<Value>::New(Null());
-      }
-      
-      args[1] = rows;
-      args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
-      
-      self->Emit(String::New("result"), 3, args);
-    }
-  }
-  while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
+    while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
+  } //end of malloc check
   
   TryCatch try_catch;
   
@@ -485,7 +507,12 @@ Handle<Value> Database::Query(const Arguments& args) {
     return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
   }
 
-  prep_req->sql = (char *) malloc(sql.length());
+  prep_req->sql = (char *) malloc(sql.length() +1);
+  prep_req->catalog = NULL;
+  prep_req->schema = NULL;
+  prep_req->table = NULL;
+  prep_req->type = NULL;
+  
   strcpy(prep_req->sql, *sql);
   
   prep_req->dbo = dbo;
@@ -539,28 +566,29 @@ Handle<Value> Database::Tables(const Arguments& args) {
     return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
   }
 
+  prep_req->sql = NULL;
   prep_req->catalog = NULL;
   prep_req->schema = NULL;
   prep_req->table = NULL;
   prep_req->type = NULL;
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
-    prep_req->catalog = (char *) malloc(catalog.length());
+    prep_req->catalog = (char *) malloc(catalog.length() +1);
     strcpy(prep_req->catalog, *catalog);
   }
   
   if (!String::New(*schema)->Equals(String::New("null"))) {
-    prep_req->schema = (char *) malloc(schema.length());
+    prep_req->schema = (char *) malloc(schema.length() +1);
     strcpy(prep_req->schema, *schema);
   }
   
   if (!String::New(*table)->Equals(String::New("null"))) {
-    prep_req->table = (char *) malloc(table.length());
+    prep_req->table = (char *) malloc(table.length() +1);
     strcpy(prep_req->table, *table);
   }
   
   if (!String::New(*type)->Equals(String::New("null"))) {
-    prep_req->type = (char *) malloc(type.length());
+    prep_req->type = (char *) malloc(type.length() +1);
     strcpy(prep_req->type, *type);
   }
   
