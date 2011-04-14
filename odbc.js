@@ -106,9 +106,78 @@ Database.prototype.tables = function(catalog, schema, table, type, callback) {
     schema : (arguments.length > 2) ? schema : "",
     table : (arguments.length > 3) ? table : "",
     type : (arguments.length > 4) ? type : "",
-    callback : (arguments.length == 5) ? callback : arguments[arguments.lengt - 1],
+    callback : (arguments.length == 5) ? callback : arguments[arguments.length - 1],
     args : arguments
   });
   
   self.processQueue();
-}
+};
+
+Database.prototype.columns = function(catalog, schema, table, column, callback) {
+  var self = this;
+  if (!self.queue) self.queue = [];
+  
+  self.queue.push({
+    context : self,
+    method : self.dispatchColumns,
+    catalog : (arguments.length > 1) ? catalog : "",
+    schema : (arguments.length > 2) ? schema : "",
+    table : (arguments.length > 3) ? table : "",
+    column : (arguments.length > 4) ? column : "",
+    callback : (arguments.length == 5) ? callback : arguments[arguments.length - 1],
+    args : arguments
+  });
+  
+  self.processQueue();
+};
+
+Database.prototype.describe = function(obj, callback) {
+  var self = this;
+  
+  if (typeof(callback) != "function") {
+    throw({
+      error : "[node-odbc] Missing Arguments",
+      message : "You must specify a callback function in order for the describe method to work."
+    });
+    
+    return false;
+  }
+  
+  if (typeof(obj) != "object") {
+    callback({
+      error : "[node-odbc] Missing Arguments",
+      message : "You must pass an object as argument 0 if you want anything productive to happen in the describe method."
+    }, []);
+    
+    return false;
+  }
+  
+  if (!obj.database) {
+    callback({
+      error : "[node-odbc] Missing Arguments",
+      message : "The object you passed did not contain a database property. This is required for the describe method to work."
+    }, []);
+    
+    return false;
+  }
+  
+  //set some defaults if they weren't passed
+  obj.schema = obj.schema || "%";
+  obj.type = obj.type || "table";
+  
+  if (obj.table && obj.column) {
+    //get the column details
+    self.columns(obj.database, obj.schema, obj.table, obj.column, callback);
+  }
+  else if (obj.table) {
+    //get the columns in the table
+    self.columns(obj.database, obj.schema, obj.table, "%", callback);
+  }
+  else {
+    //get the tables in the database
+    self.tables(obj.database, obj.schema, null, obj.type || "table", callback);
+  }
+};
+
+
+

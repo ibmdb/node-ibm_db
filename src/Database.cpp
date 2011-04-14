@@ -49,6 +49,7 @@ void Database::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
 }
@@ -215,6 +216,7 @@ Handle<Value> Database::Close(const Arguments& args) {
 }
 
 int Database::EIO_AfterQuery(eio_req *req) {
+  //printf("Database::EIO_AfterQuery\n");
   ev_unref(EV_DEFAULT_UC);
   
   struct query_request *prep_req = (struct query_request *)(req->data);
@@ -255,9 +257,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
     //malloc succeeded so let's continue -- I'm not too fond of having all this code in the else statement, but I don't know what else to do...
     
     memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
-    
     struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
-
+    
     //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
     if(req->result == SQL_ERROR)
     {
@@ -266,10 +267,13 @@ int Database::EIO_AfterQuery(eio_req *req) {
       char errorMessage[512];
       char errorSQLState[128];
       SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-      
       objError->Set(String::New("state"), String::New(errorSQLState));
       objError->Set(String::New("error"), String::New(errorMessage));
-      objError->Set(String::New("query"), String::New(prep_req->sql));
+      
+      //only set the query value of the object if we actually have a query
+      if (prep_req->sql != NULL) {
+        objError->Set(String::New("query"), String::New(prep_req->sql));
+      }
       
       //emit an error event immidiately.
       Local<Value> args[1];
@@ -512,6 +516,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   prep_req->schema = NULL;
   prep_req->table = NULL;
   prep_req->type = NULL;
+  prep_req->column = NULL;
   
   strcpy(prep_req->sql, *sql);
   
@@ -548,7 +553,7 @@ int Database::EIO_Tables(eio_req *req) {
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
-  printf("Database::Tables\n");
+  //printf("Database::Tables\n");
   HandleScope scope;
 
   REQ_STR_OR_NULL_ARG(0, catalog);
@@ -571,6 +576,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   prep_req->schema = NULL;
   prep_req->table = NULL;
   prep_req->type = NULL;
+  prep_req->column = NULL;
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
     prep_req->catalog = (char *) malloc(catalog.length() +1);
@@ -595,6 +601,85 @@ Handle<Value> Database::Tables(const Arguments& args) {
   prep_req->dbo = dbo;
 
   eio_custom(EIO_Tables, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
+
+  ev_ref(EV_DEFAULT_UC);
+  dbo->Ref();
+  scope.Close(Undefined());
+  return Undefined();
+}
+
+int Database::EIO_Columns(eio_req *req) {
+  //printf("Database::EIO_Columns\n");
+  struct query_request *prep_req = (struct query_request *)(req->data);
+  
+  if(prep_req->dbo->m_hStmt)
+  {
+    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+  }
+  
+  SQLRETURN ret = SQLColumns( 
+    prep_req->dbo->m_hStmt, 
+    (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
+    (SQLCHAR *) prep_req->schema,   SQL_NTS, 
+    (SQLCHAR *) prep_req->table,   SQL_NTS, 
+    (SQLCHAR *) prep_req->column,   SQL_NTS
+  );
+  
+  req->result = ret; // this will be checked later in EIO_AfterQuery
+  
+  return 0;
+}
+
+Handle<Value> Database::Columns(const Arguments& args) {
+  //printf("Database::Columns\n");
+  HandleScope scope;
+
+  REQ_STR_OR_NULL_ARG(0, catalog);
+  REQ_STR_OR_NULL_ARG(1, schema);
+  REQ_STR_OR_NULL_ARG(2, table);
+  REQ_STR_OR_NULL_ARG(3, column);
+  
+  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+
+  struct query_request *prep_req = (struct query_request *)
+    calloc(1, sizeof(struct query_request));
+  
+  if (!prep_req) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  prep_req->sql = NULL;
+  prep_req->catalog = NULL;
+  prep_req->schema = NULL;
+  prep_req->table = NULL;
+  prep_req->type = NULL;
+  prep_req->column = NULL;
+
+  if (!String::New(*catalog)->Equals(String::New("null"))) {
+    prep_req->catalog = (char *) malloc(catalog.length() +1);
+    strcpy(prep_req->catalog, *catalog);
+  }
+  
+  if (!String::New(*schema)->Equals(String::New("null"))) {
+    prep_req->schema = (char *) malloc(schema.length() +1);
+    strcpy(prep_req->schema, *schema);
+  }
+  
+  if (!String::New(*table)->Equals(String::New("null"))) {
+    prep_req->table = (char *) malloc(table.length() +1);
+    strcpy(prep_req->table, *table);
+  }
+  
+  if (!String::New(*column)->Equals(String::New("null"))) {
+    prep_req->column = (char *) malloc(column.length() +1);
+    strcpy(prep_req->column, *column);
+  }
+  
+  prep_req->dbo = dbo;
+
+  eio_custom(EIO_Columns, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();

@@ -58,6 +58,8 @@ class Database : public EventEmitter {
   static int EIO_Tables(eio_req *req);
   static Handle<Value> Tables(const Arguments& args);
 
+  static int EIO_Columns(eio_req *req);
+  static Handle<Value> Columns(const Arguments& args);
   
   Database *self(void) { return this; }
   void printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type);
@@ -96,6 +98,7 @@ struct query_request {
   char *schema;
   char *table;
   char *type;
+  char *column;
 };
 
 #define REQ_ARGS(N)                                                     \
