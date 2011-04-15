@@ -65,7 +65,8 @@ ACKNOWLEDGEMENTS
 
 - orlandov's node-sqlite binding was the framework I used to figure out using eio's thread pool to handle blocking calls since non blocking odbc doesn't seem to appear until 3.8.
 
-AUTHOR
+AUTHORS
 ------
 
 Lee Smith (notwink@gmail.com)
+Dan VerWeire (dverweire@gmail.com)
