@@ -389,11 +389,10 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
                   break;
                 case SQL_DATETIME :
-                  //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-                  //strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                  //tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
-                  //break;
                 case SQL_TIMESTAMP :
+                  //reset the value of our time struct to all zeros
+                  memset(&timeInfo, 0, sizeof(struct tm));
+                  
                   //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
                   strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
                   tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
