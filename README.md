@@ -69,4 +69,5 @@ AUTHORS
 ------
 
 Lee Smith (notwink@gmail.com)
+
 Dan VerWeire (dverweire@gmail.com)
