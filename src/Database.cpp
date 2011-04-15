@@ -218,7 +218,7 @@ Handle<Value> Database::Close(const Arguments& args) {
 int Database::EIO_AfterQuery(eio_req *req) {
   //printf("Database::EIO_AfterQuery\n");
   ev_unref(EV_DEFAULT_UC);
-  
+
   struct query_request *prep_req = (struct query_request *)(req->data);
   
   HandleScope scope;
@@ -390,15 +390,13 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   break;
                 case SQL_DATETIME :
                 case SQL_TIMESTAMP :
-                  //reset the value of our time struct to all zeros
-                  memset(&timeInfo, 0, sizeof(struct tm));
-                  
                   //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
                   strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
+                  timeInfo.tm_isdst = -1; //a negative value means that mktime() should (use timezone information and system 
+                        //databases to) attempt to determine whether DST is in effect at the specified time.
+                  
                   tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
                   
-                  //strftime(buf, MAX_VALUE_SIZE, "%D %H:%M:%S", &timeInfo);
-                  //tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
                   break;
                 case SQL_BIT :
                   //again, i'm not sure if this is cross database safe, but it works for MSSQL
