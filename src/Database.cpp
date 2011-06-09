@@ -268,7 +268,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
       char errorSQLState[128];
       SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
       objError->Set(String::New("state"), String::New(errorSQLState));
-      objError->Set(String::New("error"), String::New(errorMessage));
+      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+      objError->Set(String::New("message"), String::New(errorMessage));
       
       //only set the query value of the object if we actually have a query
       if (prep_req->sql != NULL) {
@@ -336,7 +337,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
             
             errorCount++;
             objError->Set(String::New("state"), String::New(errorSQLState));
-            objError->Set(String::New("error"), String::New(errorMessage));
+	    objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+            objError->Set(String::New("message"), String::New(errorMessage));
             objError->Set(String::New("query"), String::New(prep_req->sql));
             
             //emit an error event immidiately.

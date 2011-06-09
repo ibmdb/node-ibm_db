@@ -180,4 +180,34 @@ Database.prototype.describe = function(obj, callback) {
 };
 
 
+var Pool = exports.Pool = function () {
+  var self = this;
+  
+  self.connectionPool = {};
+}
 
+Pool.prototype.open = function (connectionString, callback) {
+  var self = this;
+  
+  //check to see if we already have a connection for this connection string
+  if (self.connectionPool[connectionString] && self.connectionPool[connectionString].length) {
+    callback(null, self.connectionPool[connectionString].shift());
+  }
+  else {
+    var db = new Database();
+    db.realClose = db.close;
+    
+    db.close = function (cb) {
+      //don't actually close the connection, just put this into the connectionPool.
+      self.connectionPool[connectionString] = self.connectionPool[connectionString] || [];
+      
+      self.connectionPool[connectionString].push(db);
+      
+      cb(null);
+    };
+    
+    db.open(connectionString, function (error) {
+      callback(error, db);
+    });
+  }
+};
