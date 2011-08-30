@@ -46,7 +46,7 @@ void Database::Init(v8::Handle<Object> target) {
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
@@ -173,6 +173,7 @@ int Database::EIO_AfterClose(eio_req *req) {
     FatalException(try_catch);
   }
 
+  close_req->dbo->Emit(String::New("closed"), 0, NULL);
   close_req->cb.Dispose();
 
   free(close_req);
@@ -307,7 +308,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
           columns[i].len = buflen;
           
           //get the column type and store it directly in column[i].type
-          ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, NULL, NULL, &columns[i].type );
+          ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, 0, NULL, &columns[i].type );
         }
         
         int count = 0;
@@ -430,7 +431,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
         //there are no more recordsets so free the statement now before we emit
         //because as soon as we emit the last recordest, we are clear to submit another query
         //which could cause a race condition with freeing and allocating handles.
-        SQLFreeStmt( self->m_hStmt, NULL );
+        SQLFreeStmt( self->m_hStmt, SQL_CLOSE );
         SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
       }
       
@@ -483,7 +484,7 @@ int Database::EIO_Query(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
@@ -534,7 +535,7 @@ int Database::EIO_Tables(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
@@ -613,7 +614,7 @@ int Database::EIO_Columns(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt,NULL);
+    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
