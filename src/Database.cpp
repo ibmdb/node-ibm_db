@@ -45,7 +45,7 @@ void Database::Init(v8::Handle<Object> target) {
   constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
