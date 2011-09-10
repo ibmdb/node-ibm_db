@@ -26,40 +26,6 @@ var Database = exports.Database = function () {
   
   db.__proto__ = Database.prototype;
   
-  db.addListener("ready", function () {});
-  
-  db.addListener("closed", function () {});
-  
-  db.addListener("result", function () {
-    var currentQuery = this.queue[0];
-    
-    require('assert').ok(currentQuery);
-    
-    var callback = currentQuery.callback;
-    
-    var args = Array.prototype.slice.call(currentQuery.args);
-    args.shift(); //this is wrong for SQLTables
-    args.shift(); //this is wrong for SQLTables
-    
-    //check to see if this is the last result set returned
-    if (!arguments[2]) {
-      this.queue.shift();
-      this.executing = false;
-    }
-    
-    if (callback) {
-      var newArgs = Array.prototype.slice.call(arguments);
-      
-      for(var i = 0; i < args.length; i++) {
-        newArgs.push(args[i]);
-      }
-      
-      callback.apply(db, newArgs);
-    }
-    
-    db.processQueue();
-  });
-  
   return db;
 };
 
@@ -93,10 +59,18 @@ Database.prototype.query = function(sql, callback) {
   self.queue.push({
     context : self,
     method : self.dispatchQuery,
-    sql : sql, 
-    callback : callback, 
-    args : arguments
-  });
+    args : [sql, function (error, rows, morefollowing) {
+                
+        //check to see if this is the last result set returned
+        if (!morefollowing) {
+          self.queue.shift();
+          self.executing = false;
+        }
+        
+        if (callback) callback.apply(self, arguments);
+        
+        self.processQueue();
+      }]});
   
   self.processQueue();
 };
@@ -135,8 +109,9 @@ Database.prototype.close = function(callback) {
       self.queue = [];
       self.connected = false;
       self.executing = false;
-      
-      return callback(err);
+
+      if (err && !callback) throw err;
+      else if (callback) callback(err)
     }]
   });
   

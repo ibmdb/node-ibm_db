@@ -31,14 +31,14 @@
 using namespace v8;
 using namespace node;
 
-class Database : public EventEmitter {
+class Database : public node::ObjectWrap {
  public:
   static Persistent<FunctionTemplate> constructor_template;
   static void Init(v8::Handle<Object> target);
   static pthread_mutex_t m_odbcMutex;
 
  protected:
- Database() : EventEmitter() { }
+ Database() { }
 
   ~Database() {
   }

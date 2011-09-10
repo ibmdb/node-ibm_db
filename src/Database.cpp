@@ -37,12 +37,13 @@ typedef struct {
 pthread_mutex_t Database::m_odbcMutex;
 
 void Database::Init(v8::Handle<Object> target) {
+  // I have no idea why this was using EventEmitter before
+  // but it was changed to js in node v0.5.2. So I removed it
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
   constructor_template = Persistent<FunctionTemplate>::New(t);
-  constructor_template->Inherit(EventEmitter::constructor_template);
   constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
@@ -84,7 +85,6 @@ int Database::EIO_AfterOpen(eio_req *req) {
     FatalException(try_catch);
   }
 
-  open_req->dbo->Emit(String::New("ready"), 0, NULL);
   open_req->cb.Dispose();
 
   free(open_req);
@@ -175,7 +175,6 @@ int Database::EIO_AfterClose(eio_req *req) {
     FatalException(try_catch);
   }
 
-  close_req->dbo->Emit(String::New("closed"), 0, NULL);
   close_req->cb.Dispose();
 
   free(close_req);
@@ -225,6 +224,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
   ev_unref(EV_DEFAULT_UC);
 
   struct query_request *prep_req = (struct query_request *)(req->data);
+  struct tm timeInfo = { 0 }; //used for processing date/time datatypes
   
   HandleScope scope;
   
@@ -253,16 +253,19 @@ int Database::EIO_AfterQuery(eio_req *req) {
     args[2] = Local<Boolean>::New(False());
     
     //emit an error event
-    self->Emit(String::New("error"), 3, args);
+    prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+    //self->Emit(String::New("error"), 3, args);
     
     //emit a result event
-    self->Emit(String::New("result"), 3, args);
+    //self->Emit(String::New("result"), 3, args);
+    goto cleanupshutdown;
   }
-  else {
+  //else {
     //malloc succeeded so let's continue -- I'm not too fond of having all this code in the else statement, but I don't know what else to do...
+    // you could use goto ;-)
     
     memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
-    struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
+
     
     //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
     if(req->result == SQL_ERROR)
@@ -284,7 +287,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
       //emit an error event immidiately.
       Local<Value> args[1];
       args[0] = objError;
-      self->Emit(String::New("error"), 1, args);
+      prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+      //self->Emit(String::New("error"), 1, args);
+      goto cleanupshutdown;
     }
     
     //loop through all result sets
@@ -349,7 +354,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
             //emit an error event immidiately.
             Local<Value> args[1];
             args[0] = objError;
-            self->Emit(String::New("error"), 1, args);
+            prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+            //self->Emit(String::New("error"), 1, args);
             
             break;
           }
@@ -457,12 +463,13 @@ int Database::EIO_AfterQuery(eio_req *req) {
         args[1] = rows;
         args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
         
-        self->Emit(String::New("result"), 3, args);
+        prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+        //self->Emit(String::New("result"), 3, args);
       }
     }
     while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
-  } //end of malloc check
-  
+  //} //end of malloc check
+cleanupshutdown:
   TryCatch try_catch;
   
   self->Unref();
@@ -471,7 +478,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
     FatalException(try_catch);
   }
   
+  
   free(buf);
+  prep_req->cb.Dispose();
   free(prep_req->sql);
   free(prep_req->catalog);
   free(prep_req->schema);
@@ -501,7 +510,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_ARG(0, sql);
-  //REQ_FUN_ARG(1, cb);
+  REQ_FUN_ARG(1, cb);
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
@@ -519,6 +528,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
   
   strcpy(prep_req->sql, *sql);
   
