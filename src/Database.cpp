@@ -92,7 +92,7 @@ int Database::EIO_AfterOpen(eio_req *req) {
   return 0;
 }
 
-int Database::EIO_Open(eio_req *req) {
+void Database::EIO_Open(eio_req *req) {
   struct open_request *open_req = (struct open_request *)(req->data);
   Database *self = open_req->dbo->self();
   pthread_mutex_lock(&Database::m_odbcMutex);
@@ -122,7 +122,6 @@ int Database::EIO_Open(eio_req *req) {
   }
   pthread_mutex_unlock(&Database::m_odbcMutex);
   req->result = ret;
-  return 0;
 }
 
 Handle<Value> Database::Open(const Arguments& args) {
@@ -184,7 +183,7 @@ int Database::EIO_AfterClose(eio_req *req) {
   return 0;
 }
 
-int Database::EIO_Close(eio_req *req) {
+void Database::EIO_Close(eio_req *req) {
   struct close_request *close_req = (struct close_request *)(req->data);
   Database* dbo = close_req->dbo;
   pthread_mutex_lock(&Database::m_odbcMutex);
@@ -480,11 +479,10 @@ int Database::EIO_AfterQuery(eio_req *req) {
   free(prep_req->type);
   free(prep_req);
   scope.Close(Undefined());
-  
   return 0;
 }
 
-int Database::EIO_Query(eio_req *req) {
+void Database::EIO_Query(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
@@ -497,7 +495,6 @@ int Database::EIO_Query(eio_req *req) {
   
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
 }
 
 Handle<Value> Database::Query(const Arguments& args) {
@@ -535,7 +532,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_Tables(eio_req *req) {
+void Database::EIO_Tables(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
@@ -554,7 +551,7 @@ int Database::EIO_Tables(eio_req *req) {
   
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
+
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
@@ -613,7 +610,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_Columns(eio_req *req) {
+void Database::EIO_Columns(eio_req *req) {
   //printf("Database::EIO_Columns\n");
   struct query_request *prep_req = (struct query_request *)(req->data);
   
@@ -633,7 +630,6 @@ int Database::EIO_Columns(eio_req *req) {
   
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
 }
 
 Handle<Value> Database::Columns(const Arguments& args) {
