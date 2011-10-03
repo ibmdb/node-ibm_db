@@ -21,13 +21,14 @@ var Database = exports.Database = function () {
   var self = this;
   var db = new odbc.Database();
   db.executing = false;
+  db.connected = false;
   db.queue = [];
   
   db.__proto__ = Database.prototype;
   
-  db.addListener("ready", function () {
-    self.processQueue();
-  });
+  db.addListener("ready", function () {});
+  
+  db.addListener("closed", function () {});
   
   db.addListener("result", function () {
     var currentQuery = this.queue[0];
@@ -72,7 +73,7 @@ Database.prototype.processQueue = function () {
   
   if (!self.queue) self.queue = [];
   
-  if (!self.executing && self.queue.length) {
+  if (self.connected && !self.executing && self.queue.length) {
     var currentQuery = self.queue[0];
     self.executing = true;
     
@@ -82,6 +83,11 @@ Database.prototype.processQueue = function () {
 
 Database.prototype.query = function(sql, callback) {
   var self = this;
+  
+  if (!self.connected) {
+    return callback( { message : "Connection not open." }, [], false );
+  }
+  
   if (!self.queue) self.queue = [];
   
   self.queue.push({
@@ -90,6 +96,48 @@ Database.prototype.query = function(sql, callback) {
     sql : sql, 
     callback : callback, 
     args : arguments
+  });
+  
+  self.processQueue();
+};
+
+Database.prototype.open = function(connectionString, callback) {
+  var self = this;
+  
+  if (self.connected) {
+    return callback( { message : "Connection already open." }, [], false);
+  }
+  
+  self.dispatchOpen(connectionString, function (err) {
+    self.connected = true;
+    self.processQueue();
+    
+    return callback(err);
+  });
+};
+
+/**
+ * 
+ * We must queue the close. If we don't then we may close during the middle of a query which 
+ * could cause a segfault or other madness
+ * 
+ **/
+
+Database.prototype.close = function(callback) {
+  var self = this;
+  
+  if (!self.queue) self.queue = [];
+  
+  self.queue.push({
+    context : self,
+    method : self.dispatchClose,
+    args : [function (err) {
+      self.queue = [];
+      self.connected = false;
+      self.executing = false;
+      
+      return callback(err);
+    }]
   });
   
   self.processQueue();
@@ -180,4 +228,46 @@ Database.prototype.describe = function(obj, callback) {
 };
 
 
+var Pool = exports.Pool = function () {
+  var self = this;
+  
+  self.connectionPool = {};
+}
 
+Pool.prototype.open = function (connectionString, callback) {
+  var self = this;
+  
+  //check to see if we already have a connection for this connection string
+  if (self.connectionPool[connectionString] && self.connectionPool[connectionString].length) {
+    callback(null, self.connectionPool[connectionString].shift());
+  }
+  else {
+    var db = new Database();
+    db.realClose = db.close;
+    
+    db.close = function (cb) {
+      //call back early, we can do the rest of this stuff after the client thinks
+      //that the connection is closed.
+      cb(null);
+      
+      
+      //close the connection for real
+      //this will kill any temp tables or anything that might be a security issue.
+      db.realClose( function () {
+        
+        //re-open the connection using the connection string
+        db.open(connectionString, function (error) {
+          
+          //add this clean connection to the connection pool
+          self.connectionPool[connectionString] = self.connectionPool[connectionString] || [];
+          self.connectionPool[connectionString].push(db);
+          
+        });
+      });
+    };
+    
+    db.open(connectionString, function (error) {
+      callback(error, db);
+    });
+  }
+};
