@@ -35,6 +35,7 @@ class Database : public EventEmitter {
  public:
   static Persistent<FunctionTemplate> constructor_template;
   static void Init(v8::Handle<Object> target);
+  static pthread_mutex_t m_odbcMutex;
 
  protected:
  Database() : EventEmitter() { }
@@ -64,8 +65,6 @@ class Database : public EventEmitter {
   
   Database *self(void) { return this; }
   void printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type);
-
-  static pthread_mutex_t m_odbcMutex;
 
  protected:
   HENV m_hEnv;
