@@ -26,6 +26,7 @@
 #include <sqltypes.h>
 #include <sqlext.h>
 
+#include <pthread.h>
 
 using namespace v8;
 using namespace node;
@@ -63,6 +64,8 @@ class Database : public EventEmitter {
   
   Database *self(void) { return this; }
   void printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type);
+
+  static pthread_mutex_t m_odbcMutex;
 
  protected:
   HENV m_hEnv;

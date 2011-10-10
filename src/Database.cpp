@@ -34,7 +34,6 @@ typedef struct {
   SQLLEN type;
 } Column;
 
-
 void Database::Init(v8::Handle<Object> target) {
   HandleScope scope;
 
@@ -52,6 +51,7 @@ void Database::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
+  pthread_mutex_init(&m_odbcMutex, NULL);
 }
 
 Handle<Value> Database::New(const Arguments& args) {
@@ -93,7 +93,7 @@ int Database::EIO_AfterOpen(eio_req *req) {
 int Database::EIO_Open(eio_req *req) {
   struct open_request *open_req = (struct open_request *)(req->data);
   Database *self = open_req->dbo->self();
-
+  pthread_mutex_lock(&m_odbcMutex);
   int ret = SQLAllocEnv( &self->m_hEnv );
   if( ret == SQL_SUCCESS ) {
     ret = SQLAllocConnect( self->m_hEnv,&self->m_hDBC );
@@ -118,6 +118,7 @@ int Database::EIO_Open(eio_req *req) {
         }
     }
   }
+  pthread_mutex_unlock(&m_odbcMutex);
   req->result = ret;
   return 0;
 }
