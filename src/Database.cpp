@@ -187,9 +187,11 @@ int Database::EIO_AfterClose(eio_req *req) {
 int Database::EIO_Close(eio_req *req) {
   struct close_request *close_req = (struct close_request *)(req->data);
   Database* dbo = close_req->dbo;
+  pthread_mutex_lock(&Database::m_odbcMutex);
   SQLDisconnect(dbo->m_hDBC);
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
+  pthread_mutex_unlock(&Database::m_odbcMutex);
   return 0;
 }
 
