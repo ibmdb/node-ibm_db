@@ -190,7 +190,6 @@ void Database::EIO_Close(eio_req *req) {
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
   pthread_mutex_unlock(&Database::m_odbcMutex);
-  return 0;
 }
 
 Handle<Value> Database::Close(const Arguments& args) {
