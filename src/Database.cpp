@@ -500,7 +500,7 @@ int Database::EIO_Query(eio_req *req) {
   // prepare statement, bind parameters and execute statement 
   //
   SQLRETURN ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
-  if (ret == SQL_SUCCESS || SQL_SUCCESS_WITH_INFO) 
+  if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) 
   {
       for (int i = 0; i < prep_req->paramCount; i++) 
       {
@@ -510,7 +510,7 @@ int Database::EIO_Query(eio_req *req) {
           if (ret == SQL_ERROR) {break;}
       }
 
-      if (ret == SQL_SUCCESS || SQL_SUCCESS_WITH_INFO) {
+      if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
           ret = SQLExecute(prep_req->dbo->m_hStmt);
       }
   }
