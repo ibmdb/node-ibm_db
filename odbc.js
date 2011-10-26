@@ -47,8 +47,10 @@ Database.prototype.processQueue = function () {
   }
 };
 
-Database.prototype.query = function(sql, callback) {
+Database.prototype.query = function(sql, params, callback) {
   var self = this;
+
+  if (callback == null) callback = params; // no parameters supplied
   
   if (!self.connected) {
     return callback( { message : "Connection not open." }, [], false );
