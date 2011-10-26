@@ -373,7 +373,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
               tuple->Set(String::New((const char *)columns[i].name), Null());
             }
             else
-            { 
+            {
               switch (columns[i].type) {
                 case SQL_NUMERIC :
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
@@ -385,6 +385,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
                   break;
                 case SQL_SMALLINT :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_BIGINT :
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
                   break;
                 case SQL_FLOAT :
@@ -486,15 +489,52 @@ int Database::EIO_AfterQuery(eio_req *req) {
 
 int Database::EIO_Query(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
+  Parameter prm;
   
   if(prep_req->dbo->m_hStmt)
   {
     SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+  } 
+
+  // prepare statement, bind parameters and execute statement 
+  //
+  SQLRETURN ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
+  if (ret == SQL_SUCCESS || SQL_SUCCESS_WITH_INFO) 
+  {
+      for (int i = 0; i < prep_req->paramCount; i++) 
+      {
+          prm = prep_req->params[i];
+          
+          ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
+          if (ret == SQL_ERROR) {break;}
+      }
+
+      if (ret == SQL_SUCCESS || SQL_SUCCESS_WITH_INFO) {
+          ret = SQLExecute(prep_req->dbo->m_hStmt);
+      }
   }
-  
-  SQLRETURN ret = SQLExecDirect( prep_req->dbo->m_hStmt,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
-  
+
+  // free parameters
+  //
+  if (prep_req->paramCount) 
+  {
+      for (int i = 0; i < prep_req->paramCount; i++) 
+      {
+          if (prm = prep_req->params[i], prm.buffer != NULL) 
+          {
+              switch (prm.c_type) 
+              {
+                case SQL_C_CHAR:    free(prm.buffer);             break; 
+                case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+                case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+                case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+              }
+          }
+      }     
+      free(prep_req->params);
+  }
+
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
   return 0;
@@ -506,6 +546,9 @@ Handle<Value> Database::Query(const Arguments& args) {
   REQ_STR_ARG(0, sql);
   //REQ_FUN_ARG(1, cb);
 
+  int paramCount = 0;
+  Parameter* params;
+
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
   struct query_request *prep_req = (struct query_request *)
@@ -514,6 +557,68 @@ Handle<Value> Database::Query(const Arguments& args) {
   if (!prep_req) {
     V8::LowMemoryNotification();
     return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  // populate prep_req->params if parameters were supplied
+  //
+  if (args.Length() > 1 && args[1]->IsArray()) 
+  {
+      Local<Array> values = Local<Array>::Cast(args[1]);
+
+      prep_req->paramCount = paramCount = values->Length();
+      prep_req->params     = params     = new Parameter[paramCount];
+
+      for (int i = 0; i < paramCount; i++)
+      {
+          Local<Value> value = values->Get(i);
+
+          params[i].size          = 0;
+          params[i].length        = NULL;
+          params[i].buffer_length = 0;
+
+          if (value->IsString()) 
+          {
+              String::Utf8Value string(value);
+              
+              params[i].c_type        = SQL_C_CHAR;
+              params[i].type          = SQL_VARCHAR;
+              params[i].length        = SQL_NTS;
+              params[i].buffer        = malloc(string.length() + 1);
+              params[i].buffer_length = string.length() + 1;
+            
+              strcpy((char*)params[i].buffer, *string);
+          }
+          else if (value->IsNull()) 
+          {
+              params[i].c_type = SQL_C_DEFAULT;
+              params[i].type   = SQL_NULL_DATA;
+              params[i].length = SQL_NULL_DATA;
+          }
+          else if (value->IsInt32()) 
+          {
+              int64_t  *number = new int64_t(value->IntegerValue());
+              params[i].c_type = SQL_C_LONG;
+              params[i].type   = SQL_INTEGER;
+              params[i].buffer = number; 
+          }
+          else if (value->IsNumber()) 
+          {
+              double   *number = new double(value->NumberValue());
+              params[i].c_type = SQL_C_DOUBLE;
+              params[i].type   = SQL_DECIMAL;
+              params[i].buffer = number; 
+          }
+          else if (value->IsBoolean()) 
+          {
+              bool *boolean    = new bool(value->BooleanValue());
+              params[i].c_type = SQL_C_BIT;
+              params[i].type   = SQL_BIT;
+              params[i].buffer = boolean;
+          }
+      }
+  }
+  else {
+      prep_req->paramCount = 0;
   }
 
   prep_req->sql = (char *) malloc(sql.length() +1);

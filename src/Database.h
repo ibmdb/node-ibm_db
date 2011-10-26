@@ -91,6 +91,15 @@ struct close_request {
   Database *dbo;
 };
 
+typedef struct {
+    SQLSMALLINT  c_type;
+    SQLSMALLINT  type;
+    SQLLEN       size;
+    void        *buffer;
+    SQLLEN       buffer_length;    
+    SQLLEN       length;
+} Parameter;
+
 struct query_request {
   Persistent<Function> cb;
   Database *dbo;
@@ -101,6 +110,8 @@ struct query_request {
   char *table;
   char *type;
   char *column;
+  Parameter *params;
+  int  paramCount;
 };
 
 #define REQ_ARGS(N)                                                     \
