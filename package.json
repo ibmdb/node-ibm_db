@@ -1,0 +1,20 @@
+{
+  "name": "odbc",
+  "description": "unixodbc bindings for node",
+  "version": "0.0.1",
+  "homepage": "http://github.com/w1nk/node-odbc/",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/w1nk/node-odbc.git"
+  },
+  "author": "Lee Smith <notwink@gmail.com>",
+  "directories": {
+    "lib": "."
+  },
+  "engines": {
+    "node": "*"
+  },
+  "scripts": { 
+    "preinstall":"node-waf configure build"
+  } 
+}
