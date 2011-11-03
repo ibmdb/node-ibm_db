@@ -16,7 +16,7 @@ SYNOPSYS
 		{
 			sys.debug(sys.inspect(rows));
 			db.close(function(){});
-		}
+		});
 	});
 
 
