@@ -6,7 +6,7 @@ node-odbc - An asynchronous Node interface to unixodbc and its supported drivers
 SYNOPSYS
 --------
 
-	var sys     = require("sys");
+	var sys  = require("sys");
 	var odbc = require("odbc");
 
 	var db = new odbc.Database();
