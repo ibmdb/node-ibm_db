@@ -1,7 +1,7 @@
 {
   "name": "odbc",
   "description": "unixodbc bindings for node",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "homepage": "http://github.com/w1nk/node-odbc/",
   "repository": {
     "type": "git",
