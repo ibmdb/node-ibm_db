@@ -19,7 +19,6 @@
 
 #include <v8.h>
 #include <node.h>
-#include <node_events.h>
 
 #include <stdlib.h>
 #include <sql.h>

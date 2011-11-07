@@ -17,7 +17,6 @@
 #include <string.h>
 #include <v8.h>
 #include <node.h>
-#include <node_events.h>
 #include <time.h>
 
 #include "Database.h"
