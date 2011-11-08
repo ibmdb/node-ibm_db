@@ -19,7 +19,6 @@
 
 #include <v8.h>
 #include <node.h>
-#include <node_events.h>
 
 #include <stdlib.h>
 #include <sql.h>
@@ -31,14 +30,14 @@
 using namespace v8;
 using namespace node;
 
-class Database : public EventEmitter {
+class Database : public node::ObjectWrap {
  public:
   static Persistent<FunctionTemplate> constructor_template;
   static void Init(v8::Handle<Object> target);
   static pthread_mutex_t m_odbcMutex;
 
  protected:
- Database() : EventEmitter() { }
+ Database() { }
 
   ~Database() {
   }
@@ -46,21 +45,21 @@ class Database : public EventEmitter {
   static Handle<Value> New(const Arguments& args);
 
   static int EIO_AfterOpen(eio_req *req);
-  static int EIO_Open(eio_req *req);
+  static void EIO_Open(eio_req *req);
   static Handle<Value> Open(const Arguments& args);
 
   static int EIO_AfterClose(eio_req *req);
-  static int EIO_Close(eio_req *req);
+  static void EIO_Close(eio_req *req);
   static Handle<Value> Close(const Arguments& args);
 
   static int EIO_AfterQuery(eio_req *req);
-  static int EIO_Query(eio_req *req);
+  static void EIO_Query(eio_req *req);
   static Handle<Value> Query(const Arguments& args);
 
-  static int EIO_Tables(eio_req *req);
+  static void EIO_Tables(eio_req *req);
   static Handle<Value> Tables(const Arguments& args);
 
-  static int EIO_Columns(eio_req *req);
+  static void EIO_Columns(eio_req *req);
   static Handle<Value> Columns(const Arguments& args);
   
   Database *self(void) { return this; }
@@ -91,6 +90,15 @@ struct close_request {
   Database *dbo;
 };
 
+typedef struct {
+    SQLSMALLINT  c_type;
+    SQLSMALLINT  type;
+    SQLLEN       size;
+    void        *buffer;
+    SQLLEN       buffer_length;    
+    SQLLEN       length;
+} Parameter;
+
 struct query_request {
   Persistent<Function> cb;
   Database *dbo;
@@ -101,6 +109,8 @@ struct query_request {
   char *table;
   char *type;
   char *column;
+  Parameter *params;
+  int  paramCount;
 };
 
 #define REQ_ARGS(N)                                                     \

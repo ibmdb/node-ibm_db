@@ -17,7 +17,6 @@
 #include <string.h>
 #include <v8.h>
 #include <node.h>
-#include <node_events.h>
 #include <time.h>
 
 #include "Database.h"
@@ -37,12 +36,13 @@ typedef struct {
 pthread_mutex_t Database::m_odbcMutex;
 
 void Database::Init(v8::Handle<Object> target) {
+  // I have no idea why this was using EventEmitter before
+  // but it was changed to js in node v0.5.2. So I removed it
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
   constructor_template = Persistent<FunctionTemplate>::New(t);
-  constructor_template->Inherit(EventEmitter::constructor_template);
   constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
@@ -84,7 +84,6 @@ int Database::EIO_AfterOpen(eio_req *req) {
     FatalException(try_catch);
   }
 
-  open_req->dbo->Emit(String::New("ready"), 0, NULL);
   open_req->cb.Dispose();
 
   free(open_req);
@@ -92,7 +91,7 @@ int Database::EIO_AfterOpen(eio_req *req) {
   return 0;
 }
 
-int Database::EIO_Open(eio_req *req) {
+void Database::EIO_Open(eio_req *req) {
   struct open_request *open_req = (struct open_request *)(req->data);
   Database *self = open_req->dbo->self();
   pthread_mutex_lock(&Database::m_odbcMutex);
@@ -122,7 +121,6 @@ int Database::EIO_Open(eio_req *req) {
   }
   pthread_mutex_unlock(&Database::m_odbcMutex);
   req->result = ret;
-  return 0;
 }
 
 Handle<Value> Database::Open(const Arguments& args) {
@@ -176,7 +174,6 @@ int Database::EIO_AfterClose(eio_req *req) {
     FatalException(try_catch);
   }
 
-  close_req->dbo->Emit(String::New("closed"), 0, NULL);
   close_req->cb.Dispose();
 
   free(close_req);
@@ -184,7 +181,7 @@ int Database::EIO_AfterClose(eio_req *req) {
   return 0;
 }
 
-int Database::EIO_Close(eio_req *req) {
+void Database::EIO_Close(eio_req *req) {
   struct close_request *close_req = (struct close_request *)(req->data);
   Database* dbo = close_req->dbo;
   pthread_mutex_lock(&Database::m_odbcMutex);
@@ -192,7 +189,6 @@ int Database::EIO_Close(eio_req *req) {
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
   pthread_mutex_unlock(&Database::m_odbcMutex);
-  return 0;
 }
 
 Handle<Value> Database::Close(const Arguments& args) {
@@ -226,6 +222,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
   ev_unref(EV_DEFAULT_UC);
 
   struct query_request *prep_req = (struct query_request *)(req->data);
+  struct tm timeInfo = { 0 }; //used for processing date/time datatypes
   
   HandleScope scope;
   
@@ -254,16 +251,19 @@ int Database::EIO_AfterQuery(eio_req *req) {
     args[2] = Local<Boolean>::New(False());
     
     //emit an error event
-    self->Emit(String::New("error"), 3, args);
+    prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+    //self->Emit(String::New("error"), 3, args);
     
     //emit a result event
-    self->Emit(String::New("result"), 3, args);
+    //self->Emit(String::New("result"), 3, args);
+    goto cleanupshutdown;
   }
-  else {
+  //else {
     //malloc succeeded so let's continue -- I'm not too fond of having all this code in the else statement, but I don't know what else to do...
+    // you could use goto ;-)
     
     memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
-    struct tm timeInfo = { 0 }; //used for processing date/time datatypes 
+
     
     //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
     if(req->result == SQL_ERROR)
@@ -285,7 +285,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
       //emit an error event immidiately.
       Local<Value> args[1];
       args[0] = objError;
-      self->Emit(String::New("error"), 1, args);
+      prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+      //self->Emit(String::New("error"), 1, args);
+      goto cleanupshutdown;
     }
     
     //loop through all result sets
@@ -350,7 +352,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
             //emit an error event immidiately.
             Local<Value> args[1];
             args[0] = objError;
-            self->Emit(String::New("error"), 1, args);
+            prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+            //self->Emit(String::New("error"), 1, args);
             
             break;
           }
@@ -373,7 +376,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
               tuple->Set(String::New((const char *)columns[i].name), Null());
             }
             else
-            { 
+            {
               switch (columns[i].type) {
                 case SQL_NUMERIC :
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
@@ -385,6 +388,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
                   break;
                 case SQL_SMALLINT :
+                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
+                  break;
+                case SQL_BIGINT :
                   tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
                   break;
                 case SQL_FLOAT :
@@ -458,12 +464,13 @@ int Database::EIO_AfterQuery(eio_req *req) {
         args[1] = rows;
         args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
         
-        self->Emit(String::New("result"), 3, args);
+        prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+        //self->Emit(String::New("result"), 3, args);
       }
     }
     while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
-  } //end of malloc check
-  
+  //} //end of malloc check
+cleanupshutdown:
   TryCatch try_catch;
   
   self->Unref();
@@ -472,7 +479,9 @@ int Database::EIO_AfterQuery(eio_req *req) {
     FatalException(try_catch);
   }
   
+  
   free(buf);
+  prep_req->cb.Dispose();
   free(prep_req->sql);
   free(prep_req->catalog);
   free(prep_req->schema);
@@ -480,31 +489,69 @@ int Database::EIO_AfterQuery(eio_req *req) {
   free(prep_req->type);
   free(prep_req);
   scope.Close(Undefined());
-  
   return 0;
 }
 
-int Database::EIO_Query(eio_req *req) {
+void Database::EIO_Query(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
+  Parameter prm;
   
   if(prep_req->dbo->m_hStmt)
   {
     SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+  } 
+
+  // prepare statement, bind parameters and execute statement 
+  //
+  SQLRETURN ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
+  if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) 
+  {
+      for (int i = 0; i < prep_req->paramCount; i++) 
+      {
+          prm = prep_req->params[i];
+          
+          ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
+          if (ret == SQL_ERROR) {break;}
+      }
+
+      if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+          ret = SQLExecute(prep_req->dbo->m_hStmt);
+      }
   }
-  
-  SQLRETURN ret = SQLExecDirect( prep_req->dbo->m_hStmt,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
-  
+
+  // free parameters
+  //
+  if (prep_req->paramCount) 
+  {
+      for (int i = 0; i < prep_req->paramCount; i++) 
+      {
+          if (prm = prep_req->params[i], prm.buffer != NULL) 
+          {
+              switch (prm.c_type) 
+              {
+                case SQL_C_CHAR:    free(prm.buffer);             break; 
+                case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+                case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+                case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+              }
+          }
+      }     
+      free(prep_req->params);
+  }
+
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
 }
 
 Handle<Value> Database::Query(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_ARG(0, sql);
-  //REQ_FUN_ARG(1, cb);
+  REQ_FUN_ARG(1, cb);
+
+  int paramCount = 0;
+  Parameter* params;
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
@@ -516,12 +563,75 @@ Handle<Value> Database::Query(const Arguments& args) {
     return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
   }
 
+  // populate prep_req->params if parameters were supplied
+  //
+  if (args.Length() > 1 && args[1]->IsArray()) 
+  {
+      Local<Array> values = Local<Array>::Cast(args[1]);
+
+      prep_req->paramCount = paramCount = values->Length();
+      prep_req->params     = params     = new Parameter[paramCount];
+
+      for (int i = 0; i < paramCount; i++)
+      {
+          Local<Value> value = values->Get(i);
+
+          params[i].size          = 0;
+          params[i].length        = NULL;
+          params[i].buffer_length = 0;
+
+          if (value->IsString()) 
+          {
+              String::Utf8Value string(value);
+              
+              params[i].c_type        = SQL_C_CHAR;
+              params[i].type          = SQL_VARCHAR;
+              params[i].length        = SQL_NTS;
+              params[i].buffer        = malloc(string.length() + 1);
+              params[i].buffer_length = string.length() + 1;
+            
+              strcpy((char*)params[i].buffer, *string);
+          }
+          else if (value->IsNull()) 
+          {
+              params[i].c_type = SQL_C_DEFAULT;
+              params[i].type   = SQL_NULL_DATA;
+              params[i].length = SQL_NULL_DATA;
+          }
+          else if (value->IsInt32()) 
+          {
+              int64_t  *number = new int64_t(value->IntegerValue());
+              params[i].c_type = SQL_C_LONG;
+              params[i].type   = SQL_INTEGER;
+              params[i].buffer = number; 
+          }
+          else if (value->IsNumber()) 
+          {
+              double   *number = new double(value->NumberValue());
+              params[i].c_type = SQL_C_DOUBLE;
+              params[i].type   = SQL_DECIMAL;
+              params[i].buffer = number; 
+          }
+          else if (value->IsBoolean()) 
+          {
+              bool *boolean    = new bool(value->BooleanValue());
+              params[i].c_type = SQL_C_BIT;
+              params[i].type   = SQL_BIT;
+              params[i].buffer = boolean;
+          }
+      }
+  }
+  else {
+      prep_req->paramCount = 0;
+  }
+
   prep_req->sql = (char *) malloc(sql.length() +1);
   prep_req->catalog = NULL;
   prep_req->schema = NULL;
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
   
   strcpy(prep_req->sql, *sql);
   
@@ -535,7 +645,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_Tables(eio_req *req) {
+void Database::EIO_Tables(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
@@ -554,7 +664,7 @@ int Database::EIO_Tables(eio_req *req) {
   
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
+
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
@@ -613,7 +723,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_Columns(eio_req *req) {
+void Database::EIO_Columns(eio_req *req) {
   //printf("Database::EIO_Columns\n");
   struct query_request *prep_req = (struct query_request *)(req->data);
   
@@ -633,7 +743,6 @@ int Database::EIO_Columns(eio_req *req) {
   
   req->result = ret; // this will be checked later in EIO_AfterQuery
   
-  return 0;
 }
 
 Handle<Value> Database::Columns(const Arguments& args) {
