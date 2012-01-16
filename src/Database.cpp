@@ -442,7 +442,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
         //there are no more recordsets so free the statement now before we emit
         //because as soon as we emit the last recordest, we are clear to submit another query
         //which could cause a race condition with freeing and allocating handles.
-        SQLFreeStmt( self->m_hStmt, SQL_CLOSE );
+        SQLFreeHandle( SQL_HANDLE_STMT, self->m_hStmt );
         SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
       }
       
@@ -498,7 +498,7 @@ void Database::EIO_Query(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   } 
 
@@ -650,7 +650,7 @@ void Database::EIO_Tables(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
@@ -729,7 +729,7 @@ void Database::EIO_Columns(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
