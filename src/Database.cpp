@@ -36,8 +36,6 @@ typedef struct {
 pthread_mutex_t Database::m_odbcMutex;
 
 void Database::Init(v8::Handle<Object> target) {
-  // I have no idea why this was using EventEmitter before
-  // but it was changed to js in node v0.5.2. So I removed it
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -53,6 +51,7 @@ void Database::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
+  scope.Close(Undefined());
   pthread_mutex_init(&Database::m_odbcMutex, NULL);
 }
 
@@ -60,6 +59,7 @@ Handle<Value> Database::New(const Arguments& args) {
   HandleScope scope;
   Database* dbo = new Database();
   dbo->Wrap(args.This());
+  scope.Close(Undefined());
   return args.This();
 }
 
@@ -218,7 +218,6 @@ Handle<Value> Database::Close(const Arguments& args) {
 }
 
 int Database::EIO_AfterQuery(eio_req *req) {
-  //printf("Database::EIO_AfterQuery\n");
   ev_unref(EV_DEFAULT_UC);
 
   struct query_request *prep_req = (struct query_request *)(req->data);
@@ -252,10 +251,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
     
     //emit an error event
     prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-    //self->Emit(String::New("error"), 3, args);
     
     //emit a result event
-    //self->Emit(String::New("result"), 3, args);
     goto cleanupshutdown;
   }
   //else {
@@ -345,7 +342,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
             
             errorCount++;
             objError->Set(String::New("state"), String::New(errorSQLState));
-	    objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+            objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
             objError->Set(String::New("message"), String::New(errorMessage));
             objError->Set(String::New("query"), String::New(prep_req->sql));
             
@@ -353,7 +350,6 @@ int Database::EIO_AfterQuery(eio_req *req) {
             Local<Value> args[1];
             args[0] = objError;
             prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-            //self->Emit(String::New("error"), 1, args);
             
             break;
           }
@@ -442,7 +438,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
         //there are no more recordsets so free the statement now before we emit
         //because as soon as we emit the last recordest, we are clear to submit another query
         //which could cause a race condition with freeing and allocating handles.
-        SQLFreeStmt( self->m_hStmt, SQL_CLOSE );
+        SQLFreeHandle(SQL_HANDLE_STMT, self->m_hStmt);
         SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
       }
       
@@ -465,7 +461,6 @@ int Database::EIO_AfterQuery(eio_req *req) {
         args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
         
         prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-        //self->Emit(String::New("result"), 3, args);
       }
     }
     while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
@@ -478,7 +473,6 @@ cleanupshutdown:
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-  
   
   free(buf);
   prep_req->cb.Dispose();
@@ -498,7 +492,7 @@ void Database::EIO_Query(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle(SQL_HANDLE_STMT, prep_req->dbo->m_hStmt);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   } 
 
@@ -650,7 +644,7 @@ void Database::EIO_Tables(eio_req *req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle(SQL_HANDLE_STMT, prep_req->dbo->m_hStmt);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
@@ -668,7 +662,6 @@ void Database::EIO_Tables(eio_req *req) {
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
-  //printf("Database::Tables\n");
   HandleScope scope;
 
   REQ_STR_OR_NULL_ARG(0, catalog);
@@ -724,12 +717,11 @@ Handle<Value> Database::Tables(const Arguments& args) {
 }
 
 void Database::EIO_Columns(eio_req *req) {
-  //printf("Database::EIO_Columns\n");
   struct query_request *prep_req = (struct query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
   {
-    SQLFreeStmt(prep_req->dbo->m_hStmt, SQL_CLOSE);
+    SQLFreeHandle(SQL_HANDLE_STMT, prep_req->dbo->m_hStmt);
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   }
   
@@ -746,7 +738,6 @@ void Database::EIO_Columns(eio_req *req) {
 }
 
 Handle<Value> Database::Columns(const Arguments& args) {
-  //printf("Database::Columns\n");
   HandleScope scope;
 
   REQ_STR_OR_NULL_ARG(0, catalog);
