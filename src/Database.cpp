@@ -489,6 +489,7 @@ cleanupshutdown:
 void Database::EIO_Query(eio_req *req) {
   struct query_request *prep_req = (struct query_request *)(req->data);
   Parameter prm;
+  SQLRETURN ret;
   
   if(prep_req->dbo->m_hStmt)
   {
@@ -496,42 +497,47 @@ void Database::EIO_Query(eio_req *req) {
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
   } 
 
-  // prepare statement, bind parameters and execute statement 
-  //
-  SQLRETURN ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
-  if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) 
+  //check to see if should excute a direct or a parameter bound query
+  if (!prep_req->paramCount)
   {
-      for (int i = 0; i < prep_req->paramCount; i++) 
+    // execute the query directly
+    ret = SQLExecDirect( prep_req->dbo->m_hStmt,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
+  }
+  else 
+  {
+    // prepare statement, bind parameters and execute statement 
+    ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
+    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO)
+    {
+      for (int i = 0; i < prep_req->paramCount; i++)
       {
-          prm = prep_req->params[i];
-          
-          ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
-          if (ret == SQL_ERROR) {break;}
+        prm = prep_req->params[i];
+        
+        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
+        if (ret == SQL_ERROR) {break;}
       }
 
       if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-          ret = SQLExecute(prep_req->dbo->m_hStmt);
+        ret = SQLExecute(prep_req->dbo->m_hStmt);
       }
-  }
-
-  // free parameters
-  //
-  if (prep_req->paramCount) 
-  {
-      for (int i = 0; i < prep_req->paramCount; i++) 
+    }
+    
+    // free parameters
+    //
+    for (int i = 0; i < prep_req->paramCount; i++)
+    {
+      if (prm = prep_req->params[i], prm.buffer != NULL)
       {
-          if (prm = prep_req->params[i], prm.buffer != NULL) 
-          {
-              switch (prm.c_type) 
-              {
-                case SQL_C_CHAR:    free(prm.buffer);             break; 
-                case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
-                case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-                case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-              }
-          }
-      }     
-      free(prep_req->params);
+        switch (prm.c_type)
+        {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+    free(prep_req->params);
   }
 
   req->result = ret; // this will be checked later in EIO_AfterQuery
@@ -542,8 +548,9 @@ Handle<Value> Database::Query(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_ARG(0, sql);
-  REQ_FUN_ARG(1, cb);
-
+  
+  Local<Function> cb; 
+  
   int paramCount = 0;
   Parameter* params;
 
@@ -559,9 +566,24 @@ Handle<Value> Database::Query(const Arguments& args) {
 
   // populate prep_req->params if parameters were supplied
   //
-  if (args.Length() > 1 && args[1]->IsArray()) 
+  if (args.Length() > 2) 
   {
+      if ( !args[1]->IsArray() )
+      {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 1 must be an Array"))
+           );
+      }
+      else if ( !args[2]->IsFunction() )
+      {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 2 must be a Function"))
+           );
+      }
+  
+
       Local<Array> values = Local<Array>::Cast(args[1]);
+      cb = Local<Function>::Cast(args[2]);
 
       prep_req->paramCount = paramCount = values->Length();
       prep_req->params     = params     = new Parameter[paramCount];
@@ -615,7 +637,17 @@ Handle<Value> Database::Query(const Arguments& args) {
           }
       }
   }
-  else {
+  else 
+  {
+      if ( !args[1]->IsFunction() )
+      {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 1 must be a Function"))
+           );
+      }
+
+      cb = Local<Function>::Cast(args[1]);
+
       prep_req->paramCount = 0;
   }
 

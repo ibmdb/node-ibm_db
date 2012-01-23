@@ -47,9 +47,12 @@ Database.prototype.processQueue = function () {
 };
 
 Database.prototype.query = function(sql, params, callback) {
-  var self = this;
+  var self = this, args = [];
 
-  if (callback == null) callback = params; // no parameters supplied
+  if (callback == null) {
+    callback = params; // no parameters supplied
+    params = null;
+  }
   
   if (!self.connected) {
     return callback( { message : "Connection not open." }, [], false );
@@ -57,21 +60,29 @@ Database.prototype.query = function(sql, params, callback) {
   
   if (!self.queue) self.queue = [];
   
+  args.push(sql);
+
+  if (params) {
+    args.push(params);  
+  }
+
+  args.push(function (error, rows, morefollowing) {
+    //check to see if this is the last result set returned
+    if (!morefollowing) {
+      self.queue.shift();
+      self.executing = false;
+    }
+
+    if (callback) callback.apply(self, arguments);
+
+    self.processQueue();
+  });
+ 
   self.queue.push({
     context : self,
     method : self.dispatchQuery,
-    args : [sql, function (error, rows, morefollowing) {
-                
-        //check to see if this is the last result set returned
-        if (!morefollowing) {
-          self.queue.shift();
-          self.executing = false;
-        }
-        
-        if (callback) callback.apply(self, arguments);
-        
-        self.processQueue();
-      }]});
+    args : args
+  });
   
   self.processQueue();
 };
