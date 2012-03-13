@@ -31,6 +31,7 @@ INSTALLATION
 
 - Make sure you have the unixODBC binaries and unixODBC headers installed and the drivers configured.
 	- On ubuntu and probably most linux distros the unixODBC header files are in the unixodbc-dev package (apt-get install unixodbc-dev)
+ - On OSX one case use macports.org to install unixODBC (sudo port unixODBC)
 - node-waf configure build
 
 
