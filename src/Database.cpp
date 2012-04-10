@@ -513,7 +513,7 @@ void Database::EIO_Query(eio_req *req) {
       {
         prm = prep_req->params[i];
         
-        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
+        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prm.length);
         if (ret == SQL_ERROR) {break;}
       }
 
@@ -605,7 +605,8 @@ Handle<Value> Database::Query(const Arguments& args) {
               params[i].length        = SQL_NTS;
               params[i].buffer        = malloc(string.length() + 1);
               params[i].buffer_length = string.length() + 1;
-            
+              params[i].size          = string.length() + 1;
+
               strcpy((char*)params[i].buffer, *string);
           }
           else if (value->IsNull()) 
