@@ -30,7 +30,7 @@ INSTALLATION
 ------------
 
 - Make sure you have the unixODBC binaries and unixODBC headers installed and the drivers configured.
-	- On ubuntu and probably most linux distros the unixODBC header files are in the unixodbc-dev package (apt-get install unixodbc-dev)
+ - On ubuntu and probably most linux distros the unixODBC header files are in the unixodbc-dev package (apt-get install unixodbc-dev)
  - On OSX one case use macports.org to install unixODBC (sudo port unixODBC)
 - node-waf configure build
 
@@ -42,7 +42,7 @@ TIPS
 - If you are using the FreeTDS ODBC driver and you have column names longer than 30 characters, you should add "TDS_Version=7.0" to your connection string to retrive the full column name.
   Example: 
 
-	"DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname;TDS_Version=7.0"
+  "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname;TDS_Version=7.0"
 
 
 BUGS
@@ -50,12 +50,17 @@ BUGS
 
 None known, but there might be one ;).
 
+COMPLETE
+--------
+
+- Connection Management
+- Querying
+- Database Descriptions
+- Binding Parameters (thanks to @gurzgri)
 
 TODO
 ----
 
-- Not complete; supports connection management, querying and database descriptions
-- Binding parameters (SQLBindParameter)?
 - Option to emit on each record to avoid collecting the entire dataset first and increasing memory usage
 - More error handling.
 - Tests
