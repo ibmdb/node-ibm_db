@@ -701,7 +701,8 @@ Handle<Value> Database::Tables(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(1, schema);
   REQ_STR_OR_NULL_ARG(2, table);
   REQ_STR_OR_NULL_ARG(3, type);
-  
+  Local<Function> cb = Local<Function>::Cast(args[4]);
+
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
   struct query_request *prep_req = (struct query_request *)
@@ -718,6 +719,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
     prep_req->catalog = (char *) malloc(catalog.length() +1);
@@ -777,6 +779,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(1, schema);
   REQ_STR_OR_NULL_ARG(2, table);
   REQ_STR_OR_NULL_ARG(3, column);
+  Local<Function> cb = Local<Function>::Cast(args[4]);
   
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
@@ -794,6 +797,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
     prep_req->catalog = (char *) malloc(catalog.length() +1);
