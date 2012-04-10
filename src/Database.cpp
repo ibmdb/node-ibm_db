@@ -405,7 +405,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   timeInfo.tm_isdst = -1; //a negative value means that mktime() should (use timezone information and system 
                         //databases to) attempt to determine whether DST is in effect at the specified time.
                   
-                  tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                  tuple->Set(String::New((const char *)columns[i].name), Date::New(double(mktime(&timeInfo)) * 1000));
                   
                   break;
                 case SQL_BIT :
