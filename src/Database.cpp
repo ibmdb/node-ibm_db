@@ -405,7 +405,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
                   timeInfo.tm_isdst = -1; //a negative value means that mktime() should (use timezone information and system 
                         //databases to) attempt to determine whether DST is in effect at the specified time.
                   
-                  tuple->Set(String::New((const char *)columns[i].name), Date::New(mktime(&timeInfo) * 1000));
+                  tuple->Set(String::New((const char *)columns[i].name), Date::New(double(mktime(&timeInfo)) * 1000));
                   
                   break;
                 case SQL_BIT :
@@ -513,7 +513,7 @@ void Database::EIO_Query(eio_req *req) {
       {
         prm = prep_req->params[i];
         
-        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prep_req->params[i].length);
+        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prm.length);
         if (ret == SQL_ERROR) {break;}
       }
 
@@ -605,7 +605,8 @@ Handle<Value> Database::Query(const Arguments& args) {
               params[i].length        = SQL_NTS;
               params[i].buffer        = malloc(string.length() + 1);
               params[i].buffer_length = string.length() + 1;
-            
+              params[i].size          = string.length() + 1;
+
               strcpy((char*)params[i].buffer, *string);
           }
           else if (value->IsNull()) 
@@ -700,7 +701,8 @@ Handle<Value> Database::Tables(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(1, schema);
   REQ_STR_OR_NULL_ARG(2, table);
   REQ_STR_OR_NULL_ARG(3, type);
-  
+  Local<Function> cb = Local<Function>::Cast(args[4]);
+
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
   struct query_request *prep_req = (struct query_request *)
@@ -717,6 +719,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
     prep_req->catalog = (char *) malloc(catalog.length() +1);
@@ -776,6 +779,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(1, schema);
   REQ_STR_OR_NULL_ARG(2, table);
   REQ_STR_OR_NULL_ARG(3, column);
+  Local<Function> cb = Local<Function>::Cast(args[4]);
   
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
 
@@ -793,6 +797,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   prep_req->table = NULL;
   prep_req->type = NULL;
   prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
 
   if (!String::New(*catalog)->Equals(String::New("null"))) {
     prep_req->catalog = (char *) malloc(catalog.length() +1);
