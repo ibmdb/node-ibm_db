@@ -41,7 +41,7 @@ INSTALLATION
 
 ###npm
 
-  npm install odbc
+	npm install odbc
 
 
 TIPS
