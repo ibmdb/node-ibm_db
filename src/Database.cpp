@@ -18,6 +18,7 @@
 #include <v8.h>
 #include <node.h>
 #include <time.h>
+#include <uv.h>
 
 #include "Database.h"
 
@@ -26,12 +27,6 @@
 
 using namespace v8;
 using namespace node;
-
-typedef struct {
-  unsigned char *name;
-  unsigned int len;
-  SQLLEN type;
-} Column;
 
 pthread_mutex_t Database::m_odbcMutex;
 
@@ -63,14 +58,14 @@ Handle<Value> Database::New(const Arguments& args) {
   return args.This();
 }
 
-int Database::EIO_AfterOpen(eio_req *req) {
+void Database::UV_AfterOpen(uv_work_t* req) {
   ev_unref(EV_DEFAULT_UC);
   HandleScope scope;
-  struct open_request *open_req = (struct open_request *)(req->data);
+  open_request* open_req = (open_request *)(req->data);
 
   Local<Value> argv[1];
   bool err = false;
-  if (req->result) {
+  if (open_req->result) {
     err = true;
     argv[0] = Exception::Error(String::New("Error opening database"));
   }
@@ -88,13 +83,14 @@ int Database::EIO_AfterOpen(eio_req *req) {
 
   free(open_req);
   scope.Close(Undefined());
-  return 0;
 }
 
-void Database::EIO_Open(eio_req *req) {
-  struct open_request *open_req = (struct open_request *)(req->data);
-  Database *self = open_req->dbo->self();
+void Database::UV_Open(uv_work_t* req) {
+  open_request* open_req = (open_request *)(req->data);
+  Database* self = open_req->dbo->self();
+  
   pthread_mutex_lock(&Database::m_odbcMutex);
+  
   int ret = SQLAllocEnv( &self->m_hEnv );
   if( ret == SQL_SUCCESS ) {
     ret = SQLAllocConnect( self->m_hEnv,&self->m_hDBC );
@@ -120,7 +116,7 @@ void Database::EIO_Open(eio_req *req) {
     }
   }
   pthread_mutex_unlock(&Database::m_odbcMutex);
-  req->result = ret;
+  open_req->result = ret;
 }
 
 Handle<Value> Database::Open(const Arguments& args) {
@@ -130,9 +126,8 @@ Handle<Value> Database::Open(const Arguments& args) {
   REQ_FUN_ARG(1, cb);
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
-
-  struct open_request *open_req = (struct open_request *)
-    calloc(1, sizeof(struct open_request) + connection.length());
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  open_request* open_req = (open_request *) calloc(1, sizeof(open_request) + connection.length());
 
   if (!open_req) {
     V8::LowMemoryNotification();
@@ -142,8 +137,10 @@ Handle<Value> Database::Open(const Arguments& args) {
   strcpy(open_req->connection, *connection);
   open_req->cb = Persistent<Function>::New(cb);
   open_req->dbo = dbo;
-
-  eio_custom(EIO_Open, EIO_PRI_DEFAULT, EIO_AfterOpen, open_req);
+  
+  work_req->data = open_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_Open, UV_AfterOpen);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();
@@ -151,16 +148,16 @@ Handle<Value> Database::Open(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_AfterClose(eio_req *req) {
+void Database::UV_AfterClose(uv_work_t* req) {
   ev_unref(EV_DEFAULT_UC);
 
   HandleScope scope;
 
-  struct close_request *close_req = (struct close_request *)(req->data);
+  close_request* close_req = (close_request *)(req->data);
 
   Local<Value> argv[1];
   bool err = false;
-  if (req->result) {
+  if (close_req->result) {
     err = true;
     argv[0] = Exception::Error(String::New("Error closing database"));
   }
@@ -178,16 +175,18 @@ int Database::EIO_AfterClose(eio_req *req) {
 
   free(close_req);
   scope.Close(Undefined());
-  return 0;
 }
 
-void Database::EIO_Close(eio_req *req) {
-  struct close_request *close_req = (struct close_request *)(req->data);
+void Database::UV_Close(uv_work_t* req) {
+  close_request* close_req = (close_request *)(req->data);
   Database* dbo = close_req->dbo;
+  
   pthread_mutex_lock(&Database::m_odbcMutex);
+  
   SQLDisconnect(dbo->m_hDBC);
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
+  
   pthread_mutex_unlock(&Database::m_odbcMutex);
 }
 
@@ -197,9 +196,8 @@ Handle<Value> Database::Close(const Arguments& args) {
   REQ_FUN_ARG(0, cb);
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
-
-  struct close_request *close_req = (struct close_request *)
-    calloc(1, sizeof(struct close_request));
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  close_request* close_req = (close_request *) (calloc(1, sizeof(close_request)));
 
   if (!close_req) {
     V8::LowMemoryNotification();
@@ -209,7 +207,9 @@ Handle<Value> Database::Close(const Arguments& args) {
   close_req->cb = Persistent<Function>::New(cb);
   close_req->dbo = dbo;
 
-  eio_custom(EIO_Close, EIO_PRI_DEFAULT, EIO_AfterClose, close_req);
+  work_req->data = close_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_Close, UV_AfterClose);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();
@@ -217,15 +217,15 @@ Handle<Value> Database::Close(const Arguments& args) {
   return Undefined();
 }
 
-int Database::EIO_AfterQuery(eio_req *req) {
+void Database::UV_AfterQuery(uv_work_t* req) {
   ev_unref(EV_DEFAULT_UC);
 
-  struct query_request *prep_req = (struct query_request *)(req->data);
+  query_request* prep_req = (query_request *)(req->data);
   struct tm timeInfo = { 0 }; //used for processing date/time datatypes
   
   HandleScope scope;
   
-  Database *self = prep_req->dbo->self(); //an easy reference to the Database object
+  Database* self = prep_req->dbo->self(); //an easy reference to the Database object
   Local<Object> objError = Object::New(); //our error object which we will use if we discover errors while processing the result set
   
   short colCount = 0; //used to keep track of the number of columns received in a result set
@@ -235,7 +235,7 @@ int Database::EIO_AfterQuery(eio_req *req) {
   SQLSMALLINT buflen; //used as a place holder for the length of column names
   SQLRETURN ret; //used to capture the return value from various SQL function calls
   
-  char *buf = (char *) malloc(MAX_VALUE_SIZE); //allocate a buffer for incoming column values
+  char* buf = (char *) malloc(MAX_VALUE_SIZE); //allocate a buffer for incoming column values
   
   //check to make sure malloc succeeded
   if (buf == NULL) {
@@ -262,8 +262,8 @@ int Database::EIO_AfterQuery(eio_req *req) {
     memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
 
     
-    //First thing, let's check if the execution of the query returned any errors (in EIO_Query)
-    if(req->result == SQL_ERROR)
+    //First thing, let's check if the execution of the query returned any errors (in UV_Query)
+    if(prep_req->result == SQL_ERROR)
     {
       errorCount++;
       
@@ -329,10 +329,10 @@ int Database::EIO_AfterQuery(eio_req *req) {
             char errorSQLState[128];
             SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
             
-            //printf("EIO_Query ret => %i\n", ret);
-            printf("EIO_Query => %s\n", errorMessage);
-            printf("EIO_Query => %s\n", errorSQLState);
-            //printf("EIO_Query sql => %s\n", prep_req->sql);
+            //printf("UV_Query ret => %i\n", ret);
+            printf("UV_Query => %s\n", errorMessage);
+            printf("UV_Query => %s\n", errorSQLState);
+            //printf("UV_Query sql => %s\n", prep_req->sql);
           }
           
           if (ret == SQL_ERROR)  {
@@ -483,11 +483,11 @@ cleanupshutdown:
   free(prep_req->type);
   free(prep_req);
   scope.Close(Undefined());
-  return 0;
 }
 
-void Database::EIO_Query(eio_req *req) {
-  struct query_request *prep_req = (struct query_request *)(req->data);
+void Database::UV_Query(uv_work_t* req) {
+  query_request* prep_req = (query_request *)(req->data);
+  
   Parameter prm;
   SQLRETURN ret;
   
@@ -540,8 +540,7 @@ void Database::EIO_Query(eio_req *req) {
     free(prep_req->params);
   }
 
-  req->result = ret; // this will be checked later in EIO_AfterQuery
-  
+  prep_req->result = ret; // this will be checked later in UV_AfterQuery
 }
 
 Handle<Value> Database::Query(const Arguments& args) {
@@ -555,9 +554,8 @@ Handle<Value> Database::Query(const Arguments& args) {
   Parameter* params;
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
-
-  struct query_request *prep_req = (struct query_request *)
-    calloc(1, sizeof(struct query_request));
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
 
   if (!prep_req) {
     V8::LowMemoryNotification();
@@ -593,7 +591,7 @@ Handle<Value> Database::Query(const Arguments& args) {
           Local<Value> value = values->Get(i);
 
           params[i].size          = 0;
-          params[i].length        = NULL;
+          params[i].length        = SQL_NULL_DATA;
           params[i].buffer_length = 0;
 
           if (value->IsString()) 
@@ -663,8 +661,9 @@ Handle<Value> Database::Query(const Arguments& args) {
   strcpy(prep_req->sql, *sql);
   
   prep_req->dbo = dbo;
-
-  eio_custom(EIO_Query, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
+  work_req->data = prep_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_Query, UV_AfterQuery);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();
@@ -672,8 +671,8 @@ Handle<Value> Database::Query(const Arguments& args) {
   return Undefined();
 }
 
-void Database::EIO_Tables(eio_req *req) {
-  struct query_request *prep_req = (struct query_request *)(req->data);
+void Database::UV_Tables(uv_work_t* req) {
+  query_request* prep_req = (query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
   {
@@ -689,9 +688,7 @@ void Database::EIO_Tables(eio_req *req) {
     (SQLCHAR *) prep_req->type,   SQL_NTS
   );
   
-  req->result = ret; // this will be checked later in EIO_AfterQuery
-  
-
+  prep_req->result = ret; // this will be checked later in UV_AfterQuery
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
@@ -704,9 +701,8 @@ Handle<Value> Database::Tables(const Arguments& args) {
   Local<Function> cb = Local<Function>::Cast(args[4]);
 
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
-
-  struct query_request *prep_req = (struct query_request *)
-    calloc(1, sizeof(struct query_request));
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
   if (!prep_req) {
     V8::LowMemoryNotification();
@@ -742,8 +738,9 @@ Handle<Value> Database::Tables(const Arguments& args) {
   }
   
   prep_req->dbo = dbo;
-
-  eio_custom(EIO_Tables, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
+  work_req->data = prep_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_Tables, UV_AfterQuery);
 
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();
@@ -751,8 +748,8 @@ Handle<Value> Database::Tables(const Arguments& args) {
   return Undefined();
 }
 
-void Database::EIO_Columns(eio_req *req) {
-  struct query_request *prep_req = (struct query_request *)(req->data);
+void Database::UV_Columns(uv_work_t* req) {
+  query_request* prep_req = (query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
   {
@@ -768,8 +765,7 @@ void Database::EIO_Columns(eio_req *req) {
     (SQLCHAR *) prep_req->column,   SQL_NTS
   );
   
-  req->result = ret; // this will be checked later in EIO_AfterQuery
-  
+  prep_req->result = ret; // this will be checked later in UV_AfterQuery
 }
 
 Handle<Value> Database::Columns(const Arguments& args) {
@@ -782,9 +778,8 @@ Handle<Value> Database::Columns(const Arguments& args) {
   Local<Function> cb = Local<Function>::Cast(args[4]);
   
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
-
-  struct query_request *prep_req = (struct query_request *)
-    calloc(1, sizeof(struct query_request));
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
   if (!prep_req) {
     V8::LowMemoryNotification();
@@ -820,9 +815,10 @@ Handle<Value> Database::Columns(const Arguments& args) {
   }
   
   prep_req->dbo = dbo;
-
-  eio_custom(EIO_Columns, EIO_PRI_DEFAULT, EIO_AfterQuery, prep_req);
-
+  work_req->data = prep_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_Columns, UV_AfterQuery);
+  
   ev_ref(EV_DEFAULT_UC);
   dbo->Ref();
   scope.Close(Undefined());

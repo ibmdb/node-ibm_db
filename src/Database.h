@@ -44,22 +44,22 @@ class Database : public node::ObjectWrap {
 
   static Handle<Value> New(const Arguments& args);
 
-  static int EIO_AfterOpen(eio_req *req);
-  static void EIO_Open(eio_req *req);
+  static void UV_AfterOpen(uv_work_t* req);
+  static void UV_Open(uv_work_t* req);
   static Handle<Value> Open(const Arguments& args);
 
-  static int EIO_AfterClose(eio_req *req);
-  static void EIO_Close(eio_req *req);
+  static void UV_AfterClose(uv_work_t* req);
+  static void UV_Close(uv_work_t* req);
   static Handle<Value> Close(const Arguments& args);
 
-  static int EIO_AfterQuery(eio_req *req);
-  static void EIO_Query(eio_req *req);
+  static void UV_AfterQuery(uv_work_t* req);
+  static void UV_Query(uv_work_t* req);
   static Handle<Value> Query(const Arguments& args);
 
-  static void EIO_Tables(eio_req *req);
+  static void UV_Tables(uv_work_t* req);
   static Handle<Value> Tables(const Arguments& args);
 
-  static void EIO_Columns(eio_req *req);
+  static void UV_Columns(uv_work_t* req);
   static Handle<Value> Columns(const Arguments& args);
   
   Database *self(void) { return this; }
@@ -83,12 +83,20 @@ struct open_request {
   Persistent<Function> cb;
   Database *dbo;
   char connection[1];
+  int result;
 };
 
 struct close_request {
   Persistent<Function> cb;
   Database *dbo;
+  int result;
 };
+
+typedef struct {
+  unsigned char *name;
+  unsigned int len;
+  SQLLEN type;
+} Column;
 
 typedef struct {
     SQLSMALLINT  c_type;
@@ -111,6 +119,7 @@ struct query_request {
   char *column;
   Parameter *params;
   int  paramCount;
+  int result;
 };
 
 #define REQ_ARGS(N)                                                     \
