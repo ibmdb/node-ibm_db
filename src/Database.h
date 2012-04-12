@@ -25,8 +25,6 @@
 #include <sqltypes.h>
 #include <sqlext.h>
 
-#include <pthread.h>
-
 using namespace v8;
 using namespace node;
 
