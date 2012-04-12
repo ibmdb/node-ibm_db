@@ -28,7 +28,7 @@
 using namespace v8;
 using namespace node;
 
-pthread_mutex_t Database::m_odbcMutex;
+uv_mutex_t Database::m_odbcMutex;
 
 void Database::Init(v8::Handle<Object> target) {
   HandleScope scope;
@@ -47,7 +47,7 @@ void Database::Init(v8::Handle<Object> target) {
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
   scope.Close(Undefined());
-  pthread_mutex_init(&Database::m_odbcMutex, NULL);
+  uv_mutex_init(&Database::m_odbcMutex);
 }
 
 Handle<Value> Database::New(const Arguments& args) {
@@ -89,7 +89,7 @@ void Database::UV_Open(uv_work_t* req) {
   open_request* open_req = (open_request *)(req->data);
   Database* self = open_req->dbo->self();
   
-  pthread_mutex_lock(&Database::m_odbcMutex);
+ uv_mutex_lock(&Database::m_odbcMutex);
   
   int ret = SQLAllocEnv( &self->m_hEnv );
   if( ret == SQL_SUCCESS ) {
@@ -115,7 +115,7 @@ void Database::UV_Open(uv_work_t* req) {
         }
     }
   }
-  pthread_mutex_unlock(&Database::m_odbcMutex);
+  uv_mutex_unlock(&Database::m_odbcMutex);
   open_req->result = ret;
 }
 
@@ -181,13 +181,13 @@ void Database::UV_Close(uv_work_t* req) {
   close_request* close_req = (close_request *)(req->data);
   Database* dbo = close_req->dbo;
   
-  pthread_mutex_lock(&Database::m_odbcMutex);
+  uv_mutex_lock(&Database::m_odbcMutex);
   
   SQLDisconnect(dbo->m_hDBC);
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
   
-  pthread_mutex_unlock(&Database::m_odbcMutex);
+  uv_mutex_unlock(&Database::m_odbcMutex);
 }
 
 Handle<Value> Database::Close(const Arguments& args) {
