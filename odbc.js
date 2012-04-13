@@ -94,6 +94,15 @@ Database.prototype.open = function(connectionString, callback) {
     return callback( { message : "Connection already open." }, [], false);
   }
   
+  if (typeof(connectionString) == "object") {
+    var obj = connectionString;
+    connectionString = "";
+    
+    Object.keys(obj).forEach(function (key) {
+      connectionString += key + "=" + obj[key] + ";";
+    });
+  }
+  
   self.dispatchOpen(connectionString, function (err) {
     self.connected = true;
     self.processQueue();
