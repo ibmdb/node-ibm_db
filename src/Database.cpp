@@ -426,14 +426,6 @@ void Database::UV_AfterQuery(uv_work_t* req) {
       //move to the next result set
       ret = SQLMoreResults( self->m_hStmt );
       
-      if ( ret != SQL_SUCCESS ) {
-        //there are no more recordsets so free the statement now before we emit
-        //because as soon as we emit the last recordest, we are clear to submit another query
-        //which could cause a race condition with freeing and allocating handles.
-        SQLFreeHandle( SQL_HANDLE_STMT, self->m_hStmt );
-        SQLAllocHandle( SQL_HANDLE_STMT, self->m_hDBC, &self->m_hStmt );
-      }
-      
       //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
       //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
       //any columns. We don't want to emit those unless there are actually columns
@@ -486,7 +478,7 @@ void Database::UV_Query(uv_work_t* req) {
   if(prep_req->dbo->m_hStmt)
   {
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
-    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+    SQLAllocHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hDBC, &prep_req->dbo->m_hStmt );
   } 
 
   //check to see if should excute a direct or a parameter bound query
