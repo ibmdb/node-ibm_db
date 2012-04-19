@@ -249,11 +249,10 @@ void Database::UV_AfterQuery(uv_work_t* req) {
     goto cleanupshutdown;
   }
   //else {
-    //malloc succeeded so let's continue -- I'm not too fond of having all this code in the else statement, but I don't know what else to do...
-    // you could use goto ;-)
+    //malloc succeeded so let's continue 
     
-    memset(buf,0,MAX_VALUE_SIZE); //set all of the bytes of the buffer to 0; I tried doing this inside the loop, but it increased processing time dramatically
-
+    //set the first byte of the buffer to \0 instead of memsetting the entire buffer to 0
+    buf[0] = '\0'; 
     
     //First thing, let's check if the execution of the query returned any errors (in UV_Query)
     if(prep_req->result == SQL_ERROR)
@@ -295,8 +294,8 @@ void Database::UV_AfterQuery(uv_work_t* req) {
         {
           columns[i].name = new unsigned char[MAX_FIELD_SIZE];
           
-          //zero out the space where the column name will be stored
-          memset(columns[i].name, 0, MAX_FIELD_SIZE);
+          //set the first byte of name to \0 instead of memsetting the entire buffer
+          columns[i].name[0] = '\n';
           
           //get the column name
           ret = SQLColAttribute(self->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
