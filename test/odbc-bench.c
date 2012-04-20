@@ -45,7 +45,7 @@ int main() {
       ret = SQLDriverConnect(
           m_hDBC,
           NULL,
-          "DRIVER={MySQL};SERVER=mysql-02;USER=test;PASSWORD=;DATABASE=test;",
+          "DRIVER={MySQL};SERVER=localhost;USER=test;PASSWORD=;DATABASE=test;",
           SQL_NTS,
           NULL,//outstr,
           0,//sizeof(outstr),
