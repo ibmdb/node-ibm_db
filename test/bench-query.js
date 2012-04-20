@@ -29,7 +29,7 @@ function issueQuery() {
 		if (++count == iterations) {
 			var elapsed = new Date().getTime() - time;
 			
-			console.log("%d queries issued in %d seconds, %d/sec", count, elapsed/1000, count/(elapsed/1000));
+			console.log("%d queries issued in %d seconds, %d/sec", count, elapsed/1000, Math.floor(count/(elapsed/1000)));
 			return finish();
 		}
 	}
