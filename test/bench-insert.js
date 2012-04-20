@@ -2,7 +2,7 @@ var common = require("./common")
 	, odbc = require("../odbc.js")
 	, db = new odbc.Database();
 
-db.open(common.connectionObject, function(err){ 
+db.open(common.connectionString, function(err){ 
 	if (err) {
 		console.error(err);
 		process.exit(1);
@@ -35,23 +35,26 @@ function dropTable() {
 
 function insertData() {
 	var count = 0
-		, iterations = 1000
+		, iterations = 10000
 		, time = new Date().getTime();
 	
 	for (var x = 0; x < iterations; x++) {
-		db.query("insert into bench_insert (str) values ('testing')", function (err) {
-			if (err) {
-				console.error(err);639.38619
-				return finish();
-			}
+		db.query("insert into bench_insert (str) values ('testing')", cb);
+		
+	}
+
+	function cb (err) {
+		if (err) {
+			console.error(err);
+			return finish();
+		}
+		
+		if (++count == iterations) {
+			var elapsed = new Date().getTime() - time;
 			
-			if (++count == iterations) {
-				var elapsed = new Date().getTime() - time;
-				
-				console.log("%d records inserted in %d seconds, %d/sec", iterations, elapsed/1000, iterations/(elapsed/1000));
-				return dropTable();
-			}
-		});
+			console.log("%d records inserted in %d seconds, %d/sec", iterations, elapsed/1000, iterations/(elapsed/1000));
+			return dropTable();
+		}
 	}
 }
 
