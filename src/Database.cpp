@@ -80,6 +80,8 @@ void Database::UV_AfterOpen(uv_work_t* req) {
 
   open_req->cb.Dispose();
 
+  uv_ref(uv_default_loop());
+
   free(open_req);
   scope.Close(Undefined());
 }
@@ -168,6 +170,8 @@ void Database::UV_AfterClose(uv_work_t* req) {
   }
 
   close_req->cb.Dispose();
+
+  uv_unref(uv_default_loop());
 
   free(close_req);
   scope.Close(Undefined());
