@@ -81,6 +81,7 @@ void Database::UV_AfterOpen(uv_work_t* req) {
   open_req->cb.Dispose();
 
   free(open_req);
+  free(req);
   scope.Close(Undefined());
 }
 
@@ -170,6 +171,7 @@ void Database::UV_AfterClose(uv_work_t* req) {
   close_req->cb.Dispose();
 
   free(close_req);
+  free(req);
   scope.Close(Undefined());
 }
 
@@ -466,6 +468,7 @@ cleanupshutdown:
   free(prep_req->table);
   free(prep_req->type);
   free(prep_req);
+  free(req);
   scope.Close(Undefined());
 }
 
