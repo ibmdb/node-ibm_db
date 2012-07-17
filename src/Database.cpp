@@ -17,6 +17,7 @@
 #include <string.h>
 #include <v8.h>
 #include <node.h>
+#include <node_version.h>
 #include <time.h>
 #include <uv.h>
 
@@ -29,6 +30,7 @@ using namespace v8;
 using namespace node;
 
 uv_mutex_t Database::m_odbcMutex;
+uv_async_t Database::g_async;
 
 void Database::Init(v8::Handle<Object> target) {
   HandleScope scope;
@@ -47,6 +49,7 @@ void Database::Init(v8::Handle<Object> target) {
 
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
   scope.Close(Undefined());
+  uv_async_init(uv_default_loop(), &Database::g_async, Database::WatcherCallback);
   uv_mutex_init(&Database::m_odbcMutex);
 }
 
@@ -56,6 +59,10 @@ Handle<Value> Database::New(const Arguments& args) {
   dbo->Wrap(args.This());
   scope.Close(Undefined());
   return args.This();
+}
+
+void Database::WatcherCallback(uv_async_t *w, int revents) {
+  //i don't know if we need to do anything here
 }
 
 void Database::UV_AfterOpen(uv_work_t* req) {
@@ -80,6 +87,12 @@ void Database::UV_AfterOpen(uv_work_t* req) {
 
   open_req->cb.Dispose();
 
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
+  uv_ref((uv_handle_t *)&Database::g_async);
+#else
+  uv_ref(uv_default_loop());
+#endif
+  
   free(open_req);
   free(req);
   scope.Close(Undefined());
@@ -170,6 +183,12 @@ void Database::UV_AfterClose(uv_work_t* req) {
 
   close_req->cb.Dispose();
 
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
+  uv_unref((uv_handle_t *)&Database::g_async);
+#else
+  uv_unref(uv_default_loop());
+#endif
+  
   free(close_req);
   free(req);
   scope.Close(Undefined());
