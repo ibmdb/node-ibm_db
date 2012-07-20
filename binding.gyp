@@ -8,11 +8,6 @@
 			'libraries' : [ 
 				'-lodbc' 
 			],
-			'include_dirs' : [
-				'/usr/local/lib', 
-				'/opt/local/lib',
-				'/usr/include'
-			],
 			'conditions' : [
 				[ 'OS == "linux"', {
 					
