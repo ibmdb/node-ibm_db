@@ -83,8 +83,8 @@ enum ExecMode
 struct open_request {
   Persistent<Function> cb;
   Database *dbo;
-  char connection[1];
   int result;
+  char connection[1];
 };
 
 struct close_request {
