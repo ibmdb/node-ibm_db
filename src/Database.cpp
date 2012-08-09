@@ -102,7 +102,7 @@ void Database::UV_Open(uv_work_t* req) {
   open_request* open_req = (open_request *)(req->data);
   Database* self = open_req->dbo->self();
   
- uv_mutex_lock(&Database::g_odbcMutex);
+  uv_mutex_lock(&Database::g_odbcMutex);
   
   int ret = SQLAllocEnv( &self->m_hEnv );
   if( ret == SQL_SUCCESS ) {
@@ -499,8 +499,12 @@ void Database::UV_Query(uv_work_t* req) {
   
   if(prep_req->dbo->m_hStmt)
   {
+	uv_mutex_lock(&Database::g_odbcMutex);
+	
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hDBC, &prep_req->dbo->m_hStmt );
+	
+	uv_mutex_unlock(&Database::g_odbcMutex);
   } 
 
   //check to see if should excute a direct or a parameter bound query
@@ -681,8 +685,10 @@ void Database::UV_Tables(uv_work_t* req) {
   
   if(prep_req->dbo->m_hStmt)
   {
+    uv_mutex_lock(&Database::g_odbcMutex);
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
+    uv_mutex_unlock(&Database::g_odbcMutex);
   }
   
   SQLRETURN ret = SQLTables( 
