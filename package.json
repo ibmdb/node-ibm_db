@@ -15,6 +15,6 @@
     "node": ">=0.7.0"
   },
   "scripts": { 
-    "preinstall":"node-waf configure build"
+    "preinstall":"node-gyp configure build"
   } 
 }
