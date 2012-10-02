@@ -25,8 +25,6 @@
 #include <sqltypes.h>
 #include <sqlext.h>
 
-#include <pthread.h>
-
 using namespace v8;
 using namespace node;
 
@@ -34,7 +32,8 @@ class Database : public node::ObjectWrap {
  public:
   static Persistent<FunctionTemplate> constructor_template;
   static void Init(v8::Handle<Object> target);
-  static pthread_mutex_t m_odbcMutex;
+  static pthread_mutex_t g_odbcMutex;
+  static uv_async_t g_async;
 
  protected:
  Database() { }
@@ -62,6 +61,8 @@ class Database : public node::ObjectWrap {
   static void UV_Columns(uv_work_t* req);
   static Handle<Value> Columns(const Arguments& args);
   
+  static void WatcherCallback(uv_async_t *w, int revents);
+  
   Database *self(void) { return this; }
   void printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type);
 
@@ -82,8 +83,8 @@ enum ExecMode
 struct open_request {
   Persistent<Function> cb;
   Database *dbo;
-  char connection[1];
   int result;
+  char connection[1];
 };
 
 struct close_request {
