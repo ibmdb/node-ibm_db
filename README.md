@@ -213,12 +213,49 @@ the state of this. Please feel free to submit patches for this.
 
 tips
 ----
+### Using node < v0.10 on Linux
 
-* If you are using the FreeTDS ODBC driver and you have column names longer than
-30 characters, you should add "TDS_Version=7.0" to your connection string to 
-retrive the full column name.
+Be aware that through node v0.9 the uv_queue_work function, which is used to 
+execute the ODBC functions on a separate thread, uses libeio for its thread 
+pool. This thread pool by default is limited to 4 threads.
+
+This means that if you have long running queries spread across multiple 
+instances of odbc.Database() or using odbc.Pool(), you will only be able to 
+have 4 concurrent queries.
+
+You can increase the thread pool size by using @developmentseed's [node-eio]
+(https://github.com/developmentseed/node-eio).
+
+#### install: 
+```bash
+npm install eio
+```
+
+#### usage:
+```javascript
+var eio = require('eio'); 
+eio.setMinParallel(threadCount);
+```
+
+### Using the FreeTDS ODBC driver
+
+* If you have column names longer than 30 characters, you should add 
+  "TDS_Version=7.0" to your connection string to retrive the full column name.
   * Example : "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname;TDS_Version=7.0"
+* Be sure that your odbcinst.ini has the proper threading configuration for your
+  FreeTDS driver. If you choose the incorrect threading model it may cause
+  the thread pool to be blocked by long running queries. This is what 
+  @wankdanker currently uses on Ubuntu 12.04:
 
+```
+[FreeTDS]
+Description     = TDS driver (Sybase/MS SQL)
+Driver          = libtdsodbc.so
+Setup           = libtdsS.so
+CPTimeout       = 120
+CPReuse         = 
+Threading       = 0
+```
 
 complete
 --------
