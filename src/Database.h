@@ -32,7 +32,7 @@ class Database : public node::ObjectWrap {
  public:
   static Persistent<FunctionTemplate> constructor_template;
   static void Init(v8::Handle<Object> target);
-  static pthread_mutex_t g_odbcMutex;
+  static uv_mutex_t g_odbcMutex;
   static uv_async_t g_async;
 
  protected:

@@ -22,6 +22,10 @@
 #include <uv.h>
 
 #include "Database.h"
+#ifdef _WIN32
+#include "strptime.h"
+#endif
+
 
 #define MAX_FIELD_SIZE 1024
 #define MAX_VALUE_SIZE 1048576
@@ -417,7 +421,6 @@ void Database::UV_AfterQuery(uv_work_t* req) {
                   strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
                   timeInfo.tm_isdst = -1; //a negative value means that mktime() should (use timezone information and system 
                         //databases to) attempt to determine whether DST is in effect at the specified time.
-                  
                   tuple->Set(String::New((const char *)columns[i].name), Date::New(double(mktime(&timeInfo)) * 1000));
                   
                   break;
@@ -864,3 +867,5 @@ Persistent<FunctionTemplate> Database::constructor_template;
 extern "C" void init (v8::Handle<Object> target) {
   Database::Init(target);
 }
+
+NODE_MODULE(odbc_bindings, init)
