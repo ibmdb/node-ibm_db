@@ -11,6 +11,11 @@
 						'-lodbc' 
 					]
 				}],
+				[ 'OS == "mac"', {
+					'libraries' : [ 
+						'-lodbc' 
+					]
+				}],
 				[ 'OS=="win"', {
 					'sources' : [
 						'src/strptime.c',
