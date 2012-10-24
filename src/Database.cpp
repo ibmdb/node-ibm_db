@@ -864,3 +864,5 @@ Persistent<FunctionTemplate> Database::constructor_template;
 extern "C" void init (v8::Handle<Object> target) {
   Database::Init(target);
 }
+
+NODE_MODULE(odbc_bindings, init)
