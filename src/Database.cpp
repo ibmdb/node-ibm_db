@@ -92,10 +92,10 @@ void Database::UV_AfterOpen(uv_work_t* req) {
 
     SQLINTEGER i = 0;
     SQLINTEGER native;
-    char errorSQLState[ 7 ];
-    char errorMessage[256];
     SQLSMALLINT len;
     SQLRETURN ret;
+    char errorSQLState[7];
+    char errorMessage[256];
 
     do {
       ret = SQLGetDiagRec( SQL_HANDLE_DBC, 
@@ -110,10 +110,10 @@ void Database::UV_AfterOpen(uv_work_t* req) {
       if (SQL_SUCCEEDED(ret)) {
         Local<Object> objError = Object::New();
 
-        objError->Set(String::New("state"), String::New(errorSQLState));
         objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
         objError->Set(String::New("message"), String::New(errorMessage));
-        
+        objError->Set(String::New("state"), String::New(errorSQLState));
+
         argv[0] = objError;
       }
     } while( ret == SQL_SUCCESS );
