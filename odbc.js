@@ -117,9 +117,11 @@ Database.prototype.open = function(connectionString, callback) {
   }
   
   self.dispatchOpen(connectionString, function (err) {
-    self.connected = true;
-    self.processQueue();
-    
+    if (!err) {
+      self.connected = true;
+      self.processQueue();
+    }
+
     return callback(err);
   });
 };
