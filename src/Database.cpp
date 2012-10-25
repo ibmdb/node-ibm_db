@@ -41,19 +41,29 @@ void Database::Init(v8::Handle<Object> target) {
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
+  // Constructor Template
   constructor_template = Persistent<FunctionTemplate>::New(t);
-  constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
+  // Reserve space for one Handle<Value>
+  constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
+  
+  // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
+  // Attach the Database Constructor to the target object
   target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
+  
   scope.Close(Undefined());
+  
+  // Initialize uv_async so that we can prevent node from exiting
   uv_async_init(uv_default_loop(), &Database::g_async, Database::WatcherCallback);
+  
+  // Initialize the cross platform mutex provided by libuv
   uv_mutex_init(&Database::g_odbcMutex);
 }
 
@@ -61,8 +71,8 @@ Handle<Value> Database::New(const Arguments& args) {
   HandleScope scope;
   Database* dbo = new Database();
   dbo->Wrap(args.This());
-  scope.Close(Undefined());
-  return args.This();
+  
+  return scope.Close(args.This());
 }
 
 void Database::WatcherCallback(uv_async_t *w, int revents) {
@@ -201,8 +211,8 @@ Handle<Value> Database::Open(const Arguments& args) {
   uv_queue_work(uv_default_loop(), work_req, UV_Open, UV_AfterOpen);
 
   dbo->Ref();
-  scope.Close(Undefined());
-  return Undefined();
+
+  return scope.Close(Undefined());
 }
 
 void Database::UV_AfterClose(uv_work_t* req) {
@@ -256,7 +266,7 @@ Handle<Value> Database::Close(const Arguments& args) {
   HandleScope scope;
 
   REQ_FUN_ARG(0, cb);
-
+//allocate a buffer for incoming column values
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   close_request* close_req = (close_request *) (calloc(1, sizeof(close_request)));
@@ -274,30 +284,44 @@ Handle<Value> Database::Close(const Arguments& args) {
   uv_queue_work(uv_default_loop(), work_req, UV_Close, UV_AfterClose);
 
   dbo->Ref();
-  scope.Close(Undefined());
-  return Undefined();
-}
 
+  return scope.Close(Undefined());
+}
+//allocate a buffer for incoming column values
 void Database::UV_AfterQuery(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   struct tm timeInfo = { 0 }; //used for processing date/time datatypes
   
   HandleScope scope;
   
-  Database* self = prep_req->dbo->self(); //an easy reference to the Database object
-  Local<Object> objError = Object::New(); //our error object which we will use if we discover errors while processing the result set
+  //an easy reference to the Database object
+  Database* self = prep_req->dbo->self();
+
+  //our error object which we will use if we discover errors while processing the result set
+  Local<Object> objError;
   
-  short colCount = 0; //used to keep track of the number of columns received in a result set
-  short emitCount = 0; //used to keep track of the number of event emittions that have occurred
-  short errorCount = 0; //used to keep track of the number of errors that have been found
+  //used to keep track of the number of columns received in a result set
+  short colCount = 0;
   
-  SQLSMALLINT buflen; //used as a place holder for the length of column names
-  SQLRETURN ret; //used to capture the return value from various SQL function calls
+  //used to keep track of the number of event emittions that have occurred
+  short emitCount = 0;
   
-  char* buf = (char *) malloc(MAX_VALUE_SIZE); //allocate a buffer for incoming column values
+  //used to keep track of the number of errors that have been found
+  short errorCount = 0;
+  
+  //used as a place holder for the length of column names
+  SQLSMALLINT buflen;
+  
+  //used to capture the return value from various SQL function calls
+  SQLRETURN ret;
+  
+  //allocate a buffer for incoming column values
+  char* buf = (char *) malloc(MAX_VALUE_SIZE);
   
   //check to make sure malloc succeeded
   if (buf == NULL) {
+    objError = Object::New();
+
     //malloc failed, set an error message
     objError->Set(String::New("error"), String::New("[node-odbc] Failed Malloc"));
     objError->Set(String::New("message"), String::New("An attempt to allocate memory failed. This allocation was for a value buffer of incoming recordset values."));
@@ -321,8 +345,9 @@ void Database::UV_AfterQuery(uv_work_t* req) {
     buf[0] = '\0'; 
     
     //First thing, let's check if the execution of the query returned any errors (in UV_Query)
-    if(prep_req->result == SQL_ERROR)
-    {
+    if(prep_req->result == SQL_ERROR) {
+      objError = Object::New();
+
       errorCount++;
       
       char errorMessage[512];
@@ -392,8 +417,10 @@ void Database::UV_AfterQuery(uv_work_t* req) {
             printf("UV_Query => %s\n", errorSQLState);
             //printf("UV_Query sql => %s\n", prep_req->sql);
           }
-          
+
           if (ret == SQL_ERROR)  {
+            objError = Object::New();
+
             char errorMessage[512];
             char errorSQLState[128];
             SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
@@ -500,7 +527,7 @@ void Database::UV_AfterQuery(uv_work_t* req) {
         Local<Value> args[3];
         
         if (errorCount) {
-          args[0] = objError;
+          args[0] = objError; //(objError->IsUndefined()) ? Undefined() : ;
         }
         else {
           args[0] = Local<Value>::New(Null());
@@ -543,12 +570,12 @@ void Database::UV_Query(uv_work_t* req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-	uv_mutex_lock(&Database::g_odbcMutex);
-	
+    uv_mutex_lock(&Database::g_odbcMutex);
+
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hDBC, &prep_req->dbo->m_hStmt );
-	
-	uv_mutex_unlock(&Database::g_odbcMutex);
+
+    uv_mutex_unlock(&Database::g_odbcMutex);
   } 
 
   //check to see if should excute a direct or a parameter bound query
@@ -720,8 +747,8 @@ Handle<Value> Database::Query(const Arguments& args) {
   uv_queue_work(uv_default_loop(), work_req, UV_Query, UV_AfterQuery);
 
   dbo->Ref();
-  scope.Close(Undefined());
-  return Undefined();
+
+  return  scope.Close(Undefined());
 }
 
 void Database::UV_Tables(uv_work_t* req) {
@@ -743,7 +770,8 @@ void Database::UV_Tables(uv_work_t* req) {
     (SQLCHAR *) prep_req->type,   SQL_NTS
   );
   
-  prep_req->result = ret; // this will be checked later in UV_AfterQuery
+  // this will be checked later in UV_AfterQuery
+  prep_req->result = ret; 
 }
 
 Handle<Value> Database::Tables(const Arguments& args) {
@@ -798,8 +826,8 @@ Handle<Value> Database::Tables(const Arguments& args) {
   uv_queue_work(uv_default_loop(), work_req, UV_Tables, UV_AfterQuery);
 
   dbo->Ref();
-  scope.Close(Undefined());
-  return Undefined();
+
+  return scope.Close(Undefined());
 }
 
 void Database::UV_Columns(uv_work_t* req) {
@@ -819,7 +847,8 @@ void Database::UV_Columns(uv_work_t* req) {
     (SQLCHAR *) prep_req->column,   SQL_NTS
   );
   
-  prep_req->result = ret; // this will be checked later in UV_AfterQuery
+  // this will be checked later in UV_AfterQuery
+  prep_req->result = ret;
 }
 
 Handle<Value> Database::Columns(const Arguments& args) {
