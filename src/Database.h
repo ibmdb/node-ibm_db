@@ -14,8 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef DATABASE_H
-#define DATABASE_H
+#ifndef _DATABASE_H
+#define _DATABASE_H
 
 #include <v8.h>
 #include <node.h>
@@ -29,39 +29,38 @@ using namespace v8;
 using namespace node;
 
 class Database : public node::ObjectWrap {
- public:
-  static Persistent<FunctionTemplate> constructor_template;
-  static void Init(v8::Handle<Object> target);
-  static uv_mutex_t g_odbcMutex;
-  static uv_async_t g_async;
+  public:
+   static Persistent<FunctionTemplate> constructor_template;
+   static void Init(v8::Handle<Object> target);
+   static uv_mutex_t g_odbcMutex;
+   static uv_async_t g_async;
 
- protected:
- Database() { }
+  protected:
+    Database() {}
 
-  ~Database() {
-  }
+    ~Database() {}
 
-  static Handle<Value> New(const Arguments& args);
+    static Handle<Value> New(const Arguments& args);
 
-  static void UV_AfterOpen(uv_work_t* req);
-  static void UV_Open(uv_work_t* req);
-  static Handle<Value> Open(const Arguments& args);
+    static void UV_AfterOpen(uv_work_t* req);
+    static void UV_Open(uv_work_t* req);
+    static Handle<Value> Open(const Arguments& args);
 
-  static void UV_AfterClose(uv_work_t* req);
-  static void UV_Close(uv_work_t* req);
-  static Handle<Value> Close(const Arguments& args);
+    static void UV_AfterClose(uv_work_t* req);
+    static void UV_Close(uv_work_t* req);
+    static Handle<Value> Close(const Arguments& args);
 
-  static void UV_AfterQuery(uv_work_t* req);
-  static void UV_Query(uv_work_t* req);
-  static Handle<Value> Query(const Arguments& args);
+    static void UV_AfterQuery(uv_work_t* req);
+    static void UV_Query(uv_work_t* req);
+    static Handle<Value> Query(const Arguments& args);
 
-  static void UV_Tables(uv_work_t* req);
-  static Handle<Value> Tables(const Arguments& args);
+    static void UV_Tables(uv_work_t* req);
+    static Handle<Value> Tables(const Arguments& args);
 
-  static void UV_Columns(uv_work_t* req);
-  static Handle<Value> Columns(const Arguments& args);
+    static void UV_Columns(uv_work_t* req);
+    static Handle<Value> Columns(const Arguments& args);
   
-  static void WatcherCallback(uv_async_t *w, int revents);
+    static void WatcherCallback(uv_async_t *w, int revents);
   
     Database *self(void) { return this; }
 
@@ -92,12 +91,12 @@ typedef struct {
 } Column;
 
 typedef struct {
-    SQLSMALLINT  c_type;
-    SQLSMALLINT  type;
-    SQLLEN       size;
-    void        *buffer;
-    SQLLEN       buffer_length;    
-    SQLLEN       length;
+  SQLSMALLINT  c_type;
+  SQLSMALLINT  type;
+  SQLLEN       size;
+  void        *buffer;
+  SQLLEN       buffer_length;    
+  SQLLEN       length;
 } Parameter;
 
 struct query_request {
