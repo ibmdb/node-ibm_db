@@ -63,22 +63,14 @@ class Database : public node::ObjectWrap {
   
   static void WatcherCallback(uv_async_t *w, int revents);
   
-  Database *self(void) { return this; }
-  void printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type);
+    Database *self(void) { return this; }
 
- protected:
-  HENV m_hEnv;
-  HDBC m_hDBC;
-  HSTMT m_hStmt;
-  SQLUSMALLINT canHaveMoreResults;
+  protected:
+    HENV m_hEnv;
+    HDBC m_hDBC;
+    HSTMT m_hStmt;
+    SQLUSMALLINT canHaveMoreResults;
 };
-
-enum ExecMode
-  {
-    EXEC_EMPTY = 0,
-    EXEC_LAST_INSERT_ID = 1,
-    EXEC_AFFECTED_ROWS = 2
-  };
 
 struct open_request {
   Persistent<Function> cb;

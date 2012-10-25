@@ -74,10 +74,39 @@ void Database::UV_AfterOpen(uv_work_t* req) {
   open_request* open_req = (open_request *)(req->data);
 
   Local<Value> argv[1];
+  
   bool err = false;
+
   if (open_req->result) {
     err = true;
-    argv[0] = Exception::Error(String::New("Error opening database"));
+
+    SQLINTEGER i = 0;
+    SQLINTEGER native;
+    char errorSQLState[ 7 ];
+    char errorMessage[256];
+    SQLSMALLINT len;
+    SQLRETURN ret;
+
+    do {
+      ret = SQLGetDiagRec( SQL_HANDLE_DBC, 
+                           open_req->dbo->self()->m_hDBC,
+                           ++i, 
+                           (SQLCHAR *) errorSQLState,
+                           &native,
+                           (SQLCHAR *) errorMessage,
+                           sizeof(errorMessage),
+                           &len );
+
+      if (SQL_SUCCEEDED(ret)) {
+        Local<Object> objError = Object::New();
+
+        objError->Set(String::New("state"), String::New(errorSQLState));
+        objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+        objError->Set(String::New("message"), String::New(errorMessage));
+        
+        argv[0] = objError;
+      }
+    } while( ret == SQL_SUCCESS );
   }
 
   TryCatch try_catch;
@@ -109,29 +138,41 @@ void Database::UV_Open(uv_work_t* req) {
   uv_mutex_lock(&Database::g_odbcMutex);
   
   int ret = SQLAllocEnv( &self->m_hEnv );
+
   if( ret == SQL_SUCCESS ) {
     ret = SQLAllocConnect( self->m_hEnv,&self->m_hDBC );
-    if( ret == SQL_SUCCESS ) {
-      SQLSetConnectOption( self->m_hDBC,SQL_LOGIN_TIMEOUT,5 );
-      char connstr[1024];
-      ret = SQLDriverConnect(self->m_hDBC,NULL,(SQLCHAR*)open_req->connection,strlen(open_req->connection),(SQLCHAR*)connstr,1024,NULL,SQL_DRIVER_NOPROMPT);
 
-      if( ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO )
-        {
-          ret = SQLAllocStmt( self->m_hDBC,&self->m_hStmt );
-          if (ret != SQL_SUCCESS) printf("not connected\n");
-          
-          if ( !SQL_SUCCEEDED( SQLGetFunctions(self->m_hDBC, SQL_API_SQLMORERESULTS, &self->canHaveMoreResults)))
-          {
-            self->canHaveMoreResults = 0;
-          }
+    if( ret == SQL_SUCCESS ) {
+      SQLSetConnectOption( self->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
+
+      char connstr[1024];
+
+      //Attempt to connect
+      ret = SQLDriverConnect( self->m_hDBC, 
+                              NULL,
+                              (SQLCHAR*) open_req->connection,
+                              strlen(open_req->connection),
+                              (SQLCHAR*) connstr,
+                              1024,
+                              NULL,
+                              SQL_DRIVER_NOPROMPT);
+
+      if( ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO ) {
+        ret = SQLAllocStmt( self->m_hDBC, &self->m_hStmt );
+
+        if (ret != SQL_SUCCESS) printf("not connected\n");
+
+        ret = SQLGetFunctions( self->m_hDBC,
+                               SQL_API_SQLMORERESULTS, 
+                               &self->canHaveMoreResults);
+
+        if ( !SQL_SUCCEEDED(ret)) {
+          self->canHaveMoreResults = 0;
         }
-      else
-        {
-          self->printError("SQLDriverConnect", self->m_hDBC, SQL_HANDLE_DBC);
-        }
+      }
     }
   }
+  
   uv_mutex_unlock(&Database::g_odbcMutex);
   open_req->result = ret;
 }
@@ -833,34 +874,9 @@ Handle<Value> Database::Columns(const Arguments& args) {
   uv_queue_work(uv_default_loop(), work_req, UV_Columns, UV_AfterQuery);
   
   dbo->Ref();
-  scope.Close(Undefined());
-  return Undefined();
+
+  return scope.Close(Undefined());
 }
-
-void Database::printError(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
-{
-  SQLINTEGER i = 0;
-  SQLINTEGER native;
-  SQLCHAR state[ 7 ];
-  SQLCHAR text[256];
-  SQLSMALLINT len;
-  SQLRETURN ret;
-
-  fprintf(stderr,
-    "\n"
-    "The driver reported the following diagnostics whilst running "
-    "%s\n\n",
-    fn
-  );
-
-  do {
-    ret = SQLGetDiagRec(type, handle, ++i, state, &native, text, sizeof(text), &len );
-    if (SQL_SUCCEEDED(ret))
-      printf("%s:%ld:%ld:%s\n", state, (long int) i, (long int) native, text);
-  }
-  while( ret == SQL_SUCCESS );
-}
-
 
 Persistent<FunctionTemplate> Database::constructor_template;
 
