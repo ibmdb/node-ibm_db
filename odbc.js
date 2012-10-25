@@ -14,17 +14,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-var odbc;
-
-try {
-  odbc = require("./odbc_bindings");
-} catch (e) {
-  try {
-    odbc = require("./build/default/odbc_bindings");
-  } catch (e) {
-    odbc = require("./build/Release/odbc_bindings");
-  }
-}
+var odbc = require("bindings")("odbc_bindings");
 
 exports.debug = false;
 exports.Database = Database;

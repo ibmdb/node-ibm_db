@@ -17,5 +17,8 @@
   },
   "scripts": {
     "preinstall": "node-gyp configure build"
+  },
+  "dependencies": {
+    "bindings": "~1.0.0"
   }
 }
