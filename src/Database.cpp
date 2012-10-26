@@ -26,10 +26,6 @@
 #include "strptime.h"
 #endif
 
-
-#define MAX_FIELD_SIZE 1024
-#define MAX_VALUE_SIZE 1048576
-
 using namespace v8;
 using namespace node;
 
@@ -46,7 +42,11 @@ void Database::Init(v8::Handle<Object> target) {
   constructor_template->SetClassName(String::NewSymbol("Database"));
 
   // Reserve space for one Handle<Value>
-  constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
+  Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
+  instance_template->SetInternalFieldCount(1);
+  
+  // Properties
+  instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
@@ -56,12 +56,15 @@ void Database::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
   // Attach the Database Constructor to the target object
-  target->Set(v8::String::NewSymbol("Database"), constructor_template->GetFunction());
+  target->Set( v8::String::NewSymbol("Database"),
+               constructor_template->GetFunction());
   
   scope.Close(Undefined());
   
   // Initialize uv_async so that we can prevent node from exiting
-  uv_async_init(uv_default_loop(), &Database::g_async, Database::WatcherCallback);
+  uv_async_init( uv_default_loop(),
+                 &Database::g_async,
+                 Database::WatcherCallback);
   
   // Initialize the cross platform mutex provided by libuv
   uv_mutex_init(&Database::g_odbcMutex);
@@ -70,13 +73,37 @@ void Database::Init(v8::Handle<Object> target) {
 Handle<Value> Database::New(const Arguments& args) {
   HandleScope scope;
   Database* dbo = new Database();
+  
   dbo->Wrap(args.This());
+  dbo->mode = 1;
   
   return scope.Close(args.This());
 }
 
 void Database::WatcherCallback(uv_async_t *w, int revents) {
   //i don't know if we need to do anything here
+}
+
+Handle<Value> Database::ModeGetter(Local<String> property, const AccessorInfo &info) {
+  HandleScope scope;
+
+  Database *obj = ObjectWrap::Unwrap<Database>(info.Holder());
+
+  if (obj->mode > 0) {
+      return scope.Close(Integer::New(obj->mode));
+  } else {
+      return Undefined();
+  }
+}
+
+void Database::ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
+  HandleScope scope;
+
+  Database *obj = ObjectWrap::Unwrap<Database>(info.Holder());
+  
+  if (value->IsNumber()) {
+    obj->mode = value->Int32Value();
+  }
 }
 
 void Database::UV_AfterOpen(uv_work_t* req) {
@@ -264,7 +291,7 @@ Handle<Value> Database::Close(const Arguments& args) {
   HandleScope scope;
 
   REQ_FUN_ARG(0, cb);
-//allocate a buffer for incoming column values
+
   Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   close_request* close_req = (close_request *) (calloc(1, sizeof(close_request)));
@@ -285,7 +312,7 @@ Handle<Value> Database::Close(const Arguments& args) {
 
   return scope.Close(Undefined());
 }
-//allocate a buffer for incoming column values
+
 void Database::UV_AfterQuery(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
@@ -294,7 +321,8 @@ void Database::UV_AfterQuery(uv_work_t* req) {
   //an easy reference to the Database object
   Database* self = prep_req->dbo->self();
 
-  //our error object which we will use if we discover errors while processing the result set
+  //our error object which we will use if we discover errors while processing 
+  //the result set
   Local<Object> objError;
   
   //used to keep track of the number of columns received in a result set
@@ -317,145 +345,189 @@ void Database::UV_AfterQuery(uv_work_t* req) {
     objError = Object::New();
 
     //malloc failed, set an error message
-    objError->Set(String::New("error"), String::New("[node-odbc] Failed Malloc"));
-    objError->Set(String::New("message"), String::New("An attempt to allocate memory failed. This allocation was for a value buffer of incoming recordset values."));
-    
-    //emit an error event immidiately.
+    objError->Set(String::New("error"),
+                  String::New("[node-odbc] Failed Malloc"));
+
+    objError->Set(String::New("message"), 
+                  String::New("An attempt to allocate memory failed. This "
+                              "allocation was for a value buffer of incoming "
+                              "recordset values."));
+
+    //Prepare arguments for the callback
     Local<Value> args[3];
     args[0] = objError;
     args[1] = Local<Value>::New(Null());
     args[2] = Local<Boolean>::New(False());
-    
-    //emit an error event
+
+    //Callback immidiately
     prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-    
+
     //emit a result event
     goto cleanupshutdown;
   }
-  //else {
-    //malloc succeeded so let's continue 
-    
-    //set the first byte of the buffer to \0 instead of memsetting the entire buffer to 0
-    buf[0] = '\0'; 
-    
-    //First thing, let's check if the execution of the query returned any errors (in UV_Query)
-    if(prep_req->result == SQL_ERROR) {
-      objError = Object::New();
 
-      errorCount++;
-      
-      char errorMessage[512];
-      char errorSQLState[128];
-      SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-      objError->Set(String::New("state"), String::New(errorSQLState));
-      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
-      objError->Set(String::New("message"), String::New(errorMessage));
-      
-      //only set the query value of the object if we actually have a query
-      if (prep_req->sql != NULL) {
-        objError->Set(String::New("query"), String::New(prep_req->sql));
-      }
-      
-      //emit an error event immidiately.
-      Local<Value> args[1];
-      args[0] = objError;
-      prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-      goto cleanupshutdown;
+  //First thing, let's check if the execution of the query returned any errors 
+  //in UV_Query
+  if(prep_req->result == SQL_ERROR) {
+    objError = Object::New();
+
+    errorCount++;
+    
+    char errorMessage[512];
+    char errorSQLState[128];
+    
+    SQLError( self->m_hEnv,
+              self->m_hDBC,
+              self->m_hStmt,
+              (SQLCHAR *) errorSQLState,
+              NULL,
+              (SQLCHAR *) errorMessage,
+              sizeof(errorMessage), 
+              NULL);
+
+    objError->Set(String::New("state"), String::New(errorSQLState));
+    objError->Set(String::New("error"), String::New("[node-odbc] Error in "
+                                                "SQLExecDirect or SQLExecute"));
+    objError->Set(String::New("message"), String::New(errorMessage));
+    
+    //only set the query value of the object if we actually have a query
+    if (prep_req->sql != NULL) {
+      objError->Set(String::New("query"), String::New(prep_req->sql));
     }
     
-    //loop through all result sets
-    do {
-      Local<Array> rows = Array::New();
+    //emit an error event immidiately.
+    Local<Value> args[1];
+    args[0] = objError;
+    prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+    
+    goto cleanupshutdown;
+  }
+  
+  //Loop through all result sets
+  do {
+    Local<Array> rows = Array::New();
 
-      // retrieve and store column attributes to build the row object
-      Column *columns = GetColumns(self->m_hStmt, &colCount);
+    //Retrieve and store all columns and their attributes
+    Column *columns = GetColumns(self->m_hStmt, &colCount);
 
-      if (colCount > 0) {
-        int count = 0;
+    if (colCount > 0) {
+      int count = 0;
+      
+      //I dont think odbc will tell how many rows are returned, loop until out
+      while(true) {
         
-        // i dont think odbc will tell how many rows are returned, loop until out...
-        while(true) {
-          Local<Object> tuple = Object::New();
-          ret = SQLFetch(self->m_hStmt);
-          
-          //TODO: Do something to enable/disable dumping these info messages to the console.
-          if (ret == SQL_SUCCESS_WITH_INFO ) {
-            char errorMessage[512];
-            char errorSQLState[128];
-            SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-            
-            printf("UV_Query => %s\n", errorMessage);
-            printf("UV_Query => %s\n", errorSQLState);
-          }
-
-          if (ret == SQL_ERROR)  {
-            objError = Object::New();
-
-            char errorMessage[512];
-            char errorSQLState[128];
-            SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
-            
-            errorCount++;
-            objError->Set(String::New("state"), String::New(errorSQLState));
-            objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
-            objError->Set(String::New("message"), String::New(errorMessage));
-            objError->Set(String::New("query"), String::New(prep_req->sql));
-            
-            //emit an error event immidiately.
-            Local<Value> args[1];
-            args[0] = objError;
-            prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-            
-            break;
-          }
-          
-          if (ret == SQL_NO_DATA) {
-            break;
-          }
-
-          for(int i = 0; i < colCount; i++) {
-            tuple->Set( String::New((const char *) columns[i].name),
-                        GetColumnValue( self->m_hStmt, columns[i], buf, MAX_VALUE_SIZE - 1));
-          }
-          
-          rows->Set(Integer::New(count), tuple);
-          count++;
-        }
+        ret = SQLFetch(self->m_hStmt);
         
-        for(int i = 0; i < colCount; i++) {
-          delete [] columns[i].name;
+        //TODO: Do something to enable/disable dumping these info messages to 
+        //the console.
+        if (ret == SQL_SUCCESS_WITH_INFO ) {
+          char errorMessage[512];
+          char errorSQLState[128];
+
+          SQLError( self->m_hEnv, 
+                    self->m_hDBC, 
+                    self->m_hStmt,
+                    (SQLCHAR *) errorSQLState,
+                    NULL,
+                    (SQLCHAR *) errorMessage, 
+                    sizeof(errorMessage), 
+                    NULL);
+
+          printf("UV_Query => %s\n", errorMessage);
+          printf("UV_Query => %s\n", errorSQLState);
         }
 
-        delete [] columns;
-      }
-      
-      //move to the next result set
-      ret = SQLMoreResults( self->m_hStmt );
-      
-      //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
-      //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
-      //any columns. We don't want to emit those unless there are actually columns
-      if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
-        emitCount++;
+        if (ret == SQL_ERROR)  {
+          objError = Object::New();
+
+          char errorMessage[512];
+          char errorSQLState[128];
+
+          SQLError( self->m_hEnv, 
+                    self->m_hDBC, 
+                    self->m_hStmt,
+                    (SQLCHAR *) errorSQLState,
+                    NULL,
+                    (SQLCHAR *) errorMessage,
+                    sizeof(errorMessage),
+                    NULL);
+
+          errorCount++;
+          
+          objError->Set(String::New("state"), String::New(errorSQLState));
+          objError->Set(String::New("error"),
+                        String::New("[node-odbc] Error in SQLFetch"));
+          objError->Set(String::New("message"), String::New(errorMessage));
+          objError->Set(String::New("query"), String::New(prep_req->sql));
+          
+          //emit an error event immidiately.
+          Local<Value> args[1];
+          args[0] = objError;
+          prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+          
+          break;
+        }
         
-        Local<Value> args[3];
+        if (ret == SQL_NO_DATA) {
+          break;
+        }
         
-        if (errorCount) {
-          args[0] = objError; //(objError->IsUndefined()) ? Undefined() : ;
+        if (self->mode == MODE_CALLBACK_FOR_EACH) {
+          Handle<Value> args[2];
+          
+          args[0] = Null();
+          args[1] = GetRecordTuple( self->m_hStmt,
+                                    columns,
+                                    &colCount,
+                                    buf,
+                                    MAX_VALUE_SIZE - 1);
+          
+          prep_req->cb->Call(Context::GetCurrent()->Global(), 2, args);
         }
         else {
-          args[0] = Local<Value>::New(Null());
+          rows->Set( Integer::New(count), 
+                    GetRecordTuple( self->m_hStmt,
+                                    columns,
+                                    &colCount,
+                                    buf,
+                                    MAX_VALUE_SIZE - 1));
         }
         
-        args[1] = rows;
-        //true or false, are there more result sets to follow this emit?
-        args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); 
-        
-        prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+        count++;
       }
+      
+      FreeColumns(columns, &colCount);
     }
-    while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
-  //} //end of malloc check
+    
+    //move to the next result set
+    ret = SQLMoreResults( self->m_hStmt );
+    
+    //Only trigger an emit if there are columns OR if this is the last result 
+    //and none others have been emitted odbc will process individual statments 
+    //like select @something = 1 as a recordset even though it doesn't have any
+    //columns. We don't want to emit those unless there are actually columns
+    if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
+      emitCount++;
+      
+      Local<Value> args[3];
+      
+      if (errorCount) {
+        args[0] = objError;
+      }
+      else {
+        args[0] = Local<Value>::New(Null());
+      }
+      
+      args[1] = rows;
+
+      //true or false, are there more result sets to follow this emit?
+      args[2] = Local<Boolean>::New((ret == SQL_SUCCESS) ? True() : False()); 
+
+      prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+    }
+  }
+  while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
+
 cleanupshutdown:
   TryCatch try_catch;
   
@@ -474,98 +546,8 @@ cleanupshutdown:
   free(prep_req->type);
   free(prep_req);
   free(req);
+  
   scope.Close(Undefined());
-}
-
-Column* Database::GetColumns(SQLHSTMT hStmt, short* colCount) {
-  SQLRETURN ret;
-  SQLSMALLINT buflen;
-
-  //always reset colCount for the current result set to 0;
-  *colCount = 0; 
-
-  ret = SQLNumResultCols(hStmt, colCount);
-  Column *columns = new Column[*colCount];
-
-  for (int i = 0; i < *colCount; i++) {
-    //save the index number of this column
-    columns[i].index = i + 1;
-    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
-    
-    //set the first byte of name to \0 instead of memsetting the entire buffer
-    columns[i].name[0] = '\n';
-    
-    //get the column name
-    ret = SQLColAttribute( hStmt,
-                           columns[i].index,
-                           SQL_DESC_LABEL,
-                           columns[i].name,
-                           (SQLSMALLINT) MAX_FIELD_SIZE,
-                           (SQLSMALLINT *) &buflen,
-                           NULL);
-    
-    //store the len attribute
-    columns[i].len = buflen;
-    
-    //get the column type and store it directly in column[i].type
-    ret = SQLColAttribute( hStmt,
-                           columns[i].index,
-                           SQL_COLUMN_TYPE,
-                           NULL,
-                           0,
-                           NULL,
-                           &columns[i].type);
-  }
-  
-  return columns;
-}
-
-Handle<Value> Database::GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength) {
-  SQLLEN len;
-  struct tm timeInfo = { 0 };
-
-  //reset the buffer
-  buffer[0] = '\n';
-
-  //TODO: SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
-  int ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_CHAR, 
-                        (char *) buffer, 
-                        bufferLength, 
-                        (SQLLEN *) &len);
-  
-  if(ret == SQL_NULL_DATA || len < 0) {
-    return Null();
-  }
-  else {
-    switch (column.type) {
-      case SQL_NUMERIC :
-      case SQL_DECIMAL :
-      case SQL_INTEGER : 
-      case SQL_SMALLINT :
-      case SQL_BIGINT :
-      case SQL_FLOAT :
-      case SQL_REAL :
-      case SQL_DOUBLE :
-        return Number::New(atof(buffer));
-      case SQL_DATETIME :
-      case SQL_TIMESTAMP :
-        //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-        strptime(buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
-
-        //a negative value means that mktime() should use timezone information and system 
-        //databases to attempt to determine whether DST is in effect at the specified time.
-        timeInfo.tm_isdst = -1; 
-          
-        return Date::New(double(mktime(&timeInfo)) * 1000);
-      case SQL_BIT :
-        //again, i'm not sure if this is cross database safe, but it works for MSSQL
-        return Boolean::New(( *buffer == '0') ? false : true );
-      default :
-        return String::New(buffer);
-    }
-  }
 }
 
 void Database::UV_Query(uv_work_t* req) {
@@ -578,8 +560,13 @@ void Database::UV_Query(uv_work_t* req) {
   {
     uv_mutex_lock(&Database::g_odbcMutex);
 
+    //free the previously used handle
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
-    SQLAllocHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hDBC, &prep_req->dbo->m_hStmt );
+
+    //allocate a new handle
+    SQLAllocHandle( SQL_HANDLE_STMT, 
+                    prep_req->dbo->m_hDBC, 
+                    &prep_req->dbo->m_hStmt );
 
     uv_mutex_unlock(&Database::g_odbcMutex);
   } 
@@ -588,19 +575,34 @@ void Database::UV_Query(uv_work_t* req) {
   if (!prep_req->paramCount)
   {
     // execute the query directly
-    ret = SQLExecDirect( prep_req->dbo->m_hStmt,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
+    ret = SQLExecDirect( prep_req->dbo->m_hStmt,
+                         (SQLCHAR *) prep_req->sql, 
+                         strlen(prep_req->sql));
   }
   else 
   {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepare(prep_req->dbo->m_hStmt, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
+    ret = SQLPrepare( prep_req->dbo->m_hStmt,
+                      (SQLCHAR *) prep_req->sql, 
+                      strlen(prep_req->sql));
+    
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO)
     {
       for (int i = 0; i < prep_req->paramCount; i++)
       {
         prm = prep_req->params[i];
         
-        ret = SQLBindParameter(prep_req->dbo->m_hStmt, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prm.length);
+        ret = SQLBindParameter( prep_req->dbo->m_hStmt,
+                                i + 1,
+                                SQL_PARAM_INPUT,
+                                prm.c_type,
+                                prm.type,
+                                prm.size,
+                                0,
+                                prm.buffer,
+                                prm.buffer_length,
+                                &prm.length);
+        
         if (ret == SQL_ERROR) {break;}
       }
 
@@ -610,7 +612,6 @@ void Database::UV_Query(uv_work_t* req) {
     }
     
     // free parameters
-    //
     for (int i = 0; i < prep_req->paramCount; i++)
     {
       if (prm = prep_req->params[i], prm.buffer != NULL)
@@ -627,7 +628,8 @@ void Database::UV_Query(uv_work_t* req) {
     free(prep_req->params);
   }
 
-  prep_req->result = ret; // this will be checked later in UV_AfterQuery
+  // this will be checked later in UV_AfterQuery
+  prep_req->result = ret;
 }
 
 Handle<Value> Database::Query(const Arguments& args) {
@@ -911,6 +913,155 @@ Handle<Value> Database::Columns(const Arguments& args) {
   dbo->Ref();
 
   return scope.Close(Undefined());
+}
+
+Column* Database::GetColumns(SQLHSTMT hStmt, short* colCount) {
+  SQLRETURN ret;
+  SQLSMALLINT buflen;
+
+  //always reset colCount for the current result set to 0;
+  *colCount = 0; 
+
+  //get the number of columns in the result set
+  ret = SQLNumResultCols(hStmt, colCount);
+  
+  if (!SQL_SUCCEEDED(ret)) {
+    return new Column[0];
+  }
+  
+  Column *columns = new Column[*colCount];
+
+  for (int i = 0; i < *colCount; i++) {
+    //save the index number of this column
+    columns[i].index = i + 1;
+    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
+    
+    //set the first byte of name to \0 instead of memsetting the entire buffer
+    columns[i].name[0] = '\n';
+    
+    //get the column name
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_LABEL,
+                           columns[i].name,
+                           (SQLSMALLINT) MAX_FIELD_SIZE,
+                           (SQLSMALLINT *) &buflen,
+                           NULL);
+    
+    //store the len attribute
+    columns[i].len = buflen;
+    
+    //get the column type and store it directly in column[i].type
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_COLUMN_TYPE,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].type);
+  }
+  
+  return columns;
+}
+
+void Database::FreeColumns(Column* columns, short* colCount) {
+  for(int i = 0; i < *colCount; i++) {
+      delete [] columns[i].name;
+  }
+
+  delete [] columns;
+}
+
+Handle<Value> Database::GetColumnValue( SQLHSTMT hStmt, Column column, 
+                                        char* buffer, int bufferLength) {
+  //HandleScope scope;
+  SQLLEN len;
+  
+  struct tm timeInfo = { 0 };
+
+  //reset the buffer
+  buffer[0] = '\n';
+
+  //TODO: SQLGetData can supposedly return multiple chunks, need to do this to 
+  //retrieve large fields
+  int ret = SQLGetData( hStmt, 
+                        column.index, 
+                        SQL_CHAR, 
+                        (char *) buffer, 
+                        bufferLength, 
+                        (SQLLEN *) &len);
+  
+  if(ret == SQL_NULL_DATA || len < 0) {
+    //return scope.Close(Null());
+    return Null();
+  }
+  else {
+    switch (column.type) {
+      case SQL_NUMERIC :
+      case SQL_DECIMAL :
+      case SQL_INTEGER : 
+      case SQL_SMALLINT :
+      case SQL_BIGINT :
+      case SQL_FLOAT :
+      case SQL_REAL :
+      case SQL_DOUBLE :
+        //return scope.Close(Number::New(atof(buffer)));
+        return Number::New(atof(buffer));
+      case SQL_DATETIME :
+      case SQL_TIMESTAMP :
+        //I am not sure if this is locale-safe or cross database safe, but it 
+        //works for me on MSSQL
+        strptime(buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
+
+        //a negative value means that mktime() should use timezone information 
+        //and system databases to attempt to determine whether DST is in effect 
+        //at the specified time.
+        timeInfo.tm_isdst = -1; 
+          
+        //return scope.Close(Date::New(double(mktime(&timeInfo)) * 1000));
+        return Date::New(double(mktime(&timeInfo)) * 1000);
+      case SQL_BIT :
+        //again, i'm not sure if this is cross database safe, but it works for 
+        //MSSQL
+        //return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
+        return Boolean::New(( *buffer == '0') ? false : true );
+      default :
+        //return scope.Close(String::New(buffer));
+        return String::New(buffer);
+    }
+  }
+}
+
+Handle<Value> Database::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
+                                         short* colCount, char* buffer,
+                                         int bufferLength) {
+  //HandleScope scope;
+  
+  Local<Object> tuple = Object::New();
+        
+  for(int i = 0; i < *colCount; i++) {
+    tuple->Set( String::New((const char *) columns[i].name),
+                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+  }
+  
+  return tuple;
+  //return scope.Close(tuple);
+}
+
+Handle<Value> Database::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
+                                         short* colCount, char* buffer,
+                                         int bufferLength) {
+  //HandleScope scope;
+  
+  Local<Array> array = Array::New();
+        
+  for(int i = 0; i < *colCount; i++) {
+    array->Set( Integer::New(i),
+                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+  }
+  
+  return array;
+  //return scope.Close(array);
 }
 
 Persistent<FunctionTemplate> Database::constructor_template;

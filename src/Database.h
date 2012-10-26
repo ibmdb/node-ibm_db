@@ -28,6 +28,12 @@
 using namespace v8;
 using namespace node;
 
+#define MAX_FIELD_SIZE 1024
+#define MAX_VALUE_SIZE 1048576
+
+#define MODE_COLLECT_AND_CALLBACK 1
+#define MODE_CALLBACK_FOR_EACH 2
+
 typedef struct {
   unsigned char *name;
   unsigned int len;
@@ -49,6 +55,9 @@ class Database : public node::ObjectWrap {
 
     static Handle<Value> New(const Arguments& args);
 
+    static Handle<Value> ModeGetter(Local<String> property, const AccessorInfo &info);
+    static void ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    
     static void UV_AfterOpen(uv_work_t* req);
     static void UV_Open(uv_work_t* req);
     static Handle<Value> Open(const Arguments& args);
@@ -69,8 +78,11 @@ class Database : public node::ObjectWrap {
   
     static void WatcherCallback(uv_async_t* w, int revents);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
-	static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
-  
+    static void FreeColumns(Column* columns, short* colCount);
+    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
+    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
+    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
+    
     Database *self(void) { return this; }
 
   protected:
@@ -78,6 +90,7 @@ class Database : public node::ObjectWrap {
     HDBC m_hDBC;
     HSTMT m_hStmt;
     SQLUSMALLINT canHaveMoreResults;
+    int mode;
 };
 
 struct open_request {
