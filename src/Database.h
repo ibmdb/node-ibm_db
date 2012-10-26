@@ -28,6 +28,13 @@
 using namespace v8;
 using namespace node;
 
+typedef struct {
+  unsigned char *name;
+  unsigned int len;
+  SQLLEN type;
+  SQLUSMALLINT index;
+} Column;
+
 class Database : public node::ObjectWrap {
   public:
    static Persistent<FunctionTemplate> constructor_template;
@@ -60,7 +67,9 @@ class Database : public node::ObjectWrap {
     static void UV_Columns(uv_work_t* req);
     static Handle<Value> Columns(const Arguments& args);
   
-    static void WatcherCallback(uv_async_t *w, int revents);
+    static void WatcherCallback(uv_async_t* w, int revents);
+    static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
+	static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
   
     Database *self(void) { return this; }
 
@@ -84,11 +93,6 @@ struct close_request {
   int result;
 };
 
-typedef struct {
-  unsigned char *name;
-  unsigned int len;
-  SQLLEN type;
-} Column;
 
 typedef struct {
   SQLSMALLINT  c_type;

@@ -170,8 +170,6 @@ void Database::UV_Open(uv_work_t* req) {
       if( ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO ) {
         ret = SQLAllocStmt( self->m_hDBC, &self->m_hStmt );
 
-        if (ret != SQL_SUCCESS) printf("not connected\n");
-
         ret = SQLGetFunctions( self->m_hDBC,
                                SQL_API_SQLMORERESULTS, 
                                &self->canHaveMoreResults);
@@ -290,7 +288,6 @@ Handle<Value> Database::Close(const Arguments& args) {
 //allocate a buffer for incoming column values
 void Database::UV_AfterQuery(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
-  struct tm timeInfo = { 0 }; //used for processing date/time datatypes
   
   HandleScope scope;
   
@@ -308,9 +305,6 @@ void Database::UV_AfterQuery(uv_work_t* req) {
   
   //used to keep track of the number of errors that have been found
   short errorCount = 0;
-  
-  //used as a place holder for the length of column names
-  SQLSMALLINT buflen;
   
   //used to capture the return value from various SQL function calls
   SQLRETURN ret;
@@ -366,43 +360,21 @@ void Database::UV_AfterQuery(uv_work_t* req) {
       Local<Value> args[1];
       args[0] = objError;
       prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-      //self->Emit(String::New("error"), 1, args);
       goto cleanupshutdown;
     }
     
     //loop through all result sets
     do {
-      colCount = 0; //always reset colCount for the current result set to 0;
-      
-      SQLNumResultCols(self->m_hStmt, &colCount);
-      Column *columns = new Column[colCount];
-      
       Local<Array> rows = Array::New();
-      
+
+      // retrieve and store column attributes to build the row object
+      Column *columns = GetColumns(self->m_hStmt, &colCount);
+
       if (colCount > 0) {
-        // retrieve and store column attributes to build the row object
-        for(int i = 0; i < colCount; i++)
-        {
-          columns[i].name = new unsigned char[MAX_FIELD_SIZE];
-          
-          //set the first byte of name to \0 instead of memsetting the entire buffer
-          columns[i].name[0] = '\n';
-          
-          //get the column name
-          ret = SQLColAttribute(self->m_hStmt, (SQLUSMALLINT)i+1, SQL_DESC_LABEL, columns[i].name, (SQLSMALLINT)MAX_FIELD_SIZE, (SQLSMALLINT *)&buflen, NULL);
-          
-          //store the len attribute
-          columns[i].len = buflen;
-          
-          //get the column type and store it directly in column[i].type
-          ret = SQLColAttribute( self->m_hStmt, (SQLUSMALLINT)i+1, SQL_COLUMN_TYPE, NULL, 0, NULL, &columns[i].type );
-        }
-        
         int count = 0;
         
         // i dont think odbc will tell how many rows are returned, loop until out...
-        while(true)
-        {
+        while(true) {
           Local<Object> tuple = Object::New();
           ret = SQLFetch(self->m_hStmt);
           
@@ -412,10 +384,8 @@ void Database::UV_AfterQuery(uv_work_t* req) {
             char errorSQLState[128];
             SQLError(self->m_hEnv, self->m_hDBC, self->m_hStmt,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
             
-            //printf("UV_Query ret => %i\n", ret);
             printf("UV_Query => %s\n", errorMessage);
             printf("UV_Query => %s\n", errorSQLState);
-            //printf("UV_Query sql => %s\n", prep_req->sql);
           }
 
           if (ret == SQL_ERROR)  {
@@ -442,73 +412,17 @@ void Database::UV_AfterQuery(uv_work_t* req) {
           if (ret == SQL_NO_DATA) {
             break;
           }
-          
-          for(int i = 0; i < colCount; i++)
-          {
-            SQLLEN len;
-            
-            // SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
-            int ret = SQLGetData(self->m_hStmt, i+1, SQL_CHAR, (char *) buf, MAX_VALUE_SIZE-1, (SQLLEN *) &len);
-            
-            //printf("%s %i\n", columns[i].name, columns[i].type);
-            
-            if(ret == SQL_NULL_DATA || len < 0)
-            {
-              tuple->Set(String::New((const char *)columns[i].name), Null());
-            }
-            else
-            {
-              switch (columns[i].type) {
-                case SQL_NUMERIC :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_DECIMAL :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_INTEGER :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_SMALLINT :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_BIGINT :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_FLOAT :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_REAL :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_DOUBLE :
-                  tuple->Set(String::New((const char *)columns[i].name), Number::New(atof(buf)));
-                  break;
-                case SQL_DATETIME :
-                case SQL_TIMESTAMP :
-                  //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
-                  strptime(buf, "%Y-%m-%d %H:%M:%S", &timeInfo);
-                  timeInfo.tm_isdst = -1; //a negative value means that mktime() should (use timezone information and system 
-                        //databases to) attempt to determine whether DST is in effect at the specified time.
-                  tuple->Set(String::New((const char *)columns[i].name), Date::New(double(mktime(&timeInfo)) * 1000));
-                  
-                  break;
-                case SQL_BIT :
-                  //again, i'm not sure if this is cross database safe, but it works for MSSQL
-                  tuple->Set(String::New((const char *)columns[i].name), Boolean::New( ( *buf == '0') ? false : true ));
-                  break;
-                default :
-                  tuple->Set(String::New((const char *)columns[i].name), String::New(buf));
-                  break;
-              }
-            }
+
+          for(int i = 0; i < colCount; i++) {
+            tuple->Set( String::New((const char *) columns[i].name),
+                        GetColumnValue( self->m_hStmt, columns[i], buf, MAX_VALUE_SIZE - 1));
           }
           
           rows->Set(Integer::New(count), tuple);
           count++;
         }
         
-        for(int i = 0; i < colCount; i++)
-        {
+        for(int i = 0; i < colCount; i++) {
           delete [] columns[i].name;
         }
 
@@ -534,7 +448,8 @@ void Database::UV_AfterQuery(uv_work_t* req) {
         }
         
         args[1] = rows;
-        args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); //true or false, are there more result sets to follow this emit?
+        //true or false, are there more result sets to follow this emit?
+        args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); 
         
         prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
       }
@@ -560,6 +475,97 @@ cleanupshutdown:
   free(prep_req);
   free(req);
   scope.Close(Undefined());
+}
+
+Column* Database::GetColumns(SQLHSTMT hStmt, short* colCount) {
+  SQLRETURN ret;
+  SQLSMALLINT buflen;
+
+  //always reset colCount for the current result set to 0;
+  *colCount = 0; 
+
+  ret = SQLNumResultCols(hStmt, colCount);
+  Column *columns = new Column[*colCount];
+
+  for (int i = 0; i < *colCount; i++) {
+    //save the index number of this column
+    columns[i].index = i + 1;
+    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
+    
+    //set the first byte of name to \0 instead of memsetting the entire buffer
+    columns[i].name[0] = '\n';
+    
+    //get the column name
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_LABEL,
+                           columns[i].name,
+                           (SQLSMALLINT) MAX_FIELD_SIZE,
+                           (SQLSMALLINT *) &buflen,
+                           NULL);
+    
+    //store the len attribute
+    columns[i].len = buflen;
+    
+    //get the column type and store it directly in column[i].type
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_COLUMN_TYPE,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].type);
+  }
+  
+  return columns;
+}
+
+Handle<Value> Database::GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength) {
+  SQLLEN len;
+  struct tm timeInfo = { 0 };
+
+  //reset the buffer
+  buffer[0] = '\n';
+
+  //TODO: SQLGetData can supposedly return multiple chunks, need to do this to retrieve large fields
+  int ret = SQLGetData( hStmt, 
+                        column.index, 
+                        SQL_CHAR, 
+                        (char *) buffer, 
+                        bufferLength, 
+                        (SQLLEN *) &len);
+  
+  if(ret == SQL_NULL_DATA || len < 0) {
+    return Null();
+  }
+  else {
+    switch (column.type) {
+      case SQL_NUMERIC :
+      case SQL_DECIMAL :
+      case SQL_INTEGER : 
+      case SQL_SMALLINT :
+      case SQL_BIGINT :
+      case SQL_FLOAT :
+      case SQL_REAL :
+      case SQL_DOUBLE :
+        return Number::New(atof(buffer));
+      case SQL_DATETIME :
+      case SQL_TIMESTAMP :
+        //I am not sure if this is locale-safe or cross database safe, but it works for me on MSSQL
+        strptime(buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
+
+        //a negative value means that mktime() should use timezone information and system 
+        //databases to attempt to determine whether DST is in effect at the specified time.
+        timeInfo.tm_isdst = -1; 
+          
+        return Date::New(double(mktime(&timeInfo)) * 1000);
+      case SQL_BIT :
+        //again, i'm not sure if this is cross database safe, but it works for MSSQL
+        return Boolean::New(( *buffer == '0') ? false : true );
+      default :
+        return String::New(buffer);
+    }
+  }
 }
 
 void Database::UV_Query(uv_work_t* req) {
