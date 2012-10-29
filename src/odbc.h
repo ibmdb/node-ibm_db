@@ -14,8 +14,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef _DATABASE_H
-#define _DATABASE_H
+#ifndef _SRC_ODBC_H
+#define _SRC_ODBC_H
 
 #include <v8.h>
 #include <node.h>
@@ -43,11 +43,17 @@ typedef struct {
 
 class ODBC : public node::ObjectWrap {
   public:
-   static Persistent<FunctionTemplate> constructor_template;
-   static void Init(v8::Handle<Object> target);
-   static uv_mutex_t g_odbcMutex;
-   static uv_async_t g_async;
-
+    static Persistent<FunctionTemplate> constructor_template;
+    static uv_mutex_t g_odbcMutex;
+    static uv_async_t g_async;
+    
+    static void Init(v8::Handle<Object> target);
+    static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
+    static void FreeColumns(Column* columns, short* colCount);
+    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
+    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
+    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
+   
   protected:
     ODBC() {}
 
@@ -77,18 +83,12 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> Columns(const Arguments& args);
   
     static void WatcherCallback(uv_async_t* w, int revents);
-    static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
-    static void FreeColumns(Column* columns, short* colCount);
-    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
-    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
-    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
     
     ODBC *self(void) { return this; }
 
   protected:
     HENV m_hEnv;
     HDBC m_hDBC;
-    HSTMT m_hStmt;
     SQLUSMALLINT canHaveMoreResults;
     int mode;
 };
@@ -119,6 +119,7 @@ typedef struct {
 struct query_request {
   Persistent<Function> cb;
   ODBC *dbo;
+  HSTMT hSTMT;
   int affectedRows;
   char *sql;
   char *catalog;

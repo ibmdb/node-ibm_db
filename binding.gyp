@@ -3,7 +3,8 @@
 		{
 			'target_name' : 'odbc_bindings',
 			'sources' : [ 
-				'src/odbc.cpp'
+				'src/odbc.cpp',
+                'src/odbc_result.cpp'
 			],
 			'conditions' : [
 				[ 'OS == "linux"', {

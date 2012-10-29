@@ -22,6 +22,8 @@
 #include <uv.h>
 
 #include "odbc.h"
+#include "odbc_result.h"
+
 #ifdef _WIN32
 #include "strptime.h"
 #endif
@@ -195,7 +197,9 @@ void ODBC::UV_Open(uv_work_t* req) {
                               SQL_DRIVER_NOPROMPT);
 
       if( ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO ) {
-        ret = SQLAllocStmt( self->m_hDBC, &self->m_hStmt );
+        HSTMT hStmt;
+        
+        ret = SQLAllocStmt( self->m_hDBC, &hStmt );
 
         ret = SQLGetFunctions( self->m_hDBC,
                                SQL_API_SQLMORERESULTS, 
@@ -204,6 +208,8 @@ void ODBC::UV_Open(uv_work_t* req) {
         if ( !SQL_SUCCEEDED(ret)) {
           self->canHaveMoreResults = 0;
         }
+        
+        ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
       }
     }
   }
@@ -320,65 +326,21 @@ void ODBC::UV_AfterQuery(uv_work_t* req) {
   
   //an easy reference to the Database object
   ODBC* self = prep_req->dbo->self();
-
-  //our error object which we will use if we discover errors while processing 
-  //the result set
-  Local<Object> objError;
-  
-  //used to keep track of the number of columns received in a result set
-  short colCount = 0;
-  
-  //used to keep track of the number of event emittions that have occurred
-  short emitCount = 0;
-  
-  //used to keep track of the number of errors that have been found
-  short errorCount = 0;
   
   //used to capture the return value from various SQL function calls
   SQLRETURN ret;
-  
-  //allocate a buffer for incoming column values
-  char* buf = (char *) malloc(MAX_VALUE_SIZE);
-  
-  //check to make sure malloc succeeded
-  if (buf == NULL) {
-    objError = Object::New();
-
-    //malloc failed, set an error message
-    objError->Set(String::New("error"),
-                  String::New("[node-odbc] Failed Malloc"));
-
-    objError->Set(String::New("message"), 
-                  String::New("An attempt to allocate memory failed. This "
-                              "allocation was for a value buffer of incoming "
-                              "recordset values."));
-
-    //Prepare arguments for the callback
-    Local<Value> args[3];
-    args[0] = objError;
-    args[1] = Local<Value>::New(Null());
-    args[2] = Local<Boolean>::New(False());
-
-    //Callback immidiately
-    prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-
-    //emit a result event
-    goto cleanupshutdown;
-  }
 
   //First thing, let's check if the execution of the query returned any errors 
   //in UV_Query
   if(prep_req->result == SQL_ERROR) {
-    objError = Object::New();
-
-    errorCount++;
+    Local<Object> objError = Object::New();
     
     char errorMessage[512];
     char errorSQLState[128];
     
     SQLError( self->m_hEnv,
               self->m_hDBC,
-              self->m_hStmt,
+              prep_req->hSTMT,
               (SQLCHAR *) errorSQLState,
               NULL,
               (SQLCHAR *) errorMessage,
@@ -399,136 +361,21 @@ void ODBC::UV_AfterQuery(uv_work_t* req) {
     Local<Value> args[1];
     args[0] = objError;
     prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+  }
+  else {
+    Local<Value> args[3];
+    args[0] = External::New(self->m_hEnv);
+    args[1] = External::New(self->m_hDBC);
+    args[2] = External::New(prep_req->hSTMT);
+    Persistent<Object> js_result(ODBCResult::constructor_template->
+                              GetFunction()->NewInstance(3, args));
+
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Object>::New(js_result);
     
-    goto cleanupshutdown;
+    prep_req->cb->Call(Context::GetCurrent()->Global(), 2, args);
   }
   
-  //Loop through all result sets
-  do {
-    Local<Array> rows = Array::New();
-
-    //Retrieve and store all columns and their attributes
-    Column *columns = GetColumns(self->m_hStmt, &colCount);
-
-    if (colCount > 0) {
-      int count = 0;
-      
-      //I dont think odbc will tell how many rows are returned, loop until out
-      while(true) {
-        
-        ret = SQLFetch(self->m_hStmt);
-        
-        //TODO: Do something to enable/disable dumping these info messages to 
-        //the console.
-        if (ret == SQL_SUCCESS_WITH_INFO ) {
-          char errorMessage[512];
-          char errorSQLState[128];
-
-          SQLError( self->m_hEnv, 
-                    self->m_hDBC, 
-                    self->m_hStmt,
-                    (SQLCHAR *) errorSQLState,
-                    NULL,
-                    (SQLCHAR *) errorMessage, 
-                    sizeof(errorMessage), 
-                    NULL);
-
-          printf("UV_Query => %s\n", errorMessage);
-          printf("UV_Query => %s\n", errorSQLState);
-        }
-
-        if (ret == SQL_ERROR)  {
-          objError = Object::New();
-
-          char errorMessage[512];
-          char errorSQLState[128];
-
-          SQLError( self->m_hEnv, 
-                    self->m_hDBC, 
-                    self->m_hStmt,
-                    (SQLCHAR *) errorSQLState,
-                    NULL,
-                    (SQLCHAR *) errorMessage,
-                    sizeof(errorMessage),
-                    NULL);
-
-          errorCount++;
-          
-          objError->Set(String::New("state"), String::New(errorSQLState));
-          objError->Set(String::New("error"),
-                        String::New("[node-odbc] Error in SQLFetch"));
-          objError->Set(String::New("message"), String::New(errorMessage));
-          objError->Set(String::New("query"), String::New(prep_req->sql));
-          
-          //emit an error event immidiately.
-          Local<Value> args[1];
-          args[0] = objError;
-          prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-          
-          break;
-        }
-        
-        if (ret == SQL_NO_DATA) {
-          break;
-        }
-        
-        if (self->mode == MODE_CALLBACK_FOR_EACH) {
-          Handle<Value> args[2];
-          
-          args[0] = Null();
-          args[1] = GetRecordTuple( self->m_hStmt,
-                                    columns,
-                                    &colCount,
-                                    buf,
-                                    MAX_VALUE_SIZE - 1);
-          
-          prep_req->cb->Call(Context::GetCurrent()->Global(), 2, args);
-        }
-        else {
-          rows->Set( Integer::New(count), 
-                    GetRecordTuple( self->m_hStmt,
-                                    columns,
-                                    &colCount,
-                                    buf,
-                                    MAX_VALUE_SIZE - 1));
-        }
-        
-        count++;
-      }
-      
-      FreeColumns(columns, &colCount);
-    }
-    
-    //move to the next result set
-    ret = SQLMoreResults( self->m_hStmt );
-    
-    //Only trigger an emit if there are columns OR if this is the last result 
-    //and none others have been emitted odbc will process individual statments 
-    //like select @something = 1 as a recordset even though it doesn't have any
-    //columns. We don't want to emit those unless there are actually columns
-    if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
-      emitCount++;
-      
-      Local<Value> args[3];
-      
-      if (errorCount) {
-        args[0] = objError;
-      }
-      else {
-        args[0] = Local<Value>::New(Null());
-      }
-      
-      args[1] = rows;
-
-      //true or false, are there more result sets to follow this emit?
-      args[2] = Local<Boolean>::New((ret == SQL_SUCCESS) ? True() : False()); 
-
-      prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-    }
-  }
-  while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
-
-cleanupshutdown:
   TryCatch try_catch;
   
   self->Unref();
@@ -537,7 +384,6 @@ cleanupshutdown:
     FatalException(try_catch);
   }
   
-  free(buf);
   prep_req->cb.Dispose();
   free(prep_req->sql);
   free(prep_req->catalog);
@@ -556,33 +402,27 @@ void ODBC::UV_Query(uv_work_t* req) {
   Parameter prm;
   SQLRETURN ret;
   
-  if(prep_req->dbo->m_hStmt)
-  {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+  uv_mutex_lock(&ODBC::g_odbcMutex);
 
-    //free the previously used handle
-    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
+  //allocate a new statment handle
+  SQLAllocHandle( SQL_HANDLE_STMT, 
+                  prep_req->dbo->m_hDBC, 
+                  &prep_req->hSTMT );
 
-    //allocate a new handle
-    SQLAllocHandle( SQL_HANDLE_STMT, 
-                    prep_req->dbo->m_hDBC, 
-                    &prep_req->dbo->m_hStmt );
-
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
-  } 
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   //check to see if should excute a direct or a parameter bound query
   if (!prep_req->paramCount)
   {
     // execute the query directly
-    ret = SQLExecDirect( prep_req->dbo->m_hStmt,
+    ret = SQLExecDirect( prep_req->hSTMT,
                          (SQLCHAR *) prep_req->sql, 
                          strlen(prep_req->sql));
   }
   else 
   {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepare( prep_req->dbo->m_hStmt,
+    ret = SQLPrepare( prep_req->hSTMT,
                       (SQLCHAR *) prep_req->sql, 
                       strlen(prep_req->sql));
     
@@ -592,7 +432,7 @@ void ODBC::UV_Query(uv_work_t* req) {
       {
         prm = prep_req->params[i];
         
-        ret = SQLBindParameter( prep_req->dbo->m_hStmt,
+        ret = SQLBindParameter( prep_req->hSTMT,
                                 i + 1,
                                 SQL_PARAM_INPUT,
                                 prm.c_type,
@@ -607,7 +447,7 @@ void ODBC::UV_Query(uv_work_t* req) {
       }
 
       if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-        ret = SQLExecute(prep_req->dbo->m_hStmt);
+        ret = SQLExecute(prep_req->hSTMT);
       }
     }
     
@@ -762,16 +602,12 @@ Handle<Value> ODBC::Query(const Arguments& args) {
 void ODBC::UV_Tables(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
-  if(prep_req->dbo->m_hStmt)
-  {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
-    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
-  }
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->hSTMT );
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   SQLRETURN ret = SQLTables( 
-    prep_req->dbo->m_hStmt, 
+    prep_req->hSTMT, 
     (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
     (SQLCHAR *) prep_req->schema,   SQL_NTS, 
     (SQLCHAR *) prep_req->table,   SQL_NTS, 
@@ -841,14 +677,10 @@ Handle<Value> ODBC::Tables(const Arguments& args) {
 void ODBC::UV_Columns(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
-  if(prep_req->dbo->m_hStmt)
-  {
-    SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
-    SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
-  }
+  SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->hSTMT );
   
   SQLRETURN ret = SQLColumns( 
-    prep_req->dbo->m_hStmt, 
+    prep_req->hSTMT, 
     (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
     (SQLCHAR *) prep_req->schema,   SQL_NTS, 
     (SQLCHAR *) prep_req->table,   SQL_NTS, 
@@ -970,6 +802,8 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
   }
 
   delete [] columns;
+  
+  *colCount = 0;
 }
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
@@ -1068,6 +902,7 @@ Persistent<FunctionTemplate> ODBC::constructor_template;
 
 extern "C" void init (v8::Handle<Object> target) {
   ODBC::Init(target);
+  ODBCResult::Init(target);
 }
 
 NODE_MODULE(odbc_bindings, init)
