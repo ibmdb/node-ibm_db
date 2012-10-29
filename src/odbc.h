@@ -41,7 +41,7 @@ typedef struct {
   SQLUSMALLINT index;
 } Column;
 
-class Database : public node::ObjectWrap {
+class ODBC : public node::ObjectWrap {
   public:
    static Persistent<FunctionTemplate> constructor_template;
    static void Init(v8::Handle<Object> target);
@@ -49,9 +49,9 @@ class Database : public node::ObjectWrap {
    static uv_async_t g_async;
 
   protected:
-    Database() {}
+    ODBC() {}
 
-    ~Database() {}
+    ~ODBC() {}
 
     static Handle<Value> New(const Arguments& args);
 
@@ -83,7 +83,7 @@ class Database : public node::ObjectWrap {
     static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
     
-    Database *self(void) { return this; }
+    ODBC *self(void) { return this; }
 
   protected:
     HENV m_hEnv;
@@ -95,14 +95,14 @@ class Database : public node::ObjectWrap {
 
 struct open_request {
   Persistent<Function> cb;
-  Database *dbo;
+  ODBC *dbo;
   int result;
   char connection[1];
 };
 
 struct close_request {
   Persistent<Function> cb;
-  Database *dbo;
+  ODBC *dbo;
   int result;
 };
 
@@ -118,7 +118,7 @@ typedef struct {
 
 struct query_request {
   Persistent<Function> cb;
-  Database *dbo;
+  ODBC *dbo;
   int affectedRows;
   char *sql;
   char *catalog;

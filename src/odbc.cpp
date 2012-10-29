@@ -21,7 +21,7 @@
 #include <time.h>
 #include <uv.h>
 
-#include "Database.h"
+#include "odbc.h"
 #ifdef _WIN32
 #include "strptime.h"
 #endif
@@ -29,10 +29,10 @@
 using namespace v8;
 using namespace node;
 
-uv_mutex_t Database::g_odbcMutex;
-uv_async_t Database::g_async;
+uv_mutex_t ODBC::g_odbcMutex;
+uv_async_t ODBC::g_async;
 
-void Database::Init(v8::Handle<Object> target) {
+void ODBC::Init(v8::Handle<Object> target) {
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -63,16 +63,16 @@ void Database::Init(v8::Handle<Object> target) {
   
   // Initialize uv_async so that we can prevent node from exiting
   uv_async_init( uv_default_loop(),
-                 &Database::g_async,
-                 Database::WatcherCallback);
+                 &ODBC::g_async,
+                 ODBC::WatcherCallback);
   
   // Initialize the cross platform mutex provided by libuv
-  uv_mutex_init(&Database::g_odbcMutex);
+  uv_mutex_init(&ODBC::g_odbcMutex);
 }
 
-Handle<Value> Database::New(const Arguments& args) {
+Handle<Value> ODBC::New(const Arguments& args) {
   HandleScope scope;
-  Database* dbo = new Database();
+  ODBC* dbo = new ODBC();
   
   dbo->Wrap(args.This());
   dbo->mode = 1;
@@ -80,14 +80,14 @@ Handle<Value> Database::New(const Arguments& args) {
   return scope.Close(args.This());
 }
 
-void Database::WatcherCallback(uv_async_t *w, int revents) {
+void ODBC::WatcherCallback(uv_async_t *w, int revents) {
   //i don't know if we need to do anything here
 }
 
-Handle<Value> Database::ModeGetter(Local<String> property, const AccessorInfo &info) {
+Handle<Value> ODBC::ModeGetter(Local<String> property, const AccessorInfo &info) {
   HandleScope scope;
 
-  Database *obj = ObjectWrap::Unwrap<Database>(info.Holder());
+  ODBC *obj = ObjectWrap::Unwrap<ODBC>(info.Holder());
 
   if (obj->mode > 0) {
       return scope.Close(Integer::New(obj->mode));
@@ -96,17 +96,17 @@ Handle<Value> Database::ModeGetter(Local<String> property, const AccessorInfo &i
   }
 }
 
-void Database::ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
+void ODBC::ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
   HandleScope scope;
 
-  Database *obj = ObjectWrap::Unwrap<Database>(info.Holder());
+  ODBC *obj = ObjectWrap::Unwrap<ODBC>(info.Holder());
   
   if (value->IsNumber()) {
     obj->mode = value->Int32Value();
   }
 }
 
-void Database::UV_AfterOpen(uv_work_t* req) {
+void ODBC::UV_AfterOpen(uv_work_t* req) {
   HandleScope scope;
   open_request* open_req = (open_request *)(req->data);
 
@@ -158,7 +158,7 @@ void Database::UV_AfterOpen(uv_work_t* req) {
   open_req->cb.Dispose();
 
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
-  uv_ref((uv_handle_t *)&Database::g_async);
+  uv_ref((uv_handle_t *)&ODBC::g_async);
 #else
   uv_ref(uv_default_loop());
 #endif
@@ -168,11 +168,11 @@ void Database::UV_AfterOpen(uv_work_t* req) {
   scope.Close(Undefined());
 }
 
-void Database::UV_Open(uv_work_t* req) {
+void ODBC::UV_Open(uv_work_t* req) {
   open_request* open_req = (open_request *)(req->data);
-  Database* self = open_req->dbo->self();
+  ODBC* self = open_req->dbo->self();
   
-  uv_mutex_lock(&Database::g_odbcMutex);
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   
   int ret = SQLAllocEnv( &self->m_hEnv );
 
@@ -208,17 +208,17 @@ void Database::UV_Open(uv_work_t* req) {
     }
   }
   
-  uv_mutex_unlock(&Database::g_odbcMutex);
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   open_req->result = ret;
 }
 
-Handle<Value> Database::Open(const Arguments& args) {
+Handle<Value> ODBC::Open(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_ARG(0, connection);
   REQ_FUN_ARG(1, cb);
 
-  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   open_request* open_req = (open_request *) calloc(1, sizeof(open_request) + connection.length());
 
@@ -240,7 +240,7 @@ Handle<Value> Database::Open(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-void Database::UV_AfterClose(uv_work_t* req) {
+void ODBC::UV_AfterClose(uv_work_t* req) {
   HandleScope scope;
 
   close_request* close_req = (close_request *)(req->data);
@@ -264,7 +264,7 @@ void Database::UV_AfterClose(uv_work_t* req) {
   close_req->cb.Dispose();
 
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
-  uv_unref((uv_handle_t *)&Database::g_async);
+  uv_unref((uv_handle_t *)&ODBC::g_async);
 #else
   uv_unref(uv_default_loop());
 #endif
@@ -274,25 +274,25 @@ void Database::UV_AfterClose(uv_work_t* req) {
   scope.Close(Undefined());
 }
 
-void Database::UV_Close(uv_work_t* req) {
+void ODBC::UV_Close(uv_work_t* req) {
   close_request* close_req = (close_request *)(req->data);
-  Database* dbo = close_req->dbo;
+  ODBC* dbo = close_req->dbo;
   
-  uv_mutex_lock(&Database::g_odbcMutex);
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   
   SQLDisconnect(dbo->m_hDBC);
   SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
   SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
   
-  uv_mutex_unlock(&Database::g_odbcMutex);
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
 
-Handle<Value> Database::Close(const Arguments& args) {
+Handle<Value> ODBC::Close(const Arguments& args) {
   HandleScope scope;
 
   REQ_FUN_ARG(0, cb);
 
-  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   close_request* close_req = (close_request *) (calloc(1, sizeof(close_request)));
 
@@ -313,13 +313,13 @@ Handle<Value> Database::Close(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-void Database::UV_AfterQuery(uv_work_t* req) {
+void ODBC::UV_AfterQuery(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
   HandleScope scope;
   
   //an easy reference to the Database object
-  Database* self = prep_req->dbo->self();
+  ODBC* self = prep_req->dbo->self();
 
   //our error object which we will use if we discover errors while processing 
   //the result set
@@ -550,7 +550,7 @@ cleanupshutdown:
   scope.Close(Undefined());
 }
 
-void Database::UV_Query(uv_work_t* req) {
+void ODBC::UV_Query(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
   Parameter prm;
@@ -558,7 +558,7 @@ void Database::UV_Query(uv_work_t* req) {
   
   if(prep_req->dbo->m_hStmt)
   {
-    uv_mutex_lock(&Database::g_odbcMutex);
+    uv_mutex_lock(&ODBC::g_odbcMutex);
 
     //free the previously used handle
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
@@ -568,7 +568,7 @@ void Database::UV_Query(uv_work_t* req) {
                     prep_req->dbo->m_hDBC, 
                     &prep_req->dbo->m_hStmt );
 
-    uv_mutex_unlock(&Database::g_odbcMutex);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
   } 
 
   //check to see if should excute a direct or a parameter bound query
@@ -632,7 +632,7 @@ void Database::UV_Query(uv_work_t* req) {
   prep_req->result = ret;
 }
 
-Handle<Value> Database::Query(const Arguments& args) {
+Handle<Value> ODBC::Query(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_ARG(0, sql);
@@ -642,7 +642,7 @@ Handle<Value> Database::Query(const Arguments& args) {
   int paramCount = 0;
   Parameter* params;
 
-  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
 
@@ -759,15 +759,15 @@ Handle<Value> Database::Query(const Arguments& args) {
   return  scope.Close(Undefined());
 }
 
-void Database::UV_Tables(uv_work_t* req) {
+void ODBC::UV_Tables(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
   {
-    uv_mutex_lock(&Database::g_odbcMutex);
+    uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hStmt );
     SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->dbo->m_hStmt );
-    uv_mutex_unlock(&Database::g_odbcMutex);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
   SQLRETURN ret = SQLTables( 
@@ -782,7 +782,7 @@ void Database::UV_Tables(uv_work_t* req) {
   prep_req->result = ret; 
 }
 
-Handle<Value> Database::Tables(const Arguments& args) {
+Handle<Value> ODBC::Tables(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_OR_NULL_ARG(0, catalog);
@@ -791,7 +791,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(3, type);
   Local<Function> cb = Local<Function>::Cast(args[4]);
 
-  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
@@ -838,7 +838,7 @@ Handle<Value> Database::Tables(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-void Database::UV_Columns(uv_work_t* req) {
+void ODBC::UV_Columns(uv_work_t* req) {
   query_request* prep_req = (query_request *)(req->data);
   
   if(prep_req->dbo->m_hStmt)
@@ -859,7 +859,7 @@ void Database::UV_Columns(uv_work_t* req) {
   prep_req->result = ret;
 }
 
-Handle<Value> Database::Columns(const Arguments& args) {
+Handle<Value> ODBC::Columns(const Arguments& args) {
   HandleScope scope;
 
   REQ_STR_OR_NULL_ARG(0, catalog);
@@ -868,7 +868,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(3, column);
   Local<Function> cb = Local<Function>::Cast(args[4]);
   
-  Database* dbo = ObjectWrap::Unwrap<Database>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
@@ -915,7 +915,7 @@ Handle<Value> Database::Columns(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-Column* Database::GetColumns(SQLHSTMT hStmt, short* colCount) {
+Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
   SQLRETURN ret;
   SQLSMALLINT buflen;
 
@@ -964,7 +964,7 @@ Column* Database::GetColumns(SQLHSTMT hStmt, short* colCount) {
   return columns;
 }
 
-void Database::FreeColumns(Column* columns, short* colCount) {
+void ODBC::FreeColumns(Column* columns, short* colCount) {
   for(int i = 0; i < *colCount; i++) {
       delete [] columns[i].name;
   }
@@ -972,7 +972,7 @@ void Database::FreeColumns(Column* columns, short* colCount) {
   delete [] columns;
 }
 
-Handle<Value> Database::GetColumnValue( SQLHSTMT hStmt, Column column, 
+Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
                                         char* buffer, int bufferLength) {
   //HandleScope scope;
   SQLLEN len;
@@ -1032,7 +1032,7 @@ Handle<Value> Database::GetColumnValue( SQLHSTMT hStmt, Column column,
   }
 }
 
-Handle<Value> Database::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
+Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, char* buffer,
                                          int bufferLength) {
   //HandleScope scope;
@@ -1048,7 +1048,7 @@ Handle<Value> Database::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   //return scope.Close(tuple);
 }
 
-Handle<Value> Database::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
+Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, char* buffer,
                                          int bufferLength) {
   //HandleScope scope;
@@ -1064,10 +1064,10 @@ Handle<Value> Database::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   //return scope.Close(array);
 }
 
-Persistent<FunctionTemplate> Database::constructor_template;
+Persistent<FunctionTemplate> ODBC::constructor_template;
 
 extern "C" void init (v8::Handle<Object> target) {
-  Database::Init(target);
+  ODBC::Init(target);
 }
 
 NODE_MODULE(odbc_bindings, init)

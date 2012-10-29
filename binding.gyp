@@ -3,7 +3,7 @@
 		{
 			'target_name' : 'odbc_bindings',
 			'sources' : [ 
-				'src/Database.cpp'
+				'src/odbc.cpp'
 			],
 			'conditions' : [
 				[ 'OS == "linux"', {
@@ -19,7 +19,7 @@
 				[ 'OS=="win"', {
 					'sources' : [
 						'src/strptime.c',
-						'src/Database.cpp'
+						'src/odbc.cpp'
 					],
 					'libraries' : [ 
 						'-lodbccp32.lib' 
