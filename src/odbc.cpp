@@ -20,6 +20,7 @@
 #include <node_version.h>
 #include <time.h>
 #include <uv.h>
+#include <wchar.h>
 
 #include "odbc.h"
 #include "odbc_result.h"
@@ -1086,33 +1087,48 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   //TODO: SQLGetData can supposedly return multiple chunks, need to do this to 
   //retrieve large fields
-  int ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_C_WCHAR,
-                        (uint16_t *) buffer, 
-                        bufferLength, 
-                        (SQLLEN *) &len);
+  int ret; 
   
-  if(ret == SQL_NULL_DATA || len < 0) {
-    //return scope.Close(Null());
-    return Null();
-  }
-  else {
-    switch (column.type) {
-      case SQL_NUMERIC :
-      case SQL_DECIMAL :
-      case SQL_INTEGER : 
-      case SQL_SMALLINT :
-      case SQL_BIGINT :
-      case SQL_FLOAT :
-      case SQL_REAL :
-      case SQL_DOUBLE :
+  switch (column.type) {
+    case SQL_NUMERIC :
+    case SQL_DECIMAL :
+    case SQL_INTEGER : 
+    case SQL_SMALLINT :
+    case SQL_BIGINT :
+    case SQL_FLOAT :
+    case SQL_REAL :
+    case SQL_DOUBLE :
+      ret = SQLGetData( hStmt, 
+                      column.index, 
+                      SQL_C_CHAR,
+                      (char *) buffer, 
+                      bufferLength, 
+                      (SQLLEN *) &len);
+
+      if(ret == SQL_NULL_DATA || len < 0) {
+        //return scope.Close(Null());
+        return Null();
+      }
+      else {
         //return scope.Close(Number::New(atof(buffer)));
         return Number::New(atof((char *) buffer));
-      case SQL_DATETIME :
-      case SQL_TIMESTAMP :
-        //I am not sure if this is locale-safe or cross database safe, but it 
-        //works for me on MSSQL
+      }
+    case SQL_DATETIME :
+    case SQL_TIMESTAMP :
+      //I am not sure if this is locale-safe or cross database safe, but it 
+      //works for me on MSSQL
+      ret = SQLGetData( hStmt, 
+                      column.index, 
+                      SQL_C_CHAR,
+                      (char *) buffer, 
+                      bufferLength, 
+                      (SQLLEN *) &len);
+
+      if(ret == SQL_NULL_DATA || len < 0) {
+        //return scope.Close(Null());
+        return Null();
+      }
+      else {
         strptime((char *) buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
 
         //a negative value means that mktime() should use timezone information 
@@ -1122,15 +1138,41 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           
         //return scope.Close(Date::New(double(mktime(&timeInfo)) * 1000));
         return Date::New(double(mktime(&timeInfo)) * 1000);
-      case SQL_BIT :
-        //again, i'm not sure if this is cross database safe, but it works for 
-        //MSSQL
+      }
+    case SQL_BIT :
+      //again, i'm not sure if this is cross database safe, but it works for 
+      //MSSQL
+      ret = SQLGetData( hStmt, 
+                      column.index, 
+                      SQL_C_CHAR,
+                      (char *) buffer, 
+                      bufferLength, 
+                      (SQLLEN *) &len);
+
+      if(ret == SQL_NULL_DATA || len < 0) {
+        //return scope.Close(Null());
+        return Null();
+      }
+      else {
         //return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
         return Boolean::New(( *buffer == '0') ? false : true );
-      default :
+      }
+    default :
+      ret = SQLGetData( hStmt, 
+                      column.index, 
+                      SQL_C_WCHAR,
+                      (uint16_t *) buffer, 
+                      bufferLength, 
+                      (SQLLEN *) &len);
+
+      if(ret == SQL_NULL_DATA || len < 0) {
+        //return scope.Close(Null());
+        return Null();
+      }
+      else {
         //return scope.Close(String::New(buffer));
         return String::New(buffer);
-    }
+      }
   }
 }
 
