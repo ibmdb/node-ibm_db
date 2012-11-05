@@ -580,7 +580,7 @@ void ODBC::UV_AfterQueryAll(uv_work_t* req) {
   SQLRETURN ret;
   
   //allocate a buffer for incoming column values
-  char* buf = (char *) malloc(MAX_VALUE_SIZE);
+  uint16_t* buf = (uint16_t *) malloc(MAX_VALUE_SIZE);
   
   //check to make sure malloc succeeded
   if (buf == NULL) {
@@ -1075,7 +1075,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
 }
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
-                                        char* buffer, int bufferLength) {
+                                        uint16_t* buffer, int bufferLength) {
   //HandleScope scope;
   SQLLEN len;
   
@@ -1089,7 +1089,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   int ret = SQLGetData( hStmt, 
                         column.index, 
                         SQL_C_WCHAR,
-                        (char *) buffer, 
+                        (uint16_t *) buffer, 
                         bufferLength, 
                         (SQLLEN *) &len);
   
@@ -1108,12 +1108,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       case SQL_REAL :
       case SQL_DOUBLE :
         //return scope.Close(Number::New(atof(buffer)));
-        return Number::New(atof(buffer));
+        return Number::New(atof((char *) buffer));
       case SQL_DATETIME :
       case SQL_TIMESTAMP :
         //I am not sure if this is locale-safe or cross database safe, but it 
         //works for me on MSSQL
-        strptime(buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
+        strptime((char *) buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
 
         //a negative value means that mktime() should use timezone information 
         //and system databases to attempt to determine whether DST is in effect 
@@ -1135,7 +1135,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 }
 
 Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
-                                         short* colCount, char* buffer,
+                                         short* colCount, uint16_t* buffer,
                                          int bufferLength) {
   HandleScope scope;
   
@@ -1151,7 +1151,7 @@ Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
 }
 
 Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
-                                         short* colCount, char* buffer,
+                                         short* colCount, uint16_t* buffer,
                                          int bufferLength) {
   HandleScope scope;
   

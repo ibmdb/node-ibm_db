@@ -65,7 +65,7 @@ class ODBCResult : public node::ObjectWrap {
     HENV m_hENV;
     HDBC m_hDBC;
     HSTMT m_hSTMT;
-    char *buffer;
+    uint16_t *buffer;
     int bufferLength;
     Column *columns;
     short colCount;

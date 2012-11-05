@@ -93,7 +93,7 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
   
   //initialze a buffer for this object
-  objODBCResult->buffer = (char *) malloc(objODBCResult->bufferLength + 1);
+  objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength + 1);
   //TODO: make sure the malloc succeeded
 
   //set the initial colCount to 0

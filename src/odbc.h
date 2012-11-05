@@ -59,9 +59,9 @@ class ODBC : public node::ObjectWrap {
     static void Init(v8::Handle<Object> target);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
     static void FreeColumns(Column* columns, short* colCount);
-    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
-    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
-    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
+    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
+    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
+    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
