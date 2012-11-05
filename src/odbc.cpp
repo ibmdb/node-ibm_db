@@ -1088,7 +1088,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   //retrieve large fields
   int ret = SQLGetData( hStmt, 
                         column.index, 
-                        SQL_CHAR, 
+                        SQL_C_WCHAR,
                         (char *) buffer, 
                         bufferLength, 
                         (SQLLEN *) &len);
