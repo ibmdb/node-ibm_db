@@ -34,6 +34,8 @@ using namespace node;
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
+Persistent<FunctionTemplate> ODBC::constructor_template;
+
 void ODBC::Init(v8::Handle<Object> target) {
   HandleScope scope;
 
@@ -49,11 +51,13 @@ void ODBC::Init(v8::Handle<Object> target) {
   
   // Properties
   instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
+  instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQueryAll", QueryAll);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
@@ -76,10 +80,11 @@ Handle<Value> ODBC::New(const Arguments& args) {
   HandleScope scope;
   ODBC* dbo = new ODBC();
   
-  dbo->Wrap(args.This());
+  dbo->Wrap(args.Holder());
   dbo->mode = 1;
+  dbo->connected = false;
   
-  return scope.Close(args.This());
+  return scope.Close(args.Holder());
 }
 
 void ODBC::WatcherCallback(uv_async_t *w, int revents) {
@@ -108,10 +113,20 @@ void ODBC::ModeSetter(Local<String> property, Local<Value> value, const Accessor
   }
 }
 
+Handle<Value> ODBC::ConnectedGetter(Local<String> property, const AccessorInfo &info) {
+  HandleScope scope;
+
+  ODBC *obj = ObjectWrap::Unwrap<ODBC>(info.Holder());
+
+  return scope.Close(obj->connected ? True() : False());
+}
+
 void ODBC::UV_AfterOpen(uv_work_t* req) {
   HandleScope scope;
   open_request* open_req = (open_request *)(req->data);
 
+  ODBC* self = open_req->dbo->self();
+  
   Local<Value> argv[1];
   
   bool err = false;
@@ -148,6 +163,10 @@ void ODBC::UV_AfterOpen(uv_work_t* req) {
     } while( ret == SQL_SUCCESS );
   }
 
+  if (!err) {
+    self->connected = true;
+  }
+  
   TryCatch try_catch;
 
   open_req->dbo->Unref();
@@ -224,7 +243,7 @@ Handle<Value> ODBC::Open(const Arguments& args) {
   REQ_STR_ARG(0, connection);
   REQ_FUN_ARG(1, cb);
 
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   open_request* open_req = (open_request *) calloc(1, sizeof(open_request) + connection.length());
 
@@ -251,11 +270,17 @@ void ODBC::UV_AfterClose(uv_work_t* req) {
 
   close_request* close_req = (close_request *)(req->data);
 
+  ODBC* dbo = close_req->dbo;
+  
   Local<Value> argv[1];
   bool err = false;
+  
   if (close_req->result) {
     err = true;
     argv[0] = Exception::Error(String::New("Error closing database"));
+  }
+  else {
+    dbo->connected = false;
   }
 
   TryCatch try_catch;
@@ -298,7 +323,7 @@ Handle<Value> ODBC::Close(const Arguments& args) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   close_request* close_req = (close_request *) (calloc(1, sizeof(close_request)));
 
@@ -412,24 +437,20 @@ void ODBC::UV_Query(uv_work_t* req) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   //check to see if should excute a direct or a parameter bound query
-  if (!prep_req->paramCount)
-  {
+  if (!prep_req->paramCount) {
     // execute the query directly
     ret = SQLExecDirect( prep_req->hSTMT,
                          (SQLCHAR *) prep_req->sql, 
                          strlen(prep_req->sql));
   }
-  else 
-  {
+  else {
     // prepare statement, bind parameters and execute statement 
     ret = SQLPrepare( prep_req->hSTMT,
                       (SQLCHAR *) prep_req->sql, 
                       strlen(prep_req->sql));
     
-    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO)
-    {
-      for (int i = 0; i < prep_req->paramCount; i++)
-      {
+    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+      for (int i = 0; i < prep_req->paramCount; i++) {
         prm = prep_req->params[i];
         
         ret = SQLBindParameter( prep_req->hSTMT,
@@ -452,12 +473,9 @@ void ODBC::UV_Query(uv_work_t* req) {
     }
     
     // free parameters
-    for (int i = 0; i < prep_req->paramCount; i++)
-    {
-      if (prm = prep_req->params[i], prm.buffer != NULL)
-      {
-        switch (prm.c_type)
-        {
+    for (int i = 0; i < prep_req->paramCount; i++) {
+      if (prm = prep_req->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
           case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
@@ -478,11 +496,8 @@ Handle<Value> ODBC::Query(const Arguments& args) {
   REQ_STR_ARG(0, sql);
   
   Local<Function> cb; 
-  
-  int paramCount = 0;
-  Parameter* params;
 
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
 
@@ -493,82 +508,24 @@ Handle<Value> ODBC::Query(const Arguments& args) {
 
   // populate prep_req->params if parameters were supplied
   //
-  if (args.Length() > 2) 
-  {
-      if ( !args[1]->IsArray() )
-      {
+  if (args.Length() > 2) {
+      if ( !args[1]->IsArray() ) {
            return ThrowException(Exception::TypeError(
                       String::New("Argument 1 must be an Array"))
            );
       }
-      else if ( !args[2]->IsFunction() )
-      {
+      else if ( !args[2]->IsFunction() ) {
            return ThrowException(Exception::TypeError(
                       String::New("Argument 2 must be a Function"))
            );
       }
   
-
-      Local<Array> values = Local<Array>::Cast(args[1]);
       cb = Local<Function>::Cast(args[2]);
-
-      prep_req->paramCount = paramCount = values->Length();
-      prep_req->params     = params     = new Parameter[paramCount];
-
-      for (int i = 0; i < paramCount; i++)
-      {
-          Local<Value> value = values->Get(i);
-
-          params[i].size          = 0;
-          params[i].length        = SQL_NULL_DATA;
-          params[i].buffer_length = 0;
-
-          if (value->IsString()) 
-          {
-              String::Utf8Value string(value);
-              
-              params[i].c_type        = SQL_C_CHAR;
-              params[i].type          = SQL_VARCHAR;
-              params[i].length        = SQL_NTS;
-              params[i].buffer        = malloc(string.length() + 1);
-              params[i].buffer_length = string.length() + 1;
-              params[i].size          = string.length() + 1;
-
-              strcpy((char*)params[i].buffer, *string);
-          }
-          else if (value->IsNull()) 
-          {
-              params[i].c_type = SQL_C_DEFAULT;
-              params[i].type   = SQL_NULL_DATA;
-              params[i].length = SQL_NULL_DATA;
-          }
-          else if (value->IsInt32()) 
-          {
-              int64_t  *number = new int64_t(value->IntegerValue());
-              params[i].c_type = SQL_C_LONG;
-              params[i].type   = SQL_INTEGER;
-              params[i].buffer = number; 
-          }
-          else if (value->IsNumber()) 
-          {
-              double   *number = new double(value->NumberValue());
-              params[i].c_type = SQL_C_DOUBLE;
-              params[i].type   = SQL_DECIMAL;
-              params[i].buffer = number; 
-          }
-          else if (value->IsBoolean()) 
-          {
-              bool *boolean    = new bool(value->BooleanValue());
-              params[i].c_type = SQL_C_BIT;
-              params[i].type   = SQL_BIT;
-              params[i].buffer = boolean;
-          }
-      }
+      
+      prep_req->params = GetParametersFromArray(Local<Array>::Cast(args[1]), &prep_req->paramCount);
   }
-  else 
-  {
-      if ( !args[1]->IsFunction() )
-      {
+  else {
+      if ( !args[1]->IsFunction() ) {
            return ThrowException(Exception::TypeError(
                       String::New("Argument 1 must be a Function"))
            );
@@ -593,6 +550,317 @@ Handle<Value> ODBC::Query(const Arguments& args) {
   work_req->data = prep_req;
   
   uv_queue_work(uv_default_loop(), work_req, UV_Query, UV_AfterQuery);
+
+  dbo->Ref();
+
+  return  scope.Close(Undefined());
+}
+
+void ODBC::UV_AfterQueryAll(uv_work_t* req) {
+  query_request* prep_req = (query_request *)(req->data);
+  
+  HandleScope scope;
+  
+  //an easy reference to the Database object
+  ODBC* self = prep_req->dbo->self();
+
+  //our error object which we will use if we discover errors while processing the result set
+  Local<Object> objError;
+  
+  //used to keep track of the number of columns received in a result set
+  short colCount = 0;
+  
+  //used to keep track of the number of event emittions that have occurred
+  short emitCount = 0;
+  
+  //used to keep track of the number of errors that have been found
+  short errorCount = 0;
+  
+  //used to capture the return value from various SQL function calls
+  SQLRETURN ret;
+  
+  //allocate a buffer for incoming column values
+  char* buf = (char *) malloc(MAX_VALUE_SIZE);
+  
+  //check to make sure malloc succeeded
+  if (buf == NULL) {
+    objError = Object::New();
+
+    //malloc failed, set an error message
+    objError->Set(String::New("error"), String::New("[node-odbc] Failed Malloc"));
+    objError->Set(String::New("message"), String::New("An attempt to allocate memory failed. This allocation was for a value buffer of incoming recordset values."));
+    
+    //emit an error event immidiately.
+    Local<Value> args[3];
+    args[0] = objError;
+    args[1] = Local<Value>::New(Null());
+    args[2] = Local<Boolean>::New(False());
+    
+    //emit an error event
+    prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+    
+    //emit a result event
+    goto cleanupshutdown;
+  }
+  //else {
+    //malloc succeeded so let's continue 
+    
+    //set the first byte of the buffer to \0 instead of memsetting the entire buffer to 0
+    buf[0] = '\0'; 
+    
+    //First thing, let's check if the execution of the query returned any errors (in UV_Query)
+    if(prep_req->result == SQL_ERROR) {
+      objError = Object::New();
+
+      errorCount++;
+      
+      char errorMessage[512];
+      char errorSQLState[128];
+      SQLError(self->m_hEnv, self->m_hDBC, prep_req->hSTMT,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+      objError->Set(String::New("state"), String::New(errorSQLState));
+      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+      objError->Set(String::New("message"), String::New(errorMessage));
+      
+      //only set the query value of the object if we actually have a query
+      if (prep_req->sql != NULL) {
+        objError->Set(String::New("query"), String::New(prep_req->sql));
+      }
+      
+      //emit an error event immidiately.
+      Local<Value> args[1];
+      args[0] = objError;
+      prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+      goto cleanupshutdown;
+    }
+    
+    //loop through all result sets
+    do {
+      Local<Array> rows = Array::New();
+
+      // retrieve and store column attributes to build the row object
+      Column *columns = GetColumns(prep_req->hSTMT, &colCount);
+
+      if (colCount > 0) {
+        int count = 0;
+        
+        // i dont think odbc will tell how many rows are returned, loop until out...
+        while(true) {
+          Local<Object> tuple = Object::New();
+          ret = SQLFetch(prep_req->hSTMT);
+          
+          //TODO: Do something to enable/disable dumping these info messages to the console.
+          if (ret == SQL_SUCCESS_WITH_INFO ) {
+            char errorMessage[512];
+            char errorSQLState[128];
+            SQLError(self->m_hEnv, self->m_hDBC, prep_req->hSTMT,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+            
+            printf("UV_Query => %s\n", errorMessage);
+            printf("UV_Query => %s\n", errorSQLState);
+          }
+
+          if (ret == SQL_ERROR)  {
+            objError = Object::New();
+
+            char errorMessage[512];
+            char errorSQLState[128];
+            SQLError(self->m_hEnv, self->m_hDBC, prep_req->hSTMT,(SQLCHAR *)errorSQLState,NULL,(SQLCHAR *)errorMessage, sizeof(errorMessage), NULL);
+            
+            errorCount++;
+            objError->Set(String::New("state"), String::New(errorSQLState));
+            objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+            objError->Set(String::New("message"), String::New(errorMessage));
+            objError->Set(String::New("query"), String::New(prep_req->sql));
+            
+            //emit an error event immidiately.
+            Local<Value> args[1];
+            args[0] = objError;
+            prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
+            
+            break;
+          }
+          
+          if (ret == SQL_NO_DATA) {
+            break;
+          }
+
+          for(int i = 0; i < colCount; i++) {
+            tuple->Set( String::New((const char *) columns[i].name),
+                        GetColumnValue( prep_req->hSTMT, columns[i], buf, MAX_VALUE_SIZE - 1));
+          }
+          
+          rows->Set(Integer::New(count), tuple);
+          count++;
+        }
+        
+        for(int i = 0; i < colCount; i++) {
+          delete [] columns[i].name;
+        }
+
+        delete [] columns;
+      }
+      
+      //move to the next result set
+      ret = SQLMoreResults( prep_req->hSTMT );
+      
+      //Only trigger an emit if there are columns OR if this is the last result and none others have been emitted
+      //odbc will process individual statments like select @something = 1 as a recordset even though it doesn't have
+      //any columns. We don't want to emit those unless there are actually columns
+      if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
+        emitCount++;
+        
+        Local<Value> args[3];
+        
+        if (errorCount) {
+          args[0] = objError; //(objError->IsUndefined()) ? Undefined() : ;
+        }
+        else {
+          args[0] = Local<Value>::New(Null());
+        }
+        
+        args[1] = rows;
+        //true or false, are there more result sets to follow this emit?
+        args[2] = Local<Boolean>::New(( ret == SQL_SUCCESS ) ? True() : False() ); 
+        
+        prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
+      }
+    }
+    while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
+  //} //end of malloc check
+cleanupshutdown:
+  TryCatch try_catch;
+  
+  self->Unref();
+  
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+  
+  SQLFreeHandle(SQL_HANDLE_STMT,  prep_req->hSTMT);
+  
+  free(buf);
+  prep_req->cb.Dispose();
+  free(prep_req->sql);
+  free(prep_req->catalog);
+  free(prep_req->schema);
+  free(prep_req->table);
+  free(prep_req->type);
+  free(prep_req);
+  free(req);
+  scope.Close(Undefined());
+}
+
+void ODBC::UV_QueryAll(uv_work_t* req) {
+  query_request* prep_req = (query_request *)(req->data);
+  
+  Parameter prm;
+  SQLRETURN ret;
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+
+  SQLAllocHandle( SQL_HANDLE_STMT, prep_req->dbo->m_hDBC, &prep_req->hSTMT );
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+
+  //check to see if should excute a direct or a parameter bound query
+  if (!prep_req->paramCount) {
+    // execute the query directly
+    ret = SQLExecDirect( prep_req->hSTMT,(SQLCHAR *)prep_req->sql, strlen(prep_req->sql) );
+  }
+  else {
+    // prepare statement, bind parameters and execute statement 
+    ret = SQLPrepare(prep_req->hSTMT, (SQLCHAR *)prep_req->sql, strlen(prep_req->sql));
+    
+    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+      for (int i = 0; i < prep_req->paramCount; i++) {
+        prm = prep_req->params[i];
+        
+        ret = SQLBindParameter(prep_req->hSTMT, i + 1, SQL_PARAM_INPUT, prm.c_type, prm.type, prm.size, 0, prm.buffer, prm.buffer_length, &prm.length);
+        if (ret == SQL_ERROR) {break;}
+      }
+
+      if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+        ret = SQLExecute(prep_req->hSTMT);
+      }
+    }
+    
+    // free parameters
+    //
+    for (int i = 0; i < prep_req->paramCount; i++) {
+      if (prm = prep_req->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(prep_req->params);
+  }
+
+  prep_req->result = ret; // this will be checked later in UV_AfterQuery
+}
+
+Handle<Value> ODBC::QueryAll(const Arguments& args) {
+  HandleScope scope;
+
+  REQ_STR_ARG(0, sql);
+  
+  Local<Function> cb; 
+
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
+
+  if (!prep_req) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  // populate prep_req->params if parameters were supplied
+  //
+  if (args.Length() > 2) {
+      if ( !args[1]->IsArray() ) {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 1 must be an Array"))
+           );
+      }
+      else if ( !args[2]->IsFunction() ) {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 2 must be a Function"))
+           );
+      }
+
+      cb = Local<Function>::Cast(args[2]);
+      prep_req->params = GetParametersFromArray(Local<Array>::Cast(args[1]), &prep_req->paramCount);
+  }
+  else {
+      if ( !args[1]->IsFunction() ) {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 1 must be a Function"))
+           );
+      }
+
+      cb = Local<Function>::Cast(args[1]);
+
+      prep_req->paramCount = 0;
+  }
+
+  prep_req->sql = (char *) malloc(sql.length() +1);
+  prep_req->catalog = NULL;
+  prep_req->schema = NULL;
+  prep_req->table = NULL;
+  prep_req->type = NULL;
+  prep_req->column = NULL;
+  prep_req->cb = Persistent<Function>::New(cb);
+  
+  strcpy(prep_req->sql, *sql);
+  
+  prep_req->dbo = dbo;
+  work_req->data = prep_req;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_QueryAll, UV_AfterQueryAll);
 
   dbo->Ref();
 
@@ -627,7 +895,7 @@ Handle<Value> ODBC::Tables(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(3, type);
   Local<Function> cb = Local<Function>::Cast(args[4]);
 
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
@@ -700,7 +968,7 @@ Handle<Value> ODBC::Columns(const Arguments& args) {
   REQ_STR_OR_NULL_ARG(3, column);
   Local<Function> cb = Local<Function>::Cast(args[4]);
   
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.This());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
   
@@ -869,7 +1137,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, char* buffer,
                                          int bufferLength) {
-  //HandleScope scope;
+  HandleScope scope;
   
   Local<Object> tuple = Object::New();
         
@@ -878,14 +1146,14 @@ Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
   
-  return tuple;
-  //return scope.Close(tuple);
+  //return tuple;
+  return scope.Close(tuple);
 }
 
 Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, char* buffer,
                                          int bufferLength) {
-  //HandleScope scope;
+  HandleScope scope;
   
   Local<Array> array = Array::New();
         
@@ -894,11 +1162,61 @@ Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
   
-  return array;
-  //return scope.Close(array);
+  //return array;
+  return scope.Close(array);
 }
 
-Persistent<FunctionTemplate> ODBC::constructor_template;
+Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
+  *paramCount = values->Length();
+  
+  Parameter * params = new Parameter[*paramCount];
+
+  for (int i = 0; i < *paramCount; i++) {
+    Local<Value> value = values->Get(i);
+    
+    params[i].size          = 0;
+    params[i].length        = SQL_NULL_DATA;
+    params[i].buffer_length = 0;
+    
+    if (value->IsString()) {
+      String::Utf8Value string(value);
+      
+      params[i].c_type        = SQL_C_CHAR;
+      params[i].type          = SQL_VARCHAR;
+      params[i].length        = SQL_NTS;
+      params[i].buffer        = malloc(string.length() + 1);
+      params[i].buffer_length = string.length() + 1;
+      params[i].size          = string.length() + 1;
+      
+      strcpy((char*)params[i].buffer, *string);
+    }
+    else if (value->IsNull()) {
+      params[i].c_type = SQL_C_DEFAULT;
+      params[i].type   = SQL_NULL_DATA;
+      params[i].length = SQL_NULL_DATA;
+    }
+    else if (value->IsInt32()) {
+      int64_t  *number = new int64_t(value->IntegerValue());
+      params[i].c_type = SQL_C_LONG;
+      params[i].type   = SQL_INTEGER;
+      params[i].buffer = number; 
+    }
+    else if (value->IsNumber()) {
+      double   *number = new double(value->NumberValue());
+      params[i].c_type = SQL_C_DOUBLE;
+      params[i].type   = SQL_DECIMAL;
+      params[i].buffer = number; 
+    }
+    else if (value->IsBoolean()) {
+      bool *boolean    = new bool(value->BooleanValue());
+      params[i].c_type = SQL_C_BIT;
+      params[i].type   = SQL_BIT;
+      params[i].buffer = boolean;
+    }
+  } 
+  
+  return params;
+}
 
 extern "C" void init (v8::Handle<Object> target) {
   ODBC::Init(target);

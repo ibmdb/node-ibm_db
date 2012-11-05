@@ -41,6 +41,15 @@ typedef struct {
   SQLUSMALLINT index;
 } Column;
 
+typedef struct {
+  SQLSMALLINT  c_type;
+  SQLSMALLINT  type;
+  SQLLEN       size;
+  void        *buffer;
+  SQLLEN       buffer_length;    
+  SQLLEN       length;
+} Parameter;
+
 class ODBC : public node::ObjectWrap {
   public:
     static Persistent<FunctionTemplate> constructor_template;
@@ -53,7 +62,9 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, char* buffer, int bufferLength);
     static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, char* buffer, int bufferLength);
-   
+    
+    static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
+    
   protected:
     ODBC() {}
 
@@ -61,8 +72,11 @@ class ODBC : public node::ObjectWrap {
 
     static Handle<Value> New(const Arguments& args);
 
+    //Property Getter/Setters
     static Handle<Value> ModeGetter(Local<String> property, const AccessorInfo &info);
     static void ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    
+    static Handle<Value> ConnectedGetter(Local<String> property, const AccessorInfo &info);
     
     static void UV_AfterOpen(uv_work_t* req);
     static void UV_Open(uv_work_t* req);
@@ -76,6 +90,10 @@ class ODBC : public node::ObjectWrap {
     static void UV_Query(uv_work_t* req);
     static Handle<Value> Query(const Arguments& args);
 
+    static void UV_AfterQueryAll(uv_work_t* req);
+    static void UV_QueryAll(uv_work_t* req);
+    static Handle<Value> QueryAll(const Arguments& args);
+    
     static void UV_Tables(uv_work_t* req);
     static Handle<Value> Tables(const Arguments& args);
 
@@ -91,6 +109,7 @@ class ODBC : public node::ObjectWrap {
     HDBC m_hDBC;
     SQLUSMALLINT canHaveMoreResults;
     int mode;
+    bool connected;
 };
 
 struct open_request {
@@ -107,14 +126,7 @@ struct close_request {
 };
 
 
-typedef struct {
-  SQLSMALLINT  c_type;
-  SQLSMALLINT  type;
-  SQLLEN       size;
-  void        *buffer;
-  SQLLEN       buffer_length;    
-  SQLLEN       length;
-} Parameter;
+
 
 struct query_request {
   Persistent<Function> cb;
