@@ -41,9 +41,9 @@ class ODBCResult : public node::ObjectWrap {
     static Handle<Value> New(const Arguments& args);
 
     //async methods
-    static Handle<Value> FetchOne(const Arguments& args);
-    static void UV_FetchOne(uv_work_t* work_req);
-    static void UV_AfterFetchOne(uv_work_t* work_req);
+    static Handle<Value> Fetch(const Arguments& args);
+    static void UV_Fetch(uv_work_t* work_req);
+    static void UV_AfterFetch(uv_work_t* work_req);
 
     static Handle<Value> FetchAll(const Arguments& args);
     static void UV_FetchAll(uv_work_t* work_req);

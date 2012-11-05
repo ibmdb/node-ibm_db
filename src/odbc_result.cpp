@@ -45,7 +45,7 @@ void ODBCResult::Init(v8::Handle<Object> target) {
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAll", FetchAll);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchOne", FetchOne);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetch", Fetch);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResults", MoreResults);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
 
@@ -104,7 +104,7 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   return scope.Close(args.Holder());
 }
 
-Handle<Value> ODBCResult::FetchOne(const Arguments& args) {
+Handle<Value> ODBCResult::Fetch(const Arguments& args) {
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
@@ -126,14 +126,14 @@ Handle<Value> ODBCResult::FetchOne(const Arguments& args) {
   req_fetch->objResult = objODBCResult;
   work_req->data = req_fetch;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_FetchOne, UV_AfterFetchOne);
+  uv_queue_work(uv_default_loop(), work_req, UV_Fetch, UV_AfterFetch);
 
   objODBCResult->Ref();
 
   return scope.Close(Undefined());
 }
 
-void ODBCResult::UV_FetchOne(uv_work_t* work_req) {
+void ODBCResult::UV_Fetch(uv_work_t* work_req) {
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
   
   ODBCResult* self = req_fetch->objResult->self();
@@ -141,7 +141,7 @@ void ODBCResult::UV_FetchOne(uv_work_t* work_req) {
   req_fetch->result = SQLFetch(self->m_hSTMT);
 }
 
-void ODBCResult::UV_AfterFetchOne(uv_work_t* work_req) {
+void ODBCResult::UV_AfterFetch(uv_work_t* work_req) {
   HandleScope scope;
   
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
