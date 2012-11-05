@@ -1,9 +1,9 @@
 var common = require("./common")
 	, odbc = require("../odbc.js")
-	, db = new odbc.Database()
+	, pool = new odbc.Pool()
 	, connectionString = common.connectionString
 	, connections = []
-	, connectCount = 500;
+	, connectCount = 10;
 
 openConnectionsUsingPool(connections);
 
