@@ -17,7 +17,7 @@ function issueQuery() {
   , time = new Date().getTime();
   
   for (var x = 0; x < iterations; x++) {
-    db.query("select 1 + 1 as test", cb);
+    db.queryResult("select 1 + 1 as test", cb);
   }
   
   function cb (err, result) {
@@ -30,7 +30,7 @@ function issueQuery() {
   }
   
   function fetchAll(rs) {
-    rs.fetchOne(function (err, data) {
+    rs.fetch(function (err, data) {
       if (err) {
         console.error(err);
         return finish();

@@ -17,7 +17,7 @@ function issueQuery() {
   , time = new Date().getTime();
   
   for (var x = 0; x < iterations; x++) {
-    db.query("select 1 + 1 as test", cb);
+    db.queryResult("select 1 + 1 as test", cb);
   }
   
   function cb (err, result) {
