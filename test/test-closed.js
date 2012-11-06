@@ -1,21 +1,30 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database();
+  , odbc = require("../odbc.js")
+  , db = new odbc.Database()
+  , assert = require("assert")
+  ;
+
+assert.equal(db.connected, false);
 
 db.query("select * from test", function (err, rs, moreResultSets) {
-	console.error(arguments);
+  assert.deepEqual(err, { message: 'Connection not open.' });
+  assert.deepEqual(rs, []);
+  assert.equal(moreResultSets, false);
+  assert.equal(db.connected, false);
 });
 
-db.open(common.connectionString, function(err)
-{
-	console.error('db.open callback');
-	
-	db.close(function () {
-		console.error('db.close callback');
-		
-		db.query("select * from test", function (err, rs, moreResultSets) {
-			console.error('db.query callback');
-			console.error(arguments);
-		});
-	});
+db.open(common.connectionString, function(err) {
+  assert.equal(err, null);
+  assert.equal(db.connected, true);
+  
+  db.close(function () {
+    assert.equal(db.connected, false);
+    
+    db.query("select * from test", function (err, rs, moreResultSets) {
+      assert.deepEqual(err, { message: 'Connection not open.' });
+      assert.deepEqual(rs, []);
+      assert.equal(moreResultSets, false);
+      assert.equal(db.connected, false);
+    });
+  });
 });

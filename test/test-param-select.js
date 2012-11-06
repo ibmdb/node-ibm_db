@@ -1,23 +1,22 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database();
+  , odbc = require("../odbc.js")
+  , db = new odbc.Database()
+  , assert = require("assert");
 
 
 db.open(common.connectionString, function (err) {
-	if (err) {
-		console.error(err);
-		return;
-	}
-
-	db.query("select * from test where col1 = ? "
-		, ["fish"]
-		, function (err, data, more) {
-			if (err) {
-				console.error(err);
-				process.exit(1);
-			}
-			
-			console.error(data);
-		}
-	);
+  assert.equal(err, null);
+  
+  db.query("select ? as TEXTCOL, ? as TEXTCOL2, ? as INTCOL "
+    , ["fish", "asdf", 1]
+    , function (err, data, more) {
+        db.close(function () {
+          assert.equal(err, null);
+          assert.deepEqual(data, [{
+            TEXTCOL: 'fish',
+            TEXTCOL2: 'asdf',
+            INTCOL: 1 
+          }]);
+        });
+    });
 });

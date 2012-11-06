@@ -1,15 +1,14 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database();
+  , odbc = require("../odbc.js")
+  , db = new odbc.Database()
+  , assert = require("assert")
+  ;
 
-db.open(common.connectionString, function(err)
-{
-	db.query("create table test (col1 varchar(50), col2 varchar(20))", function (err, data) {
-		if (err) {
-			console.error(err);
-			process.exit(1);
-		}
-		
-		console.error(data);
-	});
+db.open(common.connectionString, function(err) {
+  common.createTables(db, function (err, data, morefollowing) {
+    console.log(arguments);
+    db.close(function () { 
+      
+    });
+  });
 });
