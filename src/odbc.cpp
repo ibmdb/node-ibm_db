@@ -736,7 +736,11 @@ cleanupshutdown:
     FatalException(try_catch);
   }
   
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+
   SQLFreeHandle(SQL_HANDLE_STMT,  prep_req->hSTMT);
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   free(buf);
   prep_req->cb.Dispose();
