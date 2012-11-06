@@ -1,13 +1,14 @@
 var fs = require("fs")
   , spawn = require("child_process").spawn
   , errorCount = 0
-  , testCount = 0;
+  , testCount = 0
+  , testTimeout = 5000
   ;
 
 var filesDisabled = fs.readdirSync("./disabled");
 
 if (filesDisabled.length) {
-  console.log("\033[01;31mWarning\033[01;0m : there are %s disabled tests\n", filesDisabled.length);
+  console.log("\n\033[01;31mWarning\033[01;0m : there are %s disabled tests\n", filesDisabled.length);
 }
 
 var files = fs.readdirSync("./");
@@ -21,7 +22,9 @@ files.sort();
 doNextTest();
 
 function doTest(file) {
-  var test = spawn("node", [file]);
+  var test = spawn("node", [file])
+    , timer = null
+    ;
   
   process.stdout.write("Running test : " + file.replace(/\.js$/, ""));
   process.stdout.write(" ... ");
@@ -29,6 +32,8 @@ function doTest(file) {
   testCount += 1;
   
   test.on("exit", function (code, signal) {
+    clearTimeout(timer);
+    
     if (code != 0) {
       errorCount += 1;
       
@@ -42,6 +47,10 @@ function doTest(file) {
     
     doNextTest();
   });
+  
+  var timer = setTimeout(function () {
+    test.kill();
+  },testTimeout);
 }
 
 function doNextTest() {
@@ -54,11 +63,11 @@ function doNextTest() {
     //we're done, display results and exit accordingly
     
     if (errorCount) {
-      console.log("%s of %s tests failed", errorCount, testCount);
+      console.log("\nResults : %s of %s tests failed.\n", errorCount, testCount);
       process.exit(errorCount);
     }
     else {
-      console.log("All tests were successful");
+      console.log("Results : All tests were successful.");
     }
   }
 }
