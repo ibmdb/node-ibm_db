@@ -194,15 +194,21 @@ Database.prototype.tables = function(catalog, schema, table, type, callback) {
   var self = this;
   if (!self.queue) self.queue = [];
   
+  callback = callback || arguments[arguments.length - 1];
+  
+  var args = [catalog, schema, table, type, function () {
+    self.queue.shift();
+    self.executing = false;
+
+    if (callback) callback.apply(self, arguments);
+
+    self.processQueue();
+  }];
+  
   self.queue.push({
     context : self,
     method : self.dispatchTables,
-    catalog : (arguments.length > 1) ? catalog : "",
-    schema : (arguments.length > 2) ? schema : "",
-    table : (arguments.length > 3) ? table : "",
-    type : (arguments.length > 4) ? type : "",
-    callback : (arguments.length == 5) ? callback : arguments[arguments.length - 1],
-    args : arguments
+    args : args
   });
   
   self.processQueue();
@@ -212,15 +218,21 @@ Database.prototype.columns = function(catalog, schema, table, column, callback) 
   var self = this;
   if (!self.queue) self.queue = [];
   
+  callback = callback || arguments[arguments.length - 1];
+  
+  var args = [catalog, schema, table, column, function () {
+    self.queue.shift();
+    self.executing = false;
+    
+    if (callback) callback.apply(self, arguments);
+    
+    self.processQueue();
+  }];
+  
   self.queue.push({
     context : self,
     method : self.dispatchColumns,
-    catalog : (arguments.length > 1) ? catalog : "",
-    schema : (arguments.length > 2) ? schema : "",
-    table : (arguments.length > 3) ? table : "",
-    column : (arguments.length > 4) ? column : "",
-    callback : (arguments.length == 5) ? callback : arguments[arguments.length - 1],
-    args : arguments
+    args : args
   });
   
   self.processQueue();
