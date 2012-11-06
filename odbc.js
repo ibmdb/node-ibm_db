@@ -16,8 +16,13 @@
 
 var odbc = require("bindings")("odbc_bindings");
 
-exports.debug = false;
-exports.Database = Database;
+module.exports = function (options) {
+  return new Database(options);
+}
+
+module.exports.debug = false;
+
+module.exports.Database = Database;
 
 function Database () {
   var self = this;
@@ -269,7 +274,7 @@ Database.prototype.describe = function(obj, callback) {
   }
 };
 
-exports.Pool = Pool;
+module.exports.Pool = Pool;
 
 Pool.count = 0;
 
