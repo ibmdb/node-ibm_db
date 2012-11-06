@@ -10,9 +10,9 @@ db.open(common.connectionString, function(err) {
     common.createTables(db, function (err) {
       assert.equal(err, null);
       
-      db.query("insert into TEST (COLTEXT) values ('sandwich')", insertCallback);
-      db.query("insert into TEST (COLTEXT) values ('fish')", insertCallback);
-      db.query("insert into TEST (COLTEXT) values ('scarf')", insertCallback);
+      db.query("insert into " + common.tableName + " (COLTEXT) values ('sandwich')", insertCallback);
+      db.query("insert into " + common.tableName + " (COLTEXT) values ('fish')", insertCallback);
+      db.query("insert into " + common.tableName + " (COLTEXT) values ('scarf')", insertCallback);
       
     });
   });

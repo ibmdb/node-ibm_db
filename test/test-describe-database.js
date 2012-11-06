@@ -10,16 +10,11 @@ db.open(common.connectionString, function(err) {
   common.dropTables(db, function () {
     common.createTables(db, function () {
       db.describe({
-        database : 'MAIN'
+        database : common.databaseName
       }, function (err, data) {
         db.close(function () {
-          assert.deepEqual(data, [{
-            TABLE_QUALIFIER: null,
-            TABLE_OWNER: null,
-            TABLE_NAME: 'TEST',
-            TABLE_TYPE: 'TABLE',
-            REMARKS: null 
-          }]);
+          assert.equal(err, null);
+          assert.ok(data.length, "No records returned when attempting to describe the database");
         });
       });
     });

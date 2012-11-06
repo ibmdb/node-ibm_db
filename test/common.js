@@ -1,23 +1,26 @@
-module.exports.connectionString = "DRIVER={SQLite3};DATABASE=data/sqlite-test.db";
-//module.exports.connectionString = "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;";
-//module.exports.connectionString = process.env.ODBC_CONNETION_STRING;
+exports.connectionString = "DRIVER={SQLite3};DATABASE=data/sqlite-test.db";
+//exports.connectionString = "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;";
+//exports.connectionString = process.env.ODBC_CONNETION_STRING;
 
-module.exports.connectionObject = {
+exports.connectionObject = {
 	DRIVER : "{SQLITE3}",
 	DATABASE : "data/sqlite-test.db"
 };
 
-module.exports.connections = [
+exports.connections = [
 	{
 		DRIVER : "{SQLITE3}",
 		DATABASE : "data/sqlite-test.db"
 	}
 ];
 
-module.exports.dropTables = function (db, cb) {
-  db.query("drop table TEST", cb);
+exports.databaseName = "MAIN";
+exports.tableName = "NODE_ODBC_TEST_TABLE";
+
+exports.dropTables = function (db, cb) {
+  db.query("drop table " + exports.tableName, cb);
 };
 
-module.exports.createTables = function (db, cb) {
-  db.query("create table TEST(COLINT INTEGER, COLDATETIME DATETIME, COLTEXT TEXT)", cb);
+exports.createTables = function (db, cb) {
+  db.query("create table " + exports.tableName + " (COLINT INTEGER, COLDATETIME DATETIME, COLTEXT TEXT)", cb);
 };
