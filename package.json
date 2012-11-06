@@ -16,7 +16,8 @@
     "node": ">=0.7.0"
   },
   "scripts": {
-    "preinstall": "node-gyp configure build"
+    "preinstall": "node-gyp configure build",
+    "test" : "cd test && node run-tests.js"
   },
   "dependencies": {
     "bindings": "~1.0.0"
