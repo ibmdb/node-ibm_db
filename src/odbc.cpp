@@ -20,7 +20,6 @@
 #include <node_version.h>
 #include <time.h>
 #include <uv.h>
-#include <wchar.h>
 
 #include "odbc.h"
 #include "odbc_result.h"
@@ -940,7 +939,7 @@ Handle<Value> ODBC::Tables(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Tables, UV_AfterQuery);
+  uv_queue_work(uv_default_loop(), work_req, UV_Tables, UV_AfterQueryAll);
 
   dbo->Ref();
 
@@ -1013,7 +1012,7 @@ Handle<Value> ODBC::Columns(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Columns, UV_AfterQuery);
+  uv_queue_work(uv_default_loop(), work_req, UV_Columns, UV_AfterQueryAll);
   
   dbo->Ref();
 
