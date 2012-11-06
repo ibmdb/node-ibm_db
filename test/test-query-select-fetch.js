@@ -4,14 +4,6 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-process.on("uncaughtException", function (err) {
-  console.log(err);
-  
-  db.close(function () {
-    process.exit(1);
-  });
-});
-
 db.open(common.connectionString, function(err) {
   assert.equal(err, null);
   assert.equal(db.connected, true);

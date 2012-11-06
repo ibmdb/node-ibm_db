@@ -5,12 +5,6 @@ var common = require("./common")
   , insertCount = 0;
   ;
 
-process.on("uncaughtException", function (err) {
-  console.log("here", err);
-  
-  process.exit(1);
-});
-
 db.open(common.connectionString, function(err) {
   common.dropTables(db, function () {
     common.createTables(db, function (err) {
