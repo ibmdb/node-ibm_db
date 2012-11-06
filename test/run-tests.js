@@ -4,6 +4,12 @@ var fs = require("fs")
   , testCount = 0;
   ;
 
+var filesDisabled = fs.readdirSync("./disabled");
+
+if (filesDisabled.length) {
+  console.log("\033[01;31mWarning\033[01;0m : there are %s disabled tests\n", filesDisabled.length);
+}
+
 var files = fs.readdirSync("./");
 
 files = files.filter(function (file) {
@@ -17,7 +23,7 @@ doNextTest();
 function doTest(file) {
   var test = spawn("node", [file]);
   
-  process.stdout.write("Running test: " + file.replace(/\.js$/, ""));
+  process.stdout.write("Running test : " + file.replace(/\.js$/, ""));
   process.stdout.write(" ... ");
 
   testCount += 1;
