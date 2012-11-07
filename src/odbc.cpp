@@ -1163,8 +1163,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     default :
       ret = SQLGetData( hStmt, 
                       column.index, 
-                      SQL_C_WCHAR,
-                      (uint16_t *) buffer, 
+                      SQL_C_CHAR,
+                      (char *) buffer, 
                       bufferLength, 
                       (SQLLEN *) &len);
 
@@ -1174,7 +1174,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else {
         //return scope.Close(String::New(buffer));
-        return String::New(buffer);
+        return String::New((char*) buffer);
       }
   }
 }
