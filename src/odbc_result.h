@@ -25,7 +25,6 @@ class ODBCResult : public node::ObjectWrap {
    
    void Free();
    
-   
   protected:
     ODBCResult() {};
     

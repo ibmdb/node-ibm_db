@@ -61,11 +61,11 @@ ODBCResult::~ODBCResult() {
 }
 
 void ODBCResult::Free() {
-  if (m_hDBC) {
+  if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
-    SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
-    m_hDBC = NULL;
+    SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    m_hSTMT = NULL;
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
@@ -340,7 +340,6 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req) {
   self->Unref();
 }
 
-
 Handle<Value> ODBCResult::Close(const Arguments& args) {
   HandleScope scope;
   
@@ -361,133 +360,3 @@ Handle<Value> ODBCResult::MoreResults(const Arguments& args) {
 
   return scope.Close(SQL_SUCCEEDED(ret) ? True() : False());
 }
-
-/*
- * fetchAll
-
-//Loop through all result sets
-  do {
-    Local<Array> rows = Array::New();
-
-    //Retrieve and store all columns and their attributes
-    Column *columns = GetColumns(self->m_hStmt, &colCount);
-
-    if (colCount > 0) {
-      int count = 0;
-      
-      //I dont think odbc will tell how many rows are returned, loop until out
-      while(true) {
-        
-        ret = SQLFetch(self->m_hStmt);
-        
-        //TODO: Do something to enable/disable dumping these info messages to 
-        //the console.
-        if (ret == SQL_SUCCESS_WITH_INFO ) {
-          char errorMessage[512];
-          char errorSQLState[128];
-
-          SQLError( self->m_hEnv, 
-                    self->m_hDBC, 
-                    self->m_hStmt,
-                    (SQLCHAR *) errorSQLState,
-                    NULL,
-                    (SQLCHAR *) errorMessage, 
-                    sizeof(errorMessage), 
-                    NULL);
-
-          printf("UV_Query => %s\n", errorMessage);
-          printf("UV_Query => %s\n", errorSQLState);
-        }
-
-        if (ret == SQL_ERROR)  {
-          objError = Object::New();
-
-          char errorMessage[512];
-          char errorSQLState[128];
-
-          SQLError( self->m_hEnv, 
-                    self->m_hDBC, 
-                    self->m_hStmt,
-                    (SQLCHAR *) errorSQLState,
-                    NULL,
-                    (SQLCHAR *) errorMessage,
-                    sizeof(errorMessage),
-                    NULL);
-
-          errorCount++;
-          
-          objError->Set(String::New("state"), String::New(errorSQLState));
-          objError->Set(String::New("error"),
-                        String::New("[node-odbc] Error in SQLFetch"));
-          objError->Set(String::New("message"), String::New(errorMessage));
-          objError->Set(String::New("query"), String::New(prep_req->sql));
-          
-          //emit an error event immidiately.
-          Local<Value> args[1];
-          args[0] = objError;
-          prep_req->cb->Call(Context::GetCurrent()->Global(), 1, args);
-          
-          break;
-        }
-        
-        if (ret == SQL_NO_DATA) {
-          break;
-        }
-        
-        if (self->mode == MODE_CALLBACK_FOR_EACH) {
-          Handle<Value> args[2];
-          
-          args[0] = Null();
-          args[1] = GetRecordTuple( self->m_hStmt,
-                                    columns,
-                                    &colCount,
-                                    buf,
-                                    MAX_VALUE_SIZE - 1);
-          
-          prep_req->cb->Call(Context::GetCurrent()->Global(), 2, args);
-        }
-        else {
-          rows->Set( Integer::New(count), 
-                    GetRecordTuple( self->m_hStmt,
-                                    columns,
-                                    &colCount,
-                                    buf,
-                                    MAX_VALUE_SIZE - 1));
-        }
-        
-        count++;
-      }
-      
-      FreeColumns(columns, &colCount);
-    }
-    
-    //move to the next result set
-    ret = SQLMoreResults( self->m_hStmt );
-    
-    //Only trigger an emit if there are columns OR if this is the last result 
-    //and none others have been emitted odbc will process individual statments 
-    //like select @something = 1 as a recordset even though it doesn't have any
-    //columns. We don't want to emit those unless there are actually columns
-    if (colCount > 0 || ( ret != SQL_SUCCESS && emitCount == 0 )) {
-      emitCount++;
-      
-      Local<Value> args[3];
-      
-      if (errorCount) {
-        args[0] = objError;
-      }
-      else {
-        args[0] = Local<Value>::New(Null());
-      }
-      
-      args[1] = rows;
-
-      //true or false, are there more result sets to follow this emit?
-      args[2] = Local<Boolean>::New((ret == SQL_SUCCESS) ? True() : False()); 
-
-      prep_req->cb->Call(Context::GetCurrent()->Global(), 3, args);
-    }
-  }
-  while ( self->canHaveMoreResults && ret == SQL_SUCCESS );
-
- */
