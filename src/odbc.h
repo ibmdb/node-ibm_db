@@ -65,10 +65,12 @@ class ODBC : public node::ObjectWrap {
     
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
+    void Free();
+    
   protected:
     ODBC() {}
 
-    ~ODBC() {}
+    ~ODBC();
 
     static Handle<Value> New(const Arguments& args);
 

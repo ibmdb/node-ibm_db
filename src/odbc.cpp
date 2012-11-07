@@ -76,6 +76,29 @@ void ODBC::Init(v8::Handle<Object> target) {
   uv_mutex_init(&ODBC::g_odbcMutex);
 }
 
+ODBC::~ODBC() {
+  this->Free();
+}
+
+void ODBC::Free() {
+  if (m_hDBC || m_hEnv) {
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    if (m_hDBC) {
+      SQLDisconnect(m_hDBC);
+      SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
+      m_hDBC = NULL;
+    }
+    
+    if (m_hEnv) {
+      SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
+      m_hEnv = NULL;      
+    }
+
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
+}
+
 Handle<Value> ODBC::New(const Arguments& args) {
   HandleScope scope;
   ODBC* dbo = new ODBC();
@@ -309,13 +332,7 @@ void ODBC::UV_Close(uv_work_t* req) {
   close_request* close_req = (close_request *)(req->data);
   ODBC* dbo = close_req->dbo;
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
-  SQLDisconnect(dbo->m_hDBC);
-  SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
-  SQLFreeHandle(SQL_HANDLE_DBC, dbo->m_hDBC);
-  
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  dbo->Free();
 }
 
 Handle<Value> ODBC::Close(const Arguments& args) {
