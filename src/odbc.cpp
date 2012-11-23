@@ -1140,7 +1140,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   struct tm timeInfo = { 0 };
 
   //reset the buffer
-  buffer[0] = '\n';
+  buffer[0] = '\0';
 
   //TODO: SQLGetData can supposedly return multiple chunks, need to do this to 
   //retrieve large fields
