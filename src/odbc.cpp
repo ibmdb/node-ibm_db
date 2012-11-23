@@ -37,6 +37,7 @@ uv_async_t ODBC::g_async;
 Persistent<FunctionTemplate> ODBC::constructor_template;
 
 void ODBC::Init(v8::Handle<Object> target) {
+  DEBUG_PRINTF("ODBC::Init\n");
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -77,10 +78,12 @@ void ODBC::Init(v8::Handle<Object> target) {
 }
 
 ODBC::~ODBC() {
+  DEBUG_PRINTF("ODBC::~ODBC\n");
   this->Free();
 }
 
 void ODBC::Free() {
+  DEBUG_PRINTF("ODBC::Free\n");
   if (m_hDBC || m_hEnv) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
@@ -100,6 +103,7 @@ void ODBC::Free() {
 }
 
 Handle<Value> ODBC::New(const Arguments& args) {
+  DEBUG_PRINTF("ODBC::New\n");
   HandleScope scope;
   ODBC* dbo = new ODBC();
   
@@ -111,6 +115,7 @@ Handle<Value> ODBC::New(const Arguments& args) {
 }
 
 void ODBC::WatcherCallback(uv_async_t *w, int revents) {
+  DEBUG_PRINTF("ODBC::WatcherCallback\n");
   //i don't know if we need to do anything here
 }
 
@@ -145,6 +150,7 @@ Handle<Value> ODBC::ConnectedGetter(Local<String> property, const AccessorInfo &
 }
 
 void ODBC::UV_AfterOpen(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_AfterOpen\n");
   HandleScope scope;
   open_request* open_req = (open_request *)(req->data);
 
@@ -213,6 +219,7 @@ void ODBC::UV_AfterOpen(uv_work_t* req) {
 }
 
 void ODBC::UV_Open(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_Open\n");
   open_request* open_req = (open_request *)(req->data);
   ODBC* self = open_req->dbo->self();
   
@@ -261,6 +268,7 @@ void ODBC::UV_Open(uv_work_t* req) {
 }
 
 Handle<Value> ODBC::Open(const Arguments& args) {
+  DEBUG_PRINTF("ODBC::Open\n");
   HandleScope scope;
 
   REQ_STR_ARG(0, connection);
@@ -289,6 +297,7 @@ Handle<Value> ODBC::Open(const Arguments& args) {
 }
 
 void ODBC::UV_AfterClose(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_AfterClose\n");
   HandleScope scope;
 
   close_request* close_req = (close_request *)(req->data);
@@ -329,6 +338,7 @@ void ODBC::UV_AfterClose(uv_work_t* req) {
 }
 
 void ODBC::UV_Close(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_Close\n");
   close_request* close_req = (close_request *)(req->data);
   ODBC* dbo = close_req->dbo;
   
@@ -336,6 +346,7 @@ void ODBC::UV_Close(uv_work_t* req) {
 }
 
 Handle<Value> ODBC::Close(const Arguments& args) {
+  DEBUG_PRINTF("ODBC::Close\n");
   HandleScope scope;
 
   REQ_FUN_ARG(0, cb);

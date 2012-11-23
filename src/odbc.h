@@ -146,6 +146,12 @@ struct query_request {
   int result;
 };
 
+#ifdef DEBUG
+    #define DEBUG_PRINTF(...) fprintf(stdout, __VA_ARGS__)
+#else
+    #define DEBUG_PRINTF(...) (void)0
+#endif
+
 #define REQ_ARGS(N)                                                     \
   if (args.Length() < (N))                                              \
     return ThrowException(Exception::TypeError(                         \
