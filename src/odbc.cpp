@@ -496,16 +496,21 @@ void ODBC::UV_Query(uv_work_t* req) {
       for (int i = 0; i < prep_req->paramCount; i++) {
         prm = prep_req->params[i];
         
-        ret = SQLBindParameter( prep_req->hSTMT,
-                                i + 1,
-                                SQL_PARAM_INPUT,
-                                prm.c_type,
-                                prm.type,
-                                prm.size,
-                                0,
-                                prm.buffer,
-                                prm.buffer_length,
-                                &prm.length);
+        DEBUG_PRINTF("ODBC::UV_Query - param[%i]: c_type=%i type=%i "
+                     "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
+                     prm.buffer_length, prm.size, prm.length, &prep_req->params[i].length);
+
+        ret = SQLBindParameter( prep_req->hSTMT,    //StatementHandle
+                                i + 1,              //ParameterNumber
+                                SQL_PARAM_INPUT,    //InputOutputType
+                                prm.c_type,         //ValueType
+                                prm.type,           //ParameterType
+                                prm.size,           //ColumnSize
+                                0,                  //DecimalDigits
+                                prm.buffer,         //ParameterValuePtr
+                                prm.buffer_length,  //BufferLength
+                                //using &prm.length did not work here...
+                                &prep_req->params[i].length); //StrLen_or_IndPtr
         
         if (ret == SQL_ERROR) {break;}
       }
