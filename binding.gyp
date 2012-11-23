@@ -4,7 +4,9 @@
 			'target_name' : 'odbc_bindings',
 			'sources' : [ 
 				'src/odbc.cpp',
-                'src/odbc_result.cpp'
+				'src/odbc_result.cpp'
+			],
+			'defines' : [
 			],
 			'conditions' : [
 				[ 'OS == "linux"', {
