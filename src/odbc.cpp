@@ -68,10 +68,21 @@ void ODBC::Init(v8::Handle<Object> target) {
   
   scope.Close(Undefined());
   
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
   // Initialize uv_async so that we can prevent node from exiting
   uv_async_init( uv_default_loop(),
                  &ODBC::g_async,
                  ODBC::WatcherCallback);
+  
+  // Not sure if the init automatically calls uv_ref() because there is weird
+  // behavior going on. When ODBC::Init is called which initializes the 
+  // uv_async_t g_async above, there seems to be a ref which will keep it alive
+  // but we only want this available so that we can uv_ref() later on when
+  // we have a connection.
+  // so to work around this, I am possibly mistakenly calling uv_unref() once
+  // so that there are no references on the loop.
+  uv_unref((uv_handle_t *)&ODBC::g_async);
+#endif
   
   // Initialize the cross platform mutex provided by libuv
   uv_mutex_init(&ODBC::g_odbcMutex);
@@ -110,6 +121,8 @@ Handle<Value> ODBC::New(const Arguments& args) {
   dbo->Wrap(args.Holder());
   dbo->mode = 1;
   dbo->connected = false;
+  dbo->m_hDBC = NULL;
+  dbo->m_hEnv = NULL;
   
   return scope.Close(args.Holder());
 }
@@ -194,6 +207,13 @@ void ODBC::UV_AfterOpen(uv_work_t* req) {
 
   if (!err) {
     self->connected = true;
+    
+    //only uv_ref if the connection was successful
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
+    uv_ref((uv_handle_t *)&ODBC::g_async);
+#else
+    uv_ref(uv_default_loop());
+#endif
   }
   
   TryCatch try_catch;
@@ -206,12 +226,6 @@ void ODBC::UV_AfterOpen(uv_work_t* req) {
   }
 
   open_req->cb.Dispose();
-
-#if NODE_VERSION_AT_LEAST(0, 7, 9)
-  uv_ref((uv_handle_t *)&ODBC::g_async);
-#else
-  uv_ref(uv_default_loop());
-#endif
   
   free(open_req);
   free(req);
@@ -293,7 +307,7 @@ Handle<Value> ODBC::Open(const Arguments& args) {
 
   dbo->Ref();
 
-  return scope.Close(Undefined());
+  return scope.Close(args.Holder());
 }
 
 void ODBC::UV_AfterClose(uv_work_t* req) {
@@ -313,6 +327,13 @@ void ODBC::UV_AfterClose(uv_work_t* req) {
   }
   else {
     dbo->connected = false;
+    
+    //only unref if the connection was closed
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
+    uv_unref((uv_handle_t *)&ODBC::g_async);
+#else
+    uv_unref(uv_default_loop());
+#endif
   }
 
   TryCatch try_catch;
@@ -326,12 +347,6 @@ void ODBC::UV_AfterClose(uv_work_t* req) {
 
   close_req->cb.Dispose();
 
-#if NODE_VERSION_AT_LEAST(0, 7, 9)
-  uv_unref((uv_handle_t *)&ODBC::g_async);
-#else
-  uv_unref(uv_default_loop());
-#endif
-  
   free(close_req);
   free(req);
   scope.Close(Undefined());
@@ -549,7 +564,6 @@ Handle<Value> ODBC::Query(const Arguments& args) {
       }
   
       cb = Local<Function>::Cast(args[2]);
-      
       prep_req->params = GetParametersFromArray(Local<Array>::Cast(args[1]), &prep_req->paramCount);
   }
   else {
