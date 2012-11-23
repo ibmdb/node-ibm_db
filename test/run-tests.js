@@ -22,7 +22,7 @@ files.sort();
 doNextTest();
 
 function doTest(file) {
-  var test = spawn("node", [file])
+  var test = spawn("node", ['--expose_gc',file])
     , timer = null
     ;
   
