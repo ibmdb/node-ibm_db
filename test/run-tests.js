@@ -24,6 +24,7 @@ doNextTest();
 function doTest(file) {
   var test = spawn("node", ['--expose_gc',file])
     , timer = null
+    , timedOut = false;
     ;
   
   process.stdout.write("Running test : " + file.replace(/\.js$/, ""));
@@ -38,6 +39,10 @@ function doTest(file) {
       errorCount += 1;
       
       process.stdout.write("\033[01;31mfail \033[01;0m ");
+      
+      if (timedOut) {
+        process.stdout.write("(Timed Out)");
+      }
     }
     else {
       process.stdout.write("\033[01;32msuccess \033[01;0m ");
@@ -49,6 +54,7 @@ function doTest(file) {
   });
   
   var timer = setTimeout(function () {
+    timedOut = true;
     test.kill();
   },testTimeout);
 }
