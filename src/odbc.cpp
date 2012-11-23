@@ -796,6 +796,7 @@ cleanupshutdown:
 }
 
 void ODBC::UV_QueryAll(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_QueryAll\n");
   query_request* prep_req = (query_request *)(req->data);
   
   Parameter prm;
@@ -820,6 +821,10 @@ void ODBC::UV_QueryAll(uv_work_t* req) {
       for (int i = 0; i < prep_req->paramCount; i++) {
         prm = prep_req->params[i];
         
+        DEBUG_PRINTF("ODBC::UV_QueryAll - param[%i]: c_type=%i type=%i "
+                     "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
+                     prm.buffer_length, prm.size, prm.length, &prep_req->params[i].length);
+
         ret = SQLBindParameter( prep_req->hSTMT,    //StatementHandle
                                 i + 1,              //ParameterNumber
                                 SQL_PARAM_INPUT,    //InputOutputType
@@ -829,7 +834,8 @@ void ODBC::UV_QueryAll(uv_work_t* req) {
                                 0,                  //DecimalDigits
                                 prm.buffer,         //ParameterValuePtr
                                 prm.buffer_length,  //BufferLength
-                                &prm.length);       //StrLen_or_IndPtr
+                                //using &prm.length did not work here...
+                                &prep_req->params[i].length); //StrLen_or_IndPtr
 
         if (ret == SQL_ERROR) {
           break;
@@ -847,7 +853,7 @@ void ODBC::UV_QueryAll(uv_work_t* req) {
       if (prm = prep_req->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
           case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
         }
@@ -1095,7 +1101,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     columns[i].name = new unsigned char[MAX_FIELD_SIZE];
     
     //set the first byte of name to \0 instead of memsetting the entire buffer
-    columns[i].name[0] = '\n';
+    columns[i].name[0] = '\0';
     
     //get the column name
     ret = SQLColAttribute( hStmt,
@@ -1134,8 +1140,8 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
                                         uint16_t* buffer, int bufferLength) {
-  //HandleScope scope;
-  SQLLEN len;
+  HandleScope scope;
+  SQLLEN len = 0;
   
   struct tm timeInfo = { 0 };
 
@@ -1146,7 +1152,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   //retrieve large fields
   int ret; 
   
-  switch (column.type) {
+  switch ((int) column.type) {
     case SQL_NUMERIC :
     case SQL_DECIMAL :
     case SQL_INTEGER : 
@@ -1156,30 +1162,37 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     case SQL_REAL :
     case SQL_DOUBLE :
       ret = SQLGetData( hStmt, 
-                      column.index, 
-                      SQL_C_CHAR,
-                      (char *) buffer, 
-                      bufferLength, 
-                      (SQLLEN *) &len);
+                        column.index, 
+                        SQL_C_CHAR,
+                        (char *) buffer, 
+                        bufferLength, 
+                        &len);
+   
+      DEBUG_PRINTF("ODBC::GetColumnValue - Numeric: index=%i name=%s type=%i len=%i ret=%i\n", 
+                    column.index, column.name, column.type, len, ret);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        //return scope.Close(Null());
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
-        //return scope.Close(Number::New(atof(buffer)));
-        return Number::New(atof((char *) buffer));
+        return scope.Close(Number::New(atof((char *) buffer)));
+        //return Number::New(atof((char *) buffer));
       }
     case SQL_DATETIME :
     case SQL_TIMESTAMP :
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
+#ifdef _WIN32
       ret = SQLGetData( hStmt, 
-                      column.index, 
-                      SQL_C_CHAR,
-                      (char *) buffer, 
-                      bufferLength, 
-                      (SQLLEN *) &len);
+                        column.index, 
+                        SQL_C_CHAR,
+                        (char *) buffer, 
+                        bufferLength, 
+                        &len);
+
+      DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i len=%i\n", 
+                    column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
         //return scope.Close(Null());
@@ -1191,44 +1204,86 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //a negative value means that mktime() should use timezone information 
         //and system databases to attempt to determine whether DST is in effect 
         //at the specified time.
-        timeInfo.tm_isdst = -1; 
+        timeInfo.tm_isdst = -1;
           
         //return scope.Close(Date::New(double(mktime(&timeInfo)) * 1000));
-        return Date::New(double(mktime(&timeInfo)) * 1000);
+        return Date::New((double(mktime(&timeInfo)) * 1000));
       }
+#else
+      SQL_TIMESTAMP_STRUCT odbcTime;
+      
+      ret = SQLGetData( hStmt, 
+                        column.index, 
+                        SQL_C_TYPE_TIMESTAMP,
+                        &odbcTime, 
+                        bufferLength, 
+                        &len);
+
+      DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", 
+                    column.index, column.name, column.type, len);
+
+      if(ret == SQL_NULL_DATA || len < 0) {
+        return scope.Close(Null());
+        //return Null();
+      }
+      else {
+        timeInfo.tm_year = odbcTime.year - 1900;
+        timeInfo.tm_mon = odbcTime.month - 1;
+        timeInfo.tm_mday = odbcTime.day;
+        timeInfo.tm_hour = odbcTime.hour;
+        timeInfo.tm_min = odbcTime.minute;
+        timeInfo.tm_sec = odbcTime.second;
+
+        //a negative value means that mktime() should use timezone information 
+        //and system databases to attempt to determine whether DST is in effect 
+        //at the specified time.
+        timeInfo.tm_isdst = -1;
+          
+        return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
+                          + (odbcTime.fraction / 1000000)));
+//        return Date::New((double(timegm(&timeInfo)) * 1000) 
+//                          + (odbcTime.fraction / 1000000));
+      }
+#endif
     case SQL_BIT :
       //again, i'm not sure if this is cross database safe, but it works for 
       //MSSQL
       ret = SQLGetData( hStmt, 
-                      column.index, 
-                      SQL_C_CHAR,
-                      (char *) buffer, 
-                      bufferLength, 
-                      (SQLLEN *) &len);
+                        column.index, 
+                        SQL_C_CHAR,
+                        (char *) buffer, 
+                        bufferLength, 
+                        &len);
+
+      DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
+                    column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        //return scope.Close(Null());
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
-        //return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
-        return Boolean::New(( *buffer == '0') ? false : true );
+        return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
+        //return Boolean::New(( *buffer == '0') ? false : true );
       }
     default :
-      ret = SQLGetData( hStmt, 
-                      column.index, 
-                      SQL_C_CHAR,
-                      (char *) buffer, 
-                      bufferLength, 
-                      (SQLLEN *) &len);
+      ret = SQLGetData( hStmt,
+                        column.index,
+                        SQL_C_CHAR,
+                        (char *) buffer,
+                        bufferLength,
+                        &len);
+
+      DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
+                    column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        //return scope.Close(Null());
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
-        //return scope.Close(String::New(buffer));
-        return String::New((char*) buffer);
+        return scope.Close(String::New((char*) buffer));
+        //return String::New((char*) buffer);
       }
   }
 }
@@ -1266,6 +1321,7 @@ Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
 }
 
 Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
+  DEBUG_PRINTF("ODBC::GetParametersFromArray\n");
   *paramCount = values->Length();
   
   Parameter * params = new Parameter[*paramCount];
@@ -1277,40 +1333,71 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     params[i].length        = SQL_NULL_DATA;
     params[i].buffer_length = 0;
     
+    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %X\n", i, &params[i].length);
+
     if (value->IsString()) {
       String::Utf8Value string(value);
-      
+
       params[i].c_type        = SQL_C_CHAR;
       params[i].type          = SQL_VARCHAR;
-      params[i].length        = SQL_NTS;
-      params[i].buffer        = malloc(string.length() + 1);
       params[i].buffer_length = string.length() + 1;
-      params[i].size          = string.length() + 1;
-      
+      params[i].buffer        = malloc(params[i].buffer_length);
+      params[i].size          = params[i].buffer_length;
+      params[i].length        = SQL_NTS;//params[i].buffer_length;
+
       strcpy((char*)params[i].buffer, *string);
+
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i "
+                   "value=%s\n", i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length, 
+                   (char*) params[i].buffer);
     }
     else if (value->IsNull()) {
       params[i].c_type = SQL_C_DEFAULT;
-      params[i].type   = SQL_NULL_DATA;
+      params[i].type   = SQL_UNKNOWN_TYPE;
       params[i].length = SQL_NULL_DATA;
+
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNull(): params[%i] "
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                   i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsInt32()) {
       int64_t  *number = new int64_t(value->IntegerValue());
-      params[i].c_type = SQL_C_LONG;
-      params[i].type   = SQL_INTEGER;
-      params[i].buffer = number; 
+      params[i].c_type = SQL_C_SBIGINT;
+      params[i].type   = SQL_BIGINT;
+      params[i].buffer = number;
+      params[i].length = 0;
+      
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsInt32(): params[%i] "
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                   i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsNumber()) {
       double   *number = new double(value->NumberValue());
       params[i].c_type = SQL_C_DOUBLE;
       params[i].type   = SQL_DECIMAL;
       params[i].buffer = number; 
+      params[i].length = 0;
+      
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                   i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsBoolean()) {
       bool *boolean    = new bool(value->BooleanValue());
       params[i].c_type = SQL_C_BIT;
       params[i].type   = SQL_BIT;
       params[i].buffer = boolean;
+      params[i].length = 0;
+      
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsBoolean(): params[%i] "
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                   i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length);
     }
   } 
   
