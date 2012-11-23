@@ -1,13 +1,12 @@
 var odbc = require("../")
     , openCount = 100
-    , start = process.memoryUsage()
-    , stop = process.memoryUsage()
+    , start = process.memoryUsage().heapUsed
     , x = 100
     ;
 
 gc();
 
-start = process.memoryUsage();
+start = process.memoryUsage().heapUsed;
 
 for (x = 0; x < openCount; x++ ) {
     (function () {
@@ -17,6 +16,4 @@ for (x = 0; x < openCount; x++ ) {
 
 gc();
 
-stop = process.memoryUsage();
-
-console.log(start.heapUsed, stop.heapUsed);
+console.log(process.memoryUsage().heapUsed - start);
