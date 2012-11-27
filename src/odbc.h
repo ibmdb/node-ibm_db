@@ -48,6 +48,7 @@ typedef struct {
   void        *buffer;
   SQLLEN       buffer_length;    
   SQLLEN       length;
+  SQLSMALLINT  decimals;
 } Parameter;
 
 class ODBC : public node::ObjectWrap {

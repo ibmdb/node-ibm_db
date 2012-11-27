@@ -827,8 +827,8 @@ void ODBC::UV_QueryAll(uv_work_t* req) {
         prm = prep_req->params[i];
         
         DEBUG_PRINTF("ODBC::UV_QueryAll - param[%i]: c_type=%i type=%i "
-                     "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
-                     prm.buffer_length, prm.size, prm.length, &prep_req->params[i].length);
+                     "buffer_length=%i size=%i length=%i &length=%X decimals=%i\n", i, prm.c_type, prm.type, 
+                     prm.buffer_length, prm.size, prm.length, &prep_req->params[i].length, prm.decimals);
 
         ret = SQLBindParameter( prep_req->hSTMT,    //StatementHandle
                                 i + 1,              //ParameterNumber
@@ -836,7 +836,7 @@ void ODBC::UV_QueryAll(uv_work_t* req) {
                                 prm.c_type,         //ValueType
                                 prm.type,           //ParameterType
                                 prm.size,           //ColumnSize
-                                0,                  //DecimalDigits
+                                prm.decimals,       //DecimalDigits
                                 prm.buffer,         //ParameterValuePtr
                                 prm.buffer_length,  //BufferLength
                                 //using &prm.length did not work here...
@@ -1337,7 +1337,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     params[i].size          = 0;
     params[i].length        = SQL_NULL_DATA;
     params[i].buffer_length = 0;
-    
+    params[i].decimals      = 0;
+
     DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %X\n", i, &params[i].length);
 
     if (value->IsString()) {
@@ -1360,7 +1361,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     }
     else if (value->IsNull()) {
       params[i].c_type = SQL_C_DEFAULT;
-      params[i].type   = SQL_UNKNOWN_TYPE;
+      params[i].type   = SQL_VARCHAR;
       params[i].length = SQL_NULL_DATA;
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNull(): params[%i] "
@@ -1381,12 +1382,14 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                    params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsNumber()) {
-      double   *number = new double(value->NumberValue());
-      params[i].c_type = SQL_C_DOUBLE;
-      params[i].type   = SQL_DECIMAL;
-      params[i].buffer = number; 
-      params[i].length = 0;
-      
+      double   *number   = new double(value->NumberValue());
+      params[i].c_type   = SQL_C_DOUBLE;
+      params[i].type     = SQL_DECIMAL;
+      params[i].buffer   = number; 
+      params[i].length   = 0;
+      params[i].decimals = 6; //idk, i just chose this randomly.
+      params[i].size     = 10; //also just a guess
+
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
                    i, params[i].c_type, params[i].type,
