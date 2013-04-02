@@ -162,7 +162,7 @@ Handle<Value> ODBC::ConnectedGetter(Local<String> property, const AccessorInfo &
   return scope.Close(obj->connected ? True() : False());
 }
 
-void ODBC::UV_AfterOpen(uv_work_t* req) {
+void ODBC::UV_AfterOpen(uv_work_t* req, int status) {
   DEBUG_PRINTF("ODBC::UV_AfterOpen\n");
   HandleScope scope;
   open_request* open_req = (open_request *)(req->data);
@@ -310,7 +310,7 @@ Handle<Value> ODBC::Open(const Arguments& args) {
   return scope.Close(args.Holder());
 }
 
-void ODBC::UV_AfterClose(uv_work_t* req) {
+void ODBC::UV_AfterClose(uv_work_t* req, int status) {
   DEBUG_PRINTF("ODBC::UV_AfterClose\n");
   HandleScope scope;
 
@@ -387,7 +387,7 @@ Handle<Value> ODBC::Close(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-void ODBC::UV_AfterQuery(uv_work_t* req) {
+void ODBC::UV_AfterQuery(uv_work_t* req, int status) {
   query_request* prep_req = (query_request *)(req->data);
   
   HandleScope scope;
@@ -603,7 +603,7 @@ Handle<Value> ODBC::Query(const Arguments& args) {
   return  scope.Close(Undefined());
 }
 
-void ODBC::UV_AfterQueryAll(uv_work_t* req) {
+void ODBC::UV_AfterQueryAll(uv_work_t* req, int status) {
   query_request* prep_req = (query_request *)(req->data);
   
   HandleScope scope;

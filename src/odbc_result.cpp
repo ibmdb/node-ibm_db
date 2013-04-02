@@ -141,7 +141,7 @@ void ODBCResult::UV_Fetch(uv_work_t* work_req) {
   req_fetch->result = SQLFetch(self->m_hSTMT);
 }
 
-void ODBCResult::UV_AfterFetch(uv_work_t* work_req) {
+void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   HandleScope scope;
   
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
@@ -262,7 +262,7 @@ void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
   //req_fetch->result = SQLFetch(self->m_hSTMT);
 }
 
-void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req) {
+void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   HandleScope scope;
   
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);

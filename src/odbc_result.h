@@ -42,11 +42,11 @@ class ODBCResult : public node::ObjectWrap {
     //async methods
     static Handle<Value> Fetch(const Arguments& args);
     static void UV_Fetch(uv_work_t* work_req);
-    static void UV_AfterFetch(uv_work_t* work_req);
+    static void UV_AfterFetch(uv_work_t* work_req, int status);
 
     static Handle<Value> FetchAll(const Arguments& args);
     static void UV_FetchAll(uv_work_t* work_req);
-    static void UV_AfterFetchAll(uv_work_t* work_req);
+    static void UV_AfterFetchAll(uv_work_t* work_req, int status);
     
     //sync methods
     static Handle<Value> Close(const Arguments& args);

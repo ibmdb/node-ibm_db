@@ -81,19 +81,19 @@ class ODBC : public node::ObjectWrap {
     
     static Handle<Value> ConnectedGetter(Local<String> property, const AccessorInfo &info);
     
-    static void UV_AfterOpen(uv_work_t* req);
+    static void UV_AfterOpen(uv_work_t* req, int status);
     static void UV_Open(uv_work_t* req);
     static Handle<Value> Open(const Arguments& args);
 
-    static void UV_AfterClose(uv_work_t* req);
+    static void UV_AfterClose(uv_work_t* req, int status);
     static void UV_Close(uv_work_t* req);
     static Handle<Value> Close(const Arguments& args);
 
-    static void UV_AfterQuery(uv_work_t* req);
+    static void UV_AfterQuery(uv_work_t* req, int status);
     static void UV_Query(uv_work_t* req);
     static Handle<Value> Query(const Arguments& args);
 
-    static void UV_AfterQueryAll(uv_work_t* req);
+    static void UV_AfterQueryAll(uv_work_t* req, int status);
     static void UV_QueryAll(uv_work_t* req);
     static Handle<Value> QueryAll(const Arguments& args);
     
