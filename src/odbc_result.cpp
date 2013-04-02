@@ -126,7 +126,7 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
   req_fetch->objResult = objODBCResult;
   work_req->data = req_fetch;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Fetch, UV_AfterFetch);
+  uv_queue_work(uv_default_loop(), work_req, UV_Fetch, (uv_after_work_cb)UV_AfterFetch);
 
   objODBCResult->Ref();
 
@@ -247,7 +247,7 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
   fetch_Request->objResult = objODBCResult;
   work_req->data = fetch_Request;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_FetchAll, UV_AfterFetchAll);
+  uv_queue_work(uv_default_loop(), work_req, UV_FetchAll, (uv_after_work_cb)UV_AfterFetchAll);
 
   objODBCResult->Ref();
 

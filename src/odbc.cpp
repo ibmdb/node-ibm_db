@@ -303,7 +303,7 @@ Handle<Value> ODBC::Open(const Arguments& args) {
   
   work_req->data = open_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Open, UV_AfterOpen);
+  uv_queue_work(uv_default_loop(), work_req, UV_Open, (uv_after_work_cb)UV_AfterOpen);
 
   dbo->Ref();
 
@@ -380,7 +380,7 @@ Handle<Value> ODBC::Close(const Arguments& args) {
 
   work_req->data = close_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Close, UV_AfterClose);
+  uv_queue_work(uv_default_loop(), work_req, UV_Close, (uv_after_work_cb)UV_AfterClose);
 
   dbo->Ref();
 
@@ -596,7 +596,7 @@ Handle<Value> ODBC::Query(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Query, UV_AfterQuery);
+  uv_queue_work(uv_default_loop(), work_req, UV_Query, (uv_after_work_cb)UV_AfterQuery);
 
   dbo->Ref();
 
@@ -929,7 +929,7 @@ Handle<Value> ODBC::QueryAll(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_QueryAll, UV_AfterQueryAll);
+  uv_queue_work(uv_default_loop(), work_req, UV_QueryAll, (uv_after_work_cb)UV_AfterQueryAll);
 
   dbo->Ref();
 
@@ -1004,7 +1004,7 @@ Handle<Value> ODBC::Tables(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Tables, UV_AfterQueryAll);
+  uv_queue_work(uv_default_loop(), work_req, UV_Tables, (uv_after_work_cb)UV_AfterQueryAll);
 
   dbo->Ref();
 
@@ -1077,7 +1077,7 @@ Handle<Value> ODBC::Columns(const Arguments& args) {
   prep_req->dbo = dbo;
   work_req->data = prep_req;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Columns, UV_AfterQueryAll);
+  uv_queue_work(uv_default_loop(), work_req, UV_Columns, (uv_after_work_cb)UV_AfterQueryAll);
   
   dbo->Ref();
 
