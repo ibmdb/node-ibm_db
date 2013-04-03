@@ -1,4 +1,5 @@
 /*
+  Copyright (c) 2013, Dan VerWeire <dverweire@gmail.com>
   Copyright (c) 2010, Lee Smith <notwink@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -14,7 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-var odbc = require("bindings")("odbc_bindings");
+var odbc = require("bindings")("odbc_bindings")
+  ;
 
 module.exports = function (options) {
   return new Database(options);
@@ -23,7 +25,191 @@ module.exports = function (options) {
 module.exports.debug = false;
 
 module.exports.Database = Database;
+module.exports.ODBC = odbc.ODBC;
+module.exports.ODBCConnection = odbc.ODBCConnection;
+module.exports.ODBCStatement = odbc.ODBCStatement;
+module.exports.ODBCResult = odbc.ODBCResult;
 
+function Database() {
+  var self = this;
+  
+  self.odbc = new odbc.ODBC();
+  self.queue = new SimpleQueue();
+  
+  self.__defineGetter__("connected", function () {
+    if (!self.conn) {
+      return false;
+    }
+    
+    return self.conn.connected;
+  });
+}
+
+Database.prototype.open = function (connectionString, cb) {
+  var self = this;
+  
+  self.odbc.createConnection(function (err, conn) {
+    if (err) return cb(err);
+    
+    self.conn = conn;
+    
+    self.conn.open(connectionString, cb);
+  });
+};
+
+Database.prototype.close = function (cb) {
+  var self = this;
+  
+  self.conn.close(cb);
+};
+
+Database.prototype.query = function (sql, params, cb) {
+  var self = this;
+  
+  if (typeof(params) == 'function') {
+    cb = params;
+    params = null;
+  }
+  
+   if (!self.connected) {
+    return cb({ message : "Connection not open."}, [], false);
+  }
+  
+  self.queue.push(function (next) {
+    var stmt = self.conn.createStatementSync();
+    if (params) {
+      stmt.prepare(sql, function (err, result) {
+        if (err) {
+          cb(err);
+          
+          return next();
+        }
+        
+        stmt.bind(params, function (err, result) {
+          if (err) {
+            cb(err);
+            
+            return next();
+          }
+          
+          stmt.execute(function (err, result) {
+            if (err) {
+              cb(err);
+              
+              return next();
+            }
+            
+            result.fetchAll(function (err, data) {
+              stmt.closeSync();
+              
+              cb(err, data);
+              
+              return next();
+            });
+          });
+        });
+      });
+    }
+    else {                       
+      stmt.executeDirect(sql, function (err, result) {
+        if (err) {
+          cb(err);
+          
+          return next();
+        }
+        
+        result.fetchAll(function (err, data) {
+          stmt.closeSync();
+          
+          cb(err, data);
+          
+          return next();
+        });
+      });
+    }
+  });
+};
+
+Database.prototype.queryResult = function (sql, params, cb) {
+  var self = this;
+  
+  if (typeof(params) == 'function') {
+    cb = params;
+    params = null;
+  }
+  
+  if (!self.connected) {
+    return cb({ message : "Connection not open."}, [], false);
+  }
+  
+  self.queue.push(function (next) {
+    self.conn.createStatement(function (err, stmt) {
+       if (err) {
+        cb(err);
+        
+        return next();
+      }
+      
+      if (params) {
+        stmt.prepare(sql, function (err, result) {
+          if (err) {
+            cb(err);
+            
+            return next();
+          }
+          
+          stmt.bind(params, function (err, result) {
+            if (err) {
+              cb(err);
+              
+              return next();
+            }
+            
+            stmt.execute(cb);
+            
+            return next();
+          });
+        });
+      }
+      else {                       
+        stmt.executeDirect(sql, cb);
+        
+        return next();
+      }
+    });
+  });
+};
+
+function SimpleQueue() {
+  var self = this;
+  
+  self.fifo = [];
+  self.executing = false;
+}
+
+SimpleQueue.prototype.push = function (fn) {
+  var self = this;
+  
+  self.fifo.push(fn);
+  
+  self.maybeNext();
+};
+
+SimpleQueue.prototype.maybeNext = function () {
+  var self = this;
+  
+  if (!self.executing && self.fifo.length) {
+    var fn = self.fifo.shift();
+    
+    fn(function () {
+      self.executing = false;
+      
+      self.maybeNext();
+    });
+  }
+};
+
+/*
 function Database () {
   var self = this;
   var db = new odbc.Database();
@@ -162,12 +348,12 @@ Database.prototype.open = function(connectionString, callback) {
   });
 };
 
-/**
- * 
- * We must queue the close. If we don't then we may close during the middle of a query which 
- * could cause a segfault or other madness
- * 
- **/
+//
+// * 
+// * We must queue the close. If we don't then we may close during the middle of a query which 
+// * could cause a segfault or other madness
+// * 
+//
 
 Database.prototype.close = function(callback) {
   var self = this;
@@ -285,7 +471,7 @@ Database.prototype.describe = function(obj, callback) {
     self.tables(obj.database, obj.schema, null, obj.type || "table", callback);
   }
 };
-
+*/
 module.exports.Pool = Pool;
 
 Pool.count = 0;

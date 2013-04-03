@@ -48,12 +48,13 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   
   // Properties
   //instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
-  //instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
+  instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatement", CreateStatement);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatementSync", CreateStatementSync);
 
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCConnection"),
@@ -357,6 +358,35 @@ void ODBCConnection::UV_AfterClose(uv_work_t* req, int status) {
 
 
 /*
+ * CreateStatementSync
+ * 
+ */
+
+Handle<Value> ODBCConnection::CreateStatementSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::CreateStatementSync\n");
+  HandleScope scope;
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+   
+  HSTMT hSTMT;
+
+  SQLAllocHandle(
+    SQL_HANDLE_STMT, 
+    conn->m_hDBC, 
+    &hSTMT);
+  
+  Local<Value> params[3];
+  params[0] = External::New(conn->m_hENV);
+  params[1] = External::New(conn->m_hDBC);
+  params[2] = External::New(hSTMT);
+  
+  Persistent<Object> js_result(ODBCStatement::constructor_template->
+                            GetFunction()->NewInstance(3, params));
+  
+  return scope.Close(js_result);
+}
+
+/*
  * CreateStatement
  * 
  */
@@ -396,11 +426,23 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
+  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->conn->m_hENV,
+    data->conn->m_hDBC,
+    data->hSTMT
+  );
+  
   //allocate a new statment handle
   SQLAllocHandle( SQL_HANDLE_STMT, 
                   data->conn->m_hDBC, 
-                  &data->hSTMT );
+                  &data->hSTMT);
 
+  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->conn->m_hENV,
+    data->conn->m_hDBC,
+    data->hSTMT
+  );
+  
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
 
@@ -409,6 +451,12 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
   HandleScope scope;
 
   create_statement_work_data* data = (create_statement_work_data *)(req->data);
+
+  DEBUG_PRINTF("ODBCConnection::UV_AfterCreateStatement m_hDBC=%X m_hDBC=%X hSTMT=%X\n",
+    data->conn->m_hENV,
+    data->conn->m_hDBC,
+    data->hSTMT
+  );
   
   Local<Value> args[3];
   args[0] = External::New(data->conn->m_hENV);

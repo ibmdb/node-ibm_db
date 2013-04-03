@@ -62,6 +62,8 @@ class ODBCConnection : public node::ObjectWrap {
     static void UV_CreateStatement(uv_work_t* work_req);
     static void UV_AfterCreateStatement(uv_work_t* work_req, int status);
 
+    static Handle<Value> CreateStatementSync(const Arguments& args);
+    
     struct Fetch_Request {
       Persistent<Function> callback;
       ODBCConnection *objResult;

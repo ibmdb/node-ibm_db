@@ -47,8 +47,14 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "execute", Execute);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepareSync", PrepareSync);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "bind", Bind);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "bindSync", BindSync);
+  
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
 
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCStatement"),
@@ -195,6 +201,26 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   
   data->cb.Dispose();
   
+  if (data->stmt->paramCount) {
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < data->stmt->paramCount; i++) {
+      if (prm = data->stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    data->stmt->paramCount = 0;
+
+    free(data->stmt->params);
+  }
+  
   free(data);
   free(req);
   
@@ -306,6 +332,40 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
 }
 
 /*
+ * PrepareSync
+ * 
+ */
+
+Handle<Value> ODBCStatement::PrepareSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::PrepareSync\n");
+  
+  HandleScope scope;
+
+  REQ_STR_ARG(0, sql);
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+
+  SQLRETURN ret;
+  char *sql2;
+  
+  sql2 = (char *) malloc(sql.length() +1);
+  strcpy(sql2, *sql);
+  
+  ret = SQLPrepare(
+    stmt->m_hSTMT,
+    (SQLCHAR *) sql2, 
+    strlen(sql2));
+  
+  if (SQL_SUCCEEDED(ret)) {
+    return  scope.Close(True());
+  }
+  else {
+    //TODO: throw an error object
+    return  scope.Close(False());
+  }
+}
+
+/*
  * Prepare
  * 
  */
@@ -350,6 +410,12 @@ void ODBCStatement::UV_Prepare(uv_work_t* req) {
   
   prepare_work_data* data = (prepare_work_data *)(req->data);
 
+  DEBUG_PRINTF("ODBCStatement::UV_Prepare m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->stmt->m_hENV,
+    data->stmt->m_hDBC,
+    data->stmt->m_hSTMT
+  );
+  
   SQLRETURN ret;
   
   ret = SQLPrepare(
@@ -365,17 +431,20 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   
   prepare_work_data* data = (prepare_work_data *)(req->data);
   
-  HandleScope scope;
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPrepare m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->stmt->m_hENV,
+    data->stmt->m_hDBC,
+    data->stmt->m_hSTMT
+  );
   
-  //an easy reference to the statment object
-  ODBCStatement* self = data->stmt->self();
+  HandleScope scope;
 
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
      ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
-      self->m_hSTMT,
+      data->stmt->m_hENV,
+      data->stmt->m_hDBC,
+      data->stmt->m_hSTMT,
       data->cb);
   }
   else {
@@ -389,7 +458,7 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   
   TryCatch try_catch;
   
-  self->Unref();
+  data->stmt->Unref();
   
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
@@ -402,6 +471,76 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   free(req);
   
   scope.Close(Undefined());
+}
+
+/*
+ * BindSync
+ * 
+ */
+
+Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::BindSync\n");
+  
+  HandleScope scope;
+
+  if ( !args[0]->IsArray() ) {
+    return ThrowException(Exception::TypeError(
+              String::New("Argument 1 must be an Array"))
+    );
+  }
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+  
+  DEBUG_PRINTF("ODBCStatement::BindSync m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    stmt->m_hENV,
+    stmt->m_hDBC,
+    stmt->m_hSTMT
+  );
+  
+  stmt->params = ODBC::GetParametersFromArray(
+    Local<Array>::Cast(args[0]), 
+    &stmt->paramCount);
+  
+  SQLRETURN ret;
+  Parameter prm;
+  
+  for (int i = 0; i < stmt->paramCount; i++) {
+    prm = stmt->params[i];
+    
+    DEBUG_PRINTF(
+      "ODBC::BindSync - param[%i]: c_type=%i type=%i "
+      "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
+      i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
+      &stmt->params[i].length, prm.decimals, prm.buffer
+    );
+
+    ret = SQLBindParameter(
+      stmt->m_hSTMT,        //StatementHandle
+      i + 1,                      //ParameterNumber
+      SQL_PARAM_INPUT,            //InputOutputType
+      prm.c_type,                 //ValueType
+      prm.type,                   //ParameterType
+      prm.size,                   //ColumnSize
+      prm.decimals,               //DecimalDigits
+      prm.buffer,                 //ParameterValuePtr
+      prm.buffer_length,          //BufferLength
+      //using &prm.length did not work here...
+      &stmt->params[i].length);   //StrLen_or_IndPtr
+
+    if (ret == SQL_ERROR) {
+      break;
+    }
+  }
+
+  if (SQL_SUCCEEDED(ret)) {
+    return  scope.Close(True());
+  }
+  else {
+    //TODO: throw an error object
+    return  scope.Close(False());
+  }
+
+  return  scope.Close(Undefined());
 }
 
 /*
@@ -431,11 +570,17 @@ Handle<Value> ODBCStatement::Bind(const Arguments& args) {
 
   data->stmt = stmt;
   
+  DEBUG_PRINTF("ODBCStatement::Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->stmt->m_hENV,
+    data->stmt->m_hDBC,
+    data->stmt->m_hSTMT
+  );
+  
   data->cb = Persistent<Function>::New(cb);
   
-  data->params = ODBC::GetParametersFromArray(
+  data->stmt->params = ODBC::GetParametersFromArray(
     Local<Array>::Cast(args[0]), 
-    &data->paramCount);
+    &data->stmt->paramCount);
   
   work_req->data = data;
   
@@ -455,17 +600,23 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
   
   bind_work_data* data = (bind_work_data *)(req->data);
 
+  DEBUG_PRINTF("ODBCStatement::UV_Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    data->stmt->m_hENV,
+    data->stmt->m_hDBC,
+    data->stmt->m_hSTMT
+  );
+  
   SQLRETURN ret;
   Parameter prm;
   
-  for (int i = 0; i < data->paramCount; i++) {
-    prm = data->params[i];
+  for (int i = 0; i < data->stmt->paramCount; i++) {
+    prm = data->stmt->params[i];
     
     DEBUG_PRINTF(
       "ODBC::UV_Bind - param[%i]: c_type=%i type=%i "
-      "buffer_length=%i size=%i length=%i &length=%X decimals=%i\n",
+      "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
       i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
-      &data->params[i].length, prm.decimals
+      &data->stmt->params[i].length, prm.decimals, prm.buffer
     );
 
     ret = SQLBindParameter(
@@ -479,7 +630,7 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
       prm.buffer,                 //ParameterValuePtr
       prm.buffer_length,          //BufferLength
       //using &prm.length did not work here...
-      &data->params[i].length);   //StrLen_or_IndPtr
+      &data->stmt->params[i].length);   //StrLen_or_IndPtr
 
     if (ret == SQL_ERROR) {
       break;
@@ -487,20 +638,6 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
   }
 
   data->result = ret;
-  
-  //free memory
-  for (int i = 0; i < data->paramCount; i++) {
-    if (prm = data->params[i], prm.buffer != NULL) {
-      switch (prm.c_type) {
-        case SQL_C_CHAR:    free(prm.buffer);             break; 
-        case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-        case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-        case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-      }
-    }
-  }
-
-  free(data->params);
 }
 
 void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
@@ -546,6 +683,21 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
   scope.Close(Undefined());
 }
 
+/*
+ * CloseSync
+ */
+
+Handle<Value> ODBCStatement::CloseSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::Execute\n");
+  
+  HandleScope scope;
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+  
+  stmt->Free();
+
+  return  scope.Close(True());
+}
 
 /*
 void ODBC::UV_Tables(uv_work_t* req) {

@@ -1264,7 +1264,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     params[i].buffer_length = 0;
     params[i].decimals      = 0;
 
-    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %X\n", i, &params[i].length);
+    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %X\n",
+                 i, &params[i].length);
 
     if (value->IsString()) {
       String::Utf8Value string(value);
@@ -1303,9 +1304,9 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsInt32(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i "
-                   "value=%i\n", i, params[i].c_type, params[i].type,
+                   "value=%lld\n", i, params[i].c_type, params[i].type,
                    params[i].buffer_length, params[i].size, params[i].length,
-                   params[i].buffer);
+                   *number);
     }
     else if (value->IsNumber()) {
       double   *number   = new double(value->NumberValue());

@@ -1,5 +1,5 @@
 exports.connectionString = "DRIVER={SQLite3};DATABASE=data/sqlite-test.db";
-//exports.connectionString = "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;";
+exports.connectionString = "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;";
 //exports.connectionString = process.env.ODBC_CONNETION_STRING;
 
 exports.connectionObject = {

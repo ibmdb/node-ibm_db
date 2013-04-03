@@ -56,7 +56,9 @@ class ODBCStatement : public node::ObjectWrap {
     static void UV_AfterBind(uv_work_t* work_req, int status);
     
     //sync methods
-//     static Handle<Value> Close(const Arguments& args);
+    static Handle<Value> BindSync(const Arguments& args);
+    static Handle<Value> PrepareSync(const Arguments& args);
+    static Handle<Value> CloseSync(const Arguments& args);
     
     struct Fetch_Request {
       Persistent<Function> callback;
@@ -70,7 +72,9 @@ class ODBCStatement : public node::ObjectWrap {
     HENV m_hENV;
     HDBC m_hDBC;
     HSTMT m_hSTMT;
-    int results;
+    
+    Parameter *params;
+    int paramCount;
     
     uint16_t *buffer;
     int bufferLength;
@@ -101,8 +105,6 @@ struct prepare_work_data {
 struct bind_work_data {
   Persistent<Function> cb;
   ODBCStatement *stmt;
-  Parameter *params;
-  int paramCount;
   int result;
 };
 
