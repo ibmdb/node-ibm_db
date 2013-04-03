@@ -1,6 +1,5 @@
 /*
-  Copyright (c) 2012, Dan VerWeire<dverweire@gmail.com>
-  Copyright (c) 2010, Lee Smith<notwink@gmail.com>
+  Copyright (c) 2013, Dan VerWeire<dverweire@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +22,9 @@
 #include <uv.h>
 
 #include "odbc.h"
+#include "odbc_connection.h"
 #include "odbc_result.h"
+#include "odbc_statement.h"
 
 using namespace v8;
 using namespace node;
@@ -61,10 +62,15 @@ ODBCResult::~ODBCResult() {
 }
 
 void ODBCResult::Free() {
+  DEBUG_PRINTF("ODBCResult::Free\n");
+  
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
-    SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    //This doesn't actually deallocate the statement handle
+    //that should not be done by the result object; that should
+    //be done by the statement object
+    SQLFreeStmt(m_hSTMT, SQL_CLOSE);
     m_hSTMT = NULL;
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -76,6 +82,8 @@ void ODBCResult::Free() {
 }
 
 Handle<Value> ODBCResult::New(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::New\n");
+  
   HandleScope scope;
   
   REQ_EXT_ARG(0, js_henv);
@@ -105,6 +113,8 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
 }
 
 Handle<Value> ODBCResult::Fetch(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::Fetch\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
@@ -134,6 +144,8 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
 }
 
 void ODBCResult::UV_Fetch(uv_work_t* work_req) {
+  DEBUG_PRINTF("ODBCResult::UV_Fetch\n");
+  
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
   
   ODBCResult* self = req_fetch->objResult->self();
@@ -142,6 +154,8 @@ void ODBCResult::UV_Fetch(uv_work_t* work_req) {
 }
 
 void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetch\n");
+  
   HandleScope scope;
   
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
@@ -226,6 +240,8 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
 }
 
 Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::FetchAll\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
@@ -255,6 +271,7 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
 }
 
 void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll\n");
   //Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
   
   //ODBCResult* self = req_fetch->objResult->self();
@@ -263,6 +280,8 @@ void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
 }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll\n");
+  
   HandleScope scope;
   
   Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
@@ -341,6 +360,8 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
 }
 
 Handle<Value> ODBCResult::Close(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::Close\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
@@ -351,6 +372,8 @@ Handle<Value> ODBCResult::Close(const Arguments& args) {
 }
 
 Handle<Value> ODBCResult::MoreResults(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::MoreResults\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());

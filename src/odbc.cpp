@@ -1,4 +1,5 @@
 /*
+  Copyright (c) 2013, Dan VerWeire <dverweire@gmail.com>
   Copyright (c) 2010, Lee Smith<notwink@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -22,7 +23,9 @@
 #include <uv.h>
 
 #include "odbc.h"
+#include "odbc_connection.h"
 #include "odbc_result.h"
+#include "odbc_statement.h"
 
 #ifdef _WIN32
 #include "strptime.h"
@@ -44,26 +47,27 @@ void ODBC::Init(v8::Handle<Object> target) {
 
   // Constructor Template
   constructor_template = Persistent<FunctionTemplate>::New(t);
-  constructor_template->SetClassName(String::NewSymbol("Database"));
+  constructor_template->SetClassName(String::NewSymbol("ODBC"));
 
   // Reserve space for one Handle<Value>
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1);
   
   // Properties
-  instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
-  instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
+//   instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
+//   instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
   
   // Prototype Methods
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQueryAll", QueryAll);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
+     NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnection", CreateConnection);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchOpen", Open);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchClose", Close);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQuery", Query);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchQueryAll", QueryAll);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchTables", Tables);
+//   NODE_SET_PROTOTYPE_METHOD(constructor_template, "dispatchColumns", Columns);
 
   // Attach the Database Constructor to the target object
-  target->Set( v8::String::NewSymbol("Database"),
+  target->Set( v8::String::NewSymbol("ODBC"),
                constructor_template->GetFunction());
   
   scope.Close(Undefined());
@@ -95,14 +99,8 @@ ODBC::~ODBC() {
 
 void ODBC::Free() {
   DEBUG_PRINTF("ODBC::Free\n");
-  if (m_hDBC || m_hEnv) {
+  if (m_hEnv) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
-    if (m_hDBC) {
-      SQLDisconnect(m_hDBC);
-      SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
-      m_hDBC = NULL;
-    }
     
     if (m_hEnv) {
       SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
@@ -119,10 +117,11 @@ Handle<Value> ODBC::New(const Arguments& args) {
   ODBC* dbo = new ODBC();
   
   dbo->Wrap(args.Holder());
-  dbo->mode = 1;
-  dbo->connected = false;
-  dbo->m_hDBC = NULL;
   dbo->m_hEnv = NULL;
+  
+  int ret = SQLAllocEnv( &dbo->m_hEnv );
+  
+  //TODO: check if ret succeeded, if not, throw error to javascript land
   
   return scope.Close(args.Holder());
 }
@@ -132,6 +131,79 @@ void ODBC::WatcherCallback(uv_async_t *w, int revents) {
   //i don't know if we need to do anything here
 }
 
+/*
+ * CreateConnection
+ * 
+ */
+
+Handle<Value> ODBC::CreateConnection(const Arguments& args) {
+  DEBUG_PRINTF("ODBC::CreateConnection\n");
+  HandleScope scope;
+
+  REQ_FUN_ARG(0, cb);
+
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
+  
+  //initialize work request
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  //initialize our data
+  create_connection_work_data* data = 
+    (create_connection_work_data *) (calloc(1, sizeof(create_connection_work_data)));
+
+  data->cb = Persistent<Function>::New(cb);
+  data->dbo = dbo;
+
+  work_req->data = data;
+  
+  uv_queue_work(uv_default_loop(), work_req, UV_CreateConnection, (uv_after_work_cb)UV_AfterCreateConnection);
+
+  dbo->Ref();
+
+  return scope.Close(Undefined());
+}
+
+void ODBC::UV_CreateConnection(uv_work_t* req) {
+  DEBUG_PRINTF("ODBC::UV_CreateConnection\n");
+  
+  //get our work data
+  create_connection_work_data* data = (create_connection_work_data *)(req->data);
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+
+  //allocate a new connection handle
+  int ret = SQLAllocConnect(data->dbo->m_hEnv, &data->hDBC);
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+}
+
+void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
+  DEBUG_PRINTF("ODBC::UV_AfterCreateConnection\n");
+  HandleScope scope;
+
+  create_connection_work_data* data = (create_connection_work_data *)(req->data);
+  
+  Local<Value> args[2];
+  args[0] = External::New(data->dbo->m_hEnv);
+  args[1] = External::New(data->hDBC);
+  
+  Persistent<Object> js_result(ODBCConnection::constructor_template->
+                            GetFunction()->NewInstance(2, args));
+
+  args[0] = Local<Value>::New(Null());
+  args[1] = Local<Object>::New(js_result);
+
+  data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  
+  data->dbo->Unref();
+  data->cb.Dispose();
+
+  free(data);
+  free(req);
+  
+  scope.Close(Undefined());
+}
+/*
 Handle<Value> ODBC::ModeGetter(Local<String> property, const AccessorInfo &info) {
   HandleScope scope;
 
@@ -935,154 +1007,7 @@ Handle<Value> ODBC::QueryAll(const Arguments& args) {
 
   return  scope.Close(Undefined());
 }
-
-void ODBC::UV_Tables(uv_work_t* req) {
-  query_request* prep_req = (query_request *)(req->data);
-  
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->hSTMT );
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-  
-  SQLRETURN ret = SQLTables( 
-    prep_req->hSTMT, 
-    (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
-    (SQLCHAR *) prep_req->schema,   SQL_NTS, 
-    (SQLCHAR *) prep_req->table,   SQL_NTS, 
-    (SQLCHAR *) prep_req->type,   SQL_NTS
-  );
-  
-  // this will be checked later in UV_AfterQuery
-  prep_req->result = ret; 
-}
-
-Handle<Value> ODBC::Tables(const Arguments& args) {
-  HandleScope scope;
-
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, type);
-  Local<Function> cb = Local<Function>::Cast(args[4]);
-
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
-  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
-  
-  if (!prep_req) {
-    V8::LowMemoryNotification();
-    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
-  }
-
-  prep_req->sql = NULL;
-  prep_req->catalog = NULL;
-  prep_req->schema = NULL;
-  prep_req->table = NULL;
-  prep_req->type = NULL;
-  prep_req->column = NULL;
-  prep_req->cb = Persistent<Function>::New(cb);
-
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    prep_req->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(prep_req->catalog, *catalog);
-  }
-  
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    prep_req->schema = (char *) malloc(schema.length() +1);
-    strcpy(prep_req->schema, *schema);
-  }
-  
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    prep_req->table = (char *) malloc(table.length() +1);
-    strcpy(prep_req->table, *table);
-  }
-  
-  if (!String::New(*type)->Equals(String::New("null"))) {
-    prep_req->type = (char *) malloc(type.length() +1);
-    strcpy(prep_req->type, *type);
-  }
-  
-  prep_req->dbo = dbo;
-  work_req->data = prep_req;
-  
-  uv_queue_work(uv_default_loop(), work_req, UV_Tables, (uv_after_work_cb)UV_AfterQueryAll);
-
-  dbo->Ref();
-
-  return scope.Close(Undefined());
-}
-
-void ODBC::UV_Columns(uv_work_t* req) {
-  query_request* prep_req = (query_request *)(req->data);
-  
-  SQLAllocStmt(prep_req->dbo->m_hDBC,&prep_req->hSTMT );
-  
-  SQLRETURN ret = SQLColumns( 
-    prep_req->hSTMT, 
-    (SQLCHAR *) prep_req->catalog,   SQL_NTS, 
-    (SQLCHAR *) prep_req->schema,   SQL_NTS, 
-    (SQLCHAR *) prep_req->table,   SQL_NTS, 
-    (SQLCHAR *) prep_req->column,   SQL_NTS
-  );
-  
-  // this will be checked later in UV_AfterQuery
-  prep_req->result = ret;
-}
-
-Handle<Value> ODBC::Columns(const Arguments& args) {
-  HandleScope scope;
-
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, column);
-  Local<Function> cb = Local<Function>::Cast(args[4]);
-  
-  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
-  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  query_request* prep_req = (query_request *) calloc(1, sizeof(query_request));
-  
-  if (!prep_req) {
-    V8::LowMemoryNotification();
-    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
-  }
-
-  prep_req->sql = NULL;
-  prep_req->catalog = NULL;
-  prep_req->schema = NULL;
-  prep_req->table = NULL;
-  prep_req->type = NULL;
-  prep_req->column = NULL;
-  prep_req->cb = Persistent<Function>::New(cb);
-
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    prep_req->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(prep_req->catalog, *catalog);
-  }
-  
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    prep_req->schema = (char *) malloc(schema.length() +1);
-    strcpy(prep_req->schema, *schema);
-  }
-  
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    prep_req->table = (char *) malloc(table.length() +1);
-    strcpy(prep_req->table, *table);
-  }
-  
-  if (!String::New(*column)->Equals(String::New("null"))) {
-    prep_req->column = (char *) malloc(column.length() +1);
-    strcpy(prep_req->column, *column);
-  }
-  
-  prep_req->dbo = dbo;
-  work_req->data = prep_req;
-  
-  uv_queue_work(uv_default_loop(), work_req, UV_Columns, (uv_after_work_cb)UV_AfterQueryAll);
-  
-  dbo->Ref();
-
-  return scope.Close(Undefined());
-}
+*/
 
 Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
   SQLRETURN ret;
@@ -1377,9 +1302,10 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       params[i].length = 0;
       
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsInt32(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                   i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length);
+                   "c_type=%i type=%i buffer_length=%i size=%i length=%i "
+                   "value=%i\n", i, params[i].c_type, params[i].type,
+                   params[i].buffer_length, params[i].size, params[i].length,
+                   params[i].buffer);
     }
     else if (value->IsNumber()) {
       double   *number   = new double(value->NumberValue());
@@ -1412,9 +1338,40 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
   return params;
 }
 
+Handle<Value> ODBC::CallbackSQLError (HENV hENV, 
+                                     HDBC hDBC, 
+                                     HSTMT hSTMT, 
+                                     Persistent<Function> cb) {
+
+  Local<Object> objError = Object::New();
+  
+  char errorMessage[512];
+  char errorSQLState[128];
+  
+  SQLError( hENV,
+            hDBC,
+            hSTMT,
+            (SQLCHAR *) errorSQLState,
+            NULL,
+            (SQLCHAR *) errorMessage,
+            sizeof(errorMessage), 
+            NULL);
+  
+  objError->Set(String::New("state"), String::New(errorSQLState));
+  objError->Set(String::New("error"), String::New("[node-odbc] Error in "
+                                              "__Make This Dynamic__"));
+  objError->Set(String::New("message"), String::New(errorMessage));
+  
+  Local<Value> args[1];
+  args[0] = objError;
+  cb->Call(Context::GetCurrent()->Global(), 1, args);
+}
+
 extern "C" void init (v8::Handle<Object> target) {
   ODBC::Init(target);
   ODBCResult::Init(target);
+  ODBCConnection::Init(target);
+  ODBCStatement::Init(target);
 }
 
 NODE_MODULE(odbc_bindings, init)
