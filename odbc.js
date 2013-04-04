@@ -89,7 +89,7 @@ Database.prototype.query = function (sql, params, cb) {
       function fetchMore() {
         //TODO: keep calling back if there are more result sets
         result.fetchAll(function (err, data) {
-          var moreResults = result.moreResults();
+          var moreResults = result.moreResultsSync();
           
           cb(err, data, moreResults);
           

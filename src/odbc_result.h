@@ -48,11 +48,11 @@ class ODBCResult : public node::ObjectWrap {
     static void UV_AfterFetchAll(uv_work_t* work_req, int status);
     
     //sync methods
-    static Handle<Value> Close(const Arguments& args);
-    static Handle<Value> MoreResults(const Arguments& args);
+    static Handle<Value> CloseSync(const Arguments& args);
+    static Handle<Value> MoreResultsSync(const Arguments& args);
     
-    struct Fetch_Request {
-      Persistent<Function> callback;
+    struct fetch_work_data {
+      Persistent<Function> cb;
       ODBCResult *objResult;
       SQLRETURN result;
     };
@@ -68,5 +68,7 @@ class ODBCResult : public node::ObjectWrap {
     Column *columns;
     short colCount;
 };
+
+
 
 #endif
