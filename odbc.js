@@ -154,6 +154,8 @@ SimpleQueue.prototype.maybeNext = function () {
   if (!self.executing && self.fifo.length) {
     var fn = self.fifo.shift();
     
+    self.executing = true;
+    
     fn(function () {
       self.executing = false;
       
