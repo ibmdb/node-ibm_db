@@ -32,6 +32,7 @@ using namespace node;
 Persistent<FunctionTemplate> ODBCStatement::constructor_template;
 
 void ODBCStatement::Init(v8::Handle<Object> target) {
+  DEBUG_PRINTF("ODBCStatement::Init\n");
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);

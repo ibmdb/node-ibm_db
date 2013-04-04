@@ -32,6 +32,7 @@ using namespace node;
 Persistent<FunctionTemplate> ODBCResult::constructor_template;
 
 void ODBCResult::Init(v8::Handle<Object> target) {
+  DEBUG_PRINTF("ODBCResult::Init\n");
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -63,7 +64,7 @@ ODBCResult::~ODBCResult() {
 }
 
 void ODBCResult::Free() {
-  DEBUG_PRINTF("ODBCResult::Free\n");
+  DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X\n", m_hSTMT);
   
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
@@ -71,7 +72,10 @@ void ODBCResult::Free() {
     //This doesn't actually deallocate the statement handle
     //that should not be done by the result object; that should
     //be done by the statement object
-    SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+    //SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+    
+    SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
+    
     m_hSTMT = NULL;
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -97,6 +101,12 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   
   //create a new OBCResult object
   ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT);
+  
+  DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    objODBCResult->m_hENV,
+    objODBCResult->m_hDBC,
+    objODBCResult->m_hSTMT
+  );
   
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
@@ -227,6 +237,8 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
 
   free(data);
   free(work_req);
+  
+  data->objResult->Unref();
   
   return;
 }
