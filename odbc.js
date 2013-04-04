@@ -68,7 +68,7 @@ Database.prototype.query = function (sql, params, cb) {
   
   if (typeof(params) == 'function') {
     cb = params;
-    params = null;
+    params = [];
   }
   
    if (!self.connected) {
@@ -76,57 +76,32 @@ Database.prototype.query = function (sql, params, cb) {
   }
   
   self.queue.push(function (next) {
-    var stmt = self.conn.createStatementSync();
-    if (params) {
-      stmt.prepare(sql, function (err, result) {
-        if (err) {
-          cb(err);
-          
-          return next();
-        }
+    //ODBCConnection.query() is the fastest-path querying mechanism.
+    self.conn.query(sql, params, function (err, result) {
+      if (err) {
+        cb(err, [], false);
         
-        stmt.bind(params, function (err, result) {
-          if (err) {
-            cb(err);
-            
+        return next();
+      }
+      
+      fetchMore();
+      
+      function fetchMore() {
+        //TODO: keep calling back if there are more result sets
+        result.fetchAll(function (err, data) {
+          var moreResults = result.moreResults();
+          
+          cb(err, data, moreResults);
+          
+          if (moreResults) {
+            return fetchMore();
+          }
+          else {
             return next();
           }
-          
-          stmt.execute(function (err, result) {
-            if (err) {
-              cb(err);
-              
-              return next();
-            }
-            
-            result.fetchAll(function (err, data) {
-              stmt.closeSync();
-              
-              cb(err, data);
-              
-              return next();
-            });
-          });
         });
-      });
-    }
-    else {                       
-      stmt.executeDirect(sql, function (err, result) {
-        if (err) {
-          cb(err);
-          
-          return next();
-        }
-        
-        result.fetchAll(function (err, data) {
-          stmt.closeSync();
-          
-          cb(err, data);
-          
-          return next();
-        });
-      });
-    }
+      }
+    });
   });
 };
 
@@ -135,7 +110,7 @@ Database.prototype.queryResult = function (sql, params, cb) {
   
   if (typeof(params) == 'function') {
     cb = params;
-    params = null;
+    params = [];
   }
   
   if (!self.connected) {
@@ -143,39 +118,17 @@ Database.prototype.queryResult = function (sql, params, cb) {
   }
   
   self.queue.push(function (next) {
-    self.conn.createStatement(function (err, stmt) {
-       if (err) {
-        cb(err);
+    //ODBCConnection.query() is the fastest-path querying mechanism.
+    self.conn.query(sql, params, function (err, result) {
+      if (err) {
+        cb(err, null);
         
         return next();
       }
       
-      if (params) {
-        stmt.prepare(sql, function (err, result) {
-          if (err) {
-            cb(err);
-            
-            return next();
-          }
-          
-          stmt.bind(params, function (err, result) {
-            if (err) {
-              cb(err);
-              
-              return next();
-            }
-            
-            stmt.execute(cb);
-            
-            return next();
-          });
-        });
-      }
-      else {                       
-        stmt.executeDirect(sql, cb);
-        
-        return next();
-      }
+      cb(err, result);
+      
+      return next();
     });
   });
 };
