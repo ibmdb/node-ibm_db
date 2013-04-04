@@ -32,7 +32,7 @@ function issueQuery() {
         return finish();
       }
       
-      result.close();
+      result.closeSync();
         
       if (++count == iterations) {
         var elapsed = new Date().getTime() - time;

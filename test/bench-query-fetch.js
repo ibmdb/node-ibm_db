@@ -38,7 +38,7 @@ function issueQuery() {
       
       //if data is null, then no more data
       if (!data) {
-        rs.close();
+        rs.closeSync();
         
         if (++count == iterations) {
           var elapsed = new Date().getTime() - time;

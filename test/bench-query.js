@@ -13,7 +13,7 @@ db.open(common.connectionString, function(err){
 
 function issueQuery() {
 	var count = 0
-		, iterations = 1000
+		, iterations = 10000
 		, time = new Date().getTime();
 	
 	for (var x = 0; x < iterations; x++) {
