@@ -15,6 +15,9 @@
         [ 'OS == "linux"', {
           'libraries' : [ 
             '-lodbc' 
+          ],
+          'cflags' : [
+            '-g'
           ]
         }],
         [ 'OS == "mac"', {
