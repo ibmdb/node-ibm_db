@@ -36,13 +36,14 @@ function Database() {
   self.odbc = new odbc.ODBC();
   self.queue = new SimpleQueue();
   
-  self.__defineGetter__("connected", function () {
-    if (!self.conn) {
-      return false;
-    }
-    
-    return self.conn.connected;
-  });
+  self.connected = false;
+//   self.__defineGetter__("connected", function () {
+//     if (!self.conn) {
+//       return false;
+//     }
+//     
+//     return self.conn.connected;
+//   });
 }
 
 Database.prototype.open = function (connectionString, cb) {
@@ -53,14 +54,24 @@ Database.prototype.open = function (connectionString, cb) {
     
     self.conn = conn;
     
-    self.conn.open(connectionString, cb);
+    self.conn.open(connectionString, function (err, result) {
+      if (err) return cb(err);
+                   
+      self.connected = true;
+      
+      return cb(err, result);
+    });
   });
 };
 
 Database.prototype.close = function (cb) {
   var self = this;
   
-  self.conn.close(cb);
+  self.conn.close(function (err) {
+    self.connected = false;
+    
+    return cb(err);
+  });
 };
 
 Database.prototype.query = function (sql, params, cb) {
@@ -97,6 +108,8 @@ Database.prototype.query = function (sql, params, cb) {
             return fetchMore();
           }
           else {
+            result.closeSync();
+            
             return next();
           }
         });
