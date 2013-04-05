@@ -1079,29 +1079,145 @@ Handle<Value> ODBC::CallbackSQLError (HENV hENV,
                                      HDBC hDBC, 
                                      HSTMT hSTMT, 
                                      Persistent<Function> cb) {
+  HandleScope scope;
+  
+  Local<Object> objError = ODBC::GetSQLError(
+    hENV, 
+    hDBC, 
+    hSTMT,
+    (char *) "[node-odbc] Error in some module"
+  );
+  
+  Local<Value> args[1];
+  args[0] = objError;
+  cb->Call(Context::GetCurrent()->Global(), 1, args);
+  
+  return scope.Close(Undefined());
+}
 
+Local<Object> ODBC::GetSQLError (HENV hENV, 
+                                HDBC hDBC, 
+                                HSTMT hSTMT,
+                                char* message) {
+  HandleScope scope;
+  
   Local<Object> objError = Object::New();
   
   char errorMessage[512];
   char errorSQLState[128];
   
-  SQLError( hENV,
-            hDBC,
-            hSTMT,
-            (SQLCHAR *) errorSQLState,
-            NULL,
-            (SQLCHAR *) errorMessage,
-            sizeof(errorMessage), 
-            NULL);
+  SQLError(
+    hENV,
+    hDBC,
+    hSTMT,
+    (SQLCHAR *) errorSQLState,
+    NULL,
+    (SQLCHAR *) errorMessage,
+    sizeof(errorMessage), 
+    NULL);
   
   objError->Set(String::New("state"), String::New(errorSQLState));
-  objError->Set(String::New("error"), String::New("[node-odbc] Error in "
-                                              "__Make This Dynamic__"));
+  objError->Set(String::New("error"), String::New(message));
   objError->Set(String::New("message"), String::New(errorMessage));
   
-  Local<Value> args[1];
-  args[0] = objError;
-  cb->Call(Context::GetCurrent()->Global(), 1, args);
+  return scope.Close(objError);
+}
+
+Local<Object> ODBC::GetSQLDiagRecError (HDBC hDBC) {
+  HandleScope scope;
+  
+  Local<Object> objError = Object::New();
+  
+  SQLINTEGER i = 0;
+  SQLINTEGER native;
+  SQLSMALLINT len;
+  SQLRETURN ret;
+  char errorSQLState[7];
+  char errorMessage[256];
+
+  do {
+    ret = SQLGetDiagRec(
+      SQL_HANDLE_DBC, 
+      hDBC,
+      ++i, 
+      (SQLCHAR *) errorSQLState,
+      &native,
+      (SQLCHAR *) errorMessage,
+      sizeof(errorMessage),
+      &len);
+
+    if (SQL_SUCCEEDED(ret)) {
+      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+      objError->Set(String::New("message"), String::New(errorMessage));
+      objError->Set(String::New("state"), String::New(errorSQLState));
+    }
+  } while( ret == SQL_SUCCESS );
+  
+  return scope.Close(objError);
+}
+
+
+Local<Array> ODBC::GetAllRecordsSync (HENV hENV, 
+                                     HDBC hDBC, 
+                                     HSTMT hSTMT,
+                                     uint16_t* buffer,
+                                     int bufferLength) {
+  DEBUG_PRINTF("ODBC::GetAllRecordsSync\n");
+  
+  HandleScope scope;
+  
+  Local<Object> objError = Object::New();
+  
+  int count = 0;
+  int errorCount = 0;
+  short colCount = 0;
+  
+  Column* columns = GetColumns(hSTMT, &colCount);
+  
+  Local<Array> rows = Array::New();
+  
+  //loop through all records
+  while (true) {
+    SQLRETURN ret = SQLFetch(hSTMT);
+    
+    //check to see if there was an error
+    if (ret == SQL_ERROR)  {
+      //TODO: what do we do when we actually get an error here...
+      //should we throw??
+      
+      errorCount++;
+      
+      objError = ODBC::GetSQLError(
+        hENV, 
+        hDBC, 
+        hSTMT,
+        (char *) "[node-odbc] Error in ODBC::GetAllRecordsSync"
+      );
+      
+      break;
+    }
+    
+    //check to see if we are at the end of the recordset
+    if (ret == SQL_NO_DATA) {
+      ODBC::FreeColumns(columns, &colCount);
+      
+      break;
+    }
+
+    rows->Set(
+      Integer::New(count), 
+      ODBC::GetRecordTuple(
+        hSTMT,
+        columns,
+        &colCount,
+        buffer,
+        bufferLength)
+    );
+
+    count++;
+  }
+  //TODO: what do we do about errors!?!
+  scope.Close(rows);
 }
 
 extern "C" void init (v8::Handle<Object> target) {
