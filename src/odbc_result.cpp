@@ -51,6 +51,7 @@ void ODBCResult::Init(v8::Handle<Object> target) {
 
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResultsSync", MoreResultsSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
 
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCResult"),
@@ -268,6 +269,11 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
   
   cb = Local<Function>::Cast(args[0]);
   
+  data->rows = Persistent<Array>::New(Array::New());
+  data->errorCount = 0;
+  data->count = 0;
+  data->objError = Persistent<Object>::New(Object::New());
+  
   data->cb = Persistent<Function>::New(cb);
   data->objResult = objODBCResult;
   
@@ -285,26 +291,11 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
 
 void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
   DEBUG_PRINTF("ODBCResult::UV_FetchAll\n");
-  //fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
-  /*
-   * NOTE: Terriblness resides here:
-   * 
-   * FetchAll is not actually asynchronous at this time. In order to truly do this
-   * we would need to allocate memory here and load the entire recordset into
-   * some structure so that we can then loop over that structure in UV_AfterFetchAll
-   * 
-   * One reason that this is the case is that somewhere I read that you should
-   * not do anything with V8 data structure while you are in the thread pool.
-   * If that is not true, then we could just do all of UV_AfterFetchAll right here
-   * while we are in the thread pool.
-   * 
-   * For true async behaviour, use Fetch; one at a time.
-   * 
-   */
-
-  //data->result = SQLFetch(data->objResult->m_hSTMT);
-}
+  fetch_work_data* data = (fetch_work_data *)(work_req->data);
+  
+  data->result = SQLFetch(data->objResult->m_hSTMT);
+ }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll\n");
@@ -315,8 +306,96 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   
   ODBCResult* self = data->objResult->self();
   
+  bool doMoreWork = true;
+  
+  if (self->colCount == 0) {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+  
+  //check to see if there was an error
+  if (data->result == SQL_ERROR)  {
+    data->errorCount++;
+    
+    data->objError = Persistent<Object>::New(ODBC::GetSQLError(
+      self->m_hENV, 
+      self->m_hDBC, 
+      self->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+    ));
+    
+    doMoreWork = false;
+  }
+  //check to see if we are at the end of the recordset
+  else if (data->result == SQL_NO_DATA) {
+    doMoreWork = false;
+  }
+  else {
+
+    data->rows->Set(
+      Integer::New(data->count), 
+      ODBC::GetRecordTuple(
+        self->m_hSTMT,
+        self->columns,
+        &self->colCount,
+        self->buffer,
+        self->bufferLength)
+    );
+
+    data->count++;
+  }
+  
+  if (doMoreWork) {
+    //Go back to the thread pool and fetch more data!
+    uv_queue_work(
+      uv_default_loop(),
+      work_req, 
+      UV_FetchAll, 
+      (uv_after_work_cb)UV_AfterFetchAll);
+  }
+  else {
+    ODBC::FreeColumns(self->columns, &self->colCount);
+    
+    Handle<Value> args[2];
+    //TODO: we need to return the error object if there was an error
+    //however, on queries like "Drop...." the ret from SQLFetch is 
+    //SQL_ERROR, but there is not valid error message. I guess it's because
+    //there is acually no result set...
+    
+    //if (self->errorCount > 0) {
+    //  args[0] = objError;
+    //}
+    //else {
+      args[0] = Null();
+    //}
+    args[1] = data->rows;
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
+    
+    //TODO: Do we need to free self->rows somehow?
+    free(data);
+    free(work_req);
+
+    self->Unref(); 
+  }
+  
+  scope.Close(Undefined());
+}
+
+/*
+ * FetchAllSync
+ */
+
+Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::FetchAllSync\n");
+
+  HandleScope scope;
+  
+  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  
   Local<Object> objError = Object::New();
   
+  SQLRETURN ret;
   int count = 0;
   int errorCount = 0;
   
@@ -328,28 +407,18 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   
   //loop through all records
   while (true) {
-    SQLRETURN ret = SQLFetch(self->m_hSTMT);
+    ret = SQLFetch(self->m_hSTMT);
     
     //check to see if there was an error
     if (ret == SQL_ERROR)  {
       errorCount++;
       
-      char errorMessage[512];
-      char errorSQLState[128];
-
-      SQLError( self->m_hENV, 
-                self->m_hDBC, 
-                self->m_hSTMT,
-                (SQLCHAR *) errorSQLState,
-                NULL,
-                (SQLCHAR *) errorMessage,
-                sizeof(errorMessage),
-                NULL);
-
-      objError->Set(String::New("state"), String::New(errorSQLState));
-      objError->Set(String::New("error"),
-                    String::New("[node-odbc] Error in SQLFetch"));
-      objError->Set(String::New("message"), String::New(errorMessage));
+      objError = ODBC::GetSQLError(
+        self->m_hENV, 
+        self->m_hDBC, 
+        self->m_hSTMT,
+        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+      );
       
       break;
     }
@@ -374,17 +443,18 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     count++;
   }
   
-  Handle<Value> args[2];
-  args[0] = Null();
-  args[1] = rows;
-    
-  data->cb->Call(Context::GetCurrent()->Global(), 2, args);
-  data->cb.Dispose();
-  
-  free(data);
-  free(work_req);
-  
-  self->Unref();
+  //TODO: we need to return the error object if there was an error
+  //however, on queries like "Drop...." the ret from SQLFetch is 
+  //SQL_ERROR, but there is not valid error message. I guess it's because
+  //there is acually no result set...
+  //
+  //we will need to throw if there is a valid error.
+  //if (errorCount > 0) {
+  //  //THROW!
+  //  args[0] = objError;
+  //}
+
+  return scope.Close(rows);
 }
 
 Handle<Value> ODBCResult::CloseSync(const Arguments& args) {

@@ -50,11 +50,17 @@ class ODBCResult : public node::ObjectWrap {
     //sync methods
     static Handle<Value> CloseSync(const Arguments& args);
     static Handle<Value> MoreResultsSync(const Arguments& args);
+    static Handle<Value> FetchAllSync(const Arguments& args);
     
     struct fetch_work_data {
       Persistent<Function> cb;
       ODBCResult *objResult;
       SQLRETURN result;
+      
+      int count;
+      int errorCount;
+      Persistent<Array> rows;
+      Persistent<Object> objError;
     };
     
     ODBCResult *self(void) { return this; }
