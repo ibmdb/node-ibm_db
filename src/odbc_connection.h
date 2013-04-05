@@ -66,6 +66,12 @@ class ODBCConnection : public node::ObjectWrap {
     static void UV_Query(uv_work_t* req);
     static void UV_AfterQuery(uv_work_t* req, int status);
 
+    static Handle<Value> Columns(const Arguments& args);
+    static void UV_Columns(uv_work_t* req);
+    
+    static Handle<Value> Tables(const Arguments& args);
+    static void UV_Tables(uv_work_t* req);
+    
     //sync methods
     static Handle<Value> CreateStatementSync(const Arguments& args);
     static Handle<Value> QuerySync(const Arguments& args);
@@ -97,9 +103,17 @@ struct query_work_data {
   Persistent<Function> cb;
   ODBCConnection *conn;
   HSTMT hSTMT;
+  
   Parameter *params;
   int paramCount;
+  
   char *sql;
+  char *catalog;
+  char *schema;
+  char *table;
+  char *type;
+  char *column;
+  
   int result;
 };
 
@@ -115,7 +129,5 @@ struct close_connection_work_data {
   ODBCConnection *conn;
   int result;
 };
-
-
 
 #endif

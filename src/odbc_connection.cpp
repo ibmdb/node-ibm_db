@@ -58,6 +58,9 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "query", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "querySync", QuerySync);
   
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "columns", Columns);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "tables", Tables);
+  
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCConnection"),
                constructor_template->GetFunction());
@@ -649,7 +652,13 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   }
   
   data->cb.Dispose();
+  
   free(data->sql);
+  free(data->catalog);
+  free(data->schema);
+  free(data->table);
+  free(data->type);
+  free(data->column);
   free(data);
   free(req);
   
@@ -787,4 +796,182 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 
     return scope.Close(js_result);
   }
+}
+
+/*
+ * Tables
+ */
+
+Handle<Value> ODBCConnection::Tables(const Arguments& args) {
+  HandleScope scope;
+
+  REQ_STR_OR_NULL_ARG(0, catalog);
+  REQ_STR_OR_NULL_ARG(1, schema);
+  REQ_STR_OR_NULL_ARG(2, table);
+  REQ_STR_OR_NULL_ARG(3, type);
+  Local<Function> cb = Local<Function>::Cast(args[4]);
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  query_work_data* data = 
+    (query_work_data *) calloc(1, sizeof(query_work_data));
+  
+  if (!data) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  data->sql = NULL;
+  data->catalog = NULL;
+  data->schema = NULL;
+  data->table = NULL;
+  data->type = NULL;
+  data->column = NULL;
+  data->cb = Persistent<Function>::New(cb);
+
+  if (!String::New(*catalog)->Equals(String::New("null"))) {
+    data->catalog = (char *) malloc(catalog.length() +1);
+    strcpy(data->catalog, *catalog);
+  }
+  
+  if (!String::New(*schema)->Equals(String::New("null"))) {
+    data->schema = (char *) malloc(schema.length() +1);
+    strcpy(data->schema, *schema);
+  }
+  
+  if (!String::New(*table)->Equals(String::New("null"))) {
+    data->table = (char *) malloc(table.length() +1);
+    strcpy(data->table, *table);
+  }
+  
+  if (!String::New(*type)->Equals(String::New("null"))) {
+    data->type = (char *) malloc(type.length() +1);
+    strcpy(data->type, *type);
+  }
+  
+  data->conn = conn;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(), 
+    work_req, 
+    UV_Tables, 
+    (uv_after_work_cb) UV_AfterQuery);
+
+  conn->Ref();
+
+  return scope.Close(Undefined());
+}
+
+void ODBCConnection::UV_Tables(uv_work_t* req) {
+  query_work_data* data = (query_work_data *)(req->data);
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
+  SQLAllocStmt(data->conn->m_hDBC, &data->hSTMT );
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  
+  SQLRETURN ret = SQLTables( 
+    data->hSTMT, 
+    (SQLCHAR *) data->catalog,   SQL_NTS, 
+    (SQLCHAR *) data->schema,   SQL_NTS, 
+    (SQLCHAR *) data->table,   SQL_NTS, 
+    (SQLCHAR *) data->type,   SQL_NTS
+  );
+  
+  // this will be checked later in UV_AfterQuery
+  data->result = ret; 
+}
+
+
+
+/*
+ * Columns
+ */
+
+Handle<Value> ODBCConnection::Columns(const Arguments& args) {
+  HandleScope scope;
+
+  REQ_STR_OR_NULL_ARG(0, catalog);
+  REQ_STR_OR_NULL_ARG(1, schema);
+  REQ_STR_OR_NULL_ARG(2, table);
+  REQ_STR_OR_NULL_ARG(3, column);
+  
+  Local<Function> cb = Local<Function>::Cast(args[4]);
+  
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
+  
+  if (!data) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  data->sql = NULL;
+  data->catalog = NULL;
+  data->schema = NULL;
+  data->table = NULL;
+  data->type = NULL;
+  data->column = NULL;
+  data->cb = Persistent<Function>::New(cb);
+
+  if (!String::New(*catalog)->Equals(String::New("null"))) {
+    data->catalog = (char *) malloc(catalog.length() +1);
+    strcpy(data->catalog, *catalog);
+  }
+  
+  if (!String::New(*schema)->Equals(String::New("null"))) {
+    data->schema = (char *) malloc(schema.length() +1);
+    strcpy(data->schema, *schema);
+  }
+  
+  if (!String::New(*table)->Equals(String::New("null"))) {
+    data->table = (char *) malloc(table.length() +1);
+    strcpy(data->table, *table);
+  }
+  
+  if (!String::New(*column)->Equals(String::New("null"))) {
+    data->column = (char *) malloc(column.length() +1);
+    strcpy(data->column, *column);
+  }
+  
+  data->conn = conn;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(),
+    work_req, 
+    UV_Columns, 
+    (uv_after_work_cb)UV_AfterQuery);
+  
+  conn->Ref();
+
+  return scope.Close(Undefined());
+}
+
+void ODBCConnection::UV_Columns(uv_work_t* req) {
+  query_work_data* data = (query_work_data *)(req->data);
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
+  SQLAllocStmt(data->conn->m_hDBC, &data->hSTMT );
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  
+  SQLRETURN ret = SQLColumns( 
+    data->hSTMT, 
+    (SQLCHAR *) data->catalog,   SQL_NTS, 
+    (SQLCHAR *) data->schema,   SQL_NTS, 
+    (SQLCHAR *) data->table,   SQL_NTS, 
+    (SQLCHAR *) data->column,   SQL_NTS
+  );
+  
+  // this will be checked later in UV_AfterQuery
+  data->result = ret;
 }
