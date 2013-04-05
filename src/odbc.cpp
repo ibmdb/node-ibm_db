@@ -55,6 +55,7 @@ void ODBC::Init(v8::Handle<Object> target) {
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnection", CreateConnection);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnectionSync", CreateConnectionSync);
 
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBC"),
@@ -191,6 +192,35 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
   free(req);
   
   scope.Close(Undefined());
+}
+
+/*
+ * CreateConnectionSync
+ */
+
+Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBC::CreateConnectionSync\n");
+  HandleScope scope;
+
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
+   
+  HDBC hDBC;
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
+  //allocate a new connection handle
+  SQLRETURN ret = SQLAllocConnect(dbo->m_hEnv, &hDBC);
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+
+  Local<Value> params[2];
+  params[0] = External::New(dbo->m_hEnv);
+  params[1] = External::New(hDBC);
+
+  Persistent<Object> js_result(ODBCConnection::constructor_template->
+                            GetFunction()->NewInstance(2, params));
+
+  return scope.Close(js_result);
 }
 
 /*

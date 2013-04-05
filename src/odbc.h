@@ -87,6 +87,9 @@ class ODBC : public node::ObjectWrap {
     
     static void WatcherCallback(uv_async_t* w, int revents);
     
+    //sync methods
+    static Handle<Value> CreateConnectionSync(const Arguments& args);
+    
     ODBC *self(void) { return this; }
 
   protected:
