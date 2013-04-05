@@ -417,7 +417,8 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
         self->m_hENV, 
         self->m_hDBC, 
         self->m_hSTMT,
-        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
+          " your query did not have a result set."
       );
       
       break;
@@ -450,7 +451,7 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   //
   //we will need to throw if there is a valid error.
   if (errorCount > 0) {
-    ThrowException(Exception::Error(objError->Get(String::New("error"))->ToString()));
+    ThrowException(objError);
   }
   
   return scope.Close(rows);

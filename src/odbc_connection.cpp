@@ -782,7 +782,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       (char *) "[node-odbc] Error in ODBCConnection::QuerySync"
     );
     
-    ThrowException(Exception::Error(objError->Get(String::New("error"))->ToString()));
+    ThrowException(objError);
     
     return scope.Close(Undefined());
   }
