@@ -1,5 +1,5 @@
 var common = require("./common")
-, odbc = require("../odbc.js")
+, odbc = require("../")
 , openCallback = 0
 , closeCallback = 0
 , queryCallback = 0

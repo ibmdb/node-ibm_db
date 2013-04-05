@@ -1,5 +1,5 @@
 var common = require("./common")
-  , odbc = require("../odbc.js")
+  , odbc = require("../")
   , db = new odbc.Database()
   , assert = require("assert");
 
