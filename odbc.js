@@ -16,6 +16,7 @@
 */
 
 var odbc = require("bindings")("odbc_bindings")
+  , SimpleQueue = require("./simple-queue")
   ;
 
 module.exports = function (options) {
@@ -67,10 +68,13 @@ Database.prototype.open = function (connectionString, cb) {
 Database.prototype.close = function (cb) {
   var self = this;
   
-  self.conn.close(function (err) {
-    self.connected = false;
-    
-    return cb(err);
+  self.queue.push(function (next) {
+    self.conn.close(function (err) {
+      self.connected = false;
+      
+      cb(err);
+      return next();
+    });
   });
 };
 
@@ -166,34 +170,89 @@ Database.prototype.querySync = function (sql, params) {
   return data;
 };
 
-function SimpleQueue() {
+Database.prototype.columns = function(catalog, schema, table, column, callback) {
   var self = this;
+  if (!self.queue) self.queue = [];
   
-  self.fifo = [];
-  self.executing = false;
-}
+  callback = callback || arguments[arguments.length - 1];
+  
+  self.queue.push(function (next) {
+    self.conn.columns(catalog, schema, table, column, function (err, result) {
+      if (err) return callback(err, [], false);
 
-SimpleQueue.prototype.push = function (fn) {
-  var self = this;
-  
-  self.fifo.push(fn);
-  
-  self.maybeNext();
+      result.fetchAll(function (err, data) {
+        callback(err, data);
+        
+        return next();
+      });
+    });
+  });
 };
 
-SimpleQueue.prototype.maybeNext = function () {
+Database.prototype.tables = function(catalog, schema, table, type, callback) {
+  var self = this;
+  if (!self.queue) self.queue = [];
+  
+  callback = callback || arguments[arguments.length - 1];
+  
+  self.queue.push(function (next) {
+    self.conn.tables(catalog, schema, table, type, function (err, result) {
+      if (err) return callback(err, [], false);
+
+      result.fetchAll(function (err, data) {
+        callback(err, data);
+        
+        return next();
+      });
+    });
+  });
+};
+
+Database.prototype.describe = function(obj, callback) {
   var self = this;
   
-  if (!self.executing && self.fifo.length) {
-    var fn = self.fifo.shift();
-    
-    self.executing = true;
-    
-    fn(function () {
-      self.executing = false;
-      
-      self.maybeNext();
+  if (typeof(callback) != "function") {
+    throw({
+      error : "[node-odbc] Missing Arguments",
+      message : "You must specify a callback function in order for the describe method to work."
     });
+    
+    return false;
+  }
+  
+  if (typeof(obj) != "object") {
+    callback({
+      error : "[node-odbc] Missing Arguments",
+      message : "You must pass an object as argument 0 if you want anything productive to happen in the describe method."
+    }, []);
+    
+    return false;
+  }
+  
+  if (!obj.database) {
+    callback({
+      error : "[node-odbc] Missing Arguments",
+      message : "The object you passed did not contain a database property. This is required for the describe method to work."
+    }, []);
+    
+    return false;
+  }
+  
+  //set some defaults if they weren't passed
+  obj.schema = obj.schema || "%";
+  obj.type = obj.type || "table";
+  
+  if (obj.table && obj.column) {
+    //get the column details
+    self.columns(obj.database, obj.schema, obj.table, obj.column, callback);
+  }
+  else if (obj.table) {
+    //get the columns in the table
+    self.columns(obj.database, obj.schema, obj.table, "%", callback);
+  }
+  else {
+    //get the tables in the database
+    self.tables(obj.database, obj.schema, null, obj.type || "table", callback);
   }
 };
 
