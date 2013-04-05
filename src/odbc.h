@@ -85,34 +85,6 @@ class ODBC : public node::ObjectWrap {
     static void UV_CreateConnection(uv_work_t* work_req);
     static void UV_AfterCreateConnection(uv_work_t* work_req, int status);
     
-    //Property Getter/Setters
-/*    static Handle<Value> ModeGetter(Local<String> property, const AccessorInfo &info);
-    static void ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
-    
-    static Handle<Value> ConnectedGetter(Local<String> property, const AccessorInfo &info);
-    
-    static void UV_AfterOpen(uv_work_t* req, int status);
-    static void UV_Open(uv_work_t* req);
-    static Handle<Value> Open(const Arguments& args);
-
-    static void UV_AfterClose(uv_work_t* req, int status);
-    static void UV_Close(uv_work_t* req);
-    static Handle<Value> Close(const Arguments& args);
-
-    static void UV_AfterQuery(uv_work_t* req, int status);
-    static void UV_Query(uv_work_t* req);
-    static Handle<Value> Query(const Arguments& args);
-
-    static void UV_AfterQueryAll(uv_work_t* req, int status);
-    static void UV_QueryAll(uv_work_t* req);
-    static Handle<Value> QueryAll(const Arguments& args);
-    
-    static void UV_Tables(uv_work_t* req);
-    static Handle<Value> Tables(const Arguments& args);
-
-    static void UV_Columns(uv_work_t* req);
-    static Handle<Value> Columns(const Arguments& args);
-*/
     static void WatcherCallback(uv_async_t* w, int revents);
     
     ODBC *self(void) { return this; }
