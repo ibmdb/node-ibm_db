@@ -52,6 +52,7 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "openSync", OpenSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatement", CreateStatement);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatementSync", CreateStatementSync);
@@ -246,6 +247,95 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   free(data);
   free(req);
   scope.Close(Undefined());
+}
+
+/*
+ * OpenSync
+ */
+
+Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::OpenSync\n");
+  HandleScope scope;
+
+  REQ_STR_ARG(0, connection);
+
+  //get reference to the connection object
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+ 
+  Local<Object> objError;
+  SQLRETURN ret;
+  bool err = false;
+  char* connectionString;
+  char connstr[1024];
+  
+  //allocate memory for the connection string
+  connectionString = (char *) malloc(connection.length() +1);
+  
+  //copy the connection string to the work data
+  strcpy(connectionString, *connection);
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
+  //TODO: make this configurable
+  SQLSetConnectOption( conn->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
+
+  //Attempt to connect
+  ret = SQLDriverConnect( 
+    conn->m_hDBC, 
+    NULL,
+    (SQLCHAR*) connectionString,
+    strlen(connectionString),
+    (SQLCHAR*) connstr,
+    1024,
+    NULL,
+    SQL_DRIVER_NOPROMPT);
+
+  if (!SQL_SUCCEEDED(ret)) {
+    err = true;
+    
+    objError = ODBC::GetSQLDiagRecError(conn->self()->m_hDBC);
+  }
+  else {
+    HSTMT hStmt;
+    
+    //allocate a temporary statment
+    ret = SQLAllocStmt(conn->m_hDBC, &hStmt);
+
+    //try to determine if the driver can handle
+    //multiple recordsets
+    ret = SQLGetFunctions(
+      conn->m_hDBC,
+      SQL_API_SQLMORERESULTS, 
+      &conn->canHaveMoreResults);
+
+    if (!SQL_SUCCEEDED(ret)) {
+      conn->canHaveMoreResults = 0;
+    }
+  
+    //free the handle
+    ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
+    
+    conn->self()->connected = true;
+    
+    //only uv_ref if the connection was successful
+    #if NODE_VERSION_AT_LEAST(0, 7, 9)
+      uv_ref((uv_handle_t *)&ODBC::g_async);
+    #else
+      uv_ref(uv_default_loop());
+    #endif
+  }
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  
+  free(connectionString);
+
+  if (err) {
+    ThrowException(objError);
+    return scope.Close(False());
+  }
+  else {
+    return scope.Close(True());
+  }
 }
 
 /*
