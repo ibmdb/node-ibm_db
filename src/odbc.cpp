@@ -764,6 +764,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
   for (int i = 0; i < *colCount; i++) {
     //save the index number of this column
     columns[i].index = i + 1;
+    //TODO:that's a lot of memory for each field name....
     columns[i].name = new unsigned char[MAX_FIELD_SIZE];
     
     //set the first byte of name to \0 instead of memsetting the entire buffer
