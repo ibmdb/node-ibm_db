@@ -65,6 +65,9 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> CallbackSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, Persistent<Function> cb);
+    static Local<Object> GetSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, char* message);
+    static Local<Object> GetSQLDiagRecError (HDBC hDBC);
+    static Local<Array>  GetAllRecordsSync (HENV hENV, HDBC hDBC, HSTMT hSTMT, uint16_t* buffer, int bufferLength);
     
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
