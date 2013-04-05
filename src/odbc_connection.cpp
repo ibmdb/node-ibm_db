@@ -202,6 +202,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
 void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   DEBUG_PRINTF("ODBCConnection::UV_AfterOpen\n");
   HandleScope scope;
+  
   open_connection_work_data* data = (open_connection_work_data *)(req->data);
   
   Local<Value> argv[1];
@@ -211,34 +212,9 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   if (data->result) {
     err = true;
 
-    SQLINTEGER i = 0;
-    SQLINTEGER native;
-    SQLSMALLINT len;
-    SQLRETURN ret;
-    char errorSQLState[7];
-    char errorMessage[256];
-
-    do {
-      ret = SQLGetDiagRec(
-        SQL_HANDLE_DBC, 
-        data->conn->self()->m_hDBC,
-        ++i, 
-        (SQLCHAR *) errorSQLState,
-        &native,
-        (SQLCHAR *) errorMessage,
-        sizeof(errorMessage),
-        &len);
-
-      if (SQL_SUCCEEDED(ret)) {
-        Local<Object> objError = Object::New();
-
-        objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
-        objError->Set(String::New("message"), String::New(errorMessage));
-        objError->Set(String::New("state"), String::New(errorSQLState));
-
-        argv[0] = objError;
-      }
-    } while( ret == SQL_SUCCESS );
+    Local<Object> objError = ODBC::GetSQLDiagRecError(data->conn->self()->m_hDBC);
+    
+    argv[0] = objError;
   }
 
   if (!err) {
@@ -412,7 +388,11 @@ Handle<Value> ODBCConnection::CreateStatement(const Arguments& args) {
 
   work_req->data = data;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_CreateStatement, (uv_after_work_cb)UV_AfterCreateStatement);
+  uv_queue_work(
+    uv_default_loop(), 
+    work_req, 
+    UV_CreateStatement, 
+    (uv_after_work_cb)UV_AfterCreateStatement);
 
   conn->Ref();
 
@@ -586,9 +566,10 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
       for (int i = 0; i < data->paramCount; i++) {
         prm = data->params[i];
         
-        DEBUG_PRINTF("ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
-                     "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
-                     prm.buffer_length, prm.size, prm.length, &data->params[i].length);
+        DEBUG_PRINTF(
+          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
+          "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
+          prm.buffer_length, prm.size, prm.length, &data->params[i].length);
 
         ret = SQLBindParameter(
           data->hSTMT,              //StatementHandle
