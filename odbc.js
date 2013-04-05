@@ -146,6 +146,26 @@ Database.prototype.queryResult = function (sql, params, cb) {
   });
 };
 
+Database.prototype.querySync = function (sql, params) {
+  var self = this;
+  
+  if (!params) {
+    params = [];
+  }
+  
+  if (!self.connected) {
+    throw ({ message : "Connection not open."});
+  }
+  
+  var result = self.conn.querySync(sql, params);
+  
+  var data = result.fetchAllSync();
+  
+  result.closeSync();
+  
+  return data;
+};
+
 function SimpleQueue() {
   var self = this;
   

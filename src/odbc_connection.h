@@ -68,6 +68,7 @@ class ODBCConnection : public node::ObjectWrap {
 
     //sync methods
     static Handle<Value> CreateStatementSync(const Arguments& args);
+    static Handle<Value> QuerySync(const Arguments& args);
     
     struct Fetch_Request {
       Persistent<Function> callback;

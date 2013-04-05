@@ -56,6 +56,7 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatement", CreateStatement);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatementSync", CreateStatementSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "query", Query);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "querySync", QuerySync);
   
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCConnection"),
@@ -656,4 +657,134 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 }
 
 
+/*
+ * QuerySync
+ */
 
+Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::QuerySync\n");
+  
+  HandleScope scope;
+
+  REQ_STR_ARG(0, sql);
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  Local<Object> objError = Object::New();
+  Parameter* params;
+  Parameter prm;
+  SQLRETURN ret;
+  HSTMT hSTMT;
+  int paramCount = 0;
+  char* sqlString;
+  
+  // populate params if parameters were supplied
+  if (args.Length() > 1) {
+      if ( !args[1]->IsArray() ) {
+           return ThrowException(Exception::TypeError(
+                      String::New("Argument 1 must be an Array"))
+           );
+      }
+  
+      params = ODBC::GetParametersFromArray(
+        Local<Array>::Cast(args[1]),
+        &paramCount);
+  }
+  
+  sqlString = (char *) malloc(sql.length() +1);
+
+  strcpy(sqlString, *sql);
+
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+
+  //allocate a new statment handle
+  SQLAllocHandle( SQL_HANDLE_STMT, 
+                  conn->m_hDBC, 
+                  &hSTMT );
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+
+  //check to see if should excute a direct or a parameter bound query
+  if (!paramCount) {
+    // execute the query directly
+    ret = SQLExecDirect(
+      hSTMT,
+      (SQLCHAR *) sqlString, 
+      strlen(sqlString));
+  }
+  else {
+    // prepare statement, bind parameters and execute statement 
+    ret = SQLPrepare(
+      hSTMT,
+      (SQLCHAR *) sqlString, 
+      strlen(sqlString));
+    
+    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+      for (int i = 0; i < paramCount; i++) {
+        prm = params[i];
+        
+        DEBUG_PRINTF(
+          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
+          "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
+          prm.buffer_length, prm.size, prm.length, &params[i].length);
+
+        ret = SQLBindParameter(
+          hSTMT,              //StatementHandle
+          i + 1,                    //ParameterNumber
+          SQL_PARAM_INPUT,          //InputOutputType
+          prm.c_type,               //ValueType
+          prm.type,                 //ParameterType
+          prm.size,                 //ColumnSize
+          0,                        //DecimalDigits
+          prm.buffer,               //ParameterValuePtr
+          prm.buffer_length,        //BufferLength
+          //using &prm.length did not work here...
+          &params[i].length); //StrLen_or_IndPtr
+        
+        if (ret == SQL_ERROR) {break;}
+      }
+
+      if (SQL_SUCCEEDED(ret)) {
+        ret = SQLExecute(hSTMT);
+      }
+    }
+    
+    // free parameters
+    for (int i = 0; i < paramCount; i++) {
+      if (prm = params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+    
+    free(params);
+  }
+
+  //check to see if there was an error during execution
+  if(ret == SQL_ERROR) {
+    objError = ODBC::GetSQLError(
+      conn->m_hENV,
+      conn->m_hDBC,
+      hSTMT,
+      (char *) "[node-odbc] Error in ODBCConnection::QuerySync"
+    );
+    
+    ThrowException(Exception::Error(objError->Get(String::New("error"))->ToString()));
+    
+    return scope.Close(Undefined());
+  }
+  else {
+    Local<Value> args[3];
+    args[0] = External::New(conn->m_hENV);
+    args[1] = External::New(conn->m_hDBC);
+    args[2] = External::New(hSTMT);
+    Persistent<Object> js_result(ODBCResult::constructor_template->
+                              GetFunction()->NewInstance(3, args));
+
+    return scope.Close(js_result);
+  }
+}
