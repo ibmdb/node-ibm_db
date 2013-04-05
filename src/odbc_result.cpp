@@ -449,11 +449,10 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   //there is acually no result set...
   //
   //we will need to throw if there is a valid error.
-  //if (errorCount > 0) {
-  //  //THROW!
-  //  args[0] = objError;
-  //}
-
+  if (errorCount > 0) {
+    ThrowException(Exception::Error(objError->Get(String::New("error"))->ToString()));
+  }
+  
   return scope.Close(rows);
 }
 
