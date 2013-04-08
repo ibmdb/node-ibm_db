@@ -405,51 +405,52 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   
   Local<Array> rows = Array::New();
   
-  //loop through all records
-  while (true) {
-    ret = SQLFetch(self->m_hSTMT);
-    
-    //check to see if there was an error
-    if (ret == SQL_ERROR)  {
-      errorCount++;
+  //Only loop through the recordset if there are columns
+  if (self->colCount > 0) {
+    //loop through all records
+    while (true) {
+      ret = SQLFetch(self->m_hSTMT);
       
-      objError = ODBC::GetSQLError(
-        self->m_hENV, 
-        self->m_hDBC, 
-        self->m_hSTMT,
-        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
-          " your query did not have a result set."
+      //check to see if there was an error
+      if (ret == SQL_ERROR)  {
+        errorCount++;
+        
+        objError = ODBC::GetSQLError(
+          self->m_hENV, 
+          self->m_hDBC, 
+          self->m_hSTMT,
+          (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
+            " your query did not have a result set."
+        );
+        
+        break;
+      }
+      
+      //check to see if we are at the end of the recordset
+      if (ret == SQL_NO_DATA) {
+        ODBC::FreeColumns(self->columns, &self->colCount);
+        
+        break;
+      }
+
+      rows->Set(
+        Integer::New(count), 
+        ODBC::GetRecordTuple(
+          self->m_hSTMT,
+          self->columns,
+          &self->colCount,
+          self->buffer,
+          self->bufferLength)
       );
-      
-      break;
-    }
-    
-    //check to see if we are at the end of the recordset
-    if (ret == SQL_NO_DATA) {
-      ODBC::FreeColumns(self->columns, &self->colCount);
-      
-      break;
-    }
 
-    rows->Set(
-      Integer::New(count), 
-      ODBC::GetRecordTuple(
-        self->m_hSTMT,
-        self->columns,
-        &self->colCount,
-        self->buffer,
-        self->bufferLength)
-    );
-
-    count++;
+      count++;
+    }
+  }
+  else {
+    ODBC::FreeColumns(self->columns, &self->colCount);
   }
   
-  //TODO: we need to return the error object if there was an error
-  //however, on queries like "Drop...." the ret from SQLFetch is 
-  //SQL_ERROR, but there is not valid error message. I guess it's because
-  //there is acually no result set...
-  //
-  //we will need to throw if there is a valid error.
+  //throw the error object if there were errors
   if (errorCount > 0) {
     ThrowException(objError);
   }
