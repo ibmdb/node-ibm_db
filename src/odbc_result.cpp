@@ -69,6 +69,13 @@ void ODBCResult::Free() {
   
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
+    //TODO: we need to keep track of whether or not the result object
+    //can acutally call SQLFreeHandle which destroys the STMT handle
+    //the only case where it should be allowed to do this is when the
+    //result object was created by ODBCConnection.query*
+    //If there is a statement object, then that object should be used
+    //to destroy the handle.
+    
     
     //This doesn't actually deallocate the statement handle
     //that should not be done by the result object; that should
