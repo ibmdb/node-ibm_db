@@ -164,6 +164,12 @@ struct query_request {
                                                String::New("Argument " #I " must be a function"))); \
   Local<Function> VAR = Local<Function>::Cast(args[I]);
 
+#define REQ_BOOL_ARG(I, VAR)                                             \
+  if (args.Length() <= (I) || !args[I]->IsBoolean())                   \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a boolean"))); \
+  Local<Boolean> VAR = (args[I]->ToBoolean());
+  
 #define REQ_EXT_ARG(I, VAR)                                             \
   if (args.Length() <= (I) || !args[I]->IsExternal())                   \
     return ThrowException(Exception::TypeError(                         \

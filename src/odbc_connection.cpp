@@ -59,6 +59,9 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "query", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "querySync", QuerySync);
   
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "beginTransactionSync", BeginTransactionSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "endTransactionSync", EndTransactionSync);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "columns", Columns);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "tables", Tables);
   
@@ -1064,4 +1067,88 @@ void ODBCConnection::UV_Columns(uv_work_t* req) {
   
   // this will be checked later in UV_AfterQuery
   data->result = ret;
+}
+
+/*
+ * BeginTransactionSync
+ * 
+ */
+
+Handle<Value> ODBCConnection::BeginTransactionSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::BeginTransactionSync\n");
+  HandleScope scope;
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  SQLRETURN ret;
+
+  //set the connection manual commits
+  ret = SQLSetConnectAttr(
+    conn->m_hDBC,
+    SQL_ATTR_AUTOCOMMIT,
+    (SQLPOINTER) SQL_AUTOCOMMIT_OFF,
+    SQL_NTS);
+  
+  if (!SQL_SUCCEEDED(ret)) {
+    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    
+    ThrowException(objError);
+    
+    return scope.Close(False());
+  }
+  
+  return scope.Close(True());
+}
+
+/*
+ * EndTransactionSync
+ * 
+ */
+
+Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::EndTransactionSync\n");
+  HandleScope scope;
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  REQ_BOOL_ARG(0, rollback);
+  
+  SQLRETURN ret;
+  SQLSMALLINT completionType = (rollback->Value()) 
+    ? SQL_ROLLBACK
+    : SQL_COMMIT
+    ;
+  
+  //Call SQLEndTran
+  ret = SQLEndTran(
+    SQL_HANDLE_DBC,
+    conn->m_hDBC,
+    completionType);
+  
+  //check how the transaction went
+  if (!SQL_SUCCEEDED(ret)) {
+    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    
+    ThrowException(objError);
+    
+    return scope.Close(False());
+  }
+  
+  //Reset the connection back to autocommit
+  ret = SQLSetConnectAttr(
+    conn->m_hDBC,
+    SQL_ATTR_AUTOCOMMIT,
+    (SQLPOINTER) SQL_AUTOCOMMIT_ON,
+    SQL_NTS);
+  
+  //check how setting the connection attr went
+  if (!SQL_SUCCEEDED(ret)) {
+    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    
+    ThrowException(objError);
+    
+    return scope.Close(False());
+  }
+  
+  return scope.Close(True());
 }
