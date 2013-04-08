@@ -53,6 +53,12 @@ void ODBC::Init(v8::Handle<Object> target) {
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1);
   
+  // Constants
+  NODE_DEFINE_CONSTANT(constructor_template, SQL_CLOSE);
+  NODE_DEFINE_CONSTANT(constructor_template, SQL_DROP);
+  NODE_DEFINE_CONSTANT(constructor_template, SQL_UNBIND);
+  NODE_DEFINE_CONSTANT(constructor_template, SQL_RESET_PARAMS);
+  
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnection", CreateConnection);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnectionSync", CreateConnectionSync);
