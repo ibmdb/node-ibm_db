@@ -13,7 +13,7 @@ db.open(common.connectionString, function (err) {
       
       var results = db.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
 
-      db.rollbackTransaction();
+      db.rollbackTransactionSync();
       
       results = db.querySync("select * from " + common.tableName);
       
@@ -31,7 +31,7 @@ db.open(common.connectionString, function (err) {
       
       result = db.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
 
-      db.commitTransaction(); //commit
+      db.commitTransactionSync(); //commit
       
       result = db.querySync("select * from " + common.tableName);
       
