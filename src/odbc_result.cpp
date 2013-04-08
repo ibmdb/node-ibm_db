@@ -476,9 +476,12 @@ Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
   
   HandleScope scope;
   
+  OPT_INT_ARG(0, closeOption, SQL_CLOSE);
+  
   ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
   
-  result->Free();
+  //result->Free();
+  SQLFreeStmt(result->m_hSTMT, closeOption);
   
   return scope.Close(Undefined());
 }
