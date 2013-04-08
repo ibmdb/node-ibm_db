@@ -1113,7 +1113,9 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
   
   REQ_BOOL_ARG(0, rollback);
   
+  Local<Object> objError;
   SQLRETURN ret;
+  bool error = false;
   SQLSMALLINT completionType = (rollback->Value()) 
     ? SQL_ROLLBACK
     : SQL_COMMIT
@@ -1127,11 +1129,9 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
   
   //check how the transaction went
   if (!SQL_SUCCEEDED(ret)) {
-    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    error = true;
     
-    ThrowException(objError);
-    
-    return scope.Close(False());
+    objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
   }
   
   //Reset the connection back to autocommit
@@ -1142,13 +1142,23 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
     SQL_NTS);
   
   //check how setting the connection attr went
-  if (!SQL_SUCCEEDED(ret)) {
-    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+  //but only process the code if an error has not already
+  //occurred. If an error occurred during SQLEndTran,
+  //that is the error that we want to throw.
+  if (!SQL_SUCCEEDED(ret) && !error) {
+    //TODO: if this also failed, we really should
+    //be restarting the connection or something to deal with this state
+    error = true;
     
+    objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+  }
+  
+  if (error) {
     ThrowException(objError);
     
     return scope.Close(False());
   }
-  
-  return scope.Close(True());
+  else {
+    return scope.Close(True());
+  }
 }
