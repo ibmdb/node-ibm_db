@@ -181,61 +181,72 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
   SQLRETURN ret = data->result;
+  //TODO: we should probably define this on the work data so we
+  //don't have to keep creating it?
+  Local<Object> objError;
+  bool moreWork = true;
+  bool error = false;
   
-  //check to see if there was an error
-  if (ret == SQL_ERROR)  {
-    ODBC::CallbackSQLError(
-      data->objResult->m_hENV, 
-      data->objResult->m_hDBC, 
-      data->objResult->m_hSTMT,
-      data->cb);
-    
-    free(data);
-    free(work_req);
-    
-    data->objResult->Unref();
-    
-    return;
-  }
-  
-  //check to see if we are at the end of the recordset
-  if (ret == SQL_NO_DATA) {
-    ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
-    
-    Handle<Value> args[2];
-    args[0] = Null();
-    args[1] = Null();
-    
-    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
-    data->cb.Dispose();
-    
-    free(data);
-    free(work_req);
-    
-    data->objResult->Unref();
-    
-    return;
-  }
-
   if (data->objResult->colCount == 0) {
     data->objResult->columns = ODBC::GetColumns(
       data->objResult->m_hSTMT, 
       &data->objResult->colCount);
   }
   
-  Handle<Value> args[2];
+  //check to see if the result has no columns
+  if (data->objResult->colCount == 0) {
+    //this means
+    moreWork = false;
+  }
+  //check to see if there was an error
+  else if (ret == SQL_ERROR)  {
+    moreWork = false;
+    error = true;
+    
+    objError = ODBC::GetSQLError(
+      data->objResult->m_hENV, 
+      data->objResult->m_hDBC, 
+      data->objResult->m_hSTMT,
+      (char *) "Error in ODBCResult::UV_AfterFetch");
+  }
+  //check to see if we are at the end of the recordset
+  else if (ret == SQL_NO_DATA) {
+    moreWork = false;
+  }
 
-  args[0] = Null();
-  args[1] = ODBC::GetRecordTuple(
-    data->objResult->m_hSTMT,
-    data->objResult->columns,
-    &data->objResult->colCount,
-    data->objResult->buffer,
-    data->objResult->bufferLength);
+  if (moreWork) {
+    Handle<Value> args[2];
 
-  data->cb->Call(Context::GetCurrent()->Global(), 2, args);
-  data->cb.Dispose();
+    args[0] = Null();
+    args[1] = ODBC::GetRecordTuple(
+      data->objResult->m_hSTMT,
+      data->objResult->columns,
+      &data->objResult->colCount,
+      data->objResult->buffer,
+      data->objResult->bufferLength);
 
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
+  }
+  else {
+    ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
+    
+    Handle<Value> args[2];
+    
+    //if there was an error, pass that as arg[0] otherwise Null
+    if (error) {
+      args[0] = objError;
+    }
+    else {
+      args[0] = Null();
+    }
+    
+    args[1] = Null();
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
+  }
+  
   free(data);
   free(work_req);
   
@@ -312,8 +323,14 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
   }
   
+  //check to see if the result set has columns
+  if (self->colCount == 0) {
+    //this most likely means that the query was something like
+    //'insert into ....'
+    doMoreWork = false;
+  }
   //check to see if there was an error
-  if (data->result == SQL_ERROR)  {
+  else if (data->result == SQL_ERROR)  {
     data->errorCount++;
     
     data->objError = Persistent<Object>::New(ODBC::GetSQLError(
@@ -356,17 +373,13 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     ODBC::FreeColumns(self->columns, &self->colCount);
     
     Handle<Value> args[2];
-    //TODO: we need to return the error object if there was an error
-    //however, on queries like "Drop...." the ret from SQLFetch is 
-    //SQL_ERROR, but there is not valid error message. I guess it's because
-    //there is acually no result set...
     
-    //if (self->errorCount > 0) {
-    //  args[0] = objError;
-    //}
-    //else {
+    if (data->errorCount > 0) {
+      args[0] = data->objError;
+    }
+    else {
       args[0] = Null();
-    //}
+    }
     args[1] = data->rows;
     
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
