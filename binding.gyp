@@ -9,17 +9,16 @@
         'src/odbc_result.cpp'
       ],
       'defines' : [
-        
       ],
       'conditions' : [
         [ 'OS == "linux"', {
-          'libraries' : [ 
-            '-lodbc' 
-					],
-					'cflags' : [
-						'-g'
-          ]
-        }],
+     		'libraries' : [ 
+	            '-lodbc' 
+		],
+		'cflags' : [
+			'-g'
+        	]
+     	}],
         [ 'OS == "mac"', {
           'libraries' : [ 
             '-lodbc' 
