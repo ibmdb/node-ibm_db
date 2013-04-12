@@ -34,6 +34,7 @@ using namespace node;
 
 #define MODE_COLLECT_AND_CALLBACK 1
 #define MODE_CALLBACK_FOR_EACH 2
+#define SQL_DESTROY 9999
 
 typedef struct {
   unsigned char *name;
@@ -115,9 +116,6 @@ struct close_request {
   ODBC *dbo;
   int result;
 };
-
-
-
 
 struct query_request {
   Persistent<Function> cb;

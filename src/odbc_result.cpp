@@ -65,32 +65,22 @@ ODBCResult::~ODBCResult() {
 }
 
 void ODBCResult::Free() {
-  DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X\n", m_hSTMT);
+  DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
   
-  if (m_hSTMT) {
+  if (m_hSTMT && m_canFreeHandle) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    //TODO: we need to keep track of whether or not the result object
-    //can acutally call SQLFreeHandle which destroys the STMT handle
-    //the only case where it should be allowed to do this is when the
-    //result object was created by ODBCConnection.query*
-    //If there is a statement object, then that object should be used
-    //to destroy the handle.
-    
-    
-    //This doesn't actually deallocate the statement handle
-    //that should not be done by the result object; that should
-    //be done by the statement object
-    //SQLFreeStmt(m_hSTMT, SQL_CLOSE);
     
     SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
     
     m_hSTMT = NULL;
-    
+  
     uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
+  
+  if (bufferLength > 0) {
+    free(buffer);
     
-    if (bufferLength > 0) {
-      free(buffer);
-    }
+    bufferLength = 0;
   }
 }
 
@@ -102,18 +92,21 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   REQ_EXT_ARG(0, js_henv);
   REQ_EXT_ARG(1, js_hdbc);
   REQ_EXT_ARG(2, js_hstmt);
+  REQ_EXT_ARG(3, js_canFreeHandle);
   
   HENV hENV = static_cast<HENV>(js_henv->Value());
   HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
   HSTMT hSTMT = static_cast<HSTMT>(js_hstmt->Value());
+  bool canFreeHandle = static_cast<bool>(js_hstmt->Value());
   
   //create a new OBCResult object
-  ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT);
+  ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, canFreeHandle);
   
-  DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X canFreeHandle=%X\n",
     objODBCResult->m_hENV,
     objODBCResult->m_hDBC,
-    objODBCResult->m_hSTMT
+    objODBCResult->m_hSTMT,
+    objODBCResult->m_canFreeHandle
   );
   
   //specify the buffer length
@@ -478,19 +471,39 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   return scope.Close(rows);
 }
 
+/*
+ * CloseSync
+ * 
+ * When calling a Close method, 
+ */
+
 Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
   DEBUG_PRINTF("ODBCResult::Close\n");
   
   HandleScope scope;
   
-  OPT_INT_ARG(0, closeOption, SQL_CLOSE);
+  OPT_INT_ARG(0, closeOption, SQL_DESTROY);
   
   ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
  
-  //TODO: undoing this change for now util this logic is all
-  //worked out. 
-  //SQLFreeStmt(result->m_hSTMT, closeOption);
-  result->Free();
+  if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
+    result->Free();
+  }
+  else if (closeOption == SQL_DESTROY && !result->m_canFreeHandle) {
+    //We technically can't free the handle so, we'll SQL_CLOSE
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeStmt(result->m_hSTMT, SQL_CLOSE);
+  
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
+  else {
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeStmt(result->m_hSTMT, closeOption);
+  
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
   
   return scope.Close(Undefined());
 }

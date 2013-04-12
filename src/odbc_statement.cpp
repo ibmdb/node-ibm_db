@@ -95,19 +95,19 @@ Handle<Value> ODBCStatement::New(const Arguments& args) {
   HSTMT hSTMT = static_cast<HSTMT>(js_hstmt->Value());
   
   //create a new OBCResult object
-  ODBCStatement* objODBCResult = new ODBCStatement(hENV, hDBC, hSTMT);
+  ODBCStatement* stmt = new ODBCStatement(hENV, hDBC, hSTMT);
   
   //specify the buffer length
-  objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
+  stmt->bufferLength = MAX_VALUE_SIZE - 1;
   
   //initialze a buffer for this object
-  objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength + 1);
+  stmt->buffer = (uint16_t *) malloc(stmt->bufferLength + 1);
   //TODO: make sure the malloc succeeded
 
   //set the initial colCount to 0
-  objODBCResult->colCount = 0;
+  stmt->colCount = 0;
   
-  objODBCResult->Wrap(args.Holder());
+  stmt->Wrap(args.Holder());
   
   return scope.Close(args.Holder());
 }
@@ -179,12 +179,15 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
+    bool canFreeHandle;
+    
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
+    args[3] = External::New(&canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
-                              GetFunction()->NewInstance(3, args));
+                              GetFunction()->NewInstance(4, args));
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Object>::New(js_result);
@@ -302,12 +305,15 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
+    bool canFreeHandle = false;
+    
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
+    args[3] = External::New(&canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
-                              GetFunction()->NewInstance(3, args));
+                              GetFunction()->NewInstance(4, args));
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Object>::New(js_result);
