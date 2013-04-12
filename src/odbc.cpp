@@ -456,7 +456,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
  * GetRecordTuple
  */
 
-Handle<Value> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
+Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, uint16_t* buffer,
                                          int bufferLength) {
   HandleScope scope;
@@ -500,7 +500,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
   DEBUG_PRINTF("ODBC::GetParametersFromArray\n");
   *paramCount = values->Length();
   
-  Parameter * params = new Parameter[*paramCount];
+  Parameter* params = (Parameter *) malloc(*paramCount * sizeof(Parameter));
 
   for (int i = 0; i < *paramCount; i++) {
     Local<Value> value = values->Get(i);

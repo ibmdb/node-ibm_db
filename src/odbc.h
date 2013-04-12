@@ -63,7 +63,7 @@ class ODBC : public node::ObjectWrap {
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
     static void FreeColumns(Column* columns, short* colCount);
     static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
-    static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
+    static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> CallbackSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, Persistent<Function> cb);
     static Local<Object> GetSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, char* message);

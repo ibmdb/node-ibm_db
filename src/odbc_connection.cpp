@@ -688,19 +688,6 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
         ret = SQLExecute(data->hSTMT);
       }
     }
-    
-    // free parameters
-    for (int i = 0; i < data->paramCount; i++) {
-      if (prm = data->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-    free(data->params);
   }
 
   // this will be checked later in UV_AfterQuery
@@ -749,6 +736,23 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   }
   
   data->cb.Dispose();
+
+  if (data->paramCount) {
+    Parameter prm;
+    // free parameters
+    for (int i = 0; i < data->paramCount; i++) {
+      if (prm = data->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+    
+    free(data->params);
+  }
   
   free(data->sql);
   free(data->catalog);
@@ -870,6 +874,8 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     free(params);
   }
 
+  free(sqlString);
+  
   //check to see if there was an error during execution
   if(ret == SQL_ERROR) {
     objError = ODBC::GetSQLError(

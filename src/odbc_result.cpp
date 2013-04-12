@@ -78,9 +78,8 @@ void ODBCResult::Free() {
   }
   
   if (bufferLength > 0) {
-    free(buffer);
-    
     bufferLength = 0;
+    free(buffer);
   }
 }
 
@@ -375,15 +374,18 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     Handle<Value> args[2];
     
     if (data->errorCount > 0) {
-      args[0] = data->objError;
+      args[0] = Local<Object>::New(data->objError);
     }
     else {
       args[0] = Null();
     }
-    args[1] = data->rows;
+    
+    args[1] = Local<Array>::New(data->rows);
     
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
     data->cb.Dispose();
+    data->rows.Dispose();
+    data->objError.Dispose();
     
     //TODO: Do we need to free self->rows somehow?
     free(data);
