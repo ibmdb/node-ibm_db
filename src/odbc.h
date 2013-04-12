@@ -1,4 +1,5 @@
 /*
+  Copyright (c) 2013, Dan VerWeire <dverweire@gmail.com>
   Copyright (c) 2010, Lee Smith <notwink@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -63,6 +64,10 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
     static Handle<Value> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
+    static Handle<Value> CallbackSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, Persistent<Function> cb);
+    static Local<Object> GetSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, char* message);
+    static Local<Object> GetSQLDiagRecError (HDBC hDBC);
+    static Local<Array>  GetAllRecordsSync (HENV hENV, HDBC hDBC, HSTMT hSTMT, uint16_t* buffer, int bufferLength);
     
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
@@ -75,44 +80,27 @@ class ODBC : public node::ObjectWrap {
 
     static Handle<Value> New(const Arguments& args);
 
-    //Property Getter/Setters
-    static Handle<Value> ModeGetter(Local<String> property, const AccessorInfo &info);
-    static void ModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    //async methods
+    static Handle<Value> CreateConnection(const Arguments& args);
+    static void UV_CreateConnection(uv_work_t* work_req);
+    static void UV_AfterCreateConnection(uv_work_t* work_req, int status);
     
-    static Handle<Value> ConnectedGetter(Local<String> property, const AccessorInfo &info);
-    
-    static void UV_AfterOpen(uv_work_t* req, int status);
-    static void UV_Open(uv_work_t* req);
-    static Handle<Value> Open(const Arguments& args);
-
-    static void UV_AfterClose(uv_work_t* req, int status);
-    static void UV_Close(uv_work_t* req);
-    static Handle<Value> Close(const Arguments& args);
-
-    static void UV_AfterQuery(uv_work_t* req, int status);
-    static void UV_Query(uv_work_t* req);
-    static Handle<Value> Query(const Arguments& args);
-
-    static void UV_AfterQueryAll(uv_work_t* req, int status);
-    static void UV_QueryAll(uv_work_t* req);
-    static Handle<Value> QueryAll(const Arguments& args);
-    
-    static void UV_Tables(uv_work_t* req);
-    static Handle<Value> Tables(const Arguments& args);
-
-    static void UV_Columns(uv_work_t* req);
-    static Handle<Value> Columns(const Arguments& args);
-  
     static void WatcherCallback(uv_async_t* w, int revents);
+    
+    //sync methods
+    static Handle<Value> CreateConnectionSync(const Arguments& args);
     
     ODBC *self(void) { return this; }
 
   protected:
     HENV m_hEnv;
-    HDBC m_hDBC;
-    SQLUSMALLINT canHaveMoreResults;
-    int mode;
-    bool connected;
+};
+
+struct create_connection_work_data {
+  Persistent<Function> cb;
+  ODBC *dbo;
+  HDBC hDBC;
+  int result;
 };
 
 struct open_request {
@@ -176,6 +164,12 @@ struct query_request {
                                                String::New("Argument " #I " must be a function"))); \
   Local<Function> VAR = Local<Function>::Cast(args[I]);
 
+#define REQ_BOOL_ARG(I, VAR)                                             \
+  if (args.Length() <= (I) || !args[I]->IsBoolean())                   \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a boolean"))); \
+  Local<Boolean> VAR = (args[I]->ToBoolean());
+  
 #define REQ_EXT_ARG(I, VAR)                                             \
   if (args.Length() <= (I) || !args[I]->IsExternal())                   \
     return ThrowException(Exception::TypeError(                         \

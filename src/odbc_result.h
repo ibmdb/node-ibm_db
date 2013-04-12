@@ -1,6 +1,5 @@
 /*
-  Copyright (c) 2012, Dan VerWeire<dverweire@gmail.com>
-  Copyright (c) 2010, Lee Smith<notwink@gmail.com>
+  Copyright (c) 2013, Dan VerWeire<dverweire@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -49,13 +48,19 @@ class ODBCResult : public node::ObjectWrap {
     static void UV_AfterFetchAll(uv_work_t* work_req, int status);
     
     //sync methods
-    static Handle<Value> Close(const Arguments& args);
-    static Handle<Value> MoreResults(const Arguments& args);
+    static Handle<Value> CloseSync(const Arguments& args);
+    static Handle<Value> MoreResultsSync(const Arguments& args);
+    static Handle<Value> FetchAllSync(const Arguments& args);
     
-    struct Fetch_Request {
-      Persistent<Function> callback;
+    struct fetch_work_data {
+      Persistent<Function> cb;
       ODBCResult *objResult;
       SQLRETURN result;
+      
+      int count;
+      int errorCount;
+      Persistent<Array> rows;
+      Persistent<Object> objError;
     };
     
     ODBCResult *self(void) { return this; }
@@ -69,5 +74,7 @@ class ODBCResult : public node::ObjectWrap {
     Column *columns;
     short colCount;
 };
+
+
 
 #endif

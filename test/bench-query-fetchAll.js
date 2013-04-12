@@ -1,5 +1,5 @@
 var common = require("./common")
-, odbc = require("../odbc.js")
+, odbc = require("../")
 , db = new odbc.Database();
 
 db.open(common.connectionString, function(err){ 
@@ -32,7 +32,7 @@ function issueQuery() {
         return finish();
       }
       
-      result.close();
+      result.closeSync();
         
       if (++count == iterations) {
         var elapsed = new Date().getTime() - time;

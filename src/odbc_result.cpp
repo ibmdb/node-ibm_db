@@ -1,6 +1,5 @@
 /*
-  Copyright (c) 2012, Dan VerWeire<dverweire@gmail.com>
-  Copyright (c) 2010, Lee Smith<notwink@gmail.com>
+  Copyright (c) 2013, Dan VerWeire<dverweire@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +22,9 @@
 #include <uv.h>
 
 #include "odbc.h"
+#include "odbc_connection.h"
 #include "odbc_result.h"
+#include "odbc_statement.h"
 
 using namespace v8;
 using namespace node;
@@ -31,6 +32,7 @@ using namespace node;
 Persistent<FunctionTemplate> ODBCResult::constructor_template;
 
 void ODBCResult::Init(v8::Handle<Object> target) {
+  DEBUG_PRINTF("ODBCResult::Init\n");
   HandleScope scope;
 
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -46,8 +48,10 @@ void ODBCResult::Init(v8::Handle<Object> target) {
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAll", FetchAll);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetch", Fetch);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResults", MoreResults);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
+
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResultsSync", MoreResultsSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
 
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCResult"),
@@ -61,10 +65,25 @@ ODBCResult::~ODBCResult() {
 }
 
 void ODBCResult::Free() {
+  DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X\n", m_hSTMT);
+  
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
+    //TODO: we need to keep track of whether or not the result object
+    //can acutally call SQLFreeHandle which destroys the STMT handle
+    //the only case where it should be allowed to do this is when the
+    //result object was created by ODBCConnection.query*
+    //If there is a statement object, then that object should be used
+    //to destroy the handle.
     
-    SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    
+    //This doesn't actually deallocate the statement handle
+    //that should not be done by the result object; that should
+    //be done by the statement object
+    //SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+    
+    SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
+    
     m_hSTMT = NULL;
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -76,6 +95,8 @@ void ODBCResult::Free() {
 }
 
 Handle<Value> ODBCResult::New(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::New\n");
+  
   HandleScope scope;
   
   REQ_EXT_ARG(0, js_henv);
@@ -88,6 +109,12 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   
   //create a new OBCResult object
   ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT);
+  
+  DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+    objODBCResult->m_hENV,
+    objODBCResult->m_hDBC,
+    objODBCResult->m_hSTMT
+  );
   
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
@@ -104,12 +131,20 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   return scope.Close(args.Holder());
 }
 
+/*
+ * Fetch
+ */
+
 Handle<Value> ODBCResult::Fetch(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::Fetch\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  Fetch_Request* req_fetch = (Fetch_Request *) calloc(1, sizeof(Fetch_Request));
+  
+  fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
   
   Local<Function> cb;
    
@@ -121,12 +156,16 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
   
   cb = Local<Function>::Cast(args[0]);
   
-  req_fetch->callback = Persistent<Function>::New(cb);
+  data->cb = Persistent<Function>::New(cb);
   
-  req_fetch->objResult = objODBCResult;
-  work_req->data = req_fetch;
+  data->objResult = objODBCResult;
+  work_req->data = data;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_Fetch, (uv_after_work_cb)UV_AfterFetch);
+  uv_queue_work(
+    uv_default_loop(), 
+    work_req, 
+    UV_Fetch, 
+    (uv_after_work_cb)UV_AfterFetch);
 
   objODBCResult->Ref();
 
@@ -134,103 +173,109 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
 }
 
 void ODBCResult::UV_Fetch(uv_work_t* work_req) {
-  Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
+  DEBUG_PRINTF("ODBCResult::UV_Fetch\n");
   
-  ODBCResult* self = req_fetch->objResult->self();
+  fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
-  req_fetch->result = SQLFetch(self->m_hSTMT);
+  data->result = SQLFetch(data->objResult->m_hSTMT);
 }
 
 void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetch\n");
+  
   HandleScope scope;
   
-  Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
+  fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
-  SQLRETURN ret = req_fetch->result;
+  SQLRETURN ret = data->result;
+  //TODO: we should probably define this on the work data so we
+  //don't have to keep creating it?
+  Local<Object> objError;
+  bool moreWork = true;
+  bool error = false;
   
-  ODBCResult* self = req_fetch->objResult->self();
-  
-  //check to see if there was an error
-  if (ret == SQL_ERROR)  {
-    Local<Object> objError = Object::New();
-
-    char errorMessage[512];
-    char errorSQLState[128];
-
-    SQLError( self->m_hENV, 
-              self->m_hDBC, 
-              self->m_hSTMT,
-              (SQLCHAR *) errorSQLState,
-              NULL,
-              (SQLCHAR *) errorMessage,
-              sizeof(errorMessage),
-              NULL);
-
-    objError->Set(String::New("state"), String::New(errorSQLState));
-    objError->Set(String::New("error"),
-                  String::New("[node-odbc] Error in SQLFetch"));
-    objError->Set(String::New("message"), String::New(errorMessage));
-    
-    //emit an error event immidiately.
-    Local<Value> args[1];
-    args[0] = objError;
-    req_fetch->callback->Call(Context::GetCurrent()->Global(), 1, args);
-    req_fetch->callback.Dispose();
-    
-    free(work_req);
-    free(req_fetch);
-    
-    self->Unref();
-    
-    return;
+  if (data->objResult->colCount == 0) {
+    data->objResult->columns = ODBC::GetColumns(
+      data->objResult->m_hSTMT, 
+      &data->objResult->colCount);
   }
   
+  //check to see if the result has no columns
+  if (data->objResult->colCount == 0) {
+    //this means
+    moreWork = false;
+  }
+  //check to see if there was an error
+  else if (ret == SQL_ERROR)  {
+    moreWork = false;
+    error = true;
+    
+    objError = ODBC::GetSQLError(
+      data->objResult->m_hENV, 
+      data->objResult->m_hDBC, 
+      data->objResult->m_hSTMT,
+      (char *) "Error in ODBCResult::UV_AfterFetch");
+  }
   //check to see if we are at the end of the recordset
-  if (ret == SQL_NO_DATA) {
-    ODBC::FreeColumns(self->columns, &self->colCount);
+  else if (ret == SQL_NO_DATA) {
+    moreWork = false;
+  }
+
+  if (moreWork) {
+    Handle<Value> args[2];
+
+    args[0] = Null();
+    args[1] = ODBC::GetRecordTuple(
+      data->objResult->m_hSTMT,
+      data->objResult->columns,
+      &data->objResult->colCount,
+      data->objResult->buffer,
+      data->objResult->bufferLength);
+
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
+  }
+  else {
+    ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
     
     Handle<Value> args[2];
-    args[0] = Null();
+    
+    //if there was an error, pass that as arg[0] otherwise Null
+    if (error) {
+      args[0] = objError;
+    }
+    else {
+      args[0] = Null();
+    }
+    
     args[1] = Null();
     
-    req_fetch->callback->Call(Context::GetCurrent()->Global(), 2, args);
-    req_fetch->callback.Dispose();
-    
-    free(work_req);
-    free(req_fetch);
-    
-    self->Unref();
-    
-    return;
-  }
-
-  if (self->colCount == 0) {
-    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
   }
   
-  Handle<Value> args[2];
-
-  args[0] = Null();
-  args[1] = ODBC::GetRecordTuple( self->m_hSTMT,
-                            self->columns,
-                            &self->colCount,
-                            self->buffer,
-                            self->bufferLength);
-
-  req_fetch->callback->Call(Context::GetCurrent()->Global(), 2, args);
-  req_fetch->callback.Dispose();
-
+  free(data);
   free(work_req);
-  free(req_fetch);
+  
+  data->objResult->Unref();
+  
   return;
 }
 
+/*
+ * FetchAll
+ */
+
 Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::FetchAll\n");
+  
   HandleScope scope;
   
   ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  Fetch_Request* fetch_Request = (Fetch_Request *) calloc(1, sizeof(Fetch_Request));
+  
+  fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
   
   Local<Function> cb;
    
@@ -242,35 +287,135 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
   
   cb = Local<Function>::Cast(args[0]);
   
-  fetch_Request->callback = Persistent<Function>::New(cb);
+  data->rows = Persistent<Array>::New(Array::New());
+  data->errorCount = 0;
+  data->count = 0;
+  data->objError = Persistent<Object>::New(Object::New());
   
-  fetch_Request->objResult = objODBCResult;
-  work_req->data = fetch_Request;
+  data->cb = Persistent<Function>::New(cb);
+  data->objResult = objODBCResult;
   
-  uv_queue_work(uv_default_loop(), work_req, UV_FetchAll, (uv_after_work_cb)UV_AfterFetchAll);
+  work_req->data = data;
+  
+  uv_queue_work(uv_default_loop(),
+    work_req, 
+    UV_FetchAll, 
+    (uv_after_work_cb)UV_AfterFetchAll);
 
-  objODBCResult->Ref();
+  data->objResult->Ref();
 
   return scope.Close(Undefined());
 }
 
 void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
-  //Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll\n");
   
-  //ODBCResult* self = req_fetch->objResult->self();
+  fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
-  //req_fetch->result = SQLFetch(self->m_hSTMT);
-}
+  data->result = SQLFetch(data->objResult->m_hSTMT);
+ }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll\n");
+  
   HandleScope scope;
   
-  Fetch_Request* req_fetch = (Fetch_Request *)(work_req->data);
+  fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
-  ODBCResult* self = req_fetch->objResult->self();
+  ODBCResult* self = data->objResult->self();
+  
+  bool doMoreWork = true;
+  
+  if (self->colCount == 0) {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+  
+  //check to see if the result set has columns
+  if (self->colCount == 0) {
+    //this most likely means that the query was something like
+    //'insert into ....'
+    doMoreWork = false;
+  }
+  //check to see if there was an error
+  else if (data->result == SQL_ERROR)  {
+    data->errorCount++;
+    
+    data->objError = Persistent<Object>::New(ODBC::GetSQLError(
+      self->m_hENV, 
+      self->m_hDBC, 
+      self->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+    ));
+    
+    doMoreWork = false;
+  }
+  //check to see if we are at the end of the recordset
+  else if (data->result == SQL_NO_DATA) {
+    doMoreWork = false;
+  }
+  else {
+
+    data->rows->Set(
+      Integer::New(data->count), 
+      ODBC::GetRecordTuple(
+        self->m_hSTMT,
+        self->columns,
+        &self->colCount,
+        self->buffer,
+        self->bufferLength)
+    );
+
+    data->count++;
+  }
+  
+  if (doMoreWork) {
+    //Go back to the thread pool and fetch more data!
+    uv_queue_work(
+      uv_default_loop(),
+      work_req, 
+      UV_FetchAll, 
+      (uv_after_work_cb)UV_AfterFetchAll);
+  }
+  else {
+    ODBC::FreeColumns(self->columns, &self->colCount);
+    
+    Handle<Value> args[2];
+    
+    if (data->errorCount > 0) {
+      args[0] = data->objError;
+    }
+    else {
+      args[0] = Null();
+    }
+    args[1] = data->rows;
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb.Dispose();
+    
+    //TODO: Do we need to free self->rows somehow?
+    free(data);
+    free(work_req);
+
+    self->Unref(); 
+  }
+  
+  scope.Close(Undefined());
+}
+
+/*
+ * FetchAllSync
+ */
+
+Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::FetchAllSync\n");
+
+  HandleScope scope;
+  
+  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
   
   Local<Object> objError = Object::New();
   
+  SQLRETURN ret;
   int count = 0;
   int errorCount = 0;
   
@@ -280,83 +425,85 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   
   Local<Array> rows = Array::New();
   
-  //loop through all records
-  while (true) {
-    SQLRETURN ret = SQLFetch(self->m_hSTMT);
-    
-    ODBCResult* self = req_fetch->objResult->self();
-    
-    //check to see if there was an error
-    if (ret == SQL_ERROR)  {
-      errorCount++;
+  //Only loop through the recordset if there are columns
+  if (self->colCount > 0) {
+    //loop through all records
+    while (true) {
+      ret = SQLFetch(self->m_hSTMT);
       
-      char errorMessage[512];
-      char errorSQLState[128];
-
-      SQLError( self->m_hENV, 
-                self->m_hDBC, 
-                self->m_hSTMT,
-                (SQLCHAR *) errorSQLState,
-                NULL,
-                (SQLCHAR *) errorMessage,
-                sizeof(errorMessage),
-                NULL);
-
-      objError->Set(String::New("state"), String::New(errorSQLState));
-      objError->Set(String::New("error"),
-                    String::New("[node-odbc] Error in SQLFetch"));
-      objError->Set(String::New("message"), String::New(errorMessage));
+      //check to see if there was an error
+      if (ret == SQL_ERROR)  {
+        errorCount++;
+        
+        objError = ODBC::GetSQLError(
+          self->m_hENV, 
+          self->m_hDBC, 
+          self->m_hSTMT,
+          (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
+            " your query did not have a result set."
+        );
+        
+        break;
+      }
       
-      break;
+      //check to see if we are at the end of the recordset
+      if (ret == SQL_NO_DATA) {
+        ODBC::FreeColumns(self->columns, &self->colCount);
+        
+        break;
+      }
+
+      rows->Set(
+        Integer::New(count), 
+        ODBC::GetRecordTuple(
+          self->m_hSTMT,
+          self->columns,
+          &self->colCount,
+          self->buffer,
+          self->bufferLength)
+      );
+
+      count++;
     }
-    
-    //check to see if we are at the end of the recordset
-    if (ret == SQL_NO_DATA) {
-      ODBC::FreeColumns(self->columns, &self->colCount);
-      
-      break;
-    }
-
-    rows->Set( Integer::New(count), 
-               ODBC::GetRecordTuple( self->m_hSTMT,
-                                     self->columns,
-                                     &self->colCount,
-                                     self->buffer,
-                                     self->bufferLength));
-
-    count++;
+  }
+  else {
+    ODBC::FreeColumns(self->columns, &self->colCount);
   }
   
-  Handle<Value> args[2];
-  args[0] = Null();
-  args[1] = rows;
-    
-  req_fetch->callback->Call(Context::GetCurrent()->Global(), 2, args);
-  req_fetch->callback.Dispose();
+  //throw the error object if there were errors
+  if (errorCount > 0) {
+    ThrowException(objError);
+  }
   
-  free(work_req);
-  free(req_fetch);
-  
-  self->Unref();
+  return scope.Close(rows);
 }
 
-Handle<Value> ODBCResult::Close(const Arguments& args) {
+Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::Close\n");
+  
   HandleScope scope;
   
-  ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  OPT_INT_ARG(0, closeOption, SQL_CLOSE);
   
-  objODBCResult->Free();
+  ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+ 
+  //TODO: undoing this change for now util this logic is all
+  //worked out. 
+  //SQLFreeStmt(result->m_hSTMT, closeOption);
+  result->Free();
   
   return scope.Close(Undefined());
 }
 
-Handle<Value> ODBCResult::MoreResults(const Arguments& args) {
+Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::MoreResults\n");
+  
   HandleScope scope;
   
-  ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  objODBCResult->colCount = 0;
+  ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  //result->colCount = 0;
   
-  SQLRETURN ret = SQLMoreResults(objODBCResult->m_hSTMT);
+  SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
   return scope.Close(SQL_SUCCEEDED(ret) ? True() : False());
 }

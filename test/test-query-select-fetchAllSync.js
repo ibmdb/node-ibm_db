@@ -12,13 +12,13 @@ db.open(common.connectionString, function(err) {
     assert.equal(err, null);
     assert.equal(result.constructor.name, "ODBCResult");
     
-    result.fetchAll(function (err, data) {
-      db.close(function () {
-        assert.deepEqual(data, [
-           {"COLINT":1,"COLTEXT":"some test"}
-          ,{"COLINT":2,"COLTEXT":"something else"}
-        ]);
-      });
+    var data = result.fetchAllSync();
+    
+    db.close(function () {
+      assert.deepEqual(data, [
+          {"COLINT":1,"COLTEXT":"some test"}
+        ,{"COLINT":2,"COLTEXT":"something else"}
+      ]);
     });
   });
 });

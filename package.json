@@ -2,7 +2,7 @@
   "name": "odbc",
   "description": "unixodbc bindings for node",
   "version": "0.5.1",
-  "main": "odbc.js",
+  "main": "lib/odbc.js",
   "homepage": "http://github.com/w1nk/node-odbc/",
   "repository": {
     "type": "git",
