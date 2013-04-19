@@ -31,6 +31,9 @@ using namespace v8;
 using namespace node;
 
 Persistent<FunctionTemplate> ODBCConnection::constructor_template;
+Persistent<String> ODBCConnection::OPTION_SQL = Persistent<String>::New(String::New("sql"));
+Persistent<String> ODBCConnection::OPTION_PARAMS = Persistent<String>::New(String::New("params"));
+Persistent<String> ODBCConnection::OPTION_NORESULTS = Persistent<String>::New(String::New("noResults"));
 
 void ODBCConnection::Init(v8::Handle<Object> target) {
   DEBUG_PRINTF("ODBCConnection::Init\n");
@@ -566,52 +569,108 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::Query\n");
   
   HandleScope scope;
-
-  REQ_STR_ARG(0, sql);
   
-  Local<Function> cb; 
-
+  Local<Function> cb;
+  
+  String::Utf8Value* sql;
+  
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
   query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
 
-  // populate data->params if parameters were supplied
-  if (args.Length() > 2) {
-      if ( !args[1]->IsArray() ) {
-           return ThrowException(Exception::TypeError(
-                      String::New("Argument 1 must be an Array"))
-           );
-      }
-      else if ( !args[2]->IsFunction() ) {
-           return ThrowException(Exception::TypeError(
-                      String::New("Argument 2 must be a Function"))
-           );
-      }
-  
-      cb = Local<Function>::Cast(args[2]);
+  //Check arguments for different variations of calling this function
+  if (args.Length() == 3) {
+    //handle Query("sql string", [params], function cb () {});
+    
+    if ( !args[0]->IsString() ) {
+      return ThrowException(Exception::TypeError(
+        String::New("Argument 0 must be an String.")
+      ));
+    }
+    else if ( !args[1]->IsArray() ) {
+      return ThrowException(Exception::TypeError(
+        String::New("Argument 1 must be an Array.")
+      ));
+    }
+    else if ( !args[2]->IsFunction() ) {
+      return ThrowException(Exception::TypeError(
+        String::New("Argument 2 must be a Function.")
+      ));
+    }
+
+    sql = new String::Utf8Value(args[0]->ToString());
+    
+    data->params = ODBC::GetParametersFromArray(
+      Local<Array>::Cast(args[1]),
+      &data->paramCount);
+    
+    cb = Local<Function>::Cast(args[2]);
+  }
+  else if (args.Length() == 2 ) {
+    //handle either Query("sql", cb) or Query({ settings }, cb)
+    
+    if (!args[2]->IsFunction()) {
+      return ThrowException(Exception::TypeError(
+        String::New("ODBCConnection::Query(): Argument 1 must be a Function."))
+      );
+    }
+    
+    cb = Local<Function>::Cast(args[1]);
+    
+    if (args[0]->IsString()) {
+      //handle Query("sql", function cb () {})
       
-      data->params = ODBC::GetParametersFromArray(
-        Local<Array>::Cast(args[1]),
-        &data->paramCount);
+      sql = new String::Utf8Value(args[0]->ToString());
+      
+      data->paramCount = 0;
+    }
+    else if (args[0]->IsObject()) {
+      //NOTE: going forward this is the way we should expand options
+      //rather than adding more arguments to the function signature.
+      //specify options on an options object.
+      //handle Query({}, function cb () {});
+      
+      Local<Object> obj = args[0]->ToObject();
+      
+      if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
+        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+      }
+      
+      if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
+        data->params = ODBC::GetParametersFromArray(
+          Local<Array>::Cast(obj->Get(OPTION_PARAMS)),
+          &data->paramCount);
+      }
+      else {
+        data->paramCount = 0;
+      }
+      
+      if (obj->Has(OPTION_NORESULTS) && obj->Get(OPTION_NORESULTS)->IsBoolean()) {
+        data->noResultObject = obj->Get(OPTION_NORESULTS)->ToBoolean()->Value();
+      }
+      else {
+        data->noResultObject = false;
+      }
+    }
+    else {
+      return ThrowException(Exception::TypeError(
+        String::New("ODBCConnection::Query(): Argument 0 must be a String or an Object."))
+      );
+    }
   }
   else {
-      if ( !args[1]->IsFunction() ) {
-           return ThrowException(Exception::TypeError(
-                      String::New("Argument 1 must be a Function"))
-           );
-      }
-
-      cb = Local<Function>::Cast(args[1]);
-
-      data->paramCount = 0;
+    return ThrowException(Exception::TypeError(
+      String::New("ODBCConnection::Query(): Requires either 2 or 3 Arguments. "))
+    );
   }
+  //Done checking arguments
 
-  data->sql = (char *) malloc(sql.length() +1);
+  data->sql = (char *) malloc(sql->length() +1);
   data->cb = Persistent<Function>::New(cb);
   
-  strcpy(data->sql, *sql);
+  strcpy(data->sql, **sql);
   
   data->conn = conn;
   work_req->data = data;
@@ -709,6 +768,23 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
       data->hSTMT,
       data->cb);
   }
+  else if (data->noResultObject) {
+    //We have been requested to not create a result object
+    //this means we should release the handle now and call back
+    //with True()
+    
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
+   
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    
+    Local<Value> args[2];
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Value>::New(True());
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  }
   else {
     Local<Value> args[4];
     bool canFreeHandle = true;
@@ -776,34 +852,91 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   
   HandleScope scope;
 
-  REQ_STR_ARG(0, sql);
+  String::Utf8Value* sql;
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
   Local<Object> objError = Object::New();
-  Parameter* params;
+  Parameter* params = new Parameter[0];
   Parameter prm;
   SQLRETURN ret;
   HSTMT hSTMT;
   int paramCount = 0;
   char* sqlString;
+  bool noResultObject = false;
   
-  // populate params if parameters were supplied
-  if (args.Length() > 1) {
-      if ( !args[1]->IsArray() ) {
-           return ThrowException(Exception::TypeError(
-                      String::New("Argument 1 must be an Array"))
-           );
-      }
-  
-      params = ODBC::GetParametersFromArray(
-        Local<Array>::Cast(args[1]),
-        &paramCount);
-  }
-  
-  sqlString = (char *) malloc(sql.length() +1);
+  //Check arguments for different variations of calling this function
+  if (args.Length() == 2) {
+    //handle QuerySync("sql string", [params]);
+    
+    if ( !args[0]->IsString() ) {
+      return ThrowException(Exception::TypeError(
+        String::New("ODBCConnection::QuerySync(): Argument 0 must be an String.")
+      ));
+    }
+    else if (!args[1]->IsArray()) {
+      return ThrowException(Exception::TypeError(
+        String::New("ODBCConnection::QuerySync(): Argument 1 must be an Array.")
+      ));
+    }
 
-  strcpy(sqlString, *sql);
+    sql = new String::Utf8Value(args[0]->ToString());
+
+    params = ODBC::GetParametersFromArray(
+      Local<Array>::Cast(args[1]),
+      &paramCount);
+
+  }
+  else if (args.Length() == 1 ) {
+    //handle either QuerySync("sql") or QuerySync({ settings })
+
+    if (args[0]->IsString()) {
+      //handle Query("sql")
+      sql = new String::Utf8Value(args[0]->ToString());
+      
+      paramCount = 0;
+    }
+    else if (args[0]->IsObject()) {
+      //NOTE: going forward this is the way we should expand options
+      //rather than adding more arguments to the function signature.
+      //specify options on an options object.
+      //handle Query({}, function cb () {});
+      
+      Local<Object> obj = args[0]->ToObject();
+      
+      if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
+        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+      }
+      
+      if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
+        params = ODBC::GetParametersFromArray(
+          Local<Array>::Cast(obj->Get(OPTION_PARAMS)),
+          &paramCount);
+      }
+      else {
+        paramCount = 0;
+      }
+      
+      if (obj->Has(OPTION_NORESULTS) && obj->Get(OPTION_NORESULTS)->IsBoolean()) {
+        noResultObject = obj->Get(OPTION_NORESULTS)->ToBoolean()->Value();
+      }
+    }
+    else {
+      return ThrowException(Exception::TypeError(
+        String::New("ODBCConnection::QuerySync(): Argument 0 must be a String or an Object."))
+      );
+    }
+  }
+  else {
+    return ThrowException(Exception::TypeError(
+      String::New("ODBCConnection::QuerySync(): Requires either 1 or 2 Arguments. "))
+    );
+  }
+  //Done checking arguments
+  
+  sqlString = (char *) malloc(sql->length() +1);
+
+  strcpy(sqlString, **sql);
 
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
@@ -839,7 +972,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
           prm.buffer_length, prm.size, prm.length, &params[i].length);
 
         ret = SQLBindParameter(
-          hSTMT,              //StatementHandle
+          hSTMT,                    //StatementHandle
           i + 1,                    //ParameterNumber
           SQL_PARAM_INPUT,          //InputOutputType
           prm.c_type,               //ValueType
@@ -849,7 +982,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
           prm.buffer,               //ParameterValuePtr
           prm.buffer_length,        //BufferLength
           //using &prm.length did not work here...
-          &params[i].length); //StrLen_or_IndPtr
+          &params[i].length);       //StrLen_or_IndPtr
         
         if (ret == SQL_ERROR) {break;}
       }
@@ -888,6 +1021,17 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     ThrowException(objError);
     
     return scope.Close(Undefined());
+  }
+  else if (noResultObject) {
+    //if there is not result object requested then
+    //we must destroy the STMT ourselves.
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
+   
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    
+    return scope.Close(True());
   }
   else {
     Local<Value> args[4];

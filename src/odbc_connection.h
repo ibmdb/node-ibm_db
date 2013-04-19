@@ -20,7 +20,11 @@
 
 class ODBCConnection : public node::ObjectWrap {
   public:
+   static Persistent<String> OPTION_SQL;
+   static Persistent<String> OPTION_PARAMS;
+   static Persistent<String> OPTION_NORESULTS;
    static Persistent<FunctionTemplate> constructor_template;
+   
    static void Init(v8::Handle<Object> target);
    
    void Free();
@@ -109,6 +113,7 @@ struct query_work_data {
   
   Parameter *params;
   int paramCount;
+  bool noResultObject;
   
   char *sql;
   char *catalog;
