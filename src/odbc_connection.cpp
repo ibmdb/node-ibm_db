@@ -611,7 +611,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   else if (args.Length() == 2 ) {
     //handle either Query("sql", cb) or Query({ settings }, cb)
     
-    if (!args[2]->IsFunction()) {
+    if (!args[1]->IsFunction()) {
       return ThrowException(Exception::TypeError(
         String::New("ODBCConnection::Query(): Argument 1 must be a Function."))
       );
