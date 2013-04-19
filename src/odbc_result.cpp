@@ -96,7 +96,7 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   HENV hENV = static_cast<HENV>(js_henv->Value());
   HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
   HSTMT hSTMT = static_cast<HSTMT>(js_hstmt->Value());
-  bool canFreeHandle = static_cast<bool>(js_hstmt->Value());
+  bool canFreeHandle = static_cast<bool>(js_canFreeHandle->Value());
   
   //create a new OBCResult object
   ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, canFreeHandle);
