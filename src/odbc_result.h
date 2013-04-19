@@ -19,6 +19,7 @@
 
 class ODBCResult : public node::ObjectWrap {
   public:
+   static Persistent<String> OPTION_FETCH_MODE;
    static Persistent<FunctionTemplate> constructor_template;
    static void Init(v8::Handle<Object> target);
    
@@ -58,6 +59,7 @@ class ODBCResult : public node::ObjectWrap {
       ODBCResult *objResult;
       SQLRETURN result;
       
+      int fetchMode;
       int count;
       int errorCount;
       Persistent<Array> rows;

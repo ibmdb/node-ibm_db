@@ -30,6 +30,7 @@ using namespace v8;
 using namespace node;
 
 Persistent<FunctionTemplate> ODBCResult::constructor_template;
+Persistent<String> ODBCResult::OPTION_FETCH_MODE = Persistent<String>::New(String::New("fetchMode"));
 
 void ODBCResult::Init(v8::Handle<Object> target) {
   DEBUG_PRINTF("ODBCResult::Init\n");
@@ -140,13 +141,26 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
   
   Local<Function> cb;
    
-  if (args.Length() == 0 || !args[0]->IsFunction()) {
-    return ThrowException(Exception::TypeError(
-              String::New("Argument 0 must be a callback function."))
-    );
+  if (args.Length() == 1 && args[0]->IsFunction()) {
+    cb = Local<Function>::Cast(args[0]);
   }
-  
-  cb = Local<Function>::Cast(args[0]);
+  else if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsFunction()) {
+    cb = Local<Function>::Cast(args[1]);  
+    
+    Local<Object> obj = args[0]->ToObject();
+    
+    if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
+      data->fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
+    }
+    else {
+      data->fetchMode = FETCH_OBJECT;
+    }
+  }
+  else {
+    return ThrowException(Exception::TypeError(
+      String::New("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.")
+    ));
+  }
   
   data->cb = Persistent<Function>::New(cb);
   
@@ -217,13 +231,23 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
     Handle<Value> args[2];
 
     args[0] = Null();
-    args[1] = ODBC::GetRecordTuple(
-      data->objResult->m_hSTMT,
-      data->objResult->columns,
-      &data->objResult->colCount,
-      data->objResult->buffer,
-      data->objResult->bufferLength);
-
+    if (data->fetchMode == FETCH_ARRAY) {
+      args[1] = ODBC::GetRecordArray(
+        data->objResult->m_hSTMT,
+        data->objResult->columns,
+        &data->objResult->colCount,
+        data->objResult->buffer,
+        data->objResult->bufferLength);
+    }
+    else {
+      args[1] = ODBC::GetRecordTuple(
+        data->objResult->m_hSTMT,
+        data->objResult->columns,
+        &data->objResult->colCount,
+        data->objResult->buffer,
+        data->objResult->bufferLength);
+    }
+    
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
     data->cb.Dispose();
   }
@@ -271,13 +295,27 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
   
   Local<Function> cb;
    
-  if (args.Length() == 0 || !args[0]->IsFunction()) {
-    return ThrowException(Exception::TypeError(
-              String::New("Argument 0 must be a callback function."))
-    );
+  if (args.Length() == 1 && args[0]->IsFunction()) {
+    cb = Local<Function>::Cast(args[0]);
+    data->fetchMode = FETCH_OBJECT;
   }
-  
-  cb = Local<Function>::Cast(args[0]);
+  else if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsFunction()) {
+    cb = Local<Function>::Cast(args[1]);  
+    
+    Local<Object> obj = args[0]->ToObject();
+    
+    if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
+      data->fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
+    }
+    else {
+      data->fetchMode = FETCH_OBJECT;
+    }
+  }
+  else {
+    return ThrowException(Exception::TypeError(
+      String::New("ODBCResult::FetchAll(): 1 or 2 arguments are required. The last argument must be a callback function.")
+    ));
+  }
   
   data->rows = Persistent<Array>::New(Array::New());
   data->errorCount = 0;
@@ -346,17 +384,28 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     doMoreWork = false;
   }
   else {
-
-    data->rows->Set(
-      Integer::New(data->count), 
-      ODBC::GetRecordTuple(
-        self->m_hSTMT,
-        self->columns,
-        &self->colCount,
-        self->buffer,
-        self->bufferLength)
-    );
-
+    if (data->fetchMode == FETCH_ARRAY) {
+      data->rows->Set(
+        Integer::New(data->count), 
+        ODBC::GetRecordArray(
+          self->m_hSTMT,
+          self->columns,
+          &self->colCount,
+          self->buffer,
+          self->bufferLength)
+      );
+    }
+    else {
+      data->rows->Set(
+        Integer::New(data->count), 
+        ODBC::GetRecordTuple(
+          self->m_hSTMT,
+          self->columns,
+          &self->colCount,
+          self->buffer,
+          self->bufferLength)
+      );
+    }
     data->count++;
   }
   
@@ -413,6 +462,15 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   SQLRETURN ret;
   int count = 0;
   int errorCount = 0;
+  int fetchMode = FETCH_OBJECT;
+
+  if (args.Length() == 1 && args[0]->IsObject()) {
+    Local<Object> obj = args[0]->ToObject();
+    
+    if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
+      fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
+    }
+  }
   
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
@@ -448,16 +506,28 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
         break;
       }
 
-      rows->Set(
-        Integer::New(count), 
-        ODBC::GetRecordTuple(
-          self->m_hSTMT,
-          self->columns,
-          &self->colCount,
-          self->buffer,
-          self->bufferLength)
-      );
-
+      if (fetchMode == FETCH_ARRAY) {
+        rows->Set(
+          Integer::New(count), 
+          ODBC::GetRecordArray(
+            self->m_hSTMT,
+            self->columns,
+            &self->colCount,
+            self->buffer,
+            self->bufferLength)
+        );
+      }
+      else {
+        rows->Set(
+          Integer::New(count), 
+          ODBC::GetRecordTuple(
+            self->m_hSTMT,
+            self->columns,
+            &self->colCount,
+            self->buffer,
+            self->bufferLength)
+        );
+      }
       count++;
     }
   }
