@@ -508,7 +508,7 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     Local<Array>::Cast(args[0]), 
     &stmt->paramCount);
   
-  SQLRETURN ret;
+  SQLRETURN ret = SQL_SUCCESS;
   Parameter prm;
   
   for (int i = 0; i < stmt->paramCount; i++) {
@@ -613,7 +613,7 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
     data->stmt->m_hSTMT
   );
   
-  SQLRETURN ret;
+  SQLRETURN ret = SQL_SUCCESS;
   Parameter prm;
   
   for (int i = 0; i < data->stmt->paramCount; i++) {
