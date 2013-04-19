@@ -34,6 +34,8 @@ using namespace node;
 
 #define MODE_COLLECT_AND_CALLBACK 1
 #define MODE_CALLBACK_FOR_EACH 2
+#define FETCH_ARRAY 3
+#define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
 
 typedef struct {

@@ -59,6 +59,8 @@ void ODBC::Init(v8::Handle<Object> target) {
   NODE_DEFINE_CONSTANT(constructor_template, SQL_UNBIND);
   NODE_DEFINE_CONSTANT(constructor_template, SQL_RESET_PARAMS);
   NODE_DEFINE_CONSTANT(constructor_template, SQL_DESTROY); //SQL_DESTROY is non-standard
+  NODE_DEFINE_CONSTANT(constructor_template, FETCH_ARRAY);
+  NODE_DEFINE_CONSTANT(constructor_template, FETCH_OBJECT);
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnection", CreateConnection);
@@ -120,6 +122,9 @@ Handle<Value> ODBC::New(const Arguments& args) {
   int ret = SQLAllocEnv( &dbo->m_hEnv );
   
   //TODO: check if ret succeeded, if not, throw error to javascript land
+  if (!SQL_SUCCEEDED(ret)) {
+    //TODO: do something.
+  }
   
   return scope.Close(args.Holder());
 }
@@ -171,6 +176,10 @@ void ODBC::UV_CreateConnection(uv_work_t* req) {
   //allocate a new connection handle
   int ret = SQLAllocConnect(data->dbo->m_hEnv, &data->hDBC);
   
+  if (!SQL_SUCCEEDED(ret)) {
+   //TODO: do something. 
+  }
+  
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
 
@@ -217,7 +226,11 @@ Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
   
   //allocate a new connection handle
   SQLRETURN ret = SQLAllocConnect(dbo->m_hEnv, &hDBC);
-
+  
+  if (!SQL_SUCCEEDED(ret)) {
+    //TODO: do something!
+  }
+  
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   Local<Value> params[2];
