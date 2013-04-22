@@ -1,15 +1,14 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database();
+  , odbc = require("../")
+  , db = new odbc.Database()
+  , assert = require("assert")
+  ;
 
-db.open(common.connectionString, function(err)
-{
-	db.query("drop table test", function (err, data) {
-		if (err) {
-			console.error(err);
-			process.exit(1);
-		}
-		
-		console.error(data);
-	});
+db.open(common.connectionString, function(err) {
+  common.dropTables(db, function (err, data) {
+    db.close(function () {
+      assert.equal(err, null);
+      assert.deepEqual(data, []);
+    });
+  });
 });

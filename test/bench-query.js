@@ -1,5 +1,5 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
+	, odbc = require("../")
 	, db = new odbc.Database();
 
 db.open(common.connectionString, function(err){ 
@@ -13,7 +13,7 @@ db.open(common.connectionString, function(err){
 
 function issueQuery() {
 	var count = 0
-		, iterations = 10000
+		, iterations = 1000
 		, time = new Date().getTime();
 	
 	for (var x = 0; x < iterations; x++) {

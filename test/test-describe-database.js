@@ -1,17 +1,22 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database();
+  , odbc = require("../")
+  , db = new odbc.Database()
+  , assert = require("assert")
+  ;
 
-db.open(common.connectionString, function(err)
-{
-	db.describe({
-		database : 'main'
-	}, function (err, data) {
-		if (err) {
-			console.error(err);
-			process.exit(1);
-		}
-		
-		console.error(data);
-	});
+db.open(common.connectionString, function(err) {
+  assert.equal(err, null);
+  
+  common.dropTables(db, function () {
+    common.createTables(db, function () {
+      db.describe({
+        database : common.databaseName
+      }, function (err, data) {
+        db.close(function () {
+          assert.equal(err, null);
+          assert.ok(data.length, "No records returned when attempting to describe the database");
+        });
+      });
+    });
+  });
 });

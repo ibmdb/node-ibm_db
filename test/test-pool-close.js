@@ -1,5 +1,5 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
+	, odbc = require("../")
 	, pool = new odbc.Pool()
 	, connectionString = common.connectionString
 	, connections = []

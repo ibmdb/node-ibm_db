@@ -1,7 +1,8 @@
 node-odbc
 ---------
 
-An asynchronous interface for node.js to unixODBC and its supported drivers. 
+An asynchronous/synchronous interface for node.js to unixODBC and its supported
+drivers.
 
 requirements
 ------------
@@ -10,7 +11,7 @@ requirements
   * on Ubuntu/Debian `sudo apt-get install unixodbc unixodbc-dev`
   * on OSX using macports.org `sudo port unixODBC`
 * odbc drivers for target database
-* properly configured odbc.ini and odbcinst.ini.  
+* properly configured odbc.ini and odbcinst.ini.
 
 install
 -------
@@ -31,10 +32,49 @@ node-gyp configure build
 npm install odbc
 ```
 
+quick example
+-------------
+
+```javascript
+var db = require('odbc')()
+  , cn = process.env.ODBC_CONNECTION_STRING
+  ;
+
+db.open(cn, function (err) {
+  if (err) return console.log(err);
+  
+  db.query('select * from user where user_id = ?', [42], function (err, data) {
+    if (err) console.log(err);
+    
+    console.log(data);
+
+    db.close(function () {
+      console.log('done');
+    });
+  });
+});
+```
+
 api
 ---
 
 ### Database
+
+The simple api is based on instances of the `Database` class. You may get an 
+instance in a couple of ways.
+
+By using the helper function:
+
+```javascript
+var db = require("odbc")();
+``` 
+
+or by creating an instance with the constructor function:
+
+```javascript
+var Database = require("odbc").Database
+  , db = new Database();
+```
 
 #### .open(connectionString, callback)
 
@@ -44,8 +84,7 @@ Open a connection to a database.
 * **callback** - `callback (err)`
 
 ```javascript
-var Database = require("odbc").Database
-	, db = new Database()
+var db = require("odbc")()
 	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
 	;
 
@@ -57,10 +96,30 @@ db.open(cn, function (err) {
 	//we now have an open connection to the database
 });
 ```
+#### .openSync(connectionString)
+
+Synchronously open a connection to a database.
+
+* **connectionString** - The ODBC connection string for your database
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+try {
+  var result = db.openSync(cn);
+}
+catch (e) {
+  console.log(e.message);
+}
+
+//we now have an open connection to the database
+```
 
 #### .query(sqlQuery [, bindingParameters], callback)
 
-Issue a SQL query to the database which is currently open.
+Issue an asynchronous SQL query to the database which is currently open.
 
 * **sqlQuery** - The SQL query to be executed.
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
@@ -68,8 +127,7 @@ Issue a SQL query to the database which is currently open.
 * **callback** - `callback (err, rows, moreResultSets)`
 
 ```javascript
-var Database = require("odbc").Database
-	, db = new Database()
+var db = require("odbc")()
 	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
 	;
 
@@ -93,6 +151,28 @@ db.open(cn, function (err) {
 });
 ```
 
+#### .querySync(sqlQuery [, bindingParameters])
+
+Synchronously issue a SQL query to the database that is currently open.
+
+* **sqlQuery** - The SQL query to be executed.
+* **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
+    any '?' characters in `sqlQuery`.
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//blocks until the connection is opened.
+db.openSync(cn);
+
+//blocks until the query is completed and all data has been acquired
+var rows = db.querySync("select top 10 * from customers");
+
+console.log(rows);
+```
+
 #### .close(callback)
 
 Close the currently opened database.
@@ -100,8 +180,7 @@ Close the currently opened database.
 * **callback** - `callback (err)`
 
 ```javascript
-var Database = require("odbc").Database
-	, db = new Database()
+var db = require("odbc")()
 	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
 	;
 
@@ -115,6 +194,53 @@ db.open(cn, function (err) {
 	db.close(function (err) {
 		console.log("the database connection is now closed");
 	});
+});
+```
+
+#### .closeSync(callback)
+
+Synchronously close the currently opened database.
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+//Blocks until the connection is closed
+db.closeSync();
+```
+
+#### .prepareSync(sql)
+
+Synchronously prepare a statement for execution.
+
+* **sql** - SQL string to prepare
+
+Returns a `Statement` object
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+//Blocks while preparing the statement
+var stmt = db.prepareSync("insert into hits (col1, col2) VALUES (?, ?)")
+
+//Bind some values to the statement
+stmt.bindSync(['something', 42]);
+
+//Execute the statment asynchronously
+stmt.execute(function (err, result) {
+  result.closeSync();
+
+  //Close the connection
+  db.closeSync();
 });
 ```
 
@@ -207,9 +333,13 @@ db.open(connectionString, function(err) {
 testing
 -------
 
-There is a tests folder which contains scripts which are more examples than tests.
-We will be working on bundling these tests into an actual test suite. Sorry about
-the state of this. Please feel free to submit patches for this.
+Tests can be run by executing `npm test` from within the root of the node-odbc
+directory. You can also run the tests by executing `node run-tests.js` from
+within the `/test` directory.
+
+By default, the tests are setup to run against a sqlite3 database which is
+created at test time. This will require proper installation of the sqlite odbc
+driver. On Ubuntu: `sudo apt-get install libsqliteodbc`
 
 tips
 ----
@@ -257,39 +387,20 @@ CPReuse         =
 Threading       = 0
 ```
 
-complete
---------
-
-- Connection Management
-- Querying
-- Database Descriptions
-- Binding Parameters (thanks to @gurzgri)
-
-todo
-----
-
-- Option to emit on each record to avoid collecting the entire dataset first and
-  increasing memory usage
-- More error handling.
-- Tests
-- SQLGetData needs to support retrieving multiple chunks and concatenation in 
-  the case of large column values
-
-acknowledgements
-----------------
-
-- orlandov's node-sqlite binding was the framework I used to figure out using 
-  eio's thread pool to handle blocking calls since non blocking odbc doesn't 
-  seem to appear until 3.8.
-
-authors
+contributors
 ------
-
-* Lee Smith (notwink@gmail.com)
 * Dan VerWeire (dverweire@gmail.com)
+* Lee Smith (notwink@gmail.com)
+* Bruno Bigras
+* Christian Ensel
+* Yorick
+* Joachim Kainz
+* Oleg Efimov
 
 license
 -------
+
+Copyright (c) 2013 Dan VerWeire <dverweire@gmail.com>
 
 Copyright (c) 2010 Lee Smith <notwink@gmail.com>
 

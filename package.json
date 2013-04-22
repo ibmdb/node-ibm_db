@@ -1,7 +1,8 @@
 {
   "name": "odbc",
   "description": "unixodbc bindings for node",
-  "version": "0.4.3",
+  "version": "0.5.2",
+  "main": "lib/odbc.js",
   "homepage": "http://github.com/w1nk/node-odbc/",
   "repository": {
     "type": "git",
@@ -12,9 +13,13 @@
     "lib": "."
   },
   "engines": {
-    "node": ">=0.7.0"
+    "node": ">=0.10.0"
   },
   "scripts": {
-    "preinstall": "node-gyp configure build"
+    "preinstall": "node-gyp configure build",
+    "test": "cd test && node run-tests.js"
+  },
+  "dependencies": {
+    "bindings": "~1.0.0"
   }
 }

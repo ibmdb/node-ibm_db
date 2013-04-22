@@ -1,3 +1,6 @@
+#ifndef _STRPTIME_H
+#define _STRPTIME_H
+
 #define ALT_E          0x01
 #define ALT_O          0x02
 //#define LEGAL_ALT(x)       { if (alt_format & ~(x)) return (0); }
@@ -40,3 +43,5 @@ static const char *abmon[12] = {
 static const char *am_pm[2] = {
      "AM", "PM"
 };
+
+#endif

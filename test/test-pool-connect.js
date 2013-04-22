@@ -1,9 +1,9 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
-	, db = new odbc.Database()
+	, odbc = require("../")
+	, pool = new odbc.Pool()
 	, connectionString = common.connectionString
 	, connections = []
-	, connectCount = 500;
+	, connectCount = 10;
 
 openConnectionsUsingPool(connections);
 
@@ -11,8 +11,7 @@ function openConnectionsUsingPool(connections) {
 	for (var x = 0; x <= connectCount; x++) {
 		
 		(function (connectionIndex) {
-			//setTimeout(function () {
-			//console.error("Opening connection #", connectionIndex);
+			console.error("Opening connection #", connectionIndex);
 			
 			pool.open(connectionString, function (err, connection) {
 				//console.error("Opened connection #", connectionIndex);
@@ -25,34 +24,6 @@ function openConnectionsUsingPool(connections) {
 				connections.push(connection);
 				
 				if (connectionIndex == connectCount) {
-					//closeConnections(connections);
-				}
-			});
-			
-			//}, x * 50);
-		})(x);
-	}
-}
-
-function openConnectionsUsingDB(connections) {
-	for (var x = 0; x <= connectCount; x++) {
-		
-		(function (connectionIndex) {
-			//console.error("Opening connection #", connectionIndex);
-			var db = new Database();
-			
-			db.open(connectionString, function (err, connection) {
-				//console.error("Opened connection #", connectionIndex);
-				
-				if (err) {
-					console.error("error: ", err.message);
-					return false;
-				}
-				
-				connections.push(db);
-				//connections.push(connection);
-				
-				if (connectionIndex == connectCount) {
 					closeConnections(connections);
 				}
 			});
@@ -61,10 +32,7 @@ function openConnectionsUsingDB(connections) {
 }
 
 function closeConnections (connections) {
-	connections.forEach(function (connection, idx) {
-		//console.error("Closing connection #", idx);
-		connection.close(function () {
-			//console.error("Closed connection #", idx);
-		});
-	});
+	pool.close(function () {
+        console.error("pool closed");
+    });
 }
