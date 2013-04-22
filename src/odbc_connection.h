@@ -77,6 +77,7 @@ class ODBCConnection : public node::ObjectWrap {
     static void UV_Tables(uv_work_t* req);
     
     //sync methods
+    static Handle<Value> CloseSync(const Arguments& args);
     static Handle<Value> CreateStatementSync(const Arguments& args);
     static Handle<Value> OpenSync(const Arguments& args);
     static Handle<Value> QuerySync(const Arguments& args);

@@ -57,6 +57,7 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "openSync", OpenSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "close", Close);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatement", CreateStatement);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "createStatementSync", CreateStatementSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "query", Query);
@@ -433,6 +434,31 @@ void ODBCConnection::UV_AfterClose(uv_work_t* req, int status) {
   scope.Close(Undefined());
 }
 
+/*
+ * CloseSync
+ */
+
+Handle<Value> ODBCConnection::CloseSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::CloseSync\n");
+  HandleScope scope;
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  //TODO: check to see if there are any open statements
+  //on this connection
+  
+  conn->Free();
+  
+  conn->connected = false;
+
+#if NODE_VERSION_AT_LEAST(0, 7, 9)
+  uv_unref((uv_handle_t *)&ODBC::g_async);
+#else
+  uv_unref(uv_default_loop());
+#endif
+  
+  scope.Close(True());
+}
 
 /*
  * CreateStatementSync
