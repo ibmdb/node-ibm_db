@@ -387,19 +387,21 @@ CPReuse         =
 Threading       = 0
 ```
 
-acknowledgements
-----------------
-
-authors
+contributors
 ------
-
 * Dan VerWeire (dverweire@gmail.com)
 * Lee Smith (notwink@gmail.com)
+* Bruno Bigras
+* Christian Ensel
+* Yorick
+* Joachim Kainz
+* Oleg Efimov
 
 license
 -------
 
 Copyright (c) 2013 Dan VerWeire <dverweire@gmail.com>
+
 Copyright (c) 2010 Lee Smith <notwink@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
