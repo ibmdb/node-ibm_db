@@ -317,10 +317,8 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
                                         uint16_t* buffer, int bufferLength) {
-  HandleScope scope;
+  //HandleScope scope;
   SQLLEN len = 0;
-  
-  struct tm timeInfo = { 0 };
 
   //reset the buffer
   buffer[0] = '\0';
@@ -347,10 +345,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret);
         
         if (ret == SQL_NULL_DATA || len < 0) {
-          return scope.Close(Null());
+          //return scope.Close(Null());
+          return Null();
         }
         else {
-          return scope.Close(Integer::New(value));
+          //return scope.Close(Integer::New(value));
+          return Integer::New(value);
         }
       }
       break;
@@ -374,15 +374,18 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret);
         
         if(ret == SQL_NULL_DATA || len < 0) {
-          return scope.Close(Null());
+           //return scope.Close(Null());
+          return Null();
         }
         else {
-          return scope.Close(Number::New(value));
+          //return scope.Close(Number::New(value));
+          return Number::New(value);
         }
       }
       break;
     case SQL_DATETIME :
-    case SQL_TIMESTAMP :
+    case SQL_TIMESTAMP : {
+      struct tm timeInfo = { 0 };
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
 #ifdef _WIN32
@@ -425,7 +428,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        return scope.Close(Null());
+        //return scope.Close(Null());
+        return Null();
       }
       else {
         timeInfo.tm_year = odbcTime.year - 1900;
@@ -440,10 +444,13 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //at the specified time.
         timeInfo.tm_isdst = -1;
           
-        return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
-                          + (odbcTime.fraction / 1000000)));
+        //return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
+        //                  + (odbcTime.fraction / 1000000)));
+        return Date::New((double(timegm(&timeInfo)) * 1000) 
+                          + (odbcTime.fraction / 1000000));
       }
 #endif
+    } break;
     case SQL_BIT :
       //again, i'm not sure if this is cross database safe, but it works for 
       //MSSQL
@@ -459,10 +466,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        return scope.Close(Null());
+        //return scope.Close(Null());
+        return Null();
       }
       else {
-        return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
+        //return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
+        return Boolean::New(( *buffer == '0') ? false : true );
       }
     default :
       ret = SQLGetData(
@@ -477,10 +486,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        return scope.Close(Null());
+        //return scope.Close(Null());
+        return Null();
       }
       else {
-        return scope.Close(String::New((char*) buffer));
+        //return scope.Close(String::New((char*) buffer));
+        return String::New((char*) buffer);
       }
   }
 }
