@@ -330,49 +330,74 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   int ret; 
   
   switch ((int) column.type) {
-    case SQL_NUMERIC :
-    case SQL_DECIMAL :
     case SQL_INTEGER : 
     case SQL_SMALLINT :
+    case SQL_TINYINT : {
+        long value;
+        
+        ret = SQLGetData(
+          hStmt, 
+          column.index, 
+          SQL_C_SLONG,
+          &value, 
+          sizeof(value), 
+          &len);
+        
+        DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
+                    column.index, column.name, column.type, len, ret);
+        
+        if (ret == SQL_NULL_DATA || len < 0) {
+          return scope.Close(Null());
+        }
+        else {
+          return scope.Close(Integer::New(value));
+        }
+      }
+      break;
+    case SQL_NUMERIC :
+    case SQL_DECIMAL :
     case SQL_BIGINT :
     case SQL_FLOAT :
     case SQL_REAL :
-    case SQL_DOUBLE :
-      ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_C_CHAR,
-                        (char *) buffer, 
-                        bufferLength, 
-                        &len);
-   
-      DEBUG_PRINTF("ODBC::GetColumnValue - Numeric: index=%i name=%s type=%i len=%i ret=%i\n", 
+    case SQL_DOUBLE : {
+        double value;
+        
+        ret = SQLGetData(
+          hStmt, 
+          column.index, 
+          SQL_C_DOUBLE,
+          &value, 
+          sizeof(value), 
+          &len);
+        
+         DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
                     column.index, column.name, column.type, len, ret);
-
-      if(ret == SQL_NULL_DATA || len < 0) {
-        return scope.Close(Null());
-        //return Null();
+        
+        if(ret == SQL_NULL_DATA || len < 0) {
+          return scope.Close(Null());
+        }
+        else {
+          return scope.Close(Number::New(value));
+        }
       }
-      else {
-        return scope.Close(Number::New(atof((char *) buffer)));
-        //return Number::New(atof((char *) buffer));
-      }
+      break;
     case SQL_DATETIME :
     case SQL_TIMESTAMP :
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
 #ifdef _WIN32
-      ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_C_CHAR,
-                        (char *) buffer, 
-                        bufferLength, 
-                        &len);
+      ret = SQLGetData(
+        hStmt, 
+        column.index, 
+        SQL_C_CHAR,
+        (char *) buffer, 
+        bufferLength, 
+        &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
-        //return scope.Close(Null());
         return Null();
       }
       else {
@@ -383,25 +408,24 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //at the specified time.
         timeInfo.tm_isdst = -1;
           
-        //return scope.Close(Date::New(double(mktime(&timeInfo)) * 1000));
         return Date::New((double(mktime(&timeInfo)) * 1000));
       }
 #else
       SQL_TIMESTAMP_STRUCT odbcTime;
       
-      ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_C_TYPE_TIMESTAMP,
-                        &odbcTime, 
-                        bufferLength, 
-                        &len);
+      ret = SQLGetData(
+        hStmt, 
+        column.index, 
+        SQL_C_TYPE_TIMESTAMP,
+        &odbcTime, 
+        bufferLength, 
+        &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
         return scope.Close(Null());
-        //return Null();
       }
       else {
         timeInfo.tm_year = odbcTime.year - 1900;
@@ -418,49 +442,45 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           
         return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
                           + (odbcTime.fraction / 1000000)));
-//        return Date::New((double(timegm(&timeInfo)) * 1000) 
-//                          + (odbcTime.fraction / 1000000));
       }
 #endif
     case SQL_BIT :
       //again, i'm not sure if this is cross database safe, but it works for 
       //MSSQL
-      ret = SQLGetData( hStmt, 
-                        column.index, 
-                        SQL_C_CHAR,
-                        (char *) buffer, 
-                        bufferLength, 
-                        &len);
+      ret = SQLGetData(
+        hStmt, 
+        column.index, 
+        SQL_C_CHAR,
+        (char *) buffer, 
+        bufferLength, 
+        &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
       if(ret == SQL_NULL_DATA || len < 0) {
         return scope.Close(Null());
-        //return Null();
       }
       else {
         return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
-        //return Boolean::New(( *buffer == '0') ? false : true );
       }
     default :
-      ret = SQLGetData( hStmt,
-                        column.index,
-                        SQL_C_CHAR,
-                        (char *) buffer,
-                        bufferLength,
-                        &len);
+      ret = SQLGetData(
+        hStmt,
+        column.index,
+        SQL_C_CHAR,
+        (char *) buffer,
+        bufferLength,
+        &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
                     column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
       if(ret == SQL_NULL_DATA || len < 0) {
         return scope.Close(Null());
-        //return Null();
       }
       else {
         return scope.Close(String::New((char*) buffer));
-        //return String::New((char*) buffer);
       }
   }
 }
