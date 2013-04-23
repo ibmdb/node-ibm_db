@@ -698,6 +698,8 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   
   strcpy(data->sql, **sql);
   
+  delete sql;
+  
   data->conn = conn;
   work_req->data = data;
   
