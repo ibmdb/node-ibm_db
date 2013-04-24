@@ -396,6 +396,7 @@ contributors
 * Yorick
 * Joachim Kainz
 * Oleg Efimov
+* paulhendrix
 
 license
 -------
