@@ -22,9 +22,13 @@
 #include <node.h>
 
 #include <stdlib.h>
+#ifdef dynodbc
+#include "dynodbc.h"
+#else
 #include <sql.h>
 #include <sqltypes.h>
 #include <sqlext.h>
+#endif
 
 using namespace v8;
 using namespace node;
