@@ -27,6 +27,10 @@
 #include "odbc_result.h"
 #include "odbc_statement.h"
 
+#ifdef dynodbc
+#include "dynodbc.h"
+#endif
+
 #ifdef _WIN32
 #include "strptime.h"
 #endif
@@ -789,7 +793,24 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
   scope.Close(rows);
 }
 
+#ifdef dynodbc
+Handle<Value> ODBC::LoadODBCLibrary(const Arguments& args) {
+  HandleScope scope;
+  
+  REQ_STR_ARG(0, js_library);
+  
+  bool result = DynLoadODBC(*js_library);
+  
+  return scope.Close((result) ? True() : False());
+}
+#endif
+
 extern "C" void init (v8::Handle<Object> target) {
+#ifdef dynodbc
+  target->Set(String::NewSymbol("loadODBCLibrary"),
+        FunctionTemplate::New(ODBC::LoadODBCLibrary)->GetFunction());
+#endif
+  
   ODBC::Init(target);
   ODBCResult::Init(target);
   ODBCConnection::Init(target);

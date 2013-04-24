@@ -71,7 +71,9 @@ class ODBC : public node::ObjectWrap {
     static Local<Object> GetSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, char* message);
     static Local<Object> GetSQLDiagRecError (HDBC hDBC);
     static Local<Array>  GetAllRecordsSync (HENV hENV, HDBC hDBC, HSTMT hSTMT, uint16_t* buffer, int bufferLength);
-    
+#ifdef dynodbc
+    static Handle<Value> LoadODBCLibrary(const Arguments& args);
+#endif
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
     void Free();
