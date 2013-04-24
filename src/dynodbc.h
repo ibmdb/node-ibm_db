@@ -119,7 +119,7 @@ typedef RETCODE (SQL_API * pfnSQLBindParameter)(
   SQLSMALLINT        ibScale,
   SQLPOINTER         rgbValue,
   SQLINTEGER         cbValueMax,
-  SQLINTEGER        *pcbValue);
+  SQLLEN        *pcbValue);
 
 typedef RETCODE (SQL_API * pfnSQLPrimaryKeys)(
   SQLHSTMT           hstmt,
@@ -254,17 +254,17 @@ typedef RETCODE (SQL_API * pfnSQLDrivers)(
   SWORD       cbDrvrAttrMax,
   SWORD  FAR *pcbDrvrAttr);
 
-typedef RETCODE (SQL_API * pfnSQLBindParameter)(
-  HSTMT       hstmt,
-  UWORD       ipar,
-  SWORD       fParamType,
-  SWORD       fCType,
-  SWORD       fSqlType,
-  UDWORD      cbColDef,
-  SWORD       ibScale,
-  PTR         rgbValue,
-  SDWORD      cbValueMax,
-  SDWORD FAR *pcbValue);
+// typedef RETCODE (SQL_API * pfnSQLBindParameter)(
+//   HSTMT       hstmt,
+//   UWORD       ipar,
+//   SWORD       fParamType,
+//   SWORD       fCType,
+//   SWORD       fSqlType,
+//   UDWORD      cbColDef,
+//   SWORD       ibScale,
+//   PTR         rgbValue,
+//   SDWORD      cbValueMax,
+//   SDWORD FAR *pcbValue);
 
 typedef RETCODE (SQL_API * pfnSQLDataSources)(
   HENV        henv,
@@ -315,7 +315,7 @@ extern pfnSQLEndTran            pSQLEndTran;
 extern pfnSQLExecDirect         pSQLExecDirect;
 extern pfnSQLTables             pSQLTables;
 extern pfnSQLColumns            pSQLColumns;
-extern pfnSQLBindParameter      pSQLBindParameter;
+// extern pfnSQLBindParameter      pSQLBindParameter;
 extern pfnSQLPrimaryKeys        pSQLPrimaryKeys;
 extern pfnSQLSetEnvAttr         pSQLSetEnvAttr;
 extern pfnSQLFreeConnect        pSQLFreeConnect;

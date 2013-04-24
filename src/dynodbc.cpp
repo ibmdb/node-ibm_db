@@ -1,6 +1,7 @@
 #ifdef dynodbc
 
 #include "dynodbc.h"
+#include <stdio.h>
 
 #ifdef _WIN32
   #include <windows.h>
@@ -25,7 +26,13 @@ void* LoadSharedLibrary(char *pcDllname, int iMode = 2)
   return (void*)LoadLibraryA(pcDllname);
 #elif defined(__GNUC__) // GNU compiler
   sDllName += ".so";
-  return dlopen(sDllName.c_str(),iMode);
+  void* handle = dlopen(sDllName.c_str(),iMode);
+  
+  if (!handle) {
+    printf("node-odbc: error loading ODBC library: %s\n", dlerror());
+  }
+  
+  return handle;
 #endif
 }
 
