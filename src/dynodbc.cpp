@@ -29,7 +29,7 @@ void* LoadSharedLibrary(char *pcDllname, int iMode = 2)
 #endif
 }
 
-void *GetFunction(void *Lib, char *Fnname)
+void* GetFunction(void *Lib, char *Fnname)
 {
 #if defined(_MSC_VER) // Microsoft compiler
   return (void*)GetProcAddress((HINSTANCE)Lib,Fnname);
@@ -93,17 +93,25 @@ pfnSQLMoreResults       pSQLMoreResults;
 //#define LOAD_ENTRY( hMod, Name ) (p##Name = (pfn##Name) GetProcAddress( (hMod), #Name ))
 #define LOAD_ENTRY( hMod, Name ) (p##Name = (pfn##Name) GetFunction( (hMod), #Name ))
 
-static BOOL  s_fODBCLoaded = FALSE;
+static BOOL  s_fODBCLoaded = false;
 
 BOOL DynLoadODBC( char* odbcModuleName )
 {
+#ifdef _WIN32
     HMODULE hMod;
+#elif defined(__GNUC__) // GNU compiler
+    void* hMod;
+#endif
 
     if ( s_fODBCLoaded )
-      return TRUE;
+      return true;
 
  //   if ( (hMod = (HMODULE) LoadLibrary( odbcModuleName ))) {
+#ifdef _WIN32
   if ( (hMod = (HMODULE) LoadSharedLibrary( odbcModuleName ))) {
+#elif defined(__GNUC__) // GNU compiler
+  if ( (hMod = (void *) LoadSharedLibrary( odbcModuleName ))) {
+#endif
 
 //#if (ODBCVER < 0x0300)
   if (LOAD_ENTRY( hMod, SQLGetData   )  )
@@ -152,7 +160,7 @@ BOOL DynLoadODBC( char* odbcModuleName )
   if (LOAD_ENTRY( hMod, SQLMoreResults    )
           ) {
 
-          s_fODBCLoaded = TRUE;
+          s_fODBCLoaded = true;
       }
   }
 
