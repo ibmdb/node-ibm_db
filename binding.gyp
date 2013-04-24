@@ -6,19 +6,21 @@
         'src/odbc.cpp',
         'src/odbc_connection.cpp',
         'src/odbc_statement.cpp',
-        'src/odbc_result.cpp'
+        'src/odbc_result.cpp',
+        'src/dynodbc.cpp'
       ],
       'defines' : [
+        
       ],
       'conditions' : [
         [ 'OS == "linux"', {
-     		'libraries' : [ 
-	            '-lodbc' 
-		],
-		'cflags' : [
-			'-g'
-        	]
-     	}],
+          'libraries' : [ 
+            '-lodbc' 
+          ],
+          'cflags' : [
+            '-g'
+          ]
+        }],
         [ 'OS == "mac"', {
           'libraries' : [ 
             '-lodbc' 

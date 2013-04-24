@@ -1,3 +1,7 @@
+var odbc = require("../");
+//odbc.library = '/usr/lib/odbc/libsqlite3odbc-0.91';
+//odbc.library = '/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc';
+
 exports.connectionString = "DRIVER={SQLite3};DATABASE=data/sqlite-test.db";
 //exports.connectionString = "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;";
 //exports.connectionString = process.env.ODBC_CONNETION_STRING;
