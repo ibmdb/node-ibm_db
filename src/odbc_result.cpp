@@ -52,6 +52,7 @@ void ODBCResult::Init(v8::Handle<Object> target) {
 
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResultsSync", MoreResultsSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchSync", FetchSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
 
   // Attach the Database Constructor to the target object
@@ -276,6 +277,101 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   data->objResult->Unref();
   
   return;
+}
+
+/*
+ * FetchSync
+ */
+
+Handle<Value> ODBCResult::FetchSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::FetchSync\n");
+  
+  HandleScope scope;
+  
+  ODBCResult* objResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+
+  Local<Object> objError;
+  bool moreWork = true;
+  bool error = false;
+  int fetchMode = FETCH_OBJECT;
+  
+  if (args.Length() == 1 && args[0]->IsObject()) {
+    
+    Local<Object> obj = args[0]->ToObject();
+    
+    if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
+      fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
+    }
+    else {
+      fetchMode = FETCH_OBJECT;
+    }
+  }
+  
+  SQLRETURN ret = SQLFetch(objResult->m_hSTMT);
+
+  if (objResult->colCount == 0) {
+    objResult->columns = ODBC::GetColumns(
+      objResult->m_hSTMT, 
+      &objResult->colCount);
+  }
+  
+  //check to see if the result has no columns
+  if (objResult->colCount == 0) {
+    moreWork = false;
+  }
+  //check to see if there was an error
+  else if (ret == SQL_ERROR)  {
+    moreWork = false;
+    error = true;
+    
+    objError = ODBC::GetSQLError(
+      objResult->m_hENV, 
+      objResult->m_hDBC, 
+      objResult->m_hSTMT,
+      (char *) "Error in ODBCResult::UV_AfterFetch");
+  }
+  //check to see if we are at the end of the recordset
+  else if (ret == SQL_NO_DATA) {
+    moreWork = false;
+  }
+
+  if (moreWork) {
+    Handle<Value> data;
+    
+    if (fetchMode == FETCH_ARRAY) {
+      data = ODBC::GetRecordArray(
+        objResult->m_hSTMT,
+        objResult->columns,
+        &objResult->colCount,
+        objResult->buffer,
+        objResult->bufferLength);
+    }
+    else {
+      data = ODBC::GetRecordTuple(
+        objResult->m_hSTMT,
+        objResult->columns,
+        &objResult->colCount,
+        objResult->buffer,
+        objResult->bufferLength);
+    }
+    
+    return scope.Close(data);
+  }
+  else {
+    ODBC::FreeColumns(objResult->columns, &objResult->colCount);
+    
+    Handle<Value> args[2];
+    
+    //if there was an error, pass that as arg[0] otherwise Null
+    if (error) {
+      ThrowException(objError);
+      
+      return scope.Close(Null());
+    }
+    else {
+      return scope.Close(Null());
+    }
+  }
 }
 
 /*

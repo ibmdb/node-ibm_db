@@ -52,6 +52,7 @@ class ODBCResult : public node::ObjectWrap {
     //sync methods
     static Handle<Value> CloseSync(const Arguments& args);
     static Handle<Value> MoreResultsSync(const Arguments& args);
+    static Handle<Value> FetchSync(const Arguments& args);
     static Handle<Value> FetchAllSync(const Arguments& args);
     
     struct fetch_work_data {
