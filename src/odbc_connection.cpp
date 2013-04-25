@@ -272,14 +272,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   Local<Object> objError;
   SQLRETURN ret;
   bool err = false;
-  char* connectionString;
   char connstr[1024];
-  
-  //allocate memory for the connection string
-  connectionString = (char *) malloc(connection.length() +1);
-  
-  //copy the connection string to the work data
-  strcpy(connectionString, *connection);
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -290,8 +283,8 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   ret = SQLDriverConnect( 
     conn->m_hDBC, 
     NULL,
-    (SQLCHAR*) connectionString,
-    strlen(connectionString),
+    (SQLCHAR*) *connection,
+    connection.length(),
     (SQLCHAR*) connstr,
     1024,
     NULL,
@@ -333,8 +326,6 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   }
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
-  
-  free(connectionString);
 
   if (err) {
     ThrowException(objError);
@@ -890,7 +881,6 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   SQLRETURN ret;
   HSTMT hSTMT;
   int paramCount = 0;
-  char* sqlString;
   bool noResultObject = false;
   
   //Check arguments for different variations of calling this function
@@ -961,10 +951,6 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     );
   }
   //Done checking arguments
-  
-  sqlString = (char *) malloc(sql->length() +1);
-
-  strcpy(sqlString, **sql);
 
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
@@ -980,15 +966,15 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     // execute the query directly
     ret = SQLExecDirect(
       hSTMT,
-      (SQLCHAR *) sqlString, 
-      strlen(sqlString));
+      (SQLCHAR *) **sql, 
+      sql->length());
   }
   else {
     // prepare statement, bind parameters and execute statement 
     ret = SQLPrepare(
       hSTMT,
-      (SQLCHAR *) sqlString, 
-      strlen(sqlString));
+      (SQLCHAR *) **sql, 
+      sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
       for (int i = 0; i < paramCount; i++) {
@@ -1034,8 +1020,6 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     
     free(params);
   }
-
-  free(sqlString);
   
   //check to see if there was an error during execution
   if(ret == SQL_ERROR) {
