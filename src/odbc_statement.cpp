@@ -47,7 +47,10 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "execute", Execute);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeSync", ExecuteSync);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirectSync", ExecuteDirectSync);
   
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepareSync", PrepareSync);
@@ -114,7 +117,6 @@ Handle<Value> ODBCStatement::New(const Arguments& args) {
 
 /*
  * Execute
- * 
  */
 
 Handle<Value> ODBCStatement::Execute(const Arguments& args) {
@@ -179,7 +181,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle;
+    bool canFreeHandle = false;
     
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
@@ -229,6 +231,66 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   free(req);
   
   scope.Close(Undefined());
+}
+
+/*
+ * ExecuteSync
+ * 
+ */
+
+Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteSync\n");
+  
+  HandleScope scope;
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+
+  SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
+
+  if (stmt->paramCount) {
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < stmt->paramCount; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    stmt->paramCount = 0;
+
+    free(stmt->params);
+  }
+  
+  if(ret == SQL_ERROR) {
+    ThrowException(ODBC::GetSQLError(
+      stmt->m_hENV,
+      stmt->m_hDBC,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
+    ));
+    
+    return scope.Close(Null());
+  }
+  else {
+    Local<Value> args[3];
+    bool canFreeHandle = false;
+    
+    args[0] = External::New(stmt->m_hENV);
+    args[1] = External::New(stmt->m_hDBC);
+    args[2] = External::New(stmt->m_hSTMT);
+    args[3] = External::New(&canFreeHandle);
+    
+    Local<Object> js_result(ODBCResult::constructor_template->
+                              GetFunction()->NewInstance(4, args));
+    
+    return scope.Close(js_result);
+  }
 }
 
 /*
@@ -336,6 +398,51 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   free(req);
   
   scope.Close(Undefined());
+}
+
+/*
+ * ExecuteDirectSync
+ * 
+ */
+
+Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteDirectSync\n");
+  
+  HandleScope scope;
+
+  REQ_STR_ARG(0, sql);
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+  
+  SQLRETURN ret = SQLExecDirect(
+    stmt->m_hSTMT,
+    (SQLCHAR *) *sql, 
+    sql.length());  
+
+  if(ret == SQL_ERROR) {
+    ThrowException(ODBC::GetSQLError(
+      stmt->m_hENV,
+      stmt->m_hDBC,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::ExecuteDirectSync"
+    ));
+    
+    return scope.Close(Null());
+  }
+  else {
+    Local<Value> args[3];
+    bool canFreeHandle = false;
+    
+    args[0] = External::New(stmt->m_hENV);
+    args[1] = External::New(stmt->m_hDBC);
+    args[2] = External::New(stmt->m_hSTMT);
+    args[3] = External::New(&canFreeHandle);
+    
+    Persistent<Object> js_result(ODBCResult::constructor_template->
+                              GetFunction()->NewInstance(4, args));
+    
+    return scope.Close(js_result);
+  }
 }
 
 /*
@@ -448,7 +555,7 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
 
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
-     ODBC::CallbackSQLError(
+    ODBC::CallbackSQLError(
       data->stmt->m_hENV,
       data->stmt->m_hDBC,
       data->stmt->m_hSTMT,
@@ -695,7 +802,7 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
  */
 
 Handle<Value> ODBCStatement::CloseSync(const Arguments& args) {
-  DEBUG_PRINTF("ODBCStatement::Execute\n");
+  DEBUG_PRINTF("ODBCStatement::CloseSync\n");
   
   HandleScope scope;
 

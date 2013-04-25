@@ -59,6 +59,8 @@ class ODBCStatement : public node::ObjectWrap {
     static Handle<Value> BindSync(const Arguments& args);
     static Handle<Value> PrepareSync(const Arguments& args);
     static Handle<Value> CloseSync(const Arguments& args);
+    static Handle<Value> ExecuteSync(const Arguments& args);
+    static Handle<Value> ExecuteDirectSync(const Arguments& args);
     
     struct Fetch_Request {
       Persistent<Function> callback;
