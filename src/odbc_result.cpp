@@ -642,7 +642,6 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
 /*
  * CloseSync
  * 
- * When calling a Close method, 
  */
 
 Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
@@ -673,7 +672,7 @@ Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
-  return scope.Close(Undefined());
+  return scope.Close(True());
 }
 
 Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
