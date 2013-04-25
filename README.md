@@ -341,6 +341,41 @@ By default, the tests are setup to run against a sqlite3 database which is
 created at test time. This will require proper installation of the sqlite odbc
 driver. On Ubuntu: `sudo apt-get install libsqliteodbc`
 
+build options
+-------------
+
+If you would like to enable debugging messages to be displayed you can add the 
+flag `DEBUG` to the defines section of the `binding.gyp` file and then execute 
+`node-gyp rebuild`.
+
+```javascript
+<snip>
+'defines' : [
+  "DEBUG"
+],
+<snip>
+```
+
+You may also enable the ability to load a specific ODBC driver and bypass the 
+ODBC driver management layer. A performance increase of ~5Kqps was seen using
+this method with the libsqlite3odbc driver. To do this, specify the `dynodbc`
+flag in the defines section of the `binding.gyp` file. You will also need to 
+remove any library references in `binding.gyp`. Then execute `node-gyp
+rebuild`.
+
+```javascript
+<snip>
+'defines' : [
+  "dynodbc"
+],
+'conditions' : [
+  [ 'OS == "linux"', {
+    'libraries' : [ 
+      //remove this: '-lodbc' 
+    ],
+<snip>
+```
+
 tips
 ----
 ### Using node < v0.10 on Linux
