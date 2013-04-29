@@ -359,9 +359,7 @@ Handle<Value> ODBCResult::FetchSync(const Arguments& args) {
   }
   else {
     ODBC::FreeColumns(objResult->columns, &objResult->colCount);
-    
-    Handle<Value> args[2];
-    
+
     //if there was an error, pass that as arg[0] otherwise Null
     if (error) {
       ThrowException(objError);
