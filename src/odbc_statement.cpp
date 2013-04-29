@@ -622,7 +622,7 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     prm = stmt->params[i];
     
     DEBUG_PRINTF(
-      "ODBC::BindSync - param[%i]: c_type=%i type=%i "
+      "ODBCStatement::BindSync - param[%i]: c_type=%i type=%i "
       "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
       i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
       &stmt->params[i].length, prm.decimals, prm.buffer
@@ -733,7 +733,7 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
     prm = data->stmt->params[i];
     
     DEBUG_PRINTF(
-      "ODBC::UV_Bind - param[%i]: c_type=%i type=%i "
+      "ODBCStatement::UV_Bind - param[%i]: c_type=%i type=%i "
       "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
       i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
       &data->stmt->params[i].length, prm.decimals, prm.buffer
