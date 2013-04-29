@@ -52,6 +52,9 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirectSync", ExecuteDirectSync);
   
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", Execute);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuerySync", ExecuteNonQuerySync);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepareSync", PrepareSync);
   
@@ -290,6 +293,164 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
                               GetFunction()->NewInstance(4, args));
     
     return scope.Close(js_result);
+  }
+}
+
+/*
+ * ExecuteNonQuery
+ */
+
+Handle<Value> ODBCStatement::ExecuteNonQuery(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  HandleScope scope;
+
+  REQ_FUN_ARG(0, cb);
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  execute_work_data* data = 
+    (execute_work_data *) calloc(1, sizeof(execute_work_data));
+
+  data->cb = Persistent<Function>::New(cb);
+  
+  data->stmt = stmt;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_ExecuteNonQuery,
+    (uv_after_work_cb)UV_AfterExecuteNonQuery);
+
+  stmt->Ref();
+
+  return  scope.Close(Undefined());
+}
+
+void ODBCStatement::UV_ExecuteNonQuery(uv_work_t* req) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  execute_work_data* data = (execute_work_data *)(req->data);
+
+  SQLRETURN ret;
+  
+  ret = SQLExecute(data->stmt->m_hSTMT); 
+
+  data->result = ret;
+}
+
+void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  execute_work_data* data = (execute_work_data *)(req->data);
+  
+  HandleScope scope;
+  
+  //an easy reference to the statment object
+  ODBCStatement* self = data->stmt->self();
+
+  //First thing, let's check if the execution of the query returned any errors 
+  if(data->result == SQL_ERROR) {
+    ODBC::CallbackSQLError(
+      self->m_hENV,
+      self->m_hDBC,
+      self->m_hSTMT,
+      data->cb);
+  }
+  else {
+    Local<Value> args[2];
+
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Value>::New(True());
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  }
+  
+  TryCatch try_catch;
+  
+  self->Unref();
+  
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+  
+  data->cb.Dispose();
+  
+  if (data->stmt->paramCount) {
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < data->stmt->paramCount; i++) {
+      if (prm = data->stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    data->stmt->paramCount = 0;
+
+    free(data->stmt->params);
+  }
+  
+  free(data);
+  free(req);
+  
+  scope.Close(Undefined());
+}
+
+/*
+ * ExecuteNonQuerySync
+ * 
+ */
+
+Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuerySync\n");
+  
+  HandleScope scope;
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+
+  SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
+
+  if (stmt->paramCount) {
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < stmt->paramCount; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    stmt->paramCount = 0;
+
+    free(stmt->params);
+  }
+  
+  if(ret == SQL_ERROR) {
+    ThrowException(ODBC::GetSQLError(
+      stmt->m_hENV,
+      stmt->m_hDBC,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
+    ));
+    
+    return scope.Close(Null());
+  }
+  else {
+    return scope.Close(True());
   }
 }
 
