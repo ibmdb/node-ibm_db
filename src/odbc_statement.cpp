@@ -989,9 +989,23 @@ Handle<Value> ODBCStatement::CloseSync(const Arguments& args) {
   
   HandleScope scope;
 
+  OPT_INT_ARG(0, closeOption, SQL_DESTROY);
+  
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
   
-  stmt->Free();
+  DEBUG_PRINTF("ODBCStatement::CloseSync closeOption=%i\n", 
+               closeOption);
+  
+  if (closeOption == SQL_DESTROY) {
+    stmt->Free();
+  }
+  else {
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeStmt(stmt->m_hSTMT, closeOption);
+  
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
 
   return  scope.Close(True());
 }
