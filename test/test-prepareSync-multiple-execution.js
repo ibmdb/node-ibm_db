@@ -14,17 +14,19 @@ db.open(common.connectionString, function(err) {
     return finish(1);
   }
   
-  common.createTables(db, function (err, data) {
-    if (err) {
-      console.log(err);
+  common.dropTables(db, function () {
+    common.createTables(db, function (err, data) {
+      if (err) {
+        console.log(err);
+        
+        return finish(2);
+      }
       
-      return finish(2);
-    }
-    
-    var stmt = db.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
-    assert.equal(stmt.constructor.name, "ODBCStatement");
-    
-    recursive(stmt);
+      var stmt = db.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
+      assert.equal(stmt.constructor.name, "ODBCStatement");
+      
+      recursive(stmt);
+    });
   });
 });
 
