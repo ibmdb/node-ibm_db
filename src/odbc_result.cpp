@@ -98,10 +98,10 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
   HENV hENV = static_cast<HENV>(js_henv->Value());
   HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
   HSTMT hSTMT = static_cast<HSTMT>(js_hstmt->Value());
-  bool canFreeHandle = static_cast<bool>(js_canFreeHandle->Value());
+  bool* canFreeHandle = static_cast<bool *>(js_canFreeHandle->Value());
   
   //create a new OBCResult object
-  ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, canFreeHandle);
+  ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, *canFreeHandle);
   
   DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X canFreeHandle=%X\n",
     objODBCResult->m_hENV,
@@ -645,7 +645,7 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
  */
 
 Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
-  DEBUG_PRINTF("ODBCResult::Close\n");
+  DEBUG_PRINTF("ODBCResult::CloseSync\n");
   
   HandleScope scope;
   
@@ -653,6 +653,9 @@ Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
   
   ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
  
+  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i\n", 
+               closeOption, result->m_canFreeHandle);
+  
   if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
     result->Free();
   }

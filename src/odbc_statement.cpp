@@ -650,7 +650,13 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     return  scope.Close(True());
   }
   else {
-    //TODO: throw an error object
+    ThrowException(ODBC::GetSQLError(
+      stmt->m_hENV,
+      stmt->m_hDBC,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::BindSync"
+    ));
+    
     return  scope.Close(False());
   }
 
