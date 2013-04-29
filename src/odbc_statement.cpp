@@ -361,10 +361,18 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
       data->cb);
   }
   else {
+    SQLLEN rowCount = 0;
+    
+    SQLRETURN ret = SQLRowCount(self->m_hSTMT, &rowCount);
+    
+    if (!SQL_SUCCEEDED(ret)) {
+      rowCount = 0;
+    }
+    
     Local<Value> args[2];
 
     args[0] = Local<Value>::New(Null());
-    args[1] = Local<Value>::New(True());
+    args[1] = Local<Value>::New(Number::New(rowCount));
     
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
   }
@@ -450,7 +458,15 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
     return scope.Close(Null());
   }
   else {
-    return scope.Close(True());
+    SQLLEN rowCount = 0;
+    
+    SQLRETURN ret = SQLRowCount(stmt->m_hSTMT, &rowCount);
+    
+    if (!SQL_SUCCEEDED(ret)) {
+      rowCount = 0;
+    }
+    
+    return scope.Close(Number::New(rowCount));
   }
 }
 
