@@ -75,6 +75,29 @@ ODBCStatement::~ODBCStatement() {
 }
 
 void ODBCStatement::Free() {
+  DEBUG_PRINTF("ODBCStatement::Free\n");
+  //if we previously had parameters, then be sure to free them
+  if (paramCount) {
+    int count = paramCount;
+    paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(params);
+  }
+  
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
@@ -90,6 +113,7 @@ void ODBCStatement::Free() {
 }
 
 Handle<Value> ODBCStatement::New(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::New\n");
   HandleScope scope;
   
   REQ_EXT_ARG(0, js_henv);
@@ -112,6 +136,9 @@ Handle<Value> ODBCStatement::New(const Arguments& args) {
 
   //set the initial colCount to 0
   stmt->colCount = 0;
+  
+  //initialize the paramCount
+  stmt->paramCount = 0;
   
   stmt->Wrap(args.Holder());
   
@@ -210,26 +237,6 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   
   data->cb.Dispose();
   
-  if (data->stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < data->stmt->paramCount; i++) {
-      if (prm = data->stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    data->stmt->paramCount = 0;
-
-    free(data->stmt->params);
-  }
-  
   free(data);
   free(req);
   
@@ -249,26 +256,6 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
-
-  if (stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < stmt->paramCount; i++) {
-      if (prm = stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    stmt->paramCount = 0;
-
-    free(stmt->params);
-  }
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
@@ -387,26 +374,6 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
   
   data->cb.Dispose();
   
-  if (data->stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < data->stmt->paramCount; i++) {
-      if (prm = data->stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    data->stmt->paramCount = 0;
-
-    free(data->stmt->params);
-  }
-  
   free(data);
   free(req);
   
@@ -426,26 +393,6 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
-
-  if (stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < stmt->paramCount; i++) {
-      if (prm = stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    stmt->paramCount = 0;
-
-    free(stmt->params);
-  }
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
@@ -788,6 +735,29 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     stmt->m_hSTMT
   );
   
+  //if we previously had parameters, then be sure to free them
+  //before allocating more
+  if (stmt->paramCount) {
+    int count = stmt->paramCount;
+    stmt->paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(stmt->params);
+  }
+  
   stmt->params = ODBC::GetParametersFromArray(
     Local<Array>::Cast(args[0]), 
     &stmt->paramCount);
@@ -865,6 +835,29 @@ Handle<Value> ODBCStatement::Bind(const Arguments& args) {
   bind_work_data* data = 
     (bind_work_data *) calloc(1, sizeof(bind_work_data));
 
+  //if we previously had parameters, then be sure to free them
+  //before allocating more
+  if (stmt->paramCount) {
+    int count = stmt->paramCount;
+    stmt->paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(stmt->params);
+  }
+  
   data->stmt = stmt;
   
   DEBUG_PRINTF("ODBCStatement::Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
