@@ -110,6 +110,9 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
     objODBCResult->m_canFreeHandle
   );
   
+  //free the pointer to canFreeHandle
+  delete canFreeHandle;
+
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
   

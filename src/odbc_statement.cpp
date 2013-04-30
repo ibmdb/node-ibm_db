@@ -184,12 +184,12 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -282,12 +282,12 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
     args[1] = External::New(stmt->m_hDBC);
     args[2] = External::New(stmt->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Local<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -544,12 +544,12 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -608,12 +608,12 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
     args[1] = External::New(stmt->m_hDBC);
     args[2] = External::New(stmt->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
