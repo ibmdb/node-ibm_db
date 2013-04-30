@@ -110,6 +110,9 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
     objODBCResult->m_canFreeHandle
   );
   
+  //free the pointer to canFreeHandle
+  delete canFreeHandle;
+
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
   
@@ -677,12 +680,11 @@ Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
 }
 
 Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
-  DEBUG_PRINTF("ODBCResult::MoreResults\n");
+  DEBUG_PRINTF("ODBCResult::MoreResultsSync\n");
   
   HandleScope scope;
   
   ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  //result->colCount = 0;
   
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 

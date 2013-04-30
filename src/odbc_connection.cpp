@@ -448,7 +448,7 @@ Handle<Value> ODBCConnection::CloseSync(const Arguments& args) {
   uv_unref(uv_default_loop());
 #endif
   
-  scope.Close(True());
+  return scope.Close(True());
 }
 
 /*
@@ -806,12 +806,12 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[4];
-    bool canFreeHandle = true;
+    bool* canFreeHandle = new bool(true);
     
     args[0] = External::New(data->conn->m_hENV);
     args[1] = External::New(data->conn->m_hDBC);
     args[2] = External::New(data->hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -1047,12 +1047,12 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   }
   else {
     Local<Value> args[4];
-    bool canFreeHandle;
+    bool* canFreeHandle = new bool(true);
     
     args[0] = External::New(conn->m_hENV);
     args[1] = External::New(conn->m_hDBC);
     args[2] = External::New(hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
