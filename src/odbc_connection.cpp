@@ -464,10 +464,14 @@ Handle<Value> ODBCConnection::CreateStatementSync(const Arguments& args) {
    
   HSTMT hSTMT;
 
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
   SQLAllocHandle(
     SQL_HANDLE_STMT, 
     conn->m_hDBC, 
     &hSTMT);
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   Local<Value> params[3];
   params[0] = External::New(conn->m_hENV);
