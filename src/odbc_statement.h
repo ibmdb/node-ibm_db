@@ -47,6 +47,10 @@ class ODBCStatement : public node::ObjectWrap {
     static void UV_ExecuteDirect(uv_work_t* work_req);
     static void UV_AfterExecuteDirect(uv_work_t* work_req, int status);
 
+    static Handle<Value> ExecuteNonQuery(const Arguments& args);
+    static void UV_ExecuteNonQuery(uv_work_t* work_req);
+    static void UV_AfterExecuteNonQuery(uv_work_t* work_req, int status);
+    
     static Handle<Value> Prepare(const Arguments& args);
     static void UV_Prepare(uv_work_t* work_req);
     static void UV_AfterPrepare(uv_work_t* work_req, int status);
@@ -56,11 +60,12 @@ class ODBCStatement : public node::ObjectWrap {
     static void UV_AfterBind(uv_work_t* work_req, int status);
     
     //sync methods
-    static Handle<Value> BindSync(const Arguments& args);
-    static Handle<Value> PrepareSync(const Arguments& args);
     static Handle<Value> CloseSync(const Arguments& args);
     static Handle<Value> ExecuteSync(const Arguments& args);
     static Handle<Value> ExecuteDirectSync(const Arguments& args);
+    static Handle<Value> ExecuteNonQuerySync(const Arguments& args);
+    static Handle<Value> PrepareSync(const Arguments& args);
+    static Handle<Value> BindSync(const Arguments& args);
     
     struct Fetch_Request {
       Persistent<Function> callback;
