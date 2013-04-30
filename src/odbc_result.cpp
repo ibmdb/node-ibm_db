@@ -680,12 +680,11 @@ Handle<Value> ODBCResult::CloseSync(const Arguments& args) {
 }
 
 Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
-  DEBUG_PRINTF("ODBCResult::MoreResults\n");
+  DEBUG_PRINTF("ODBCResult::MoreResultsSync\n");
   
   HandleScope scope;
   
   ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  //result->colCount = 0;
   
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
