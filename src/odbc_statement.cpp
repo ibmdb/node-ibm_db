@@ -52,6 +52,9 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirectSync", ExecuteDirectSync);
   
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", Execute);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuerySync", ExecuteNonQuerySync);
+  
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepareSync", PrepareSync);
   
@@ -72,6 +75,29 @@ ODBCStatement::~ODBCStatement() {
 }
 
 void ODBCStatement::Free() {
+  DEBUG_PRINTF("ODBCStatement::Free\n");
+  //if we previously had parameters, then be sure to free them
+  if (paramCount) {
+    int count = paramCount;
+    paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(params);
+  }
+  
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
@@ -87,6 +113,7 @@ void ODBCStatement::Free() {
 }
 
 Handle<Value> ODBCStatement::New(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::New\n");
   HandleScope scope;
   
   REQ_EXT_ARG(0, js_henv);
@@ -109,6 +136,9 @@ Handle<Value> ODBCStatement::New(const Arguments& args) {
 
   //set the initial colCount to 0
   stmt->colCount = 0;
+  
+  //initialize the paramCount
+  stmt->paramCount = 0;
   
   stmt->Wrap(args.Holder());
   
@@ -181,12 +211,12 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -207,26 +237,6 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   
   data->cb.Dispose();
   
-  if (data->stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < data->stmt->paramCount; i++) {
-      if (prm = data->stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    data->stmt->paramCount = 0;
-
-    free(data->stmt->params);
-  }
-  
   free(data);
   free(req);
   
@@ -246,26 +256,6 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
-
-  if (stmt->paramCount) {
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < stmt->paramCount; i++) {
-      if (prm = stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    stmt->paramCount = 0;
-
-    free(stmt->params);
-  }
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
@@ -279,17 +269,151 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
     args[1] = External::New(stmt->m_hDBC);
     args[2] = External::New(stmt->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Local<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
     
     return scope.Close(js_result);
+  }
+}
+
+/*
+ * ExecuteNonQuery
+ */
+
+Handle<Value> ODBCStatement::ExecuteNonQuery(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  HandleScope scope;
+
+  REQ_FUN_ARG(0, cb);
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  execute_work_data* data = 
+    (execute_work_data *) calloc(1, sizeof(execute_work_data));
+
+  data->cb = Persistent<Function>::New(cb);
+  
+  data->stmt = stmt;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_ExecuteNonQuery,
+    (uv_after_work_cb)UV_AfterExecuteNonQuery);
+
+  stmt->Ref();
+
+  return  scope.Close(Undefined());
+}
+
+void ODBCStatement::UV_ExecuteNonQuery(uv_work_t* req) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  execute_work_data* data = (execute_work_data *)(req->data);
+
+  SQLRETURN ret;
+  
+  ret = SQLExecute(data->stmt->m_hSTMT); 
+
+  data->result = ret;
+}
+
+void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  
+  execute_work_data* data = (execute_work_data *)(req->data);
+  
+  HandleScope scope;
+  
+  //an easy reference to the statment object
+  ODBCStatement* self = data->stmt->self();
+
+  //First thing, let's check if the execution of the query returned any errors 
+  if(data->result == SQL_ERROR) {
+    ODBC::CallbackSQLError(
+      self->m_hENV,
+      self->m_hDBC,
+      self->m_hSTMT,
+      data->cb);
+  }
+  else {
+    SQLLEN rowCount = 0;
+    
+    SQLRETURN ret = SQLRowCount(self->m_hSTMT, &rowCount);
+    
+    if (!SQL_SUCCEEDED(ret)) {
+      rowCount = 0;
+    }
+    
+    Local<Value> args[2];
+
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Value>::New(Number::New(rowCount));
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  }
+  
+  TryCatch try_catch;
+  
+  self->Unref();
+  
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+  
+  data->cb.Dispose();
+  
+  free(data);
+  free(req);
+  
+  scope.Close(Undefined());
+}
+
+/*
+ * ExecuteNonQuerySync
+ * 
+ */
+
+Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuerySync\n");
+  
+  HandleScope scope;
+
+  ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
+
+  SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
+  
+  if(ret == SQL_ERROR) {
+    ThrowException(ODBC::GetSQLError(
+      stmt->m_hENV,
+      stmt->m_hDBC,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
+    ));
+    
+    return scope.Close(Null());
+  }
+  else {
+    SQLLEN rowCount = 0;
+    
+    SQLRETURN ret = SQLRowCount(stmt->m_hSTMT, &rowCount);
+    
+    if (!SQL_SUCCEEDED(ret)) {
+      rowCount = 0;
+    }
+    
+    return scope.Close(Number::New(rowCount));
   }
 }
 
@@ -367,12 +491,12 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
     args[1] = External::New(self->m_hDBC);
     args[2] = External::New(self->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -431,12 +555,12 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
   }
   else {
     Local<Value> args[3];
-    bool canFreeHandle = false;
+    bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
     args[1] = External::New(stmt->m_hDBC);
     args[2] = External::New(stmt->m_hSTMT);
-    args[3] = External::New(&canFreeHandle);
+    args[3] = External::New(canFreeHandle);
     
     Persistent<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
@@ -611,6 +735,29 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     stmt->m_hSTMT
   );
   
+  //if we previously had parameters, then be sure to free them
+  //before allocating more
+  if (stmt->paramCount) {
+    int count = stmt->paramCount;
+    stmt->paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(stmt->params);
+  }
+  
   stmt->params = ODBC::GetParametersFromArray(
     Local<Array>::Cast(args[0]), 
     &stmt->paramCount);
@@ -688,6 +835,29 @@ Handle<Value> ODBCStatement::Bind(const Arguments& args) {
   bind_work_data* data = 
     (bind_work_data *) calloc(1, sizeof(bind_work_data));
 
+  //if we previously had parameters, then be sure to free them
+  //before allocating more
+  if (stmt->paramCount) {
+    int count = stmt->paramCount;
+    stmt->paramCount = 0;
+    
+    Parameter prm;
+    
+    //free parameter memory
+    for (int i = 0; i < count; i++) {
+      if (prm = stmt->params[i], prm.buffer != NULL) {
+        switch (prm.c_type) {
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
+        }
+      }
+    }
+
+    free(stmt->params);
+  }
+  
   data->stmt = stmt;
   
   DEBUG_PRINTF("ODBCStatement::Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
@@ -812,9 +982,23 @@ Handle<Value> ODBCStatement::CloseSync(const Arguments& args) {
   
   HandleScope scope;
 
+  OPT_INT_ARG(0, closeOption, SQL_DESTROY);
+  
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
   
-  stmt->Free();
+  DEBUG_PRINTF("ODBCStatement::CloseSync closeOption=%i\n", 
+               closeOption);
+  
+  if (closeOption == SQL_DESTROY) {
+    stmt->Free();
+  }
+  else {
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    
+    SQLFreeStmt(stmt->m_hSTMT, closeOption);
+  
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+  }
 
   return  scope.Close(True());
 }
