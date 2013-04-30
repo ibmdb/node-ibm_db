@@ -123,7 +123,11 @@ Handle<Value> ODBC::New(const Arguments& args) {
   dbo->Wrap(args.Holder());
   dbo->m_hEnv = NULL;
   
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
   int ret = SQLAllocEnv( &dbo->m_hEnv );
+  
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   //TODO: check if ret succeeded, if not, throw error to javascript land
   if (!SQL_SUCCEEDED(ret)) {
