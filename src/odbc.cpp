@@ -374,7 +374,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           sizeof(value), 
           &len);
         
-         DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
+         DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i\n", 
                     column.index, column.name, column.type, len, ret);
         
         if(ret == SQL_NULL_DATA || len < 0) {
@@ -389,7 +389,19 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       break;
     case SQL_DATETIME :
     case SQL_TIMESTAMP : {
-      struct tm timeInfo = { 0 };
+      struct tm timeInfo = { 
+        tm_sec : 0
+        , tm_min : 0
+        , tm_hour : 0
+        , tm_mday : 0
+        , tm_mon : 0
+        , tm_year : 0
+        , tm_wday : 0
+        , tm_yday : 0
+        , tm_isdst : 0
+        , tm_gmtoff : 0
+        , tm_zone : 0
+      };
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
 #ifdef _WIN32
