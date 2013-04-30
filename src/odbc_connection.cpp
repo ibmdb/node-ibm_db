@@ -448,7 +448,7 @@ Handle<Value> ODBCConnection::CloseSync(const Arguments& args) {
   uv_unref(uv_default_loop());
 #endif
   
-  scope.Close(True());
+  return scope.Close(True());
 }
 
 /*
