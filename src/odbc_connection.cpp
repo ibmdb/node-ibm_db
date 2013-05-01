@@ -666,6 +666,9 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
         sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
       }
+      else {
+        sql = new String::Utf8Value(String::New(""));
+      }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
         data->params = ODBC::GetParametersFromArray(
@@ -936,6 +939,9 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
         sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+      }
+      else {
+        sql = new String::Utf8Value(String::New(""));
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {

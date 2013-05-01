@@ -806,7 +806,8 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
     count++;
   }
   //TODO: what do we do about errors!?!
-  scope.Close(rows);
+  //we throw them
+  return scope.Close(rows);
 }
 
 #ifdef dynodbc
