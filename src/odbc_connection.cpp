@@ -96,6 +96,10 @@ void ODBCConnection::Free() {
   }
 }
 
+/*
+ * New
+ */
+
 Handle<Value> ODBCConnection::New(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::New\n");
   HandleScope scope;
@@ -167,12 +171,16 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   ODBCConnection* self = data->conn->self();
   
+  uv_mutex_lock(&ODBC::g_odbcMutex); 
+  
   //TODO: make this configurable
+  //NOTE: SQLSetConnectOption requires the thread to be locked
   SQLSetConnectOption( self->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
-
+  
   char connstr[1024];
 
   //Attempt to connect
+  //NOTE: SQLDriverConnect requires the thread to be locked
   int ret = SQLDriverConnect( 
     self->m_hDBC, 
     NULL,
@@ -182,16 +190,12 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);
-
+  
   if (SQL_SUCCEEDED(ret)) {
     HSTMT hStmt;
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     //allocate a temporary statment
     ret = SQLAllocStmt(self->m_hDBC, &hStmt);
-
-    uv_mutex_unlock(&ODBC::g_odbcMutex); 
     
     //try to determine if the driver can handle
     //multiple recordsets
@@ -204,13 +208,11 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
       self->canHaveMoreResults = 0;
     }
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
-    
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   data->result = ret;
 }
@@ -278,10 +280,14 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   bool err = false;
   char connstr[1024];
   
+  uv_mutex_lock(&ODBC::g_odbcMutex);
+  
   //TODO: make this configurable
+  //NOTE: SQLSetConnectOption requires the thread to be locked
   SQLSetConnectOption( conn->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
 
   //Attempt to connect
+  //NOTE: SQLDriverConnect requires the thread to be locked
   ret = SQLDriverConnect( 
     conn->m_hDBC, 
     NULL,
@@ -300,12 +306,8 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   else {
     HSTMT hStmt;
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     //allocate a temporary statment
     ret = SQLAllocStmt(conn->m_hDBC, &hStmt);
-
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     //try to determine if the driver can handle
     //multiple recordsets
@@ -318,12 +320,8 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
       conn->canHaveMoreResults = 0;
     }
   
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-  
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
-    
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     conn->self()->connected = true;
     
@@ -334,6 +332,8 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
       uv_ref(uv_default_loop());
     #endif
   }
+
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   if (err) {
     ThrowException(objError);
