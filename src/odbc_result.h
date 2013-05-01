@@ -55,6 +55,10 @@ class ODBCResult : public node::ObjectWrap {
     static Handle<Value> FetchSync(const Arguments& args);
     static Handle<Value> FetchAllSync(const Arguments& args);
     
+    //property getter/setters
+    static Handle<Value> FetchModeGetter(Local<String> property, const AccessorInfo &info);
+    static void FetchModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    
     struct fetch_work_data {
       Persistent<Function> cb;
       ODBCResult *objResult;
@@ -74,7 +78,8 @@ class ODBCResult : public node::ObjectWrap {
     HDBC m_hDBC;
     HSTMT m_hSTMT;
     bool m_canFreeHandle;
-
+    int m_fetchMode;
+    
     uint16_t *buffer;
     int bufferLength;
     Column *columns;
