@@ -25,18 +25,13 @@ function issueQuery3(done) {
   for (var x = 0; x < iterations; x++) {
     (function (x) {
       stmt.bindSync([x]);
-      stmt.execute(function (err, result) {
-        cb(err, result, x);
-      });
+      var result = stmt.executeSync()
+      cb(result, x);
+      
     })(x);
   }
   
-  function cb (err, result, x) {
-    if (err) {
-      console.error(err);
-      return finish();
-    }
-    
+  function cb (result, x) {
     assert.deepEqual(result.fetchAllSync(), [ { test : x } ]);
     
     result.closeSync();
