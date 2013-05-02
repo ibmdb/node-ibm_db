@@ -1,7 +1,7 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 10000
+  , iterations = 100000
   ;
 
 db.open(common.connectionString, function(err){ 
@@ -19,17 +19,19 @@ function issueQuery2(done) {
   var count = 0
     , time = new Date().getTime();
   
-  var stmt = db.prepareSync('select 1 + ? as test');
+  var stmt = db.prepareSync('select ? as test');
     
   for (var x = 0; x < iterations; x++) {
-    stmt.bind([2], function (err) {
-       if (err) {
-        console.log(err);
-        return finish();
-      }
-      
-      stmt.executeNonQuery(cb);
-    });
+    (function (x) {
+      stmt.bind([x], function (err) {
+        if (err) {
+          console.log(err);
+          return finish();
+        }
+        
+        stmt.executeNonQuery(cb);
+      });
+    })(x);
   }
   
   function cb (err, data) {

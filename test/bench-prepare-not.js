@@ -1,7 +1,7 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 10000
+  , iterations = 100000
   ;
 
 db.open(common.connectionString, function(err){ 

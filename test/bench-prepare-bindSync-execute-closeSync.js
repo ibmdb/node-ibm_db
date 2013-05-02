@@ -20,19 +20,11 @@ function issueQuery3(done) {
     , time = new Date().getTime();
   
   var stmt = db.prepareSync('select ? as test');
-  
+    
   for (var x = 0; x < iterations; x++) {
     (function (x) {
-      stmt.bind([x], function (err) {
-        if (err) {
-          console.log(err);
-          return finish();
-        }
-        
-        //console.log(x);
-        
-        stmt.execute(cb);
-      });
+      stmt.bindSync([x]);
+      stmt.execute(cb);
     })(x);
   }
   
@@ -41,8 +33,6 @@ function issueQuery3(done) {
       console.error(err);
       return finish();
     }
-    
-    //console.log(result.fetchAllSync());
     
     result.closeSync();
 
