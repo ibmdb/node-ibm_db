@@ -356,6 +356,10 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
       rowCount = 0;
     }
     
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    
     Local<Value> args[2];
 
     args[0] = Local<Value>::New(Null());
@@ -412,6 +416,10 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
     if (!SQL_SUCCEEDED(ret)) {
       rowCount = 0;
     }
+    
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     return scope.Close(Number::New(rowCount));
   }
