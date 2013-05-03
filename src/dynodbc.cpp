@@ -136,7 +136,16 @@ BOOL DynLoadODBC( char* odbcModuleName )
   if (LOAD_ENTRY( hMod, SQLFreeEnv        )  )
   if (LOAD_ENTRY( hMod, SQLTransact       )  )
   if (LOAD_ENTRY( hMod, SQLSetConnectOption )  )
-  if (LOAD_ENTRY( hMod, SQLDrivers        )  )
+/*
+ * NOTE: This is commented out because it wouldn't be used
+ * in a direct-to-driver situation and we currently never
+ * call SQLDrivers. But if we ever do we may need to have
+ * some type of flag do determine if we should try to load
+ * this function if the user is not doing a direct-to-driver
+ * and is specifying a specific libodbc library.
+ */
+//  if (LOAD_ENTRY( hMod, SQLDrivers        )  )
+
   if (LOAD_ENTRY( hMod, SQLDataSources    )  )
 //#endif
   if (LOAD_ENTRY( hMod, SQLBindCol        )  )
