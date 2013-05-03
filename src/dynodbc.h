@@ -81,7 +81,7 @@ typedef RETCODE (SQL_API * pfnSQLAllocHandle)(
 
 typedef RETCODE (SQL_API * pfnSQLRowCount)(
   SQLHSTMT StatementHandle, 
-  SQLINTEGER *RowCount);
+  SQLLEN *RowCount);
 
 typedef RETCODE (SQL_API * pfnSQLNumResultCols)(
   SQLHSTMT StatementHandle,
@@ -227,7 +227,7 @@ typedef RETCODE (SQL_API * pfnSQLPrepare)(
 
 typedef RETCODE (SQL_API * pfnSQLRowCount)(
   HSTMT       hstmt,
-  SDWORD FAR *pcrow);
+  SQLLEN FAR *pcrow);
 
 typedef RETCODE (SQL_API * pfnSQLSetCursorName)(
   HSTMT       hstmt,
