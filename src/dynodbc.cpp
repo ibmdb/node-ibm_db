@@ -41,7 +41,11 @@ void* GetFunction(void *Lib, char *Fnname)
 #if defined(_MSC_VER) // Microsoft compiler
   return (void*)GetProcAddress((HINSTANCE)Lib,Fnname);
 #elif defined(__GNUC__) // GNU compiler
-  return dlsym(Lib,Fnname);
+  void * tmp = dlsym(Lib, Fnname);
+  if (!tmp) {
+    printf("node-odbc: error loading function: %s\n", Fnname);
+  }
+  return tmp;
 #endif
 }
 
