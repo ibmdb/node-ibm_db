@@ -890,7 +890,6 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
-  Local<Object> objError = Object::New();
   Parameter* params = new Parameter[0];
   Parameter prm;
   SQLRETURN ret;
@@ -973,14 +972,19 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
   //allocate a new statment handle
-  SQLAllocHandle( SQL_HANDLE_STMT, 
+  ret = SQLAllocHandle( SQL_HANDLE_STMT, 
                   conn->m_hDBC, 
                   &hSTMT );
 
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
+  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%p\n", hSTMT);
+  
   //check to see if should excute a direct or a parameter bound query
-  if (!paramCount) {
+  if (!SQL_SUCCEEDED(ret)) {
+    //We'll check again later
+  }
+  else if (!paramCount) {
     // execute the query directly
     ret = SQLExecDirect(
       hSTMT,
