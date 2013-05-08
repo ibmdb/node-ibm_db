@@ -230,7 +230,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   if (data->result) {
     err = true;
 
-    Local<Object> objError = ODBC::GetSQLDiagRecError(data->conn->self()->m_hDBC);
+    Local<Object> objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
     
     argv[0] = objError;
   }
@@ -301,7 +301,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   if (!SQL_SUCCEEDED(ret)) {
     err = true;
     
-    objError = ODBC::GetSQLDiagRecError(conn->self()->m_hDBC);
+    objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
   }
   else {
     HSTMT hStmt;
@@ -1278,7 +1278,7 @@ Handle<Value> ODBCConnection::BeginTransactionSync(const Arguments& args) {
     SQL_NTS);
   
   if (!SQL_SUCCEEDED(ret)) {
-    Local<Object> objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    Local<Object> objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_DBC, conn->m_hDBC);
     
     ThrowException(objError);
     
@@ -1319,7 +1319,7 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
   if (!SQL_SUCCEEDED(ret)) {
     error = true;
     
-    objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_DBC, conn->m_hDBC);
   }
   
   //Reset the connection back to autocommit
@@ -1338,7 +1338,7 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
     //be restarting the connection or something to deal with this state
     error = true;
     
-    objError = ODBC::GetSQLDiagRecError(conn->m_hDBC);
+    objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_DBC, conn->m_hDBC);
   }
   
   if (error) {

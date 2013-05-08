@@ -129,9 +129,12 @@ Handle<Value> ODBC::New(const Arguments& args) {
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
-  //TODO: check if ret succeeded, if not, throw error to javascript land
   if (!SQL_SUCCEEDED(ret)) {
-    //TODO: do something.
+    DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
+    
+    Local<Object> objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_ENV, dbo->m_hEnv);
+    
+    ThrowException(objError);
   }
   
   return scope.Close(args.Holder());
@@ -182,11 +185,7 @@ void ODBC::UV_CreateConnection(uv_work_t* req) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
   //allocate a new connection handle
-  int ret = SQLAllocConnect(data->dbo->m_hEnv, &data->hDBC);
-  
-  if (!SQL_SUCCEEDED(ret)) {
-   //TODO: do something. 
-  }
+  data->result = SQLAllocHandle(SQL_HANDLE_DBC, data->dbo->m_hEnv, &data->hDBC);
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
@@ -197,17 +196,26 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
 
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
   
-  Local<Value> args[2];
-  args[0] = External::New(data->dbo->m_hEnv);
-  args[1] = External::New(data->hDBC);
-  
-  Persistent<Object> js_result(ODBCConnection::constructor_template->
-                            GetFunction()->NewInstance(2, args));
+  if (!SQL_SUCCEEDED(data->result)) {
+    Local<Value> args[1];
+    
+    args[0] = ODBC::GetSQLDiagRecError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 1, args);
+  }
+  else {
+    Local<Value> args[2];
+    args[0] = External::New(data->dbo->m_hEnv);
+    args[1] = External::New(data->hDBC);
+    
+    Persistent<Object> js_result(ODBCConnection::constructor_template->
+                              GetFunction()->NewInstance(2, args));
 
-  args[0] = Local<Value>::New(Null());
-  args[1] = Local<Object>::New(js_result);
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Object>::New(js_result);
 
-  data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  }
   
   data->dbo->Unref();
   data->cb.Dispose();
@@ -711,7 +719,7 @@ Local<Object> ODBC::GetSQLError (HENV hENV,
  * GetSQLDiagRecError
  */
 
-Local<Object> ODBC::GetSQLDiagRecError (HDBC hDBC) {
+Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle) {
   HandleScope scope;
   
   Local<Object> objError = Object::New();
@@ -725,8 +733,8 @@ Local<Object> ODBC::GetSQLDiagRecError (HDBC hDBC) {
 
   do {
     ret = SQLGetDiagRec(
-      SQL_HANDLE_DBC, 
-      hDBC,
+      handleType, 
+      handle,
       ++i, 
       (SQLCHAR *) errorSQLState,
       &native,
