@@ -54,6 +54,7 @@ void ODBCResult::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchSync", FetchSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
 
   // Properties
   instance_template->SetAccessor(String::New("fetchMode"), FetchModeGetter, FetchModeSetter);
@@ -707,4 +708,29 @@ Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
   return scope.Close(SQL_SUCCEEDED(ret) ? True() : False());
+}
+
+/*
+ * GetColumnNamesSync
+ */
+
+Handle<Value> ODBCResult::GetColumnNamesSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::GetColumnNamesSync\n");
+
+  HandleScope scope;
+  
+  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  
+  Local<Array> cols = Array::New();
+  
+  if (self->colCount == 0) {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+  
+  for (int i = 0; i < self->colCount; i++) {
+    cols->Set(Integer::New(i),
+              String::New((const char *) self->columns[i].name));
+  }
+    
+  return scope.Close(cols);
 }

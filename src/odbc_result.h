@@ -54,6 +54,7 @@ class ODBCResult : public node::ObjectWrap {
     static Handle<Value> MoreResultsSync(const Arguments& args);
     static Handle<Value> FetchSync(const Arguments& args);
     static Handle<Value> FetchAllSync(const Arguments& args);
+    static Handle<Value> GetColumnNamesSync(const Arguments& args);
     
     //property getter/setters
     static Handle<Value> FetchModeGetter(Local<String> property, const AccessorInfo &info);
