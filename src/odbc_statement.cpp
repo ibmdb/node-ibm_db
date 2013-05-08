@@ -52,7 +52,7 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirectSync", ExecuteDirectSync);
   
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", Execute);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", ExecuteNonQuery);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuerySync", ExecuteNonQuerySync);
   
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
@@ -356,6 +356,10 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
       rowCount = 0;
     }
     
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    
     Local<Value> args[2];
 
     args[0] = Local<Value>::New(Null());
@@ -412,6 +416,10 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
     if (!SQL_SUCCEEDED(ret)) {
       rowCount = 0;
     }
+    
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     return scope.Close(Number::New(rowCount));
   }

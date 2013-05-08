@@ -96,6 +96,10 @@ void ODBCConnection::Free() {
   }
 }
 
+/*
+ * New
+ */
+
 Handle<Value> ODBCConnection::New(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::New\n");
   HandleScope scope;
@@ -167,14 +171,16 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   ODBCConnection* self = data->conn->self();
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  uv_mutex_lock(&ODBC::g_odbcMutex); 
   
   //TODO: make this configurable
+  //NOTE: SQLSetConnectOption requires the thread to be locked
   SQLSetConnectOption( self->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
-
+  
   char connstr[1024];
 
   //Attempt to connect
+  //NOTE: SQLDriverConnect requires the thread to be locked
   int ret = SQLDriverConnect( 
     self->m_hDBC, 
     NULL,
@@ -184,13 +190,13 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);
-
+  
   if (SQL_SUCCEEDED(ret)) {
     HSTMT hStmt;
     
     //allocate a temporary statment
     ret = SQLAllocStmt(self->m_hDBC, &hStmt);
-
+    
     //try to determine if the driver can handle
     //multiple recordsets
     ret = SQLGetFunctions(
@@ -205,7 +211,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
   }
-  
+
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   data->result = ret;
@@ -277,9 +283,11 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //TODO: make this configurable
+  //NOTE: SQLSetConnectOption requires the thread to be locked
   SQLSetConnectOption( conn->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
 
   //Attempt to connect
+  //NOTE: SQLDriverConnect requires the thread to be locked
   ret = SQLDriverConnect( 
     conn->m_hDBC, 
     NULL,
@@ -300,7 +308,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
     
     //allocate a temporary statment
     ret = SQLAllocStmt(conn->m_hDBC, &hStmt);
-
+    
     //try to determine if the driver can handle
     //multiple recordsets
     ret = SQLGetFunctions(
@@ -324,7 +332,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
       uv_ref(uv_default_loop());
     #endif
   }
-  
+
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   if (err) {
@@ -525,27 +533,27 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req) {
   
   //get our work data
   create_statement_work_data* data = (create_statement_work_data *)(req->data);
-  
-  uv_mutex_lock(&ODBC::g_odbcMutex);
 
   DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
     data->hSTMT
   );
+  
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //allocate a new statment handle
   SQLAllocHandle( SQL_HANDLE_STMT, 
                   data->conn->m_hDBC, 
                   &data->hSTMT);
 
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  
   DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
     data->hSTMT
   );
-  
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
 
 void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
@@ -657,6 +665,9 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
         sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+      }
+      else {
+        sql = new String::Utf8Value(String::New(""));
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -928,6 +939,9 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
         sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+      }
+      else {
+        sql = new String::Utf8Value(String::New(""));
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {

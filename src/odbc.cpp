@@ -619,18 +619,20 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                    *number);
     }
     else if (value->IsNumber()) {
-      double   *number   = new double(value->NumberValue());
-      params[i].c_type   = SQL_C_DOUBLE;
-      params[i].type     = SQL_DECIMAL;
-      params[i].buffer   = number; 
-      params[i].length   = 0;
-      params[i].decimals = 6; //idk, i just chose this randomly.
-      params[i].size     = 10; //also just a guess
+      double *number   = new double(value->NumberValue());
+      
+      params[i].c_type        = SQL_C_DOUBLE;
+      params[i].type          = SQL_DECIMAL;
+      params[i].buffer        = number;
+      params[i].buffer_length = sizeof(double);
+      params[i].length        = params[i].buffer_length;
+      params[i].decimals      = 0;
+      params[i].size          = sizeof(double);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                   i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length);
+                  "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                  i, params[i].c_type, params[i].type,
+                  params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsBoolean()) {
       bool *boolean    = new bool(value->BooleanValue());
@@ -806,7 +808,8 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
     count++;
   }
   //TODO: what do we do about errors!?!
-  scope.Close(rows);
+  //we throw them
+  return scope.Close(rows);
 }
 
 #ifdef dynodbc
