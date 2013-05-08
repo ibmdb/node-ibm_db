@@ -1041,14 +1041,11 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   
   //check to see if there was an error during execution
   if(ret == SQL_ERROR) {
-    objError = ODBC::GetSQLError(
-      conn->m_hENV,
-      conn->m_hDBC,
+    ThrowException(ODBC::GetSQLDiagRecError(
+      SQL_HANDLE_STMT,
       hSTMT,
       (char *) "[node-odbc] Error in ODBCConnection::QuerySync"
-    );
-    
-    ThrowException(objError);
+    ));
     
     return scope.Close(Undefined());
   }

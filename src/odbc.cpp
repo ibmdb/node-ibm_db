@@ -724,7 +724,7 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
   return scope.Close(GetSQLDiagRecError(
     handleType,
     handle,
-    (char *) "[node-odbc] Error in some module"));
+    (char *) "[node-odbc] SQL_ERROR"));
 }
 
 Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
@@ -732,42 +732,51 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
   
   DEBUG_PRINTF("ODBC::GetSQLDiagRecError : handleType=%i, handle=%p\n", handleType, handle);
   
-  Local<Array> errors = Array::New();
+  Local<Object> objError = Object::New();
   
   SQLINTEGER i = 0;
   SQLINTEGER native;
+  
   SQLSMALLINT len;
+  SQLINTEGER numfields;
   SQLRETURN ret;
   char errorSQLState[7];
   char errorMessage[256];
 
-  do {
+  SQLGetDiagField(
+    handleType,
+    handle,
+    1,
+    SQL_DIAG_NUMBER,
+    &numfields,
+    SQL_IS_INTEGER,
+    &len);
+  
+  for (i = 0; i < numfields; i++){
+    DEBUG_PRINTF("ODBC::GetSQLDiagRecError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
+    
     ret = SQLGetDiagRec(
       handleType, 
-      &handle,
-      ++i, 
+      handle,
+      i + 1, 
       (SQLCHAR *) errorSQLState,
       &native,
       (SQLCHAR *) errorMessage,
       sizeof(errorMessage),
       &len);
+    
+    DEBUG_PRINTF("ODBC::GetSQLDiagRecError : after SQLGetDiagRec; i=%i\n", i);
 
     if (SQL_SUCCEEDED(ret)) {
-      Local<Object> objError = Object::New();
+      DEBUG_PRINTF("ODBC::GetSQLDiagRecError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
       
       objError->Set(String::New("error"), String::New(message));
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
-      
-      errors->Set(Number::New(i), objError);
     }
-  } while( ret == SQL_SUCCESS );
+  }
   
-  Local<Object> objReturn = Object::New();
-  
-  objReturn->Set(String::New("errors"), errors);
-  
-  return scope.Close(objReturn);
+  return scope.Close(objError);
 }
 
 /*
