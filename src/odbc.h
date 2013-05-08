@@ -73,8 +73,8 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> CallbackSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, Persistent<Function> cb);
     static Local<Object> GetSQLError (HENV hENV, HDBC hDBC, HSTMT hSTMT, char* message);
-    static Handle<Value> GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle);
-    static Handle<Value> GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
+    static Local<Object> GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle);
+    static Local<Object> GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
     static Local<Array>  GetAllRecordsSync (HENV hENV, HDBC hDBC, HSTMT hSTMT, uint16_t* buffer, int bufferLength);
 #ifdef dynodbc
     static Handle<Value> LoadODBCLibrary(const Arguments& args);

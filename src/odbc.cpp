@@ -730,6 +730,8 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
 Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
   HandleScope scope;
   
+  DEBUG_PRINTF("ODBC::GetSQLDiagRecError : handleType=%i, handle=%p\n", handleType, handle);
+  
   Local<Array> errors = Array::New();
   
   SQLINTEGER i = 0;
