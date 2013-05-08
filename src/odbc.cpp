@@ -16,7 +16,6 @@
 */
 
 #include <string.h>
-#include <math.h>
 #include <v8.h>
 #include <node.h>
 #include <node_version.h>
@@ -622,40 +621,18 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     else if (value->IsNumber()) {
       double *number   = new double(value->NumberValue());
       
-      double tmp = 0.0;
-      if (modf(*number, &tmp) == 0.0) {
-        //This is actually an integer
-        //delete the double number because we will not be using it
-        delete number;
-        
-        params[i].c_type        = SQL_C_SBIGINT;
-        params[i].type          = SQL_BIGINT;
-        params[i].buffer        = new int64_t(value->IntegerValue());
-        params[i].buffer_length = sizeof(int64_t);
-        params[i].length        = params[i].buffer_length;
-        params[i].decimals      = 0;
-        params[i].size          = sizeof(int64_t);
-        
-        DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber() - IntegerValue(): params[%i] "
-                    "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                    i, params[i].c_type, params[i].type,
-                    params[i].buffer_length, params[i].size, params[i].length);
-      }
-      else {
-        //This is actually a float
-        params[i].c_type        = SQL_C_DOUBLE;
-        params[i].type          = SQL_DECIMAL;
-        params[i].buffer        = number;
-        params[i].buffer_length = sizeof(double);
-        params[i].length        = params[i].buffer_length;
-        params[i].decimals      = 0;
-        params[i].size          = sizeof(double);
+      params[i].c_type        = SQL_C_DOUBLE;
+      params[i].type          = SQL_DECIMAL;
+      params[i].buffer        = number;
+      params[i].buffer_length = sizeof(double);
+      params[i].length        = params[i].buffer_length;
+      params[i].decimals      = 0;
+      params[i].size          = sizeof(double);
 
-        DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber() - NumberValue() : params[%i] "
-                    "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                    i, params[i].c_type, params[i].type,
-                    params[i].buffer_length, params[i].size, params[i].length);
-      }
+      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
+                  "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                  i, params[i].c_type, params[i].type,
+                  params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsBoolean()) {
       bool *boolean    = new bool(value->BooleanValue());
