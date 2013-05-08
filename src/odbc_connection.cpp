@@ -195,7 +195,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     HSTMT hStmt;
     
     //allocate a temporary statment
-    ret = SQLAllocStmt(self->m_hDBC, &hStmt);
+    ret = SQLAllocHandle(SQL_HANDLE_STMT, self->m_hDBC, &hStmt);
     
     //try to determine if the driver can handle
     //multiple recordsets
@@ -307,7 +307,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
     HSTMT hStmt;
     
     //allocate a temporary statment
-    ret = SQLAllocStmt(conn->m_hDBC, &hStmt);
+    ret = SQLAllocHandle(SQL_HANDLE_STMT, conn->m_hDBC, &hStmt);
     
     //try to determine if the driver can handle
     //multiple recordsets
@@ -1151,7 +1151,7 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
-  SQLAllocStmt(data->conn->m_hDBC, &data->hSTMT );
+  SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
@@ -1241,7 +1241,7 @@ void ODBCConnection::UV_Columns(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
-  SQLAllocStmt(data->conn->m_hDBC, &data->hSTMT );
+  SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
