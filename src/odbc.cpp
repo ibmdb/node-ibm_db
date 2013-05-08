@@ -125,7 +125,7 @@ Handle<Value> ODBC::New(const Arguments& args) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
-  int ret = SQLAllocEnv( &dbo->m_hEnv );
+  int ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &dbo->m_hEnv);
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
@@ -136,6 +136,8 @@ Handle<Value> ODBC::New(const Arguments& args) {
     
     ThrowException(objError);
   }
+  
+  SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, SQL_IS_UINTEGER);
   
   return scope.Close(args.Holder());
 }
@@ -241,7 +243,7 @@ Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //allocate a new connection handle
-  SQLRETURN ret = SQLAllocConnect(dbo->m_hEnv, &hDBC);
+  SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DBC, dbo->m_hEnv, &hDBC);
   
   if (!SQL_SUCCEEDED(ret)) {
     //TODO: do something!
