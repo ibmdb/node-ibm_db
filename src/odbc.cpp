@@ -695,26 +695,23 @@ Local<Object> ODBC::GetSQLError (HENV hENV,
                                 char* message) {
   HandleScope scope;
   
-  Local<Object> objError = Object::New();
+  SQLSMALLINT handleType;
+  SQLHANDLE handle;
   
-  char errorMessage[512];
-  char errorSQLState[128];
+  if (hSTMT) {
+    handleType = SQL_HANDLE_STMT;
+    handle = hSTMT;
+  }
+  else if (hDBC) {
+    handleType = SQL_HANDLE_DBC;
+    handle = hDBC;
+  }
+  else {
+    handleType = SQL_HANDLE_ENV;
+    handle = hENV;
+  }
   
-  SQLError(
-    hENV,
-    hDBC,
-    hSTMT,
-    (SQLCHAR *) errorSQLState,
-    NULL,
-    (SQLCHAR *) errorMessage,
-    sizeof(errorMessage), 
-    NULL);
-  
-  objError->Set(String::New("state"), String::New(errorSQLState));
-  objError->Set(String::New("error"), String::New(message));
-  objError->Set(String::New("message"), String::New(errorMessage));
-  
-  return scope.Close(objError);
+  return scope.Close(GetSQLDiagRecError(handleType, handle, message));
 }
 
 /*
@@ -724,7 +721,16 @@ Local<Object> ODBC::GetSQLError (HENV hENV,
 Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle) {
   HandleScope scope;
   
-  Local<Object> objError = Object::New();
+  return scope.Close(GetSQLDiagRecError(
+    handleType,
+    handle,
+    (char *) "[node-odbc] Error in some module"));
+}
+
+Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
+  HandleScope scope;
+  
+  Local<Array> errors = Array::New();
   
   SQLINTEGER i = 0;
   SQLINTEGER native;
@@ -736,7 +742,7 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
   do {
     ret = SQLGetDiagRec(
       handleType, 
-      handle,
+      &handle,
       ++i, 
       (SQLCHAR *) errorSQLState,
       &native,
@@ -745,13 +751,21 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
       &len);
 
     if (SQL_SUCCEEDED(ret)) {
-      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+      Local<Object> objError = Object::New();
+      
+      objError->Set(String::New("error"), String::New(message));
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
+      
+      errors->Set(Number::New(i), objError);
     }
   } while( ret == SQL_SUCCESS );
   
-  return scope.Close(objError);
+  Local<Object> objReturn = Object::New();
+  
+  objReturn->Set(String::New("errors"), errors);
+  
+  return scope.Close(objReturn);
 }
 
 /*
