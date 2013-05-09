@@ -204,8 +204,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -259,8 +258,7 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
     ));
@@ -342,8 +340,7 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -400,8 +397,7 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
     ));
@@ -492,8 +488,7 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -553,8 +548,7 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
 
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteDirectSync"
     ));
@@ -688,8 +682,7 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      data->stmt->m_hENV,
-      data->stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       data->stmt->m_hSTMT,
       data->cb);
   }
@@ -806,8 +799,7 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
   }
   else {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::BindSync"
     ));
@@ -951,8 +943,7 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
   //Check if there were errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }

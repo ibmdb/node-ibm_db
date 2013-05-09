@@ -132,7 +132,7 @@ Handle<Value> ODBC::New(const Arguments& args) {
   if (!SQL_SUCCEEDED(ret)) {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
     
-    Local<Object> objError = ODBC::GetSQLDiagRecError(SQL_HANDLE_ENV, dbo->m_hEnv);
+    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
     
     ThrowException(objError);
   }
@@ -201,7 +201,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
   if (!SQL_SUCCEEDED(data->result)) {
     Local<Value> args[1];
     
-    args[0] = ODBC::GetSQLDiagRecError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
+    args[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
     
     data->cb->Call(Context::GetCurrent()->Global(), 1, args);
   }
@@ -665,17 +665,28 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
  * CallbackSQLError
  */
 
-Handle<Value> ODBC::CallbackSQLError (HENV hENV, 
-                                     HDBC hDBC, 
-                                     HSTMT hSTMT, 
-                                     Persistent<Function> cb) {
+Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+                                      SQLHANDLE handle, 
+                                      Persistent<Function> cb) {
+  HandleScope scope;
+  
+  return scope.Close(CallbackSQLError(
+    handleType,
+    handle,
+    (char *) "[node-odbc] SQL_ERROR",
+    cb));
+}
+
+Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+                                      SQLHANDLE handle,
+                                      char* message,
+                                      Persistent<Function> cb) {
   HandleScope scope;
   
   Local<Object> objError = ODBC::GetSQLError(
-    hENV, 
-    hDBC, 
-    hSTMT,
-    (char *) "[node-odbc] Error in some module"
+    handleType, 
+    handle, 
+    message
   );
   
   Local<Value> args[1];
@@ -689,48 +700,19 @@ Handle<Value> ODBC::CallbackSQLError (HENV hENV,
  * GetSQLError
  */
 
-Local<Object> ODBC::GetSQLError (HENV hENV, 
-                                HDBC hDBC, 
-                                HSTMT hSTMT,
-                                char* message) {
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
   HandleScope scope;
   
-  SQLSMALLINT handleType;
-  SQLHANDLE handle;
-  
-  if (hSTMT) {
-    handleType = SQL_HANDLE_STMT;
-    handle = hSTMT;
-  }
-  else if (hDBC) {
-    handleType = SQL_HANDLE_DBC;
-    handle = hDBC;
-  }
-  else {
-    handleType = SQL_HANDLE_ENV;
-    handle = hENV;
-  }
-  
-  return scope.Close(GetSQLDiagRecError(handleType, handle, message));
-}
-
-/*
- * GetSQLDiagRecError
- */
-
-Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle) {
-  HandleScope scope;
-  
-  return scope.Close(GetSQLDiagRecError(
+  return scope.Close(GetSQLError(
     handleType,
     handle,
     (char *) "[node-odbc] SQL_ERROR"));
 }
 
-Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
   HandleScope scope;
   
-  DEBUG_PRINTF("ODBC::GetSQLDiagRecError : handleType=%i, handle=%p\n", handleType, handle);
+  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%p\n", handleType, handle);
   
   Local<Object> objError = Object::New();
   
@@ -753,7 +735,7 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
     &len);
   
   for (i = 0; i < numfields; i++){
-    DEBUG_PRINTF("ODBC::GetSQLDiagRecError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
+    DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
     
     ret = SQLGetDiagRec(
       handleType, 
@@ -765,10 +747,10 @@ Local<Object> ODBC::GetSQLDiagRecError (SQLSMALLINT handleType, SQLHANDLE handle
       sizeof(errorMessage),
       &len);
     
-    DEBUG_PRINTF("ODBC::GetSQLDiagRecError : after SQLGetDiagRec; i=%i\n", i);
+    DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i\n", i);
 
     if (SQL_SUCCEEDED(ret)) {
-      DEBUG_PRINTF("ODBC::GetSQLDiagRecError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
+      DEBUG_PRINTF("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
       
       objError->Set(String::New("error"), String::New(message));
       objError->Set(String::New("message"), String::New(errorMessage));
@@ -814,8 +796,7 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
       errorCount++;
       
       objError = ODBC::GetSQLError(
-        hENV, 
-        hDBC, 
+        SQL_HANDLE_STMT, 
         hSTMT,
         (char *) "[node-odbc] Error in ODBC::GetAllRecordsSync"
       );

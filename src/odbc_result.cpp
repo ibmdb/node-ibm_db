@@ -246,8 +246,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
     error = true;
     
     objError = ODBC::GetSQLError(
-      data->objResult->m_hENV, 
-      data->objResult->m_hDBC, 
+      SQL_HANDLE_STMT, 
       data->objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -349,8 +348,7 @@ Handle<Value> ODBCResult::FetchSync(const Arguments& args) {
     error = true;
     
     objError = ODBC::GetSQLError(
-      objResult->m_hENV, 
-      objResult->m_hDBC, 
+      SQL_HANDLE_STMT, 
       objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -487,8 +485,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     data->errorCount++;
     
     data->objError = Persistent<Object>::New(ODBC::GetSQLError(
-      self->m_hENV, 
-      self->m_hDBC, 
+      SQL_HANDLE_STMT, 
       self->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
     ));
@@ -605,8 +602,7 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
         errorCount++;
         
         objError = ODBC::GetSQLError(
-          self->m_hENV, 
-          self->m_hDBC, 
+          SQL_HANDLE_STMT, 
           self->m_hSTMT,
           (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
             " your query did not have a result set."
