@@ -54,7 +54,11 @@ void ODBCResult::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchSync", FetchSync);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
 
+  // Properties
+  instance_template->SetAccessor(String::New("fetchMode"), FetchModeGetter, FetchModeSetter);
+  
   // Attach the Database Constructor to the target object
   target->Set( v8::String::NewSymbol("ODBCResult"),
                constructor_template->GetFunction());
@@ -122,10 +126,31 @@ Handle<Value> ODBCResult::New(const Arguments& args) {
 
   //set the initial colCount to 0
   objODBCResult->colCount = 0;
+
+  //default fetchMode to FETCH_OBJECT
+  objODBCResult->m_fetchMode = FETCH_OBJECT;
   
   objODBCResult->Wrap(args.Holder());
   
   return scope.Close(args.Holder());
+}
+
+Handle<Value> ODBCResult::FetchModeGetter(Local<String> property, const AccessorInfo &info) {
+  HandleScope scope;
+
+  ODBCResult *obj = ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  return scope.Close(Integer::New(obj->m_fetchMode));
+}
+
+void ODBCResult::FetchModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
+  HandleScope scope;
+
+  ODBCResult *obj = ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  
+  if (value->IsNumber()) {
+    obj->m_fetchMode = value->Int32Value();
+  }
 }
 
 /*
@@ -145,6 +170,9 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
   
   Local<Function> cb;
    
+  //set the fetch mode to the default of this instance
+  data->fetchMode = objODBCResult->m_fetchMode;
+  
   if (args.Length() == 1 && args[0]->IsFunction()) {
     cb = Local<Function>::Cast(args[0]);
   }
@@ -155,9 +183,6 @@ Handle<Value> ODBCResult::Fetch(const Arguments& args) {
     
     if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
       data->fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
-    }
-    else {
-      data->fetchMode = FETCH_OBJECT;
     }
   }
   else {
@@ -221,8 +246,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
     error = true;
     
     objError = ODBC::GetSQLError(
-      data->objResult->m_hENV, 
-      data->objResult->m_hDBC, 
+      SQL_HANDLE_STMT, 
       data->objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -296,17 +320,13 @@ Handle<Value> ODBCResult::FetchSync(const Arguments& args) {
   Local<Object> objError;
   bool moreWork = true;
   bool error = false;
-  int fetchMode = FETCH_OBJECT;
+  int fetchMode = objResult->m_fetchMode;
   
   if (args.Length() == 1 && args[0]->IsObject()) {
-    
     Local<Object> obj = args[0]->ToObject();
     
     if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
       fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
-    }
-    else {
-      fetchMode = FETCH_OBJECT;
     }
   }
   
@@ -328,8 +348,7 @@ Handle<Value> ODBCResult::FetchSync(const Arguments& args) {
     error = true;
     
     objError = ODBC::GetSQLError(
-      objResult->m_hENV, 
-      objResult->m_hDBC, 
+      SQL_HANDLE_STMT, 
       objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -391,10 +410,11 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
   
   Local<Function> cb;
-   
+  
+  data->fetchMode = objODBCResult->m_fetchMode;
+  
   if (args.Length() == 1 && args[0]->IsFunction()) {
     cb = Local<Function>::Cast(args[0]);
-    data->fetchMode = FETCH_OBJECT;
   }
   else if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsFunction()) {
     cb = Local<Function>::Cast(args[1]);  
@@ -403,9 +423,6 @@ Handle<Value> ODBCResult::FetchAll(const Arguments& args) {
     
     if (obj->Has(OPTION_FETCH_MODE) && obj->Get(OPTION_FETCH_MODE)->IsInt32()) {
       data->fetchMode = obj->Get(OPTION_FETCH_MODE)->ToInt32()->Value();
-    }
-    else {
-      data->fetchMode = FETCH_OBJECT;
     }
   }
   else {
@@ -468,8 +485,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     data->errorCount++;
     
     data->objError = Persistent<Object>::New(ODBC::GetSQLError(
-      self->m_hENV, 
-      self->m_hDBC, 
+      SQL_HANDLE_STMT, 
       self->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
     ));
@@ -559,7 +575,7 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
   SQLRETURN ret;
   int count = 0;
   int errorCount = 0;
-  int fetchMode = FETCH_OBJECT;
+  int fetchMode = self->m_fetchMode;
 
   if (args.Length() == 1 && args[0]->IsObject()) {
     Local<Object> obj = args[0]->ToObject();
@@ -586,8 +602,7 @@ Handle<Value> ODBCResult::FetchAllSync(const Arguments& args) {
         errorCount++;
         
         objError = ODBC::GetSQLError(
-          self->m_hENV, 
-          self->m_hDBC, 
+          SQL_HANDLE_STMT, 
           self->m_hSTMT,
           (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
             " your query did not have a result set."
@@ -689,4 +704,29 @@ Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
   return scope.Close(SQL_SUCCEEDED(ret) ? True() : False());
+}
+
+/*
+ * GetColumnNamesSync
+ */
+
+Handle<Value> ODBCResult::GetColumnNamesSync(const Arguments& args) {
+  DEBUG_PRINTF("ODBCResult::GetColumnNamesSync\n");
+
+  HandleScope scope;
+  
+  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  
+  Local<Array> cols = Array::New();
+  
+  if (self->colCount == 0) {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+  
+  for (int i = 0; i < self->colCount; i++) {
+    cols->Set(Integer::New(i),
+              String::New((const char *) self->columns[i].name));
+  }
+    
+  return scope.Close(cols);
 }

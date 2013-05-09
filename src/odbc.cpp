@@ -125,14 +125,19 @@ Handle<Value> ODBC::New(const Arguments& args) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
-  int ret = SQLAllocEnv( &dbo->m_hEnv );
+  int ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &dbo->m_hEnv);
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
-  //TODO: check if ret succeeded, if not, throw error to javascript land
   if (!SQL_SUCCEEDED(ret)) {
-    //TODO: do something.
+    DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
+    
+    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
+    
+    ThrowException(objError);
   }
+  
+  SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, SQL_IS_UINTEGER);
   
   return scope.Close(args.Holder());
 }
@@ -182,11 +187,7 @@ void ODBC::UV_CreateConnection(uv_work_t* req) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
 
   //allocate a new connection handle
-  int ret = SQLAllocConnect(data->dbo->m_hEnv, &data->hDBC);
-  
-  if (!SQL_SUCCEEDED(ret)) {
-   //TODO: do something. 
-  }
+  data->result = SQLAllocHandle(SQL_HANDLE_DBC, data->dbo->m_hEnv, &data->hDBC);
   
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
@@ -197,17 +198,26 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
 
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
   
-  Local<Value> args[2];
-  args[0] = External::New(data->dbo->m_hEnv);
-  args[1] = External::New(data->hDBC);
-  
-  Persistent<Object> js_result(ODBCConnection::constructor_template->
-                            GetFunction()->NewInstance(2, args));
+  if (!SQL_SUCCEEDED(data->result)) {
+    Local<Value> args[1];
+    
+    args[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
+    
+    data->cb->Call(Context::GetCurrent()->Global(), 1, args);
+  }
+  else {
+    Local<Value> args[2];
+    args[0] = External::New(data->dbo->m_hEnv);
+    args[1] = External::New(data->hDBC);
+    
+    Persistent<Object> js_result(ODBCConnection::constructor_template->
+                              GetFunction()->NewInstance(2, args));
 
-  args[0] = Local<Value>::New(Null());
-  args[1] = Local<Object>::New(js_result);
+    args[0] = Local<Value>::New(Null());
+    args[1] = Local<Object>::New(js_result);
 
-  data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+    data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+  }
   
   data->dbo->Unref();
   data->cb.Dispose();
@@ -233,7 +243,7 @@ Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //allocate a new connection handle
-  SQLRETURN ret = SQLAllocConnect(dbo->m_hEnv, &hDBC);
+  SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DBC, dbo->m_hEnv, &hDBC);
   
   if (!SQL_SUCCEEDED(ret)) {
     //TODO: do something!
@@ -619,18 +629,20 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                    *number);
     }
     else if (value->IsNumber()) {
-      double   *number   = new double(value->NumberValue());
-      params[i].c_type   = SQL_C_DOUBLE;
-      params[i].type     = SQL_DECIMAL;
-      params[i].buffer   = number; 
-      params[i].length   = 0;
-      params[i].decimals = 6; //idk, i just chose this randomly.
-      params[i].size     = 10; //also just a guess
+      double *number   = new double(value->NumberValue());
+      
+      params[i].c_type        = SQL_C_DOUBLE;
+      params[i].type          = SQL_DECIMAL;
+      params[i].buffer        = number;
+      params[i].buffer_length = sizeof(double);
+      params[i].length        = params[i].buffer_length;
+      params[i].decimals      = 0;
+      params[i].size          = sizeof(double);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                   i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length);
+                  "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                  i, params[i].c_type, params[i].type,
+                  params[i].buffer_length, params[i].size, params[i].length);
     }
     else if (value->IsBoolean()) {
       bool *boolean    = new bool(value->BooleanValue());
@@ -653,17 +665,28 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
  * CallbackSQLError
  */
 
-Handle<Value> ODBC::CallbackSQLError (HENV hENV, 
-                                     HDBC hDBC, 
-                                     HSTMT hSTMT, 
-                                     Persistent<Function> cb) {
+Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+                                      SQLHANDLE handle, 
+                                      Persistent<Function> cb) {
+  HandleScope scope;
+  
+  return scope.Close(CallbackSQLError(
+    handleType,
+    handle,
+    (char *) "[node-odbc] SQL_ERROR",
+    cb));
+}
+
+Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+                                      SQLHANDLE handle,
+                                      char* message,
+                                      Persistent<Function> cb) {
   HandleScope scope;
   
   Local<Object> objError = ODBC::GetSQLError(
-    hENV, 
-    hDBC, 
-    hSTMT,
-    (char *) "[node-odbc] Error in some module"
+    handleType, 
+    handle, 
+    message
   );
   
   Local<Value> args[1];
@@ -677,67 +700,63 @@ Handle<Value> ODBC::CallbackSQLError (HENV hENV,
  * GetSQLError
  */
 
-Local<Object> ODBC::GetSQLError (HENV hENV, 
-                                HDBC hDBC, 
-                                HSTMT hSTMT,
-                                char* message) {
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
   HandleScope scope;
   
-  Local<Object> objError = Object::New();
-  
-  char errorMessage[512];
-  char errorSQLState[128];
-  
-  SQLError(
-    hENV,
-    hDBC,
-    hSTMT,
-    (SQLCHAR *) errorSQLState,
-    NULL,
-    (SQLCHAR *) errorMessage,
-    sizeof(errorMessage), 
-    NULL);
-  
-  objError->Set(String::New("state"), String::New(errorSQLState));
-  objError->Set(String::New("error"), String::New(message));
-  objError->Set(String::New("message"), String::New(errorMessage));
-  
-  return scope.Close(objError);
+  return scope.Close(GetSQLError(
+    handleType,
+    handle,
+    (char *) "[node-odbc] SQL_ERROR"));
 }
 
-/*
- * GetSQLDiagRecError
- */
-
-Local<Object> ODBC::GetSQLDiagRecError (HDBC hDBC) {
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
   HandleScope scope;
+  
+  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%p\n", handleType, handle);
   
   Local<Object> objError = Object::New();
   
   SQLINTEGER i = 0;
   SQLINTEGER native;
+  
   SQLSMALLINT len;
+  SQLINTEGER numfields;
   SQLRETURN ret;
   char errorSQLState[7];
   char errorMessage[256];
 
-  do {
+  SQLGetDiagField(
+    handleType,
+    handle,
+    1,
+    SQL_DIAG_NUMBER,
+    &numfields,
+    SQL_IS_INTEGER,
+    &len);
+  
+  for (i = 0; i < numfields; i++){
+    DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
+    
     ret = SQLGetDiagRec(
-      SQL_HANDLE_DBC, 
-      hDBC,
-      ++i, 
+      handleType, 
+      handle,
+      i + 1, 
       (SQLCHAR *) errorSQLState,
       &native,
       (SQLCHAR *) errorMessage,
       sizeof(errorMessage),
       &len);
+    
+    DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i\n", i);
 
     if (SQL_SUCCEEDED(ret)) {
-      objError->Set(String::New("error"), String::New("[node-odbc] SQL_ERROR"));
+      DEBUG_PRINTF("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
+      
+      objError->Set(String::New("error"), String::New(message));
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
     }
-  } while( ret == SQL_SUCCESS );
+  }
   
   return scope.Close(objError);
 }
@@ -777,8 +796,7 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
       errorCount++;
       
       objError = ODBC::GetSQLError(
-        hENV, 
-        hDBC, 
+        SQL_HANDLE_STMT, 
         hSTMT,
         (char *) "[node-odbc] Error in ODBC::GetAllRecordsSync"
       );
@@ -806,7 +824,8 @@ Local<Array> ODBC::GetAllRecordsSync (HENV hENV,
     count++;
   }
   //TODO: what do we do about errors!?!
-  scope.Close(rows);
+  //we throw them
+  return scope.Close(rows);
 }
 
 #ifdef dynodbc

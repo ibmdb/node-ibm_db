@@ -52,7 +52,7 @@ void ODBCStatement::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirect", ExecuteDirect);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeDirectSync", ExecuteDirectSync);
   
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", Execute);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuery", ExecuteNonQuery);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "executeNonQuerySync", ExecuteNonQuerySync);
   
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "prepare", Prepare);
@@ -204,8 +204,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -259,8 +258,7 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
     ));
@@ -342,8 +340,7 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -355,6 +352,10 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
     if (!SQL_SUCCEEDED(ret)) {
       rowCount = 0;
     }
+    
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     Local<Value> args[2];
 
@@ -396,8 +397,7 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
   
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
     ));
@@ -412,6 +412,10 @@ Handle<Value> ODBCStatement::ExecuteNonQuerySync(const Arguments& args) {
     if (!SQL_SUCCEEDED(ret)) {
       rowCount = 0;
     }
+    
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     return scope.Close(Number::New(rowCount));
   }
@@ -484,8 +488,7 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
@@ -545,8 +548,7 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
 
   if(ret == SQL_ERROR) {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::ExecuteDirectSync"
     ));
@@ -680,8 +682,7 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      data->stmt->m_hENV,
-      data->stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       data->stmt->m_hSTMT,
       data->cb);
   }
@@ -798,8 +799,7 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
   }
   else {
     ThrowException(ODBC::GetSQLError(
-      stmt->m_hENV,
-      stmt->m_hDBC,
+      SQL_HANDLE_STMT,
       stmt->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCStatement::BindSync"
     ));
@@ -943,8 +943,7 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
   //Check if there were errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
-      self->m_hENV,
-      self->m_hDBC,
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }

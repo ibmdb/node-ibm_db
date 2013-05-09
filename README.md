@@ -232,11 +232,8 @@ db.openSync(cn);
 //Blocks while preparing the statement
 var stmt = db.prepareSync("insert into hits (col1, col2) VALUES (?, ?)")
 
-//Bind some values to the statement
-stmt.bindSync(['something', 42]);
-
-//Execute the statment asynchronously
-stmt.execute(function (err, result) {
+//Bind and Execute the statment asynchronously
+stmt.execute(['something', 42], function (err, result) {
   result.closeSync();
 
   //Close the connection
