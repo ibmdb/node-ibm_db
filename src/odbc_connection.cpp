@@ -173,12 +173,18 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
-  //TODO: make this configurable
-  //NOTE: SQLSetConnectOption requires the thread to be locked
-  SQLSetConnectOption( self->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
-  
   char connstr[1024];
-
+  
+  //TODO: make this configurable
+  int timeOut = 5;
+  
+  //NOTE: SQLSetConnectAttr requires the thread to be locked
+  SQLSetConnectAttr(
+    self->m_hDBC,           //ConnectionHandle
+    SQL_ATTR_LOGIN_TIMEOUT, //Attribute
+    &timeOut,               //ValuePtr
+    sizeof(timeOut));       //StringLength
+  
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   int ret = SQLDriverConnect( 
@@ -283,8 +289,14 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //TODO: make this configurable
-  //NOTE: SQLSetConnectOption requires the thread to be locked
-  SQLSetConnectOption( conn->m_hDBC, SQL_LOGIN_TIMEOUT, 5 );
+  int timeOut = 5;
+  
+  //NOTE: SQLSetConnectAttr requires the thread to be locked
+  SQLSetConnectAttr(
+    conn->m_hDBC,           //ConnectionHandle
+    SQL_ATTR_LOGIN_TIMEOUT, //Attribute
+    &timeOut,               //ValuePtr
+    sizeof(timeOut));       //StringLength
 
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
