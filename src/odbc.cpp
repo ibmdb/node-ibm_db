@@ -403,22 +403,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       break;
     case SQL_DATETIME :
     case SQL_TIMESTAMP : {
-      struct tm timeInfo = { 
-        tm_sec : 0
-        , tm_min : 0
-        , tm_hour : 0
-        , tm_mday : 0
-        , tm_mon : 0
-        , tm_year : 0
-        , tm_wday : 0
-        , tm_yday : 0
-        , tm_isdst : 0
-        , tm_gmtoff : 0
-        , tm_zone : 0
-      };
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
 #ifdef _WIN32
+      struct tm timeInfo = {};
+
       ret = SQLGetData(
         hStmt, 
         column.index, 
@@ -444,6 +433,20 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return Date::New((double(mktime(&timeInfo)) * 1000));
       }
 #else
+      struct tm timeInfo = { 
+        tm_sec : 0
+        , tm_min : 0
+        , tm_hour : 0
+        , tm_mday : 0
+        , tm_mon : 0
+        , tm_year : 0
+        , tm_wday : 0
+        , tm_yday : 0
+        , tm_isdst : 0
+        , tm_gmtoff : 0
+        , tm_zone : 0
+      };
+
       SQL_TIMESTAMP_STRUCT odbcTime;
       
       ret = SQLGetData(
