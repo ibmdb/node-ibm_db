@@ -116,13 +116,14 @@ struct query_work_data {
   int paramCount;
   bool noResultObject;
   
-  char *sql;
+  uint16_t *sql;
   char *catalog;
   char *schema;
   char *table;
   char *type;
   char *column;
   
+  int sqlLen;
   int result;
 };
 

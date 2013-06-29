@@ -613,7 +613,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   
   Local<Function> cb;
   
-  String::Utf8Value* sql;
+  String::Value* sql;
   
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
@@ -641,7 +641,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       ));
     }
 
-    sql = new String::Utf8Value(args[0]->ToString());
+    sql = new String::Value(args[0]->ToString());
     
     data->params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(args[1]),
@@ -663,7 +663,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
     if (args[0]->IsString()) {
       //handle Query("sql", function cb () {})
       
-      sql = new String::Utf8Value(args[0]->ToString());
+      sql = new String::Value(args[0]->ToString());
       
       data->paramCount = 0;
     }
@@ -676,10 +676,10 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       Local<Object> obj = args[0]->ToObject();
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
-        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+        sql = new String::Value(obj->Get(OPTION_SQL)->ToString());
       }
       else {
-        sql = new String::Utf8Value(String::New(""));
+        sql = new String::Value(String::New(""));
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -710,12 +710,12 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
     );
   }
   //Done checking arguments
-
-  data->sql = (char *) malloc(sql->length() +1);
+  data->sqlLen = sql->length();
+  data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
   data->cb = Persistent<Function>::New(cb);
-  
-  strcpy(data->sql, **sql);
-  
+
+  memcpy(data->sql, **sql, (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+
   delete sql;
   
   data->conn = conn;
@@ -752,17 +752,17 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
   //check to see if should excute a direct or a parameter bound query
   if (!data->paramCount) {
     // execute the query directly
-    ret = SQLExecDirect(
+    ret = SQLExecDirectW(
       data->hSTMT,
-      (SQLCHAR *) data->sql, 
-      strlen(data->sql));
+      (SQLWCHAR *) data->sql, 
+      data->sqlLen);
   }
   else {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepare(
+    ret = SQLPrepareW(
       data->hSTMT,
-      (SQLCHAR *) data->sql, 
-      strlen(data->sql));
+      (SQLWCHAR *) data->sql, 
+      data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
       for (int i = 0; i < data->paramCount; i++) {
@@ -864,7 +864,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     for (int i = 0; i < data->paramCount; i++) {
       if (prm = data->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_WCHAR:   free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
@@ -897,7 +897,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   
   HandleScope scope;
 
-  String::Utf8Value* sql;
+  String::Value* sql;
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
@@ -923,7 +923,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       ));
     }
 
-    sql = new String::Utf8Value(args[0]->ToString());
+    sql = new String::Value(args[0]->ToString());
 
     params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(args[1]),
@@ -935,7 +935,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 
     if (args[0]->IsString()) {
       //handle Query("sql")
-      sql = new String::Utf8Value(args[0]->ToString());
+      sql = new String::Value(args[0]->ToString());
       
       paramCount = 0;
     }
@@ -948,10 +948,10 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       Local<Object> obj = args[0]->ToObject();
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
-        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+        sql = new String::Value(obj->Get(OPTION_SQL)->ToString());
       }
       else {
-        sql = new String::Utf8Value(String::New(""));
+        sql = new String::Value(String::New(""));
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -997,9 +997,9 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   }
   else if (!paramCount) {
     // execute the query directly
-    ret = SQLExecDirect(
+    ret = SQLExecDirectW(
       hSTMT,
-      (SQLCHAR *) **sql, 
+      (SQLWCHAR *) **sql, 
       sql->length());
   }
   else {
@@ -1043,7 +1043,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     for (int i = 0; i < paramCount; i++) {
       if (prm = params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
+          case SQL_C_WCHAR:   free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;

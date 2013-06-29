@@ -20,6 +20,7 @@
 
 #include <v8.h>
 #include <node.h>
+#include <wchar.h>
 
 #include <stdlib.h>
 #ifdef dynodbc
@@ -28,6 +29,7 @@
 #include <sql.h>
 #include <sqltypes.h>
 #include <sqlext.h>
+#include <sqlucode.h>
 #endif
 
 using namespace v8;
@@ -41,6 +43,8 @@ using namespace node;
 #define FETCH_ARRAY 3
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
+#define UNICODE
+
 
 typedef struct {
   unsigned char *name;
