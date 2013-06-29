@@ -124,6 +124,8 @@ struct query_work_data {
   char *column;
   
   int sqlLen;
+  int sqlSize;
+  
   int result;
 };
 

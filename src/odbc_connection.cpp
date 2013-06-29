@@ -711,10 +711,12 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   }
   //Done checking arguments
   data->sqlLen = sql->length();
-  data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
+
+  data->sql = (uint16_t *) malloc(data->sqlSize);
   data->cb = Persistent<Function>::New(cb);
 
-  memcpy(data->sql, **sql, (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  memcpy(data->sql, **sql, data->sqlSize);
 
   delete sql;
   
@@ -754,14 +756,14 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
     // execute the query directly
     ret = SQLExecDirectW(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      data->sql, 
       data->sqlLen);
   }
   else {
     // prepare statement, bind parameters and execute statement 
     ret = SQLPrepareW(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      data->sql, 
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
