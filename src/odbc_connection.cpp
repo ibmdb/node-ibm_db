@@ -758,14 +758,14 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
     // execute the query directly
     ret = SQLExecDirectW(
       data->hSTMT,
-      data->sql, 
+      (SQLWCHAR *) data->sql, 
       data->sqlLen);
   }
   else {
     // prepare statement, bind parameters and execute statement 
     ret = SQLPrepareW(
       data->hSTMT,
-      data->sql, 
+      (SQLWCHAR *) data->sql, 
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
