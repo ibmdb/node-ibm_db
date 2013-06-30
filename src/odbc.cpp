@@ -510,11 +510,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       ret = SQLGetData(
         hStmt,
         column.index,
-#ifdef _WIN32
         SQL_C_WCHAR,
-#else
-        SQL_C_CHAR,
-#endif
         (char *) buffer,
         bufferLength,
         &len);
@@ -528,11 +524,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else {
         //return scope.Close(String::New((char*) buffer));
-#ifdef _WIN32
-        return String::New((uint16_t*) buffer, wcslen((wchar_t*) buffer));
-#else
-        return String::New((char*) buffer);
-#endif
+        return String::New((uint16_t*) buffer, len / 2);
       }
   }
 }
