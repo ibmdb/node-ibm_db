@@ -719,6 +719,8 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   memcpy(data->sql, **sql, data->sqlSize);
 
   delete sql;
+
+  DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n", data->sqlLen, data->sqlSize, (char*) data->sql);
   
   data->conn = conn;
   work_req->data = data;

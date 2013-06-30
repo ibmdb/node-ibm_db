@@ -602,7 +602,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       String::Value string(value);
 
       params[i].c_type        = SQL_C_WCHAR;
-      params[i].type          = SQL_VARCHAR;
+      params[i].type          = SQL_WVARCHAR;
       params[i].buffer_length = (string.length() * sizeof(uint16_t)) + sizeof(uint16_t);
       params[i].buffer        = malloc(params[i].buffer_length);
       params[i].size          = params[i].buffer_length;
