@@ -613,7 +613,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   
   Local<Function> cb;
   
-  String::Value* sql;
+  Local<String> sql;
   
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
@@ -641,7 +641,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       ));
     }
 
-    sql = new String::Value(args[0]->ToString());
+    sql = args[0]->ToString();
     
     data->params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(args[1]),
@@ -663,7 +663,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
     if (args[0]->IsString()) {
       //handle Query("sql", function cb () {})
       
-      sql = new String::Value(args[0]->ToString());
+      sql = args[0]->ToString();
       
       data->paramCount = 0;
     }
@@ -676,10 +676,10 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
       Local<Object> obj = args[0]->ToObject();
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
-        sql = new String::Value(obj->Get(OPTION_SQL)->ToString());
+        sql = obj->Get(OPTION_SQL)->ToString();
       }
       else {
-        sql = new String::Value(String::New(""));
+        sql = String::New("");
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -710,17 +710,19 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
     );
   }
   //Done checking arguments
-  data->sqlLen = sql->length();
+  data->sqlLen = sql->Length();
   data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
 
   data->sql = (uint16_t *) malloc(data->sqlSize);
   data->cb = Persistent<Function>::New(cb);
 
-  memcpy(data->sql, **sql, data->sqlSize);
+  sql->Write(data->sql);
+  //memcpy(data->sql, **sql, data->sqlSize);
 
-  delete sql;
+//   delete sql;
 
-  DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n", data->sqlLen, data->sqlSize, (char*) data->sql);
+  DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
+               data->sqlLen, data->sqlSize, (char*) data->sql);
   
   data->conn = conn;
   work_req->data = data;
@@ -1008,9 +1010,9 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   }
   else {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepare(
+    ret = SQLPrepareW(
       hSTMT,
-      (SQLCHAR *) **sql, 
+      (SQLWCHAR *) **sql, 
       sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
@@ -1057,6 +1059,8 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     
     free(params);
   }
+  
+  delete sql;
   
   //check to see if there was an error during execution
   if(ret == SQL_ERROR) {
