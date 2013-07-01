@@ -591,16 +591,16 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                  i, &params[i].length);
 
     if (value->IsString()) {
-      String::Value string(value);
+      Local<String> string = value->ToString();
 
       params[i].c_type        = SQL_C_WCHAR;
       params[i].type          = SQL_WVARCHAR;
-      params[i].buffer_length = (string.length() * sizeof(uint16_t)) + sizeof(uint16_t);
+      params[i].buffer_length = (string->Length() * sizeof(uint16_t)) + sizeof(uint16_t);
       params[i].buffer        = malloc(params[i].buffer_length);
       params[i].size          = params[i].buffer_length;
       params[i].length        = SQL_NTS;//params[i].buffer_length;
 
-      memcpy(params[i].buffer, *string, params[i].buffer_length);
+      string->Write((uint16_t *) params[i].buffer);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i "

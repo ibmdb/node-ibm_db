@@ -710,6 +710,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
     );
   }
   //Done checking arguments
+
   data->sqlLen = sql->Length();
   data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
 
@@ -717,9 +718,6 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   data->cb = Persistent<Function>::New(cb);
 
   sql->Write(data->sql);
-  //memcpy(data->sql, **sql, data->sqlSize);
-
-//   delete sql;
 
   DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
                data->sqlLen, data->sqlSize, (char*) data->sql);
