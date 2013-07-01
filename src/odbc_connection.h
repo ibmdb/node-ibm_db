@@ -116,7 +116,7 @@ struct query_work_data {
   int paramCount;
   bool noResultObject;
   
-  uint16_t *sql;
+  void *sql;
   char *catalog;
   char *schema;
   char *table;

@@ -717,7 +717,7 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   data->sql = (uint16_t *) malloc(data->sqlSize);
   data->cb = Persistent<Function>::New(cb);
 
-  sql->Write(data->sql);
+  sql->Write((uint16_t *) data->sql);
 
   DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
                data->sqlLen, data->sqlSize, (char*) data->sql);
