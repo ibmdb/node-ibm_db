@@ -134,7 +134,7 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::Open\n");
   HandleScope scope;
 
-  REQ_STR_ARG(0, connection);
+  REQ_STRO_ARG(0, connection);
   REQ_FUN_ARG(1, cb);
 
   //get reference to the connection object
@@ -145,10 +145,12 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
  
   //allocate our worker data
   open_connection_work_data* data = (open_connection_work_data *) 
-    calloc(1, sizeof(open_connection_work_data) + connection.length());
+    calloc(1, sizeof(open_connection_work_data) + (connection->Length() * sizeof(uint16_t)));
+
+  data->connectionLength = connection->Length();
 
   //copy the connection string to the work data
-  strcpy(data->connection, *connection);
+  connection->Write((uint16_t*) data->connection);
   data->cb = Persistent<Function>::New(cb);
   data->conn = conn;
   
@@ -187,12 +189,12 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  int ret = SQLDriverConnect( 
+  int ret = SQLDriverConnectW( 
     self->m_hDBC, 
     NULL,
-    (SQLCHAR*) data->connection,
-    strlen(data->connection),
-    (SQLCHAR*) connstr,
+    (SQLWCHAR*) data->connection,
+    data->connectionLength,
+    (SQLWCHAR*) connstr,
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);
@@ -276,7 +278,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::OpenSync\n");
   HandleScope scope;
 
-  REQ_STR_ARG(0, connection);
+  REQ_WSTR_ARG(0, connection);
 
   //get reference to the connection object
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -300,12 +302,12 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  ret = SQLDriverConnect( 
+  ret = SQLDriverConnectW( 
     conn->m_hDBC, 
     NULL,
-    (SQLCHAR*) *connection,
+    (SQLWCHAR*) *connection,
     connection.length(),
-    (SQLCHAR*) connstr,
+    (SQLWCHAR*) connstr,
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);

@@ -133,7 +133,8 @@ struct open_connection_work_data {
   Persistent<Function> cb;
   ODBCConnection *conn;
   int result;
-  char connection[1];
+  int connectionLength;
+  uint16_t connection[1];
 };
 
 struct close_connection_work_data {
