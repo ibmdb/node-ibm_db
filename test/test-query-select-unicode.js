@@ -5,11 +5,11 @@ var common = require("./common")
   ;
 
 db.open(common.connectionString, function(err) {
-  db.query("select 'ף צ ץ ק ר ש תכ ך ל מ ם נ ן ס ע פ 電电電買买買開开開東东東車车車' as UNICODETEXT", function (err, data) {
+  db.query("select '☯ąčęėįšųūž☎áäàéêèóöòüßÄÖÜ€ шчябы Ⅲ ❤' as UNICODETEXT", function (err, data) {
     db.close(function () {
       console.log(data);
       assert.equal(err, null);
-      assert.deepEqual(data, [{ UNICODETEXT: 'ף צ ץ ק ר ש תכ ך ל מ ם נ ן ס ע פ 電电電買买買開开開東东東車车車' }]);
+      assert.deepEqual(data, [{ UNICODETEXT: '☯ąčęėįšųūž☎áäàéêèóöòüßÄÖÜ€ шчябы Ⅲ ❤' }]);
     });
   });
 });

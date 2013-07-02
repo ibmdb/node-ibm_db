@@ -510,11 +510,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       ret = SQLGetData(
         hStmt,
         column.index,
-#ifdef _WIN32
         SQL_C_WCHAR,
-#else
-        SQL_C_CHAR,
-#endif
         (char *) buffer,
         bufferLength,
         &len);
@@ -528,11 +524,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else {
         //return scope.Close(String::New((char*) buffer));
-#ifdef _WIN32
-        return String::New((uint16_t*) buffer, wcslen((wchar_t*) buffer));
-#else
-        return String::New((char*) buffer);
-#endif
+        return String::New((uint16_t*) buffer, len / 2);
       }
   }
 }
@@ -599,16 +591,16 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                  i, &params[i].length);
 
     if (value->IsString()) {
-      String::Utf8Value string(value);
+      Local<String> string = value->ToString();
 
-      params[i].c_type        = SQL_C_CHAR;
-      params[i].type          = SQL_VARCHAR;
-      params[i].buffer_length = string.length() + 1;
+      params[i].c_type        = SQL_C_WCHAR;
+      params[i].type          = SQL_WVARCHAR;
+      params[i].buffer_length = (string->Length() * sizeof(uint16_t)) + sizeof(uint16_t);
       params[i].buffer        = malloc(params[i].buffer_length);
       params[i].size          = params[i].buffer_length;
       params[i].length        = SQL_NTS;//params[i].buffer_length;
 
-      strcpy((char*)params[i].buffer, *string);
+      string->Write((uint16_t *) params[i].buffer);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i "
