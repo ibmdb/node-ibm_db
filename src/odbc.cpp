@@ -603,10 +603,11 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       Local<String> string = value->ToString();
 
       params[i].c_type        = SQL_C_TCHAR;
-      params[i].type          = SQL_VARCHAR;
 #ifdef UNICODE
+      params[i].type          = SQL_WVARCHAR;
       params[i].buffer_length = (string->Length() * sizeof(uint16_t)) + sizeof(uint16_t);
 #else
+      params[i].type          = SQL_VARCHAR;
       params[i].buffer_length = string->Utf8Length() + 1;
 #endif
       params[i].buffer        = malloc(params[i].buffer_length);
