@@ -305,7 +305,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     //get the column type and store it directly in column[i].type
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
-                           SQL_COLUMN_TYPE,
+                           SQL_DESC_TYPE,
                            NULL,
                            0,
                            NULL,
