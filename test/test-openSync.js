@@ -12,6 +12,8 @@ db.query("select * from " + common.tableName, function (err, rs, moreResultSets)
   assert.equal(db.connected, false);
 });
 
+console.log("Attempting to connect to: %s", common.connectionString);
+
 try {
   db.openSync(common.connectionString);
 }
