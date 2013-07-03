@@ -134,7 +134,7 @@ struct open_connection_work_data {
   ODBCConnection *conn;
   int result;
   int connectionLength;
-  uint16_t connection[1];
+  void* connection[1];
 };
 
 struct close_connection_work_data {

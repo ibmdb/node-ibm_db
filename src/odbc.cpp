@@ -510,7 +510,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       ret = SQLGetData(
         hStmt,
         column.index,
-        SQL_C_WCHAR,
+        SQL_C_TCHAR,
         (char *) buffer,
         bufferLength,
         &len);
@@ -524,7 +524,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else {
         //return scope.Close(String::New((char*) buffer));
+#ifdef UNICODE
         return String::New((uint16_t*) buffer, len / 2);
+#else
+        return String::New((char *) buffer, len);
+#endif
       }
   }
 }
@@ -593,14 +597,22 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     if (value->IsString()) {
       Local<String> string = value->ToString();
 
-      params[i].c_type        = SQL_C_WCHAR;
-      params[i].type          = SQL_WVARCHAR;
+      params[i].c_type        = SQL_C_TCHAR;
+      params[i].type          = SQL_VARCHAR;
+#ifdef UNICODE
       params[i].buffer_length = (string->Length() * sizeof(uint16_t)) + sizeof(uint16_t);
+#else
+      params[i].buffer_length = string->Utf8Length() + 1;
+#endif
       params[i].buffer        = malloc(params[i].buffer_length);
       params[i].size          = params[i].buffer_length;
       params[i].length        = SQL_NTS;//params[i].buffer_length;
 
+#ifdef UNICODE
       string->Write((uint16_t *) params[i].buffer);
+#else
+      string->WriteUtf8((char *) params[i].buffer);
+#endif
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i "
@@ -744,9 +756,9 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       handleType, 
       handle,
       i + 1, 
-      (SQLCHAR *) errorSQLState,
+      (SQLTCHAR *) errorSQLState,
       &native,
-      (SQLCHAR *) errorMessage,
+      (SQLTCHAR *) errorMessage,
       sizeof(errorMessage),
       &len);
     

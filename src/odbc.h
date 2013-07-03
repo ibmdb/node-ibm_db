@@ -43,7 +43,6 @@ using namespace node;
 #define FETCH_ARRAY 3
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
-#define UNICODE
 
 
 typedef struct {

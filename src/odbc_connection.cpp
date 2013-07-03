@@ -144,13 +144,23 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
  
   //allocate our worker data
+#ifdef UNICODE
   open_connection_work_data* data = (open_connection_work_data *) 
     calloc(1, sizeof(open_connection_work_data) + (connection->Length() * sizeof(uint16_t)));
+#else
+  open_connection_work_data* data = (open_connection_work_data *) 
+    calloc(1, sizeof(open_connection_work_data) + connection->Length());
+#endif
 
   data->connectionLength = connection->Length();
 
   //copy the connection string to the work data
+#ifdef UNICODE
   connection->Write((uint16_t*) data->connection);
+#else
+  connection->WriteUtf8((char*) data->connection);
+#endif
+
   data->cb = Persistent<Function>::New(cb);
   data->conn = conn;
   
@@ -189,16 +199,17 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  int ret = SQLDriverConnectW( 
+
+  int ret = SQLDriverConnect( 
     self->m_hDBC, 
     NULL,
-    (SQLWCHAR*) data->connection,
+    (SQLTCHAR*) data->connection,
     data->connectionLength,
-    (SQLWCHAR*) connstr,
+    (SQLTCHAR*) connstr,
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);
-  
+
   if (SQL_SUCCEEDED(ret)) {
     HSTMT hStmt;
     
@@ -278,7 +289,11 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::OpenSync\n");
   HandleScope scope;
 
+#ifdef UNICODE
   REQ_WSTR_ARG(0, connection);
+#else
+  REQ_STR_ARG(0, connection);
+#endif
 
   //get reference to the connection object
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -302,12 +317,12 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  ret = SQLDriverConnectW( 
+  ret = SQLDriverConnect( 
     conn->m_hDBC, 
     NULL,
-    (SQLWCHAR*) *connection,
+    (SQLTCHAR*) *connection,
     connection.length(),
-    (SQLWCHAR*) connstr,
+    (SQLTCHAR*) connstr,
     1024,
     NULL,
     SQL_DRIVER_NOPROMPT);
@@ -713,13 +728,18 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   }
   //Done checking arguments
 
-  data->sqlLen = sql->Length();
-  data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
-
-  data->sql = (uint16_t *) malloc(data->sqlSize);
   data->cb = Persistent<Function>::New(cb);
+  data->sqlLen = sql->Length();
 
+#ifdef UNICODE
+  data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
+  data->sql = (uint16_t *) malloc(data->sqlSize);
   sql->Write((uint16_t *) data->sql);
+#else
+  data->sqlSize = sql->Utf8Length() + 1;
+  data->sql = (char *) malloc(data->sqlSize);
+  sql->WriteUtf8((char *) data->sql);
+#endif
 
   DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
                data->sqlLen, data->sqlSize, (char*) data->sql);
@@ -758,16 +778,16 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
   //check to see if should excute a direct or a parameter bound query
   if (!data->paramCount) {
     // execute the query directly
-    ret = SQLExecDirectW(
+    ret = SQLExecDirect(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql, 
       data->sqlLen);
   }
   else {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepareW(
+    ret = SQLPrepare(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql, 
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
@@ -871,6 +891,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
       if (prm = data->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
           case SQL_C_WCHAR:   free(prm.buffer);             break; 
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
@@ -903,7 +924,11 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   
   HandleScope scope;
 
+#ifdef UNICODE
   String::Value* sql;
+#else
+  String::Utf8Value* sql;
+#endif
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
@@ -929,7 +954,11 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       ));
     }
 
+#ifdef UNICODE
     sql = new String::Value(args[0]->ToString());
+#else
+    sql = new String::Utf8Value(args[0]->ToString());
+#endif
 
     params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(args[1]),
@@ -941,8 +970,12 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 
     if (args[0]->IsString()) {
       //handle Query("sql")
+#ifdef UNICODE
       sql = new String::Value(args[0]->ToString());
-      
+#else
+      sql = new String::Utf8Value(args[0]->ToString());
+#endif
+    
       paramCount = 0;
     }
     else if (args[0]->IsObject()) {
@@ -954,10 +987,18 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       Local<Object> obj = args[0]->ToObject();
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
+#ifdef UNICODE
         sql = new String::Value(obj->Get(OPTION_SQL)->ToString());
+#else
+        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+#endif
       }
       else {
+#ifdef UNICODE
         sql = new String::Value(String::New(""));
+#else
+        sql = new String::Utf8Value(String::New(""));
+#endif
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -1003,16 +1044,16 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   }
   else if (!paramCount) {
     // execute the query directly
-    ret = SQLExecDirectW(
+    ret = SQLExecDirect(
       hSTMT,
-      (SQLWCHAR *) **sql, 
+      (SQLTCHAR *) **sql, 
       sql->length());
   }
   else {
-    // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepareW(
+    // prepare statement, bind parameters and execute statement
+    ret = SQLPrepare(
       hSTMT,
-      (SQLWCHAR *) **sql, 
+      (SQLTCHAR *) **sql, 
       sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
@@ -1049,7 +1090,8 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     for (int i = 0; i < paramCount; i++) {
       if (prm = params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break; 
+          case SQL_C_WCHAR:   free(prm.buffer);             break;
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
@@ -1177,10 +1219,10 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
   
   SQLRETURN ret = SQLTables( 
     data->hSTMT, 
-    (SQLCHAR *) data->catalog,   SQL_NTS, 
-    (SQLCHAR *) data->schema,   SQL_NTS, 
-    (SQLCHAR *) data->table,   SQL_NTS, 
-    (SQLCHAR *) data->type,   SQL_NTS
+    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS, 
+    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->type,   SQL_NTS
   );
   
   // this will be checked later in UV_AfterQuery
@@ -1267,10 +1309,10 @@ void ODBCConnection::UV_Columns(uv_work_t* req) {
   
   SQLRETURN ret = SQLColumns( 
     data->hSTMT, 
-    (SQLCHAR *) data->catalog,   SQL_NTS, 
-    (SQLCHAR *) data->schema,   SQL_NTS, 
-    (SQLCHAR *) data->table,   SQL_NTS, 
-    (SQLCHAR *) data->column,   SQL_NTS
+    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS, 
+    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->column,   SQL_NTS
   );
   
   // this will be checked later in UV_AfterQuery
