@@ -144,20 +144,17 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
  
   //allocate our worker data
-#ifdef UNICODE
   open_connection_work_data* data = (open_connection_work_data *) 
-    calloc(1, sizeof(open_connection_work_data) + (connection->Length() * sizeof(uint16_t)));
-#else
-  open_connection_work_data* data = (open_connection_work_data *) 
-    calloc(1, sizeof(open_connection_work_data) + connection->Length());
-#endif
+    calloc(1, sizeof(open_connection_work_data));
 
   data->connectionLength = connection->Length();
 
-  //copy the connection string to the work data
+  //copy the connection string to the work data  
 #ifdef UNICODE
+  data->connection = (uint16_t *) malloc(sizeof(uint16_t) * data->connectionLength);
   connection->Write((uint16_t*) data->connection);
 #else
+  data->connection = (char *) malloc(sizeof(char) * data->connectionLength);
   connection->WriteUtf8((char*) data->connection);
 #endif
 
@@ -185,7 +182,13 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
-  char connstr[1024];
+#ifdef UNICODE
+  int connectionStringOutSize = 1024 * sizeof(uint16_t);
+  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
+#else
+  int connectionStringOutSize = 1024;
+  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
+#endif
   
   //TODO: make this configurable
   int timeOut = 5;
@@ -199,17 +202,17 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-
-  int ret = SQLDriverConnect( 
-    self->m_hDBC, 
-    NULL,
-    (SQLTCHAR*) data->connection,
-    data->connectionLength,
-    (SQLTCHAR*) connstr,
-    1024,
-    NULL,
-    SQL_DRIVER_NOPROMPT);
-
+  int ret = SQLDriverConnect(
+    self->m_hDBC,                   //ConnectionHandle
+    NULL,                           //WindowHandle
+    (SQLTCHAR*) data->connection,   //InConnectionString
+    data->connectionLength,         //StringLength1
+    (SQLTCHAR*) connectionStringOut,//OutConnectionString
+    1024,                           //BufferLength - in characters
+    NULL,                           //StringLength2Ptr
+    SQL_DRIVER_NOPROMPT);           //DriverCompletion
+  
+  
   if (SQL_SUCCEEDED(ret)) {
     HSTMT hStmt;
     
@@ -276,6 +279,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
 
   data->cb.Dispose();
   
+  free(data->connection);
   free(data);
   free(req);
   scope.Close(Undefined());
@@ -289,11 +293,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::OpenSync\n");
   HandleScope scope;
 
-#ifdef UNICODE
-  REQ_WSTR_ARG(0, connection);
-#else
-  REQ_STR_ARG(0, connection);
-#endif
+  REQ_STRO_ARG(0, connection);
 
   //get reference to the connection object
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -301,7 +301,20 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   Local<Object> objError;
   SQLRETURN ret;
   bool err = false;
-  char connstr[1024];
+  
+  int connectionLength = connection->Length() + 1;
+  
+#ifdef UNICODE
+  int connectionStringOutSize = 1024 * sizeof(uint16_t);
+  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
+  uint16_t* connectionString = (uint16_t *) malloc(connectionLength * sizeof(uint16_t));
+  connection->Write(connectionString);
+#else
+  int connectionStringOutSize = 1024;
+  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
+  char* connectionString = (char *) malloc(connectionLength);
+  connection->WriteUtf8(connectionString);
+#endif
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -317,15 +330,15 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  ret = SQLDriverConnect( 
-    conn->m_hDBC, 
-    NULL,
-    (SQLTCHAR*) *connection,
-    connection.length(),
-    (SQLTCHAR*) connstr,
-    1024,
-    NULL,
-    SQL_DRIVER_NOPROMPT);
+  ret = SQLDriverConnect(
+    conn->m_hDBC,                   //ConnectionHandle
+    NULL,                           //WindowHandle
+    (SQLTCHAR*) connectionString,   //InConnectionString
+    connectionLength,               //StringLength1
+    (SQLTCHAR*) connectionStringOut,//OutConnectionString
+    1024,                           //BufferLength - in characters
+    NULL,                           //StringLength2Ptr
+    SQL_DRIVER_NOPROMPT);           //DriverCompletion
 
   if (!SQL_SUCCEEDED(ret)) {
     err = true;
@@ -364,6 +377,9 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
+  free(connectionString);
+  free(connectionStringOut);
+  
   if (err) {
     ThrowException(objError);
     return scope.Close(False());
@@ -1148,10 +1164,10 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 Handle<Value> ODBCConnection::Tables(const Arguments& args) {
   HandleScope scope;
 
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, type);
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+  REQ_STRO_OR_NULL_ARG(3, type);
   Local<Function> cb = Local<Function>::Cast(args[4]);
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -1174,24 +1190,44 @@ Handle<Value> ODBCConnection::Tables(const Arguments& args) {
   data->column = NULL;
   data->cb = Persistent<Function>::New(cb);
 
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    data->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(data->catalog, *catalog);
+  if (!catalog->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    catalog->Write((uint16_t *) data->catalog);
+#else
+    data->catalog = (char *) malloc(catalog->Length() + 1);
+    catalog->WriteUtf8((char *) data->catalog);
+#endif
+  }
+
+  if (!schema->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    schema->Write((uint16_t *) data->schema);
+#else
+    data->schema = (char *) malloc(schema->Length() + 1);
+    schema->WriteUtf8((char *) data->schema);
+#endif
   }
   
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    data->schema = (char *) malloc(schema.length() +1);
-    strcpy(data->schema, *schema);
+  if (!table->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    table->Write((uint16_t *) data->table);
+#else
+    data->table = (char *) malloc(table->Length() + 1);
+    table->WriteUtf8((char *) data->table);
+#endif
   }
   
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    data->table = (char *) malloc(table.length() +1);
-    strcpy(data->table, *table);
-  }
-  
-  if (!String::New(*type)->Equals(String::New("null"))) {
-    data->type = (char *) malloc(type.length() +1);
-    strcpy(data->type, *type);
+  if (!type->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->type = (uint16_t *) malloc((type->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    type->Write((uint16_t *) data->type);
+#else
+    data->type = (char *) malloc(type->Length() + 1);
+    type->WriteUtf8((char *) data->type);
+#endif
   }
   
   data->conn = conn;
@@ -1238,10 +1274,10 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
 Handle<Value> ODBCConnection::Columns(const Arguments& args) {
   HandleScope scope;
 
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, column);
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+  REQ_STRO_OR_NULL_ARG(3, column);
   
   Local<Function> cb = Local<Function>::Cast(args[4]);
   
@@ -1264,24 +1300,44 @@ Handle<Value> ODBCConnection::Columns(const Arguments& args) {
   data->column = NULL;
   data->cb = Persistent<Function>::New(cb);
 
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    data->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(data->catalog, *catalog);
+  if (!catalog->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    catalog->Write((uint16_t *) data->catalog);
+#else
+    data->catalog = (char *) malloc(catalog->Length() + 1);
+    catalog->WriteUtf8((char *) data->catalog);
+#endif
+  }
+
+  if (!schema->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    schema->Write((uint16_t *) data->schema);
+#else
+    data->schema = (char *) malloc(schema->Length() + 1);
+    schema->WriteUtf8((char *) data->schema);
+#endif
   }
   
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    data->schema = (char *) malloc(schema.length() +1);
-    strcpy(data->schema, *schema);
+  if (!table->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    table->Write((uint16_t *) data->table);
+#else
+    data->table = (char *) malloc(table->Length() + 1);
+    table->WriteUtf8((char *) data->table);
+#endif
   }
   
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    data->table = (char *) malloc(table.length() +1);
-    strcpy(data->table, *table);
-  }
-  
-  if (!String::New(*column)->Equals(String::New("null"))) {
-    data->column = (char *) malloc(column.length() +1);
-    strcpy(data->column, *column);
+  if (!column->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->column = (uint16_t *) malloc((column->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    column->Write((uint16_t *) data->column);
+#else
+    data->column = (char *) malloc(column->Length() + 1);
+    column->WriteUtf8((char *) data->column);
+#endif
   }
   
   data->conn = conn;

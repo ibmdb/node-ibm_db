@@ -545,8 +545,13 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   Local<Object> tuple = Object::New();
         
   for(int i = 0; i < *colCount; i++) {
+#ifdef UNICODE
+    tuple->Set( String::New((uint16_t *) columns[i].name),
+                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+#else
     tuple->Set( String::New((const char *) columns[i].name),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+#endif
   }
   
   //return tuple;
@@ -737,8 +742,8 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   SQLSMALLINT len;
   SQLINTEGER numfields;
   SQLRETURN ret;
-  char errorSQLState[7];
-  char errorMessage[256];
+  char errorSQLState[14];
+  char errorMessage[512];
 
   SQLGetDiagField(
     handleType,
@@ -768,8 +773,13 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       DEBUG_PRINTF("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
       
       objError->Set(String::New("error"), String::New(message));
+#ifdef UNICODE
+      objError->Set(String::New("message"), String::New((uint16_t *) errorMessage));
+      objError->Set(String::New("state"), String::New((uint16_t *) errorSQLState));
+#else
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
+#endif
     }
   }
   

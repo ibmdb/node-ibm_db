@@ -117,11 +117,11 @@ struct query_work_data {
   bool noResultObject;
   
   void *sql;
-  char *catalog;
-  char *schema;
-  char *table;
-  char *type;
-  char *column;
+  void *catalog;
+  void *schema;
+  void *table;
+  void *type;
+  void *column;
   
   int sqlLen;
   int sqlSize;
@@ -134,7 +134,7 @@ struct open_connection_work_data {
   ODBCConnection *conn;
   int result;
   int connectionLength;
-  void* connection[1];
+  void* connection;
 };
 
 struct close_connection_work_data {
