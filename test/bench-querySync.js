@@ -25,7 +25,5 @@ function issueQuery() {
    
   console.log("%d queries issued in %d seconds, %d/sec", count, elapsed/1000, Math.floor(count/(elapsed/1000)));
       
-  db.close(function () {
-    console.log("connection closed");
-  });
+  db.close(function () { });
 }
