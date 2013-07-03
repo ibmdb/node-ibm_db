@@ -2,7 +2,7 @@ var common = require("./common")
 	, odbc = require("../")
 	, openCallback = 0
 	, closeCallback = 0
-	, openCount = 1000
+	, openCount = 100
 	, connections = []
 	;
 
