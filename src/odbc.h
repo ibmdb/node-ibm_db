@@ -43,7 +43,6 @@ using namespace node;
 #define FETCH_ARRAY 3
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
-#define UNICODE
 
 
 typedef struct {
@@ -157,17 +156,47 @@ struct query_request {
     return ThrowException(Exception::TypeError(                         \
                                                String::New("Expected " #N "arguments")));
 
+//Require String Argument; Save String as Utf8
 #define REQ_STR_ARG(I, VAR)                                             \
   if (args.Length() <= (I) || !args[I]->IsString())                     \
     return ThrowException(Exception::TypeError(                         \
                                                String::New("Argument " #I " must be a string"))); \
   String::Utf8Value VAR(args[I]->ToString());
 
+//Require String Argument; Save String as Wide String (UCS2)
+#define REQ_WSTR_ARG(I, VAR)                                             \
+  if (args.Length() <= (I) || !args[I]->IsString())                     \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a string"))); \
+  String::Value VAR(args[I]->ToString());
+
+//Require String Argument; Save String as Object
+#define REQ_STRO_ARG(I, VAR)                                             \
+  if (args.Length() <= (I) || !args[I]->IsString())                     \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a string"))); \
+  Local<String> VAR(args[I]->ToString());
+
+//Require String or Null Argument; Save String as Utf8
 #define REQ_STR_OR_NULL_ARG(I, VAR)                                             \
   if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) )                     \
     return ThrowException(Exception::TypeError(                         \
                                                String::New("Argument " #I " must be a string or null"))); \
   String::Utf8Value VAR(args[I]->ToString());
+
+//Require String or Null Argument; Save String as Wide String (UCS2)
+#define REQ_WSTR_OR_NULL_ARG(I, VAR)                                             \
+  if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) )                     \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a string or null"))); \
+  String::Value VAR(args[I]->ToString());
+
+//Require String or Null Argument; save String as String Object
+#define REQ_STRO_OR_NULL_ARG(I, VAR)                                             \
+  if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) )                     \
+    return ThrowException(Exception::TypeError(                         \
+                                               String::New("Argument " #I " must be a string or null"))); \
+  Local<String> VAR(args[I]->ToString());
 
 #define REQ_FUN_ARG(I, VAR)                                             \
   if (args.Length() <= (I) || !args[I]->IsFunction())                   \

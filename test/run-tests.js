@@ -1,8 +1,11 @@
 var fs = require("fs")
+  , common = require('./common.js')
   , spawn = require("child_process").spawn
   , errorCount = 0
   , testCount = 0
   , testTimeout = 5000
+  , requestedTest = null
+  , files
   ;
 
 var filesDisabled = fs.readdirSync("./disabled");
@@ -11,23 +14,32 @@ if (filesDisabled.length) {
   console.log("\n\033[01;31mWarning\033[01;0m : there are %s disabled tests\n", filesDisabled.length);
 }
 
-var files = fs.readdirSync("./");
+if (process.argv.length === 3) {
+  requestedTest = process.argv[2];
+}
 
-files = files.filter(function (file) {
-  return (/^test-/.test(file)) ? true : false;
-});
+var connectionStrings = common.testConnectionStrings;
 
-files.sort();
+//check to see if the requested test is actually a driver to test
+if (requestedTest) {
+  connectionStrings.forEach(function (connectionString) {
+    if (requestedTest == connectionString.title) {
+      connectionStrings = [connectionString];
+      requestedTest = null;
+    }
+  });
+}
 
-doNextTest();
+doNextConnectionString();
 
-function doTest(file) {
-  var test = spawn("node", ['--expose_gc',file])
+
+function doTest(file, connectionString) {
+  var test = spawn("node", ['--expose_gc',file, connectionString.connectionString])
     , timer = null
     , timedOut = false;
     ;
   
-  process.stdout.write("Running test : " + file.replace(/\.js$/, ""));
+  process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : " + file.replace(/\.js$/, ""));
   process.stdout.write(" ... ");
 
   testCount += 1;
@@ -50,7 +62,7 @@ function doTest(file) {
     
     process.stdout.write("\n");
     
-    doNextTest();
+    doNextTest(connectionString);
   });
   
   var timer = setTimeout(function () {
@@ -59,15 +71,39 @@ function doTest(file) {
   },testTimeout);
 }
 
-function doNextTest() {
+function doNextTest(connectionString) {
   if (files.length) {
     var testFile = files.shift();
     
-    doTest(testFile);
+    doTest(testFile, connectionString);
   }
   else {
-    //we're done, display results and exit accordingly
+    //we're done with this connection string, display results and exit accordingly
+    doNextConnectionString();
+  }
+}
+
+function doNextConnectionString() {
+  if (connectionStrings.length) {
+    var connectionString = connectionStrings.shift();
     
+    if (requestedTest) {
+      files = [requestedTest];
+    }
+    else {
+      //re-read files
+      files = fs.readdirSync("./");
+
+      files = files.filter(function (file) {
+        return (/^test-/.test(file)) ? true : false;
+      });
+
+      files.sort();
+    }
+    
+    doNextTest(connectionString);
+  }
+  else {
     if (errorCount) {
       console.log("\nResults : %s of %s tests failed.\n", errorCount, testCount);
       process.exit(errorCount);

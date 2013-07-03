@@ -1,0 +1,6 @@
+[
+	{ "title" : "Sqlite3", "connectionString" : "DRIVER={SQLite3};DATABASE=data/sqlite-test.db" }
+	, { "title" : "MySQL-Local", "connectionString" : "DRIVER={MySQL};DATABASE=test;HOST=localhost;USER=test;" }
+	, { "title" : "MSSQL-FreeTDS-Remote", "connectionString" : "DRIVER={FreeTDS};SERVERNAME=sql2;DATABASE=test;UID=test;PWD=test;AutoTranslate=yes" }
+	, { "title" : "MSSQL-NativeCLI-Remote", "connectionString" : "DRIVER={SQL Server Native Client 11.0};SERVER=sql2;DATABASE=test;UID=test;PWD=test;" }
+]

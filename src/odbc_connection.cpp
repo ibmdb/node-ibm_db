@@ -134,7 +134,7 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::Open\n");
   HandleScope scope;
 
-  REQ_STR_ARG(0, connection);
+  REQ_STRO_ARG(0, connection);
   REQ_FUN_ARG(1, cb);
 
   //get reference to the connection object
@@ -145,10 +145,19 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
  
   //allocate our worker data
   open_connection_work_data* data = (open_connection_work_data *) 
-    calloc(1, sizeof(open_connection_work_data) + connection.length());
+    calloc(1, sizeof(open_connection_work_data));
 
-  //copy the connection string to the work data
-  strcpy(data->connection, *connection);
+  data->connectionLength = connection->Length();
+
+  //copy the connection string to the work data  
+#ifdef UNICODE
+  data->connection = (uint16_t *) malloc(sizeof(uint16_t) * data->connectionLength);
+  connection->Write((uint16_t*) data->connection);
+#else
+  data->connection = (char *) malloc(sizeof(char) * data->connectionLength);
+  connection->WriteUtf8((char*) data->connection);
+#endif
+
   data->cb = Persistent<Function>::New(cb);
   data->conn = conn;
   
@@ -173,7 +182,13 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
-  char connstr[1024];
+#ifdef UNICODE
+  int connectionStringOutSize = 1024 * sizeof(uint16_t);
+  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
+#else
+  int connectionStringOutSize = 1024;
+  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
+#endif
   
   //TODO: make this configurable
   int timeOut = 5;
@@ -187,15 +202,16 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  int ret = SQLDriverConnect( 
-    self->m_hDBC, 
-    NULL,
-    (SQLCHAR*) data->connection,
-    strlen(data->connection),
-    (SQLCHAR*) connstr,
-    1024,
-    NULL,
-    SQL_DRIVER_NOPROMPT);
+  int ret = SQLDriverConnect(
+    self->m_hDBC,                   //ConnectionHandle
+    NULL,                           //WindowHandle
+    (SQLTCHAR*) data->connection,   //InConnectionString
+    data->connectionLength,         //StringLength1
+    (SQLTCHAR*) connectionStringOut,//OutConnectionString
+    1024,                           //BufferLength - in characters
+    NULL,                           //StringLength2Ptr
+    SQL_DRIVER_NOPROMPT);           //DriverCompletion
+  
   
   if (SQL_SUCCEEDED(ret)) {
     HSTMT hStmt;
@@ -263,6 +279,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
 
   data->cb.Dispose();
   
+  free(data->connection);
   free(data);
   free(req);
   scope.Close(Undefined());
@@ -276,7 +293,7 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   DEBUG_PRINTF("ODBCConnection::OpenSync\n");
   HandleScope scope;
 
-  REQ_STR_ARG(0, connection);
+  REQ_STRO_ARG(0, connection);
 
   //get reference to the connection object
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -284,7 +301,20 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   Local<Object> objError;
   SQLRETURN ret;
   bool err = false;
-  char connstr[1024];
+  
+  int connectionLength = connection->Length() + 1;
+  
+#ifdef UNICODE
+  int connectionStringOutSize = 1024 * sizeof(uint16_t);
+  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
+  uint16_t* connectionString = (uint16_t *) malloc(connectionLength * sizeof(uint16_t));
+  connection->Write(connectionString);
+#else
+  int connectionStringOutSize = 1024;
+  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
+  char* connectionString = (char *) malloc(connectionLength);
+  connection->WriteUtf8(connectionString);
+#endif
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -300,15 +330,15 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
-  ret = SQLDriverConnect( 
-    conn->m_hDBC, 
-    NULL,
-    (SQLCHAR*) *connection,
-    connection.length(),
-    (SQLCHAR*) connstr,
-    1024,
-    NULL,
-    SQL_DRIVER_NOPROMPT);
+  ret = SQLDriverConnect(
+    conn->m_hDBC,                   //ConnectionHandle
+    NULL,                           //WindowHandle
+    (SQLTCHAR*) connectionString,   //InConnectionString
+    connectionLength,               //StringLength1
+    (SQLTCHAR*) connectionStringOut,//OutConnectionString
+    1024,                           //BufferLength - in characters
+    NULL,                           //StringLength2Ptr
+    SQL_DRIVER_NOPROMPT);           //DriverCompletion
 
   if (!SQL_SUCCEEDED(ret)) {
     err = true;
@@ -347,6 +377,9 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
 
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
+  free(connectionString);
+  free(connectionStringOut);
+  
   if (err) {
     ThrowException(objError);
     return scope.Close(False());
@@ -711,13 +744,18 @@ Handle<Value> ODBCConnection::Query(const Arguments& args) {
   }
   //Done checking arguments
 
-  data->sqlLen = sql->Length();
-  data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
-
-  data->sql = (uint16_t *) malloc(data->sqlSize);
   data->cb = Persistent<Function>::New(cb);
+  data->sqlLen = sql->Length();
 
+#ifdef UNICODE
+  data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
+  data->sql = (uint16_t *) malloc(data->sqlSize);
   sql->Write((uint16_t *) data->sql);
+#else
+  data->sqlSize = sql->Utf8Length() + 1;
+  data->sql = (char *) malloc(data->sqlSize);
+  sql->WriteUtf8((char *) data->sql);
+#endif
 
   DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
                data->sqlLen, data->sqlSize, (char*) data->sql);
@@ -756,16 +794,16 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
   //check to see if should excute a direct or a parameter bound query
   if (!data->paramCount) {
     // execute the query directly
-    ret = SQLExecDirectW(
+    ret = SQLExecDirect(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql, 
       data->sqlLen);
   }
   else {
     // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepareW(
+    ret = SQLPrepare(
       data->hSTMT,
-      (SQLWCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql, 
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
@@ -869,6 +907,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
       if (prm = data->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
           case SQL_C_WCHAR:   free(prm.buffer);             break; 
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
@@ -901,7 +940,11 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   
   HandleScope scope;
 
+#ifdef UNICODE
   String::Value* sql;
+#else
+  String::Utf8Value* sql;
+#endif
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
   
@@ -927,7 +970,11 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       ));
     }
 
+#ifdef UNICODE
     sql = new String::Value(args[0]->ToString());
+#else
+    sql = new String::Utf8Value(args[0]->ToString());
+#endif
 
     params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(args[1]),
@@ -939,8 +986,12 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 
     if (args[0]->IsString()) {
       //handle Query("sql")
+#ifdef UNICODE
       sql = new String::Value(args[0]->ToString());
-      
+#else
+      sql = new String::Utf8Value(args[0]->ToString());
+#endif
+    
       paramCount = 0;
     }
     else if (args[0]->IsObject()) {
@@ -952,10 +1003,18 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
       Local<Object> obj = args[0]->ToObject();
       
       if (obj->Has(OPTION_SQL) && obj->Get(OPTION_SQL)->IsString()) {
+#ifdef UNICODE
         sql = new String::Value(obj->Get(OPTION_SQL)->ToString());
+#else
+        sql = new String::Utf8Value(obj->Get(OPTION_SQL)->ToString());
+#endif
       }
       else {
+#ifdef UNICODE
         sql = new String::Value(String::New(""));
+#else
+        sql = new String::Utf8Value(String::New(""));
+#endif
       }
       
       if (obj->Has(OPTION_PARAMS) && obj->Get(OPTION_PARAMS)->IsArray()) {
@@ -1001,16 +1060,16 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
   }
   else if (!paramCount) {
     // execute the query directly
-    ret = SQLExecDirectW(
+    ret = SQLExecDirect(
       hSTMT,
-      (SQLWCHAR *) **sql, 
+      (SQLTCHAR *) **sql, 
       sql->length());
   }
   else {
-    // prepare statement, bind parameters and execute statement 
-    ret = SQLPrepareW(
+    // prepare statement, bind parameters and execute statement
+    ret = SQLPrepare(
       hSTMT,
-      (SQLWCHAR *) **sql, 
+      (SQLTCHAR *) **sql, 
       sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
@@ -1047,7 +1106,8 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     for (int i = 0; i < paramCount; i++) {
       if (prm = params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break; 
+          case SQL_C_WCHAR:   free(prm.buffer);             break;
+          case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
@@ -1104,10 +1164,10 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
 Handle<Value> ODBCConnection::Tables(const Arguments& args) {
   HandleScope scope;
 
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, type);
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+  REQ_STRO_OR_NULL_ARG(3, type);
   Local<Function> cb = Local<Function>::Cast(args[4]);
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
@@ -1130,24 +1190,44 @@ Handle<Value> ODBCConnection::Tables(const Arguments& args) {
   data->column = NULL;
   data->cb = Persistent<Function>::New(cb);
 
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    data->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(data->catalog, *catalog);
+  if (!catalog->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    catalog->Write((uint16_t *) data->catalog);
+#else
+    data->catalog = (char *) malloc(catalog->Length() + 1);
+    catalog->WriteUtf8((char *) data->catalog);
+#endif
+  }
+
+  if (!schema->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    schema->Write((uint16_t *) data->schema);
+#else
+    data->schema = (char *) malloc(schema->Length() + 1);
+    schema->WriteUtf8((char *) data->schema);
+#endif
   }
   
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    data->schema = (char *) malloc(schema.length() +1);
-    strcpy(data->schema, *schema);
+  if (!table->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    table->Write((uint16_t *) data->table);
+#else
+    data->table = (char *) malloc(table->Length() + 1);
+    table->WriteUtf8((char *) data->table);
+#endif
   }
   
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    data->table = (char *) malloc(table.length() +1);
-    strcpy(data->table, *table);
-  }
-  
-  if (!String::New(*type)->Equals(String::New("null"))) {
-    data->type = (char *) malloc(type.length() +1);
-    strcpy(data->type, *type);
+  if (!type->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->type = (uint16_t *) malloc((type->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    type->Write((uint16_t *) data->type);
+#else
+    data->type = (char *) malloc(type->Length() + 1);
+    type->WriteUtf8((char *) data->type);
+#endif
   }
   
   data->conn = conn;
@@ -1175,10 +1255,10 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
   
   SQLRETURN ret = SQLTables( 
     data->hSTMT, 
-    (SQLCHAR *) data->catalog,   SQL_NTS, 
-    (SQLCHAR *) data->schema,   SQL_NTS, 
-    (SQLCHAR *) data->table,   SQL_NTS, 
-    (SQLCHAR *) data->type,   SQL_NTS
+    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS, 
+    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->type,   SQL_NTS
   );
   
   // this will be checked later in UV_AfterQuery
@@ -1194,10 +1274,10 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
 Handle<Value> ODBCConnection::Columns(const Arguments& args) {
   HandleScope scope;
 
-  REQ_STR_OR_NULL_ARG(0, catalog);
-  REQ_STR_OR_NULL_ARG(1, schema);
-  REQ_STR_OR_NULL_ARG(2, table);
-  REQ_STR_OR_NULL_ARG(3, column);
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+  REQ_STRO_OR_NULL_ARG(3, column);
   
   Local<Function> cb = Local<Function>::Cast(args[4]);
   
@@ -1220,24 +1300,44 @@ Handle<Value> ODBCConnection::Columns(const Arguments& args) {
   data->column = NULL;
   data->cb = Persistent<Function>::New(cb);
 
-  if (!String::New(*catalog)->Equals(String::New("null"))) {
-    data->catalog = (char *) malloc(catalog.length() +1);
-    strcpy(data->catalog, *catalog);
+  if (!catalog->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    catalog->Write((uint16_t *) data->catalog);
+#else
+    data->catalog = (char *) malloc(catalog->Length() + 1);
+    catalog->WriteUtf8((char *) data->catalog);
+#endif
+  }
+
+  if (!schema->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    schema->Write((uint16_t *) data->schema);
+#else
+    data->schema = (char *) malloc(schema->Length() + 1);
+    schema->WriteUtf8((char *) data->schema);
+#endif
   }
   
-  if (!String::New(*schema)->Equals(String::New("null"))) {
-    data->schema = (char *) malloc(schema.length() +1);
-    strcpy(data->schema, *schema);
+  if (!table->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    table->Write((uint16_t *) data->table);
+#else
+    data->table = (char *) malloc(table->Length() + 1);
+    table->WriteUtf8((char *) data->table);
+#endif
   }
   
-  if (!String::New(*table)->Equals(String::New("null"))) {
-    data->table = (char *) malloc(table.length() +1);
-    strcpy(data->table, *table);
-  }
-  
-  if (!String::New(*column)->Equals(String::New("null"))) {
-    data->column = (char *) malloc(column.length() +1);
-    strcpy(data->column, *column);
+  if (!column->Equals(String::New("null"))) {
+#ifdef UNICODE
+    data->column = (uint16_t *) malloc((column->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    column->Write((uint16_t *) data->column);
+#else
+    data->column = (char *) malloc(column->Length() + 1);
+    column->WriteUtf8((char *) data->column);
+#endif
   }
   
   data->conn = conn;
@@ -1265,10 +1365,10 @@ void ODBCConnection::UV_Columns(uv_work_t* req) {
   
   SQLRETURN ret = SQLColumns( 
     data->hSTMT, 
-    (SQLCHAR *) data->catalog,   SQL_NTS, 
-    (SQLCHAR *) data->schema,   SQL_NTS, 
-    (SQLCHAR *) data->table,   SQL_NTS, 
-    (SQLCHAR *) data->column,   SQL_NTS
+    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS, 
+    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->column,   SQL_NTS
   );
   
   // this will be checked later in UV_AfterQuery

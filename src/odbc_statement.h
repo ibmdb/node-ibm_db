@@ -93,7 +93,8 @@ struct execute_direct_work_data {
   Persistent<Function> cb;
   ODBCStatement *stmt;
   int result;
-  char *sql;
+  void *sql;
+  int sqlLen;
 };
 
 struct execute_work_data {
@@ -106,7 +107,8 @@ struct prepare_work_data {
   Persistent<Function> cb;
   ODBCStatement *stmt;
   int result;
-  char *sql;
+  void *sql;
+  int sqlLen;
 };
 
 struct bind_work_data {

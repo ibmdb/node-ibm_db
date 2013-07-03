@@ -431,7 +431,7 @@ Handle<Value> ODBCStatement::ExecuteDirect(const Arguments& args) {
   
   HandleScope scope;
 
-  REQ_STR_ARG(0, sql);
+  REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
 
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
@@ -441,11 +441,18 @@ Handle<Value> ODBCStatement::ExecuteDirect(const Arguments& args) {
   execute_direct_work_data* data = 
     (execute_direct_work_data *) calloc(1, sizeof(execute_direct_work_data));
 
-  data->sql = (char *) malloc(sql.length() +1);
   data->cb = Persistent<Function>::New(cb);
-  
-  strcpy(data->sql, *sql);
-  
+
+  data->sqlLen = sql->Length();
+
+#ifdef UNICODE
+  data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  sql->Write((uint16_t *) data->sql);
+#else
+  data->sql = (char *) malloc(data->sqlLen +1);
+  sql->WriteUtf8((char *) data->sql);
+#endif
+
   data->stmt = stmt;
   work_req->data = data;
   
@@ -469,8 +476,8 @@ void ODBCStatement::UV_ExecuteDirect(uv_work_t* req) {
   
   ret = SQLExecDirect(
     data->stmt->m_hSTMT,
-    (SQLCHAR *) data->sql, 
-    strlen(data->sql));  
+    (SQLTCHAR *) data->sql, 
+    data->sqlLen);  
 
   data->result = ret;
 }
@@ -537,13 +544,17 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
   
   HandleScope scope;
 
+#ifdef UNICODE
+  REQ_WSTR_ARG(0, sql);
+#else
   REQ_STR_ARG(0, sql);
+#endif
 
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
   
   SQLRETURN ret = SQLExecDirect(
     stmt->m_hSTMT,
-    (SQLCHAR *) *sql, 
+    (SQLTCHAR *) *sql, 
     sql.length());  
 
   if(ret == SQL_ERROR) {
@@ -581,20 +592,28 @@ Handle<Value> ODBCStatement::PrepareSync(const Arguments& args) {
   
   HandleScope scope;
 
-  REQ_STR_ARG(0, sql);
+  REQ_STRO_ARG(0, sql);
 
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
 
   SQLRETURN ret;
+
+  int sqlLen = sql->Length() + 1;
+
+#ifdef UNICODE
+  uint16_t *sql2;
+  sql2 = (uint16_t *) malloc(sqlLen * sizeof(uint16_t));
+  sql->Write(sql2);
+#else
   char *sql2;
-  
-  sql2 = (char *) malloc(sql.length() +1);
-  strcpy(sql2, *sql);
+  sql2 = (char *) malloc(sqlLen);
+  sql->WriteUtf8(sql2);
+#endif
   
   ret = SQLPrepare(
     stmt->m_hSTMT,
-    (SQLCHAR *) sql2, 
-    strlen(sql2));
+    (SQLTCHAR *) sql2, 
+    sqlLen);
   
   if (SQL_SUCCEEDED(ret)) {
     return  scope.Close(True());
@@ -615,7 +634,7 @@ Handle<Value> ODBCStatement::Prepare(const Arguments& args) {
   
   HandleScope scope;
 
-  REQ_STR_ARG(0, sql);
+  REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
 
   ODBCStatement* stmt = ObjectWrap::Unwrap<ODBCStatement>(args.Holder());
@@ -625,10 +644,17 @@ Handle<Value> ODBCStatement::Prepare(const Arguments& args) {
   prepare_work_data* data = 
     (prepare_work_data *) calloc(1, sizeof(prepare_work_data));
 
-  data->sql = (char *) malloc(sql.length() +1);
   data->cb = Persistent<Function>::New(cb);
-  
-  strcpy(data->sql, *sql);
+
+  data->sqlLen = sql->Length();
+
+#ifdef UNICODE
+  data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  sql->Write((uint16_t *) data->sql);
+#else
+  data->sql = (char *) malloc(data->sqlLen +1);
+  sql->WriteUtf8((char *) data->sql);
+#endif
   
   data->stmt = stmt;
   
@@ -660,8 +686,8 @@ void ODBCStatement::UV_Prepare(uv_work_t* req) {
   
   ret = SQLPrepare(
     data->stmt->m_hSTMT,
-    (SQLCHAR *) data->sql, 
-    strlen(data->sql));
+    (SQLTCHAR *) data->sql, 
+    data->sqlLen);
 
   data->result = ret;
 }

@@ -305,7 +305,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     //get the column type and store it directly in column[i].type
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
-                           SQL_COLUMN_TYPE,
+                           SQL_DESC_TYPE,
                            NULL,
                            0,
                            NULL,
@@ -510,7 +510,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       ret = SQLGetData(
         hStmt,
         column.index,
-        SQL_C_WCHAR,
+        SQL_C_TCHAR,
         (char *) buffer,
         bufferLength,
         &len);
@@ -524,7 +524,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else {
         //return scope.Close(String::New((char*) buffer));
+#ifdef UNICODE
         return String::New((uint16_t*) buffer, len / 2);
+#else
+        return String::New((char *) buffer, len);
+#endif
       }
   }
 }
@@ -541,8 +545,13 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   Local<Object> tuple = Object::New();
         
   for(int i = 0; i < *colCount; i++) {
+#ifdef UNICODE
+    tuple->Set( String::New((uint16_t *) columns[i].name),
+                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+#else
     tuple->Set( String::New((const char *) columns[i].name),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+#endif
   }
   
   //return tuple;
@@ -593,14 +602,23 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
     if (value->IsString()) {
       Local<String> string = value->ToString();
 
-      params[i].c_type        = SQL_C_WCHAR;
+      params[i].c_type        = SQL_C_TCHAR;
+#ifdef UNICODE
       params[i].type          = SQL_WVARCHAR;
       params[i].buffer_length = (string->Length() * sizeof(uint16_t)) + sizeof(uint16_t);
+#else
+      params[i].type          = SQL_VARCHAR;
+      params[i].buffer_length = string->Utf8Length() + 1;
+#endif
       params[i].buffer        = malloc(params[i].buffer_length);
       params[i].size          = params[i].buffer_length;
       params[i].length        = SQL_NTS;//params[i].buffer_length;
 
+#ifdef UNICODE
       string->Write((uint16_t *) params[i].buffer);
+#else
+      string->WriteUtf8((char *) params[i].buffer);
+#endif
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
                    "c_type=%i type=%i buffer_length=%i size=%i length=%i "
@@ -725,8 +743,8 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   SQLSMALLINT len;
   SQLINTEGER numfields;
   SQLRETURN ret;
-  char errorSQLState[7];
-  char errorMessage[256];
+  char errorSQLState[14];
+  char errorMessage[512];
 
   SQLGetDiagField(
     handleType,
@@ -744,9 +762,9 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       handleType, 
       handle,
       i + 1, 
-      (SQLCHAR *) errorSQLState,
+      (SQLTCHAR *) errorSQLState,
       &native,
-      (SQLCHAR *) errorMessage,
+      (SQLTCHAR *) errorMessage,
       sizeof(errorMessage),
       &len);
     
@@ -756,8 +774,13 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       DEBUG_PRINTF("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
       
       objError->Set(String::New("error"), String::New(message));
+#ifdef UNICODE
+      objError->Set(String::New("message"), String::New((uint16_t *) errorMessage));
+      objError->Set(String::New("state"), String::New((uint16_t *) errorSQLState));
+#else
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
+#endif
     }
   }
   
