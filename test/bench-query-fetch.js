@@ -54,8 +54,6 @@ function issueQuery() {
   }
   
   function finish() {
-    db.close(function () {
-      console.log("connection closed");
-    });
+    db.close(function () {});
   }
 }

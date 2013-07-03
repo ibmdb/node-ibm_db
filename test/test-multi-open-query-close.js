@@ -3,7 +3,7 @@ var common = require("./common")
 , openCallback = 0
 , closeCallback = 0
 , queryCallback = 0
-, openCount = 10
+, openCount = 3
 , connections = []
 ;
 

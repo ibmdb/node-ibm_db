@@ -1,7 +1,7 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 100000
+  , iterations = 10000
   ;
 
 db.open(common.connectionString, function(err){ 
@@ -56,7 +56,5 @@ function issueQuery3(done) {
 }
 
 function finish() {
-  db.close(function () {
-    console.log("connection closed");
-  });
+  db.close(function () {});
 }
