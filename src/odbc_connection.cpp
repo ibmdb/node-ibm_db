@@ -147,7 +147,7 @@ Handle<Value> ODBCConnection::Open(const Arguments& args) {
   open_connection_work_data* data = (open_connection_work_data *) 
     calloc(1, sizeof(open_connection_work_data));
 
-  data->connectionLength = connection->Length();
+  data->connectionLength = connection->Length() + 1;
 
   //copy the connection string to the work data  
 #ifdef UNICODE
