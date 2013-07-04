@@ -657,7 +657,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       params[i].buffer        = number;
       params[i].buffer_length = sizeof(double);
       params[i].length        = params[i].buffer_length;
-      params[i].decimals      = 0;
+      params[i].decimals      = 7;
       params[i].size          = sizeof(double);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
