@@ -388,8 +388,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           sizeof(value), 
           &len);
         
-         DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i\n", 
-                    column.index, column.name, column.type, len, ret);
+         DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
+                    column.index, column.name, column.type, len, ret, value);
         
         if(ret == SQL_NULL_DATA || len < 0) {
            //return scope.Close(Null());
@@ -661,9 +661,11 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
       params[i].size          = sizeof(double);
 
       DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
-                  "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
+                  "c_type=%i type=%i buffer_length=%i size=%i length=%i "
+		  "value=%f\n",
                   i, params[i].c_type, params[i].type,
-                  params[i].buffer_length, params[i].size, params[i].length);
+                  params[i].buffer_length, params[i].size, params[i].length,
+		  *number);
     }
     else if (value->IsBoolean()) {
       bool *boolean    = new bool(value->BooleanValue());
