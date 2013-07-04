@@ -822,7 +822,7 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
           prm.c_type,               //ValueType
           prm.type,                 //ParameterType
           prm.size,                 //ColumnSize
-          0,                        //DecimalDigits
+          prm.decimals,             //DecimalDigits
           prm.buffer,               //ParameterValuePtr
           prm.buffer_length,        //BufferLength
           //using &prm.length did not work here...
@@ -1088,7 +1088,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
           prm.c_type,               //ValueType
           prm.type,                 //ParameterType
           prm.size,                 //ColumnSize
-          0,                        //DecimalDigits
+          prm.decimals,             //DecimalDigits
           prm.buffer,               //ParameterValuePtr
           prm.buffer_length,        //BufferLength
           //using &prm.length did not work here...
