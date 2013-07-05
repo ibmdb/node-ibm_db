@@ -182,14 +182,6 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
-#ifdef UNICODE
-  int connectionStringOutSize = 1024 * sizeof(uint16_t);
-  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
-#else
-  int connectionStringOutSize = 1024;
-  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
-#endif
-  
   //TODO: make this configurable
   int timeOut = 5;
   
@@ -207,8 +199,8 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     NULL,                           //WindowHandle
     (SQLTCHAR*) data->connection,   //InConnectionString
     data->connectionLength,         //StringLength1
-    (SQLTCHAR*) connectionStringOut,//OutConnectionString
-    1024,                           //BufferLength - in characters
+    NULL,                           //OutConnectionString
+    0,                              //BufferLength - in characters
     NULL,                           //StringLength2Ptr
     SQL_DRIVER_NOPROMPT);           //DriverCompletion
   
@@ -305,13 +297,9 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   int connectionLength = connection->Length() + 1;
   
 #ifdef UNICODE
-  int connectionStringOutSize = 1024 * sizeof(uint16_t);
-  uint16_t* connectionStringOut = (uint16_t *) malloc(connectionStringOutSize);
   uint16_t* connectionString = (uint16_t *) malloc(connectionLength * sizeof(uint16_t));
   connection->Write(connectionString);
 #else
-  int connectionStringOutSize = 1024;
-  char* connectionStringOut = (char *) malloc(connectionStringOutSize);
   char* connectionString = (char *) malloc(connectionLength);
   connection->WriteUtf8(connectionString);
 #endif
@@ -335,8 +323,8 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
     NULL,                           //WindowHandle
     (SQLTCHAR*) connectionString,   //InConnectionString
     connectionLength,               //StringLength1
-    (SQLTCHAR*) connectionStringOut,//OutConnectionString
-    1024,                           //BufferLength - in characters
+    NULL,                           //OutConnectionString
+    0,                              //BufferLength - in characters
     NULL,                           //StringLength2Ptr
     SQL_DRIVER_NOPROMPT);           //DriverCompletion
 
@@ -378,7 +366,6 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   free(connectionString);
-  free(connectionStringOut);
   
   if (err) {
     ThrowException(objError);
