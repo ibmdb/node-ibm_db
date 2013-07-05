@@ -210,7 +210,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
     args[0] = External::New(data->dbo->m_hEnv);
     args[1] = External::New(data->hDBC);
     
-    Persistent<Object> js_result(ODBCConnection::constructor_template->
+    Local<Object> js_result(ODBCConnection::constructor_template->
                               GetFunction()->NewInstance(2, args));
 
     args[0] = Local<Value>::New(Null());
@@ -255,7 +255,7 @@ Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
   params[0] = External::New(dbo->m_hEnv);
   params[1] = External::New(hDBC);
 
-  Persistent<Object> js_result(ODBCConnection::constructor_template->
+  Local<Object> js_result(ODBCConnection::constructor_template->
                             GetFunction()->NewInstance(2, params));
 
   return scope.Close(js_result);

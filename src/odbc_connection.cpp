@@ -518,7 +518,7 @@ Handle<Value> ODBCConnection::CreateStatementSync(const Arguments& args) {
   params[1] = External::New(conn->m_hDBC);
   params[2] = External::New(hSTMT);
   
-  Persistent<Object> js_result(ODBCStatement::constructor_template->
+  Local<Object> js_result(ODBCStatement::constructor_template->
                             GetFunction()->NewInstance(3, params));
   
   return scope.Close(js_result);
@@ -605,7 +605,7 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
   args[1] = External::New(data->conn->m_hDBC);
   args[2] = External::New(data->hSTMT);
   
-  Persistent<Object> js_result(ODBCStatement::constructor_template->
+  Local<Object> js_result(ODBCStatement::constructor_template->
                             GetFunction()->NewInstance(3, args));
 
   args[0] = Local<Value>::New(Null());
@@ -868,7 +868,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     args[2] = External::New(data->hSTMT);
     args[3] = External::New(canFreeHandle);
     
-    Persistent<Object> js_result(ODBCResult::constructor_template->
+    Local<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
 
     args[0] = Local<Value>::New(Null());
@@ -1137,7 +1137,7 @@ Handle<Value> ODBCConnection::QuerySync(const Arguments& args) {
     args[2] = External::New(hSTMT);
     args[3] = External::New(canFreeHandle);
     
-    Persistent<Object> js_result(ODBCResult::constructor_template->
+    Local<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
 
     return scope.Close(js_result);
