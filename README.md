@@ -341,6 +341,8 @@ driver. On Ubuntu: `sudo apt-get install libsqliteodbc`
 build options
 -------------
 
+### Debug
+
 If you would like to enable debugging messages to be displayed you can add the 
 flag `DEBUG` to the defines section of the `binding.gyp` file and then execute 
 `node-gyp rebuild`.
@@ -352,6 +354,8 @@ flag `DEBUG` to the defines section of the `binding.gyp` file and then execute
 ],
 <snip>
 ```
+
+### Dynodbc
 
 You may also enable the ability to load a specific ODBC driver and bypass the 
 ODBC driver management layer. A performance increase of ~5Kqps was seen using
@@ -370,6 +374,41 @@ rebuild`.
     'libraries' : [ 
       //remove this: '-lodbc' 
     ],
+<snip>
+```
+
+### Unicode
+
+By default, UNICODE suppport is enabled. This should provide the most accurate
+way to get Unicode strings submitted to your database. For best results, you 
+may want to put your Unicode string into bound parameters. 
+
+However, if you experience issues or you think that submitting UTF8 strings will
+work better or faster, you can remove the `UNICODE` define in `binding.gyp`
+
+```javascript
+<snip>
+'defines' : [
+  "UNICODE"
+],
+<snip>
+```
+
+### Strict Column Naming
+
+When column names are retrieved from ODBC, you can request by SQL_DESC_NAME or
+SQL_DESC_LABEL. SQL_DESC_NAME is the exact column name or none if there is none
+defined. SQL_DESC_LABEL is the heading or column name or calculation. 
+SQL_DESC_LABEL is used by default and seems to work well in most cases.
+
+If you want to use the exact column name via SQL_DESC_NAME, enable the `STRICT_COLUMN_NAMES`
+define in `binding.gyp`
+
+```javascript
+<snip>
+'defines' : [
+  "STRICT_COLUMN_NAMES"
+],
 <snip>
 ```
 

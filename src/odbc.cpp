@@ -293,7 +293,11 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     //get the column name
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
+#ifdef STRICT_COLUMN_NAMES
+                           SQL_DESC_NAME,
+#else
                            SQL_DESC_LABEL,
+#endif
                            columns[i].name,
                            (SQLSMALLINT) MAX_FIELD_SIZE,
                            (SQLSMALLINT *) &buflen,
