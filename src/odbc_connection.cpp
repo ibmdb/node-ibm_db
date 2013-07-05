@@ -108,7 +108,7 @@ Handle<Value> ODBCConnection::New(const Arguments& args) {
   REQ_EXT_ARG(1, js_hdbc);
   
   HENV hENV = static_cast<HENV>(js_henv->Value());
-  HDBC hDBC = static_cast<HENV>(js_hdbc->Value());
+  HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
   
   ODBCConnection* conn = new ODBCConnection(hENV, hDBC);
   
