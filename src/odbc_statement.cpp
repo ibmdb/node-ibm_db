@@ -87,6 +87,7 @@ void ODBCStatement::Free() {
     for (int i = 0; i < count; i++) {
       if (prm = params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
+          case SQL_C_WCHAR:   free(prm.buffer);             break;
           case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
@@ -774,6 +775,7 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
     for (int i = 0; i < count; i++) {
       if (prm = stmt->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
+          case SQL_C_WCHAR:   free(prm.buffer);             break;
           case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
@@ -873,6 +875,7 @@ Handle<Value> ODBCStatement::Bind(const Arguments& args) {
     for (int i = 0; i < count; i++) {
       if (prm = stmt->params[i], prm.buffer != NULL) {
         switch (prm.c_type) {
+          case SQL_C_WCHAR:   free(prm.buffer);             break;
           case SQL_C_CHAR:    free(prm.buffer);             break; 
           case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
