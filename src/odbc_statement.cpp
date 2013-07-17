@@ -620,7 +620,12 @@ Handle<Value> ODBCStatement::PrepareSync(const Arguments& args) {
     return  scope.Close(True());
   }
   else {
-    //TODO: throw an error object
+    ThrowException(ODBC::GetSQLError(
+      SQL_HANDLE_STMT,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::BindSync"
+    ));
+    
     return  scope.Close(False());
   }
 }
