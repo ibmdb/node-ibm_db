@@ -339,7 +339,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
                                         uint16_t* buffer, int bufferLength) {
-  //HandleScope scope;
+  HandleScope scope;
   SQLLEN len = 0;
 
   //reset the buffer
@@ -367,12 +367,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret);
         
         if (len == SQL_NULL_DATA) {
-          //return scope.Close(Null());
-          return Null();
+          return scope.Close(Null());
+          //return Null();
         }
         else {
-          //return scope.Close(Integer::New(value));
-          return Integer::New(value);
+          return scope.Close(Integer::New(value));
+          //return Integer::New(value);
         }
       }
       break;
@@ -396,12 +396,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret, value);
         
         if(len == SQL_NULL_DATA) {
-           //return scope.Close(Null());
-          return Null();
+          return scope.Close(Null());
+          //return Null();
         }
         else {
-          //return scope.Close(Number::New(value));
-          return Number::New(value);
+          return scope.Close(Number::New(value));
+          //return Number::New(value);
         }
       }
       break;
@@ -424,7 +424,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if(len == SQL_NULL_DATA) {
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
         strptime((char *) buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
@@ -434,7 +435,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //at the specified time.
         timeInfo.tm_isdst = -1;
           
-        return Date::New((double(mktime(&timeInfo)) * 1000));
+        //return Date::New((double(mktime(&timeInfo)) * 1000));
+        return scope.Close(Date::New((double(mktime(&timeInfo)) * 1000)));
       }
 #else
       struct tm timeInfo = { 
@@ -465,8 +467,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if(len == SQL_NULL_DATA) {
-        //return scope.Close(Null());
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
         timeInfo.tm_year = odbcTime.year - 1900;
@@ -481,10 +483,10 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //at the specified time.
         timeInfo.tm_isdst = -1;
           
-        //return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
-        //                  + (odbcTime.fraction / 1000000)));
-        return Date::New((double(timegm(&timeInfo)) * 1000) 
-                          + (odbcTime.fraction / 1000000));
+        return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
+                          + (odbcTime.fraction / 1000000)));
+        //return Date::New((double(timegm(&timeInfo)) * 1000) 
+        //                  + (odbcTime.fraction / 1000000));
       }
 #endif
     } break;
@@ -503,12 +505,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if(len == SQL_NULL_DATA) {
-        //return scope.Close(Null());
-        return Null();
+        return scope.Close(Null());
+        //return Null();
       }
       else {
-        //return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
-        return Boolean::New(( *buffer == '0') ? false : true );
+        return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
+        //return Boolean::New(( *buffer == '0') ? false : true );
       }
     default :
       Local<String> str;
@@ -527,8 +529,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
         if(len == SQL_NULL_DATA) {
-          //return scope.Close(Null());
-          return Null();
+          return scope.Close(Null());
+          //return Null();
         }
         
         if (ret != SQL_NO_DATA) {
@@ -559,7 +561,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       } while (true);
       
-      return str;
+      return scope.Close(str);
+      //return str;
   }
 }
 
