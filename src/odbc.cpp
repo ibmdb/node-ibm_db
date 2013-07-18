@@ -511,29 +511,55 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return Boolean::New(( *buffer == '0') ? false : true );
       }
     default :
-      ret = SQLGetData(
-        hStmt,
-        column.index,
-        SQL_C_TCHAR,
-        (char *) buffer,
-        bufferLength,
-        &len);
+      Local<String> str;
+      int count = 0;
+      
+      do {
+        ret = SQLGetData(
+          hStmt,
+          column.index,
+          SQL_C_TCHAR,
+          (char *) buffer,
+          bufferLength,
+          &len);
 
-      DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
-                    column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
+        DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
+                      column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
-      if(ret == SQL_NULL_DATA || len < 0) {
-        //return scope.Close(Null());
-        return Null();
-      }
-      else {
-        //return scope.Close(String::New((char*) buffer));
+        if(len == SQL_NULL_DATA || len < 0) {
+          //return scope.Close(Null());
+          return Null();
+        }
+        
+        if (ret != SQL_NO_DATA) {
+          //we have not captured all of the data yet
+          
+          if (count == 0) {
+            //no concatenation required, this is our first pass
 #ifdef UNICODE
-        return String::New((uint16_t*) buffer, len / 2);
+            str = String::New((uint16_t*) buffer);
 #else
-        return String::New((char *) buffer, len);
+            str = String::New((char *) buffer);
 #endif
-      }
+          }
+          else {
+            //we need to concatenate
+#ifdef UNICODE
+            str = String::Concat(str, String::New((uint16_t*) buffer));
+#else
+            str = String::Concat(str, String::New((char *) buffer));
+#endif
+          }
+          
+          count += 1;
+        }
+        else {
+          //we have captured all of the data
+          break;
+        }
+      } while (true);
+      
+      return str;
   }
 }
 
