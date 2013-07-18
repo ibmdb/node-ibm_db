@@ -366,7 +366,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
                     column.index, column.name, column.type, len, ret);
         
-        if (len == SQL_NULL_DATA || len < 0) {
+        if (len == SQL_NULL_DATA) {
           //return scope.Close(Null());
           return Null();
         }
@@ -395,7 +395,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
          DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
                     column.index, column.name, column.type, len, ret, value);
         
-        if(len == SQL_NULL_DATA || len < 0) {
+        if(len == SQL_NULL_DATA) {
            //return scope.Close(Null());
           return Null();
         }
@@ -423,7 +423,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
-      if(len == SQL_NULL_DATA || len < 0) {
+      if(len == SQL_NULL_DATA) {
         return Null();
       }
       else {
@@ -464,7 +464,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
-      if(len == SQL_NULL_DATA || len < 0) {
+      if(len == SQL_NULL_DATA) {
         //return scope.Close(Null());
         return Null();
       }
@@ -502,7 +502,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
-      if(len == SQL_NULL_DATA || len < 0) {
+      if(len == SQL_NULL_DATA) {
         //return scope.Close(Null());
         return Null();
       }
@@ -526,7 +526,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
-        if(len == SQL_NULL_DATA || len < 0) {
+        if(len == SQL_NULL_DATA) {
           //return scope.Close(Null());
           return Null();
         }
