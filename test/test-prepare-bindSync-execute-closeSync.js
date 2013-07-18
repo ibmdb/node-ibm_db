@@ -2,7 +2,7 @@ var common = require("./common")
   , odbc = require("../")
   , assert = require("assert")
   , db = new odbc.Database()
-  , iterations = 100000
+  , iterations = 100
   ;
 
 db.open(common.connectionString, function(err){ 
