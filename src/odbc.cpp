@@ -808,9 +808,11 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       objError->Set(String::New("error"), String::New(message));
 #ifdef UNICODE
       objError->SetPrototype(Exception::Error(String::New((uint16_t *) errorMessage)));
+      objError->Set(String::New("message"), String::New((uint16_t *) errorMessage));
       objError->Set(String::New("state"), String::New((uint16_t *) errorSQLState));
 #else
       objError->SetPrototype(Exception::Error(String::New(errorMessage)));
+      objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
 #endif
     }
