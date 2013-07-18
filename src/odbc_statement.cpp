@@ -623,9 +623,9 @@ Handle<Value> ODBCStatement::PrepareSync(const Arguments& args) {
     ThrowException(ODBC::GetSQLError(
       SQL_HANDLE_STMT,
       stmt->m_hSTMT,
-      (char *) "[node-odbc] Error in ODBCStatement::BindSync"
+      (char *) "[node-odbc] Error in ODBCStatement::PrepareSync"
     ));
-    
+
     return  scope.Close(False());
   }
 }

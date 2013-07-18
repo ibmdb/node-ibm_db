@@ -743,11 +743,6 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   
   Local<Object> objError = Object::New();
   
-  //Setting the prototype to an Error Exception will actually
-  //allow the node interface to show proper errors rather than
-  //just [Object object].
-  objError->SetPrototype(Exception::Error(String::New("")));
-  
   SQLINTEGER i = 0;
   SQLINTEGER native;
   
@@ -786,10 +781,10 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       
       objError->Set(String::New("error"), String::New(message));
 #ifdef UNICODE
-      objError->Set(String::New("message"), String::New((uint16_t *) errorMessage));
+      objError->SetPrototype(Exception::Error(String::New((uint16_t *) errorMessage)));
       objError->Set(String::New("state"), String::New((uint16_t *) errorSQLState));
 #else
-      objError->Set(String::New("message"), String::New(errorMessage));
+      objError->SetPrototype(Exception::Error(String::New(errorMessage)));
       objError->Set(String::New("state"), String::New(errorSQLState));
 #endif
     }
