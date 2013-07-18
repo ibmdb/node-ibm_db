@@ -5,6 +5,12 @@ var common = require("./common")
   , exitCode = 0
   ;
 
+/*
+ * The purpose of this test is to test binding an array and then
+ * changing the values of the array before an execute[Sync]
+ * call and have the new array values be used.
+ */
+  
 db.createConnection(function (err, conn) {
   conn.open(common.connectionString, function (err) {
     conn.createStatement(function (err, stmt) {
