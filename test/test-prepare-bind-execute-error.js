@@ -15,33 +15,35 @@ db.open(common.connectionString, function(err){
 
 function issueQuery() {
   var count = 0
-    , time = new Date().getTime();
+    , time = new Date().getTime()
+    , stmt
+    , result
+    , data
+    ;
   
-  try {
-    var stmt = db.prepareSync('select cast(? as datetime) as test');
-  }
-  catch (e) {
-    console.log(e);
-    return finish(1);
-  }
-  
-  stmt.bind([], function (err) {
-    if (err) {
-      console.log(err);
-      return finish(1);
-    }
-    
-    stmt.execute(function (err, result) {
-      if (err) {
-        console.log(err);
-        return finish(1);
-      }
-      
-      console.log(result.fetchAllSync());
-      
-      finish(0);
-    });
+  assert.doesNotThrow(function () {
+    stmt = db.prepareSync('select cast(? as datetime) as test');
   });
+
+  assert.throws(function () {
+    result = stmt.executeSync();
+  });
+  
+  assert.doesNotThrow(function () {
+    stmt.bindSync([0]);
+  });
+  
+  assert.doesNotThrow(function () {
+    result = stmt.executeSync();
+  });
+  
+  assert.doesNotThrow(function () {
+    data = result.fetchAllSync();
+  });
+  
+  assert.ok(data);
+  
+  finish(0);
 }
 
 function finish(exitCode) {
