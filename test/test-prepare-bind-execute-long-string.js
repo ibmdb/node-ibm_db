@@ -22,8 +22,10 @@ function issueQuery() {
     , str = ''
     ;
   
-  for (var x = 0; x < 10000; x++) {
-    str += 't';
+  var set = 'abcdefghijklmnopqrstuvwxyz';
+  
+  for (var x = 0; x < 1000001; x++) {
+    str += set[x % set.length];
   }
   
   assert.doesNotThrow(function () {
@@ -46,11 +48,13 @@ function issueQuery() {
   console.log(str.length);
   console.log(data[0].longString.length);
   
-//   for (var x = 0; x < str.length; x++) {
-//     if (str[x] != data[0].longString[x]) {
-//       //console.log(x, str[x], data[0].longString[x]);
-//     }
-//   }
+  for (var x = 0; x < str.length; x++) {
+    if (str[x] != data[0].longString[x]) {
+      console.log(x, str[x], data[0].longString[x]);
+      
+      assert.equal(str[x], data[0].longString[x]);
+    }
+  }
   
   assert.equal(data[0].longString, str);
   
