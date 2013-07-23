@@ -7,7 +7,7 @@ var common = require("./common")
 db.open(common.connectionString, function (err) {
   assert.equal(err, null);
   
-  db.query("select ? as TRUECOL, ? as FALSECOL "
+  db.query("select ? as \"TRUECOL\", ? as \"FALSECOL\" "
     , [true, false]
     , function (err, data, more) {
         db.close(function () {
