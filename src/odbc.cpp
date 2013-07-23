@@ -198,6 +198,8 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
 
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
   
+  TryCatch try_catch;
+  
   if (!SQL_SUCCEEDED(data->result)) {
     Local<Value> args[1];
     
@@ -218,6 +220,11 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
 
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
   }
+  
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+
   
   data->dbo->Unref();
   data->cb.Dispose();

@@ -44,7 +44,9 @@ class ODBCConnection : public node::ObjectWrap {
 
     //Property Getter/Setters
     static Handle<Value> ConnectedGetter(Local<String> property, const AccessorInfo &info);
-
+    static Handle<Value> ConnectTimeoutGetter(Local<String> property, const AccessorInfo &info);
+    static void ConnectTimeoutSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    
     //async methods
 //     static Handle<Value> BeginTransaction(const Arguments& args);
 //     static void UV_BeginTransaction(uv_work_t* work_req);
@@ -98,6 +100,7 @@ class ODBCConnection : public node::ObjectWrap {
     SQLUSMALLINT canHaveMoreResults;
     bool connected;
     int statements;
+    int connectTimeout;
 };
 
 struct create_statement_work_data {

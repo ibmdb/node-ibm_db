@@ -52,6 +52,7 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   // Properties
   //instance_template->SetAccessor(String::New("mode"), ModeGetter, ModeSetter);
   instance_template->SetAccessor(String::New("connected"), ConnectedGetter);
+  instance_template->SetAccessor(String::New("connectTimeout"), ConnectTimeoutGetter, ConnectTimeoutSetter);
   
   // Prototype Methods
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "open", Open);
@@ -114,6 +115,9 @@ Handle<Value> ODBCConnection::New(const Arguments& args) {
   
   conn->Wrap(args.Holder());
   
+  //set default connectTimeout to 5 seconds
+  conn->connectTimeout = 5;
+  
   return scope.Close(args.Holder());
 }
 
@@ -123,6 +127,24 @@ Handle<Value> ODBCConnection::ConnectedGetter(Local<String> property, const Acce
   ODBCConnection *obj = ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
   return scope.Close(obj->connected ? True() : False());
+}
+
+Handle<Value> ODBCConnection::ConnectTimeoutGetter(Local<String> property, const AccessorInfo &info) {
+  HandleScope scope;
+
+  ODBCConnection *obj = ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  return scope.Close(Number::New(obj->connectTimeout));
+}
+
+void ODBCConnection::ConnectTimeoutSetter(Local<String> property, Local<Value> value, const AccessorInfo &info) {
+  HandleScope scope;
+
+  ODBCConnection *obj = ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  
+  if (value->IsNumber()) {
+    obj->connectTimeout = value->Int32Value();
+  }
 }
 
 /*
@@ -182,15 +204,16 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
-  //TODO: make this configurable
-  int timeOut = 5;
+  int timeOut = self->connectTimeout;
   
-  //NOTE: SQLSetConnectAttr requires the thread to be locked
-  SQLSetConnectAttr(
-    self->m_hDBC,           //ConnectionHandle
-    SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-    &timeOut,               //ValuePtr
-    sizeof(timeOut));       //StringLength
+  if (timeOut > 0) {
+    //NOTE: SQLSetConnectAttr requires the thread to be locked
+    SQLSetConnectAttr(
+      self->m_hDBC,           //ConnectionHandle
+      SQL_ATTR_LOGIN_TIMEOUT, //Attribute
+      &timeOut,               //ValuePtr
+      sizeof(timeOut));       //StringLength
+  }
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
@@ -306,16 +329,17 @@ Handle<Value> ODBCConnection::OpenSync(const Arguments& args) {
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
-  //TODO: make this configurable
-  int timeOut = 5;
-  
-  //NOTE: SQLSetConnectAttr requires the thread to be locked
-  SQLSetConnectAttr(
-    conn->m_hDBC,           //ConnectionHandle
-    SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-    &timeOut,               //ValuePtr
-    sizeof(timeOut));       //StringLength
+  int timeOut = conn->connectTimeout;
 
+  if (timeOut > 0) {
+    //NOTE: SQLSetConnectAttr requires the thread to be locked
+    SQLSetConnectAttr(
+      conn->m_hDBC,           //ConnectionHandle
+      SQL_ATTR_LOGIN_TIMEOUT, //Attribute
+      &timeOut,               //ValuePtr
+      sizeof(timeOut));       //StringLength
+  }
+  
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   ret = SQLDriverConnect(
