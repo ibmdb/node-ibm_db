@@ -6,49 +6,48 @@ var common = require("./common")
   ;
 
 db.createConnection(function (err, conn) {
-  conn.open(common.connectionString, function (err) {
-    common.createTables(conn, function (err, data) {
-      try {
-        conn.beginTransactionSync();
-        
-        var result = conn.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
-
-        conn.endTransactionSync(true); //rollback
-        
-        result = conn.querySync("select * from " + common.tableName);
-        
-        assert.deepEqual(result.fetchAllSync(), []);
-      }
-      catch (e) {
-        console.log("Failed when rolling back");
-        console.log(e);
-        exitCode = 1
-      }  
-       
-      try {
-        //Start a new transaction
-        conn.beginTransactionSync();
-        
-        result = conn.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
-
-        conn.endTransactionSync(false); //commit
-        
-        result = conn.querySync("select * from " + common.tableName);
-        
-        assert.deepEqual(result.fetchAllSync(), [ { COLINT: 42, COLDATETIME: null, COLTEXT: null } ]);
-      }
-      catch (e) {
-        console.log("Failed when committing");
-        console.log(e);
-        
-        exitCode = 2;
-      }
+  conn.openSync(common.connectionString);
+  
+  common.createTables(conn, function (err, data) {
+    try {
+      conn.beginTransactionSync();
       
-      common.dropTables(conn, function (err) {
-        conn.close(function () {
-          process.exit(exitCode);
-        });
-      });
+      var result = conn.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
+
+      conn.endTransactionSync(true); //rollback
+      
+      result = conn.querySync("select * from " + common.tableName);
+      
+      assert.deepEqual(result.fetchAllSync(), []);
+    }
+    catch (e) {
+      console.log("Failed when rolling back");
+      console.log(e);
+      exitCode = 1
+    }  
+      
+    try {
+      //Start a new transaction
+      conn.beginTransactionSync();
+      
+      result = conn.querySync("insert into " + common.tableName + " (COLINT, COLDATETIME, COLTEXT) VALUES (42, null, null)" );
+
+      conn.endTransactionSync(false); //commit
+      
+      result = conn.querySync("select * from " + common.tableName);
+      
+      assert.deepEqual(result.fetchAllSync(), [ { COLINT: 42, COLDATETIME: null, COLTEXT: null } ]);
+    }
+    catch (e) {
+      console.log("Failed when committing");
+      console.log(e);
+      
+      exitCode = 2;
+    }
+    
+    common.dropTables(conn, function (err) {
+      conn.closeSync();
+      process.exit(exitCode);
     });
   });
 });

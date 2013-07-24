@@ -4,19 +4,15 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
-  assert.equal(err, null);
+db.openSync(common.connectionString);
   
-  common.dropTables(db, function () {
-    common.createTables(db, function () {
-      db.describe({
-        database : common.databaseName
-      }, function (err, data) {
-        db.close(function () {
-          assert.equal(err, null);
-          assert.ok(data.length, "No records returned when attempting to describe the database");
-        });
-      });
+common.dropTables(db, function () {
+  common.createTables(db, function () {
+    db.describe({
+      database : common.databaseName
+    }, function (err, data) {
+      db.closeSync();
+      assert.ok(data.length, "No records returned when attempting to describe the database");
     });
   });
 });

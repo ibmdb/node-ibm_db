@@ -4,14 +4,8 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err){ 
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-  
-  issueQuery();
-});
+db.openSync(common.connectionString);
+issueQuery();
 
 function issueQuery() {
   var count = 0
@@ -62,9 +56,8 @@ function issueQuery() {
 }
 
 function finish(exitCode) {
-  db.close(function () {
-    console.log("connection closed");
-    
-    process.exit(exitCode || 0);
-  });
+  db.closeSync();
+  
+  console.log("connection closed");
+  process.exit(exitCode || 0);
 }

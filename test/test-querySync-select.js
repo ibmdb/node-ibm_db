@@ -4,13 +4,12 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
-  assert.equal(err, null);
-  assert.equal(db.connected, true);
-  
-  var data = db.querySync("select 1 as \"COLINT\", 'some test' as \"COLTEXT\"");
-  
-  db.close(function () {
-    assert.deepEqual(data, [{ COLINT: 1, COLTEXT: 'some test' }]);
-  });
-});
+db.openSync(common.connectionString);
+assert.equal(db.connected, true);
+
+var data = db.querySync("select 1 as \"COLINT\", 'some test' as \"COLTEXT\"");
+
+db.closeSync();
+assert.deepEqual(data, [{ COLINT: 1, COLTEXT: 'some test' }]);
+
+

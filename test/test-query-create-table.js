@@ -4,11 +4,9 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
-  common.createTables(db, function (err, data, morefollowing) {
-    console.log(arguments);
-    db.close(function () { 
-      
-    });
-  });
+db.openSync(common.connectionString);
+common.createTables(db, function (err, data, morefollowing) {
+  console.log(arguments);
+  db.closeSync();
 });
+

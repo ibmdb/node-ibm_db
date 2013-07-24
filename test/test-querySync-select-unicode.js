@@ -4,17 +4,17 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
-  var data;
-  try {
-    data = db.querySync("select 'ꜨꜢ' as UNICODETEXT");
-  }
-  catch (e) {
-   console.log(e); 
-  }
-  
-  db.close(function () {
-    console.log(data);
-    assert.deepEqual(data, [{ UNICODETEXT: 'ꜨꜢ' }]);
-  });
-});
+db.openSync(common.connectionString);
+var data;
+
+try {
+  data = db.querySync("select 'ꜨꜢ' as UNICODETEXT");
+}
+catch (e) {
+  console.log(e); 
+}
+
+db.closeSync();
+console.log(data);
+assert.deepEqual(data, [{ UNICODETEXT: 'ꜨꜢ' }]);
+

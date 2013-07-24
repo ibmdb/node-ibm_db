@@ -7,37 +7,28 @@ var common = require("./common")
 var count = 0;
 var iterations = 10;
 
-db.open(common.connectionString, function(err) {
-  if(err) {
-    console.log(err)
-    
-    return finish(1);
-  }
+db.openSync(common.connectionString);
   
-  common.dropTables(db, function () {
-    common.createTables(db, function (err, data) {
-      if (err) {
-        console.log(err);
-        
-        return finish(2);
-      }
+common.dropTables(db, function () {
+  common.createTables(db, function (err, data) {
+    if (err) {
+      console.log(err);
       
-      var stmt = db.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
-      assert.equal(stmt.constructor.name, "ODBCStatement");
-      
-      recursive(stmt);
-    });
+      return finish(2);
+    }
+    
+    var stmt = db.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
+    assert.equal(stmt.constructor.name, "ODBCStatement");
+    
+    recursive(stmt);
   });
 });
 
 function finish(retValue) {
   console.log("finish exit value: %s", retValue);
   
-  db.close(function (err) {
-    if (err) console.log (err);
-    
-    process.exit(retValue || 0);
-  });
+  db.closeSync();
+  process.exit(retValue || 0);
 }
 
 function recursive (stmt) {

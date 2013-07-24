@@ -4,18 +4,16 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
+db.openSync(common.connectionString);
+assert.equal(db.connected, true);
+
+db.queryResult("select 1 as COLINT, 'some test' as COLTEXT ", function (err, result) {
   assert.equal(err, null);
-  assert.equal(db.connected, true);
+  assert.equal(result.constructor.name, "ODBCResult");
   
-  db.queryResult("select 1 as COLINT, 'some test' as COLTEXT ", function (err, result) {
-    assert.equal(err, null);
-    assert.equal(result.constructor.name, "ODBCResult");
-    
-    result.fetch(function (err, data) {
-      db.close(function () {
-        assert.deepEqual(data, { COLINT: '1', COLTEXT: 'some test' });
-      });
-    });
+  result.fetch(function (err, data) {
+    db.closeSync();
+    assert.deepEqual(data, { COLINT: '1', COLTEXT: 'some test' });
   });
 });
+

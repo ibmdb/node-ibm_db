@@ -4,11 +4,10 @@ var common = require("./common")
   , assert = require("assert")
   ;
 
-db.open(common.connectionString, function(err) {
-  common.dropTables(db, function (err, data) {
-    db.close(function () {
-      assert.equal(err, null);
-      assert.deepEqual(data, []);
-    });
-  });
+db.openSync(common.connectionString);
+common.dropTables(db, function (err, data) {
+  db.closeSync();
+  assert.equal(err, null);
+  assert.deepEqual(data, []);
 });
+

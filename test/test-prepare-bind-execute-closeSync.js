@@ -5,16 +5,12 @@ var common = require("./common")
   , iterations = 1000
   ;
 
-db.open(common.connectionString, function(err){ 
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
+db.openSync(common.connectionString);
   
-  issueQuery3(function () {
-    finish();
-  });
+issueQuery3(function () {
+  finish();
 });
+
 
 function issueQuery3(done) {
   var count = 0
@@ -61,7 +57,6 @@ function issueQuery3(done) {
 }
 
 function finish() {
-  db.close(function () {
-    console.log("connection closed");
-  });
+  db.closeSync();
+  console.log("connection closed");
 }
