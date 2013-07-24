@@ -275,9 +275,15 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
         data->objResult->buffer,
         data->objResult->bufferLength);
     }
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
     data->cb.Dispose();
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
   else {
     ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
@@ -293,9 +299,15 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
     }
     
     args[1] = Null();
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
     data->cb.Dispose();
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
   
   free(data);
@@ -543,12 +555,18 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     }
     
     args[1] = Local<Array>::New(data->rows);
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
     data->cb.Dispose();
     data->rows.Dispose();
     data->objError.Dispose();
-    
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
+
     //TODO: Do we need to free self->rows somehow?
     free(data);
     free(work_req);

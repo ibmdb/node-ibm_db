@@ -223,18 +223,17 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Object>::New(js_result);
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
-  
-  TryCatch try_catch;
-  
+
   self->Unref();
-  
-  if (try_catch.HasCaught()) {
-    FatalException(try_catch);
-  }
-  
   data->cb.Dispose();
   
   free(data);
@@ -362,18 +361,17 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Value>::New(Number::New(rowCount));
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
-  
-  TryCatch try_catch;
-  
+
   self->Unref();
-  
-  if (try_catch.HasCaught()) {
-    FatalException(try_catch);
-  }
-  
   data->cb.Dispose();
   
   free(data);
@@ -514,18 +512,17 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Object>::New(js_result);
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
-  
-  TryCatch try_catch;
-  
+
   self->Unref();
-  
-  if (try_catch.HasCaught()) {
-    FatalException(try_catch);
-  }
-  
   data->cb.Dispose();
   
   free(data->sql);
@@ -723,18 +720,17 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Value>::New(True());
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
-  
-  TryCatch try_catch;
   
   data->stmt->Unref();
-  
-  if (try_catch.HasCaught()) {
-    FatalException(try_catch);
-  }
-  
   data->cb.Dispose();
   
   free(data->sql);
@@ -986,18 +982,17 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
 
     args[0] = Local<Value>::New(Null());
     args[1] = Local<Value>::New(True());
-    
+
+    TryCatch try_catch;
+
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
   }
-  
-  TryCatch try_catch;
-  
+
   self->Unref();
-  
-  if (try_catch.HasCaught()) {
-    FatalException(try_catch);
-  }
-  
   data->cb.Dispose();
   
   free(data);

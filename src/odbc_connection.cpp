@@ -282,7 +282,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
     uv_ref(uv_default_loop());
 #endif
   }
-  
+
   TryCatch try_catch;
 
   data->conn->Unref();
@@ -635,7 +635,14 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
   args[0] = Local<Value>::New(Null());
   args[1] = Local<Object>::New(js_result);
 
+
+  TryCatch try_catch;
+
   data->cb->Call(Context::GetCurrent()->Global(), 2, args);
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
   
   data->conn->Unref();
   data->cb.Dispose();
@@ -859,6 +866,8 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   
   query_work_data* data = (query_work_data *)(req->data);
 
+  TryCatch try_catch;
+
   //check to see if there was an error during execution
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
@@ -900,8 +909,6 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
   }
-  
-  TryCatch try_catch;
   
   data->conn->Unref();
   
