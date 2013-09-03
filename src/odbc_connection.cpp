@@ -868,6 +868,8 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
   TryCatch try_catch;
 
+  DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i\n", data->result, data->noResultObject);
+
   //check to see if there was an error during execution
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
