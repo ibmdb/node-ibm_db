@@ -532,6 +532,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           bufferLength,
           &len);
 
+        assert(ret != -2);
+
         DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
