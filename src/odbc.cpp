@@ -540,7 +540,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           //return Null();
         }
         
-        if (ret != SQL_NO_DATA) {
+        if (SQL_NO_DATA == ret) {
+          //we have captured all of the data
+          break;
+        }
+        else if (SQL_SUCCEEDED(ret)) {
           //we have not captured all of the data yet
           
           if (count == 0) {
@@ -563,7 +567,25 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           count += 1;
         }
         else {
-          //we have captured all of the data
+          //an error has occured
+          //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
+          char *errorMessage = "ODBC::GetColumnValue - String: - ERROR";
+          DEBUG_PRINTF("%s\n", errorMessage);
+          
+          
+          //What's the right way to handle errors here????
+          Local<Object> objError = Object::New();
+          objError->SetPrototype(Exception::Error(String::New(errorMessage)));
+          objError->Set(String::New("message"), String::New(errorMessage));
+          objError->Set(String::New("state"), String::New("FUCKED UP"));
+          
+          return ThrowException(scope.Close(objError));
+          // ThrowException(ODBC::GetSQLError(
+          //   SQL_HANDLE_STMT,
+          //   hStmt,
+          //   (char *) "[node-odbc] Error in ODBC::GetColumnValue"
+          // ));
+          
           break;
         }
       } while (true);
