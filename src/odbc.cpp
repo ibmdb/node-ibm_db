@@ -568,9 +568,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
         else {
           //an error has occured
+          //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
           char *errorMessage = "ODBC::GetColumnValue - String: - ERROR";
           DEBUG_PRINTF("%s\n", errorMessage);
           
+          
+          //What's the right way to handle errors here????
           Local<Object> objError = Object::New();
           objError->SetPrototype(Exception::Error(String::New(errorMessage)));
           objError->Set(String::New("message"), String::New(errorMessage));
