@@ -532,8 +532,6 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           bufferLength,
           &len);
 
-        assert(ret != -2);
-
         DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
@@ -571,22 +569,20 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         else {
           //an error has occured
           //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
-          char *errorMessage = "ODBC::GetColumnValue - String: - ERROR";
-          DEBUG_PRINTF("%s\n", errorMessage);
-          
-          
-          //What's the right way to handle errors here????
-          Local<Object> objError = Object::New();
-          objError->SetPrototype(Exception::Error(String::New(errorMessage)));
-          objError->Set(String::New("message"), String::New(errorMessage));
-          objError->Set(String::New("state"), String::New("FUCKED UP"));
-          
-          return ThrowException(scope.Close(objError));
-          // ThrowException(ODBC::GetSQLError(
-          //   SQL_HANDLE_STMT,
-          //   hStmt,
-          //   (char *) "[node-odbc] Error in ODBC::GetColumnValue"
-          // ));
+
+          //If we have an invalid handle, then stuff is way bad and we should abort
+          //immediately. Memory errors are bound to follow as we must be in an
+          //inconsisant state.
+          assert(ret != SQL_INVALID_HANDLE);
+
+          //Not sure if throwing here will work out well for us but we can try
+          //since we should have a valid handle and the error is something we 
+          //can look into
+          return ThrowException(ODBC::GetSQLError(
+             SQL_HANDLE_STMT,
+             hStmt,
+             (char *) "[node-odbc] Error in ODBC::GetColumnValue"
+           ));
           
           break;
         }
