@@ -186,6 +186,12 @@ typedef RETCODE (SQL_API * pfnSQLGetDiagRec)(
   SQLINTEGER *NativeError, SQLCHAR *MessageText,
   SQLSMALLINT BufferLength, SQLSMALLINT *TextLength);
 
+typedef RETCODE (SQL_API * pfnSQLGetDiagField)(
+  SQLSMALLINT HandleType, SQLHANDLE Handle,
+  SQLSMALLINT RecNumber, SQLSMALLINT DiagIdentifier,
+  SQLPOINTER DiagInfoPtr, SQLSMALLINT BufferLength,
+  SQLSMALLINT *StringLengthPtr
+
 typedef RETCODE (SQL_API * pfnSQLFreeHandle)(
   SQLSMALLINT HandleType, SQLHANDLE Handle);
 
@@ -302,6 +308,7 @@ extern pfnSQLExecDirect         pSQLExecDirect;
 extern pfnSQLExecute            pSQLExecute;
 extern pfnSQLFetch              pSQLFetch;
 extern pfnSQLGetDiagRec         pSQLGetDiagRec;
+extern pfnSQLGetDiagField       pSQLGetDiagField;
 extern pfnSQLFreeHandle         pSQLFreeHandle;
 extern pfnSQLFetchScroll        pSQLFetchScroll;
 extern pfnSQLFetchScroll        pSQLFetchScroll;
@@ -347,6 +354,7 @@ BOOL DynLoadODBC( char* odbcModuleName );
 #define SQLPrepare pSQLPrepare
 #define SQLExecute pSQLExecute
 #define SQLGetDiagRec pSQLGetDiagRec
+#define SQLGetDiagField pSQLGetDiagField
 #define SQLFreeHandle pSQLFreeHandle
 #define SQLFreeStmt pSQLFreeStmt
 #define SQLFetchScroll pSQLFetchScroll

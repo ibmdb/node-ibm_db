@@ -74,6 +74,7 @@ pfnSQLExecDirect        pSQLExecDirect;
 pfnSQLExecute           pSQLExecute;
 pfnSQLFetch             pSQLFetch;
 pfnSQLGetDiagRec        pSQLGetDiagRec;
+pfnSQLGetDiagField      pSQLGetDiagField;
 pfnSQLFreeHandle        pSQLFreeHandle;
 pfnSQLFetchScroll       pSQLFetchScroll;
 pfnSQLColAttribute      pSQLColAttribute;
@@ -157,6 +158,7 @@ BOOL DynLoadODBC( char* odbcModuleName )
   if (LOAD_ENTRY( hMod, SQLExecute        )  )
   if (LOAD_ENTRY( hMod, SQLFetch          )  )
   if (LOAD_ENTRY( hMod, SQLGetDiagRec     )  )
+  if (LOAD_ENTRY( hMod, SQLGetDiagField   )  )
   if (LOAD_ENTRY( hMod, SQLFreeHandle     )  )
   //Unused-> if (LOAD_ENTRY( hMod, SQLFetchScroll    )  )
   if (LOAD_ENTRY( hMod, SQLColAttribute   )  )
