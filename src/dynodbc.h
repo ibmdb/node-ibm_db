@@ -68,9 +68,9 @@ typedef RETCODE (SQL_API * pfnSQLSetConnectAttr)(
 typedef RETCODE (SQL_API * pfnSQLDriverConnect)(    
   SQLHDBC            hdbc,
   SQLHWND            hwnd,
-  SQLCHAR           *szConnStrIn,
+  SQLTCHAR           *szConnStrIn,
   SQLSMALLINT        cbConnStrIn,
-  SQLCHAR           *szConnStrOut,
+  SQLTCHAR           *szConnStrOut,
   SQLSMALLINT        cbConnStrOutMax,
   SQLSMALLINT       *pcbConnStrOut,
   SQLUSMALLINT       fDriverCompletion);
@@ -93,21 +93,22 @@ typedef RETCODE (SQL_API * pfnSQLEndTran)(
 
 typedef RETCODE (SQL_API * pfnSQLExecDirect)(
   SQLHSTMT StatementHandle,
-  SQLCHAR *StatementText, SQLINTEGER TextLength);
+  SQLTCHAR *StatementText, SQLINTEGER TextLength);
+  
 
 typedef RETCODE (SQL_API * pfnSQLTables)(
   SQLHSTMT StatementHandle,
-  SQLCHAR *CatalogName, SQLSMALLINT NameLength1,
-  SQLCHAR *SchemaName, SQLSMALLINT NameLength2,
-  SQLCHAR *TableName, SQLSMALLINT NameLength3,
-  SQLCHAR *TableType, SQLSMALLINT NameLength4);
+  SQLTCHAR *CatalogName, SQLSMALLINT NameLength1,
+  SQLTCHAR *SchemaName, SQLSMALLINT NameLength2,
+  SQLTCHAR *TableName, SQLSMALLINT NameLength3,
+  SQLTCHAR *TableType, SQLSMALLINT NameLength4);
 
 typedef RETCODE (SQL_API * pfnSQLColumns)(
   SQLHSTMT StatementHandle,
-  SQLCHAR *CatalogName, SQLSMALLINT NameLength1,
-  SQLCHAR *SchemaName, SQLSMALLINT NameLength2,
-  SQLCHAR *TableName, SQLSMALLINT NameLength3,
-  SQLCHAR *ColumnName, SQLSMALLINT NameLength4);
+  SQLTCHAR *CatalogName, SQLSMALLINT NameLength1,
+  SQLTCHAR *SchemaName, SQLSMALLINT NameLength2,
+  SQLTCHAR *TableName, SQLSMALLINT NameLength3,
+  SQLTCHAR *ColumnName, SQLSMALLINT NameLength4);
 
 typedef RETCODE (SQL_API * pfnSQLBindParameter)(    
   SQLHSTMT           hstmt,
@@ -123,11 +124,11 @@ typedef RETCODE (SQL_API * pfnSQLBindParameter)(
 
 typedef RETCODE (SQL_API * pfnSQLPrimaryKeys)(
   SQLHSTMT           hstmt,
-  SQLCHAR           *szCatalogName,
+  SQLTCHAR           *szCatalogName,
   SQLSMALLINT        cbCatalogName,
-  SQLCHAR           *szSchemaName,
+  SQLTCHAR           *szSchemaName,
   SQLSMALLINT        cbSchemaName,
-  SQLCHAR           *szTableName,
+  SQLTCHAR           *szTableName,
   SQLSMALLINT        cbTableName);
 
 typedef RETCODE (SQL_API * pfnSQLSetEnvAttr)(
@@ -169,11 +170,11 @@ typedef RETCODE (SQL_API * pfnSQLError)(
   SWORD       cbErrorMsgMax,
   SWORD  FAR *pcbErrorMsg);
 
-typedef RETCODE (SQL_API * pfnSQLExecDirect)(
+/*typedef RETCODE (SQL_API * pfnSQLExecDirect)(
   HSTMT       hstmt,
   UCHAR  FAR *szSqlStr,
   SDWORD      cbSqlStr);
-
+*/
 typedef RETCODE (SQL_API * pfnSQLExecute)(
   HSTMT       hstmt);
 
@@ -182,15 +183,15 @@ typedef RETCODE (SQL_API * pfnSQLFetch)(
 
 typedef RETCODE (SQL_API * pfnSQLGetDiagRec)(
   SQLSMALLINT HandleType, SQLHANDLE Handle,
-  SQLSMALLINT RecNumber, SQLCHAR *Sqlstate,
-  SQLINTEGER *NativeError, SQLCHAR *MessageText,
+  SQLSMALLINT RecNumber, SQLTCHAR *Sqlstate,
+  SQLINTEGER *NativeError, SQLTCHAR *MessageText,
   SQLSMALLINT BufferLength, SQLSMALLINT *TextLength);
 
 typedef RETCODE (SQL_API * pfnSQLGetDiagField)(
   SQLSMALLINT HandleType, SQLHANDLE Handle,
   SQLSMALLINT RecNumber, SQLSMALLINT DiagIdentifier,
   SQLPOINTER DiagInfoPtr, SQLSMALLINT BufferLength,
-  SQLSMALLINT *StringLengthPtr
+  SQLSMALLINT *StringLengthPtr);
 
 typedef RETCODE (SQL_API * pfnSQLFreeHandle)(
   SQLSMALLINT HandleType, SQLHANDLE Handle);
@@ -227,9 +228,12 @@ typedef RETCODE (SQL_API * pfnSQLNumResultCols)(
   SWORD  FAR *pccol);
 
 typedef RETCODE (SQL_API * pfnSQLPrepare)(
-  HSTMT       hstmt,
-  UCHAR  FAR *szSqlStr,
-  SDWORD      cbSqlStr);
+  SQLHSTMT    StatementHandle,
+  SQLTCHAR   *StatementText,
+  SQLINTEGER  TextLength);
+//  HSTMT       hstmt,
+//  UCHAR  FAR *szSqlStr,
+//  SDWORD      cbSqlStr);
 
 typedef RETCODE (SQL_API * pfnSQLRowCount)(
   HSTMT       hstmt,
@@ -319,7 +323,7 @@ extern pfnSQLAllocHandle        pSQLAllocHandle;
 extern pfnSQLRowCount           pSQLRowCount;
 extern pfnSQLNumResultCols      pSQLNumResultCols;
 extern pfnSQLEndTran            pSQLEndTran;
-extern pfnSQLExecDirect         pSQLExecDirect;
+//extern pfnSQLExecDirect         pSQLExecDirect;
 extern pfnSQLTables             pSQLTables;
 extern pfnSQLColumns            pSQLColumns;
 // extern pfnSQLBindParameter      pSQLBindParameter;
