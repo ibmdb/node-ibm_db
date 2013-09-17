@@ -22,7 +22,8 @@
           ]
         }],
         [ 'OS == "mac"', {
-          'libraries' : [ 
+          'libraries' : [
+            '-L/usr/local/lib',
             '-lodbc' 
           ]
         }],
