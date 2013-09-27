@@ -721,7 +721,10 @@ Handle<Value> ODBCResult::MoreResultsSync(const Arguments& args) {
   
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
-  return scope.Close(SQL_SUCCEEDED(ret) ? True() : False());
+  if (ret == SQL_ERROR)
+    return scope.Close(ODBC::GetSQLError(SQL_HANDLE_STMT, result->m_hSTMT, (char *)"[node-odbc] Error in ODBCResult::MoreResultsSync"));
+
+  return scope.Close(SQL_SUCCEEDED(ret) || ret == SQL_ERROR ? True() : False());
 }
 
 /*

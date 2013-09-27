@@ -834,7 +834,7 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
     DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i\n", i);
 
     if (SQL_SUCCEEDED(ret)) {
-      DEBUG_PRINTF("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n", errorMessage, errorSQLState);
+      DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);
       
       objError->Set(String::New("error"), String::New(message));
 #ifdef UNICODE
@@ -846,6 +846,8 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
       objError->Set(String::New("message"), String::New(errorMessage));
       objError->Set(String::New("state"), String::New(errorSQLState));
 #endif
+    } else if (ret == SQL_NO_DATA) {
+      break;
     }
   }
   

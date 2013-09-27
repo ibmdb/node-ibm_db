@@ -145,10 +145,22 @@ struct query_request {
   int result;
 };
 
+#ifdef UNICODE
+    #define SQL_T(x) (L##x)
+#else
+    #define SQL_T(x) (x)
+#endif
+
 #ifdef DEBUG
     #define DEBUG_PRINTF(...) fprintf(stdout, __VA_ARGS__)
+    #ifdef UNICODE
+        #define DEBUG_TPRINTF(...) fwprintf(stdout, __VA_ARGS__)
+    #else
+        #define DEBUG_TPRINTF(...) fprintf(stdout, __VA_ARGS__)
+    #endif
 #else
     #define DEBUG_PRINTF(...) (void)0
+    #define DEBUG_TPRINTF(...) (void)0
 #endif
 
 #define REQ_ARGS(N)                                                     \
