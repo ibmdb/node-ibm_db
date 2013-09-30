@@ -870,14 +870,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
   DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i\n", data->result, data->noResultObject);
 
-  //check to see if there was an error during execution
-  if(data->result == SQL_ERROR) {
-    ODBC::CallbackSQLError(
-      SQL_HANDLE_STMT,
-      data->hSTMT,
-      data->cb);
-  }
-  else if (data->noResultObject) {
+  if (data->result != SQL_ERROR && data->noResultObject) {
     //We have been requested to not create a result object
     //this means we should release the handle now and call back
     //with True()
@@ -906,7 +899,12 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     Local<Object> js_result(ODBCResult::constructor_template->
                               GetFunction()->NewInstance(4, args));
 
-    args[0] = Local<Value>::New(Null());
+    // Check now to see if there was an error (as there may be further result sets)
+    if (data->result == SQL_ERROR) {
+      args[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, "[node-odbc] SQL_ERROR");
+    } else {
+      args[0] = Local<Value>::New(Null());
+    }
     args[1] = Local<Object>::New(js_result);
     
     data->cb->Call(Context::GetCurrent()->Global(), 2, args);
