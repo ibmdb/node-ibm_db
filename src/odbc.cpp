@@ -809,14 +809,17 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   char errorSQLState[14];
   char errorMessage[512];
 
-  SQLGetDiagField(
+  ret = SQLGetDiagField(
     handleType,
     handle,
-    1,
+    0,
     SQL_DIAG_NUMBER,
     &numfields,
     SQL_IS_INTEGER,
     &len);
+
+  // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
+  DEBUG_PRINTF("ODBC::GetSQLError : called SQLGetDiagField; ret=%i\n", ret);
   
   for (i = 0; i < numfields; i++){
     DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
