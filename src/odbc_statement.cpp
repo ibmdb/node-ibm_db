@@ -266,7 +266,7 @@ Handle<Value> ODBCStatement::ExecuteSync(const Arguments& args) {
     return scope.Close(Null());
   }
   else {
-    Local<Value> args[3];
+    Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
@@ -499,7 +499,7 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
       data->cb);
   }
   else {
-    Local<Value> args[3];
+    Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
@@ -565,7 +565,7 @@ Handle<Value> ODBCStatement::ExecuteDirectSync(const Arguments& args) {
     return scope.Close(Null());
   }
   else {
-    Local<Value> args[3];
+    Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(stmt->m_hENV);
