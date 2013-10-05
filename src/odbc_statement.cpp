@@ -210,7 +210,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
       data->cb);
   }
   else {
-    Local<Value> args[3];
+    Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
     args[0] = External::New(self->m_hENV);
