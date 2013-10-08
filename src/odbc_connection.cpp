@@ -901,7 +901,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result == SQL_ERROR) {
-      args[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, "[node-odbc] SQL_ERROR");
+      args[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-odbc] SQL_ERROR");
     } else {
       args[0] = Local<Value>::New(Null());
     }
