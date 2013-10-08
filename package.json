@@ -1,7 +1,7 @@
 {
   "name": "odbc",
   "description": "unixodbc bindings for node",
-  "version": "0.5.31",
+  "version": "0.5.32",
   "main": "lib/odbc.js",
   "homepage": "http://github.com/wankdanker/node-odbc/",
   "repository": {
@@ -9,10 +9,14 @@
     "url": "git://github.com/wankdanker/node-odbc.git"
   },
   "contributors": [
-    { "name" : "Dan VerWeire",
-      "email" : "dverweire@gmail.com" },
-    { "name" : "Lee Smith",
-      "email" : "notwink@gmail.com" }
+    {
+      "name": "Dan VerWeire",
+      "email": "dverweire@gmail.com"
+    },
+    {
+      "name": "Lee Smith",
+      "email": "notwink@gmail.com"
+    }
   ],
   "directories": {
     "lib": "."
