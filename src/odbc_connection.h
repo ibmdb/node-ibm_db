@@ -48,13 +48,13 @@ class ODBCConnection : public node::ObjectWrap {
     static void ConnectTimeoutSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
     
     //async methods
-//     static Handle<Value> BeginTransaction(const Arguments& args);
-//     static void UV_BeginTransaction(uv_work_t* work_req);
-//     static void UV_AfterBeginTransaction(uv_work_t* work_req, int status);
-//     
-//     static Handle<Value> EndTransaction(const Arguments& args);
-//     static void UV_EndTransaction(uv_work_t* work_req);
-//     static void UV_AfterEndTransaction(uv_work_t* work_req, int status);
+    static Handle<Value> BeginTransaction(const Arguments& args);
+    static void UV_BeginTransaction(uv_work_t* work_req);
+    static void UV_AfterBeginTransaction(uv_work_t* work_req, int status);
+    
+    static Handle<Value> EndTransaction(const Arguments& args);
+    static void UV_EndTransaction(uv_work_t* work_req);
+    static void UV_AfterEndTransaction(uv_work_t* work_req, int status);
     
     static Handle<Value> Open(const Arguments& args);
     static void UV_Open(uv_work_t* work_req);
@@ -117,6 +117,7 @@ struct query_work_data {
   
   Parameter *params;
   int paramCount;
+  int completionType;
   bool noResultObject;
   
   void *sql;

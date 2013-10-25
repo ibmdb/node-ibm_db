@@ -213,6 +213,40 @@ db.openSync(cn);
 db.closeSync();
 ```
 
+#### .prepare(sql, callback)
+
+Prepare a statement for execution.
+
+* **sql** - SQL string to prepare
+* **callback** - `callback (err, stmt)`
+
+Returns a `Statement` object via the callback
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+db.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
+  if (err) {
+    //could not prepare for some reason
+    console.log(err);
+    return db.closeSync();
+  }
+
+  //Bind and Execute the statment asynchronously
+  stmt.execute(['something', 42], function (err, result) {
+    result.closeSync();
+
+    //Close the connection
+    db.closeSync();
+  });
+})
+```
+
 #### .prepareSync(sql)
 
 Synchronously prepare a statement for execution.
@@ -239,6 +273,140 @@ stmt.execute(['something', 42], function (err, result) {
   //Close the connection
   db.closeSync();
 });
+```
+
+#### .beginTransaction(callback)
+
+Begin a transaction
+
+* **callback** - `callback (err)`
+
+#### .beginTransactionSync(callback)
+
+Synchronously begin a transaction
+
+#### .commitTransaction(callback)
+
+Commit a transaction
+
+* **callback** - `callback (err)`
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+db.beginTransaction(function (err) {
+  if (err) {
+    //could not begin a transaction for some reason.
+    console.log(err);
+    return db.closeSync();
+  }
+
+  var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+
+  db.commitTransaction(function (err) {
+    if (err) {
+      //error during commit
+      console.log(err);
+      return db.closeSync();
+    }
+
+    console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+
+    //Close the connection
+    db.closeSync();
+  });
+})
+```
+
+#### .commitTransactionSync(callback)
+
+Synchronously commit a transaction
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+db.beginTransactionSync();
+
+var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+
+db.commitTransactionSync();
+
+console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+
+//Close the connection
+db.closeSync();
+```
+
+#### .rollbackTransaction(callback)
+
+Rollback a transaction
+
+* **callback** - `callback (err)`
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+db.beginTransaction(function (err) {
+  if (err) {
+    //could not begin a transaction for some reason.
+    console.log(err);
+    return db.closeSync();
+  }
+
+  var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+
+  db.rollbackTransaction(function (err) {
+    if (err) {
+      //error during rollback
+      console.log(err);
+      return db.closeSync();
+    }
+
+    console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+
+    //Close the connection
+    db.closeSync();
+  });
+})
+```
+
+#### .rollbackTransactionSync(callback)
+
+Synchronously rollback a transaction
+
+```javascript
+var db = require("odbc")()
+  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+  ;
+
+//Blocks until the connection is open
+db.openSync(cn);
+
+db.beginTransactionSync();
+
+var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+
+db.rollbackTransactionSync();
+
+console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+
+//Close the connection
+db.closeSync();
 ```
 
 ----------

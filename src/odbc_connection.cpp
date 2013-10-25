@@ -64,7 +64,9 @@ void ODBCConnection::Init(v8::Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "query", Query);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "querySync", QuerySync);
   
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "beginTransaction", BeginTransaction);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "beginTransactionSync", BeginTransactionSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "endTransaction", EndTransaction);
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "endTransactionSync", EndTransactionSync);
   
   NODE_SET_PROTOTYPE_METHOD(constructor_template, "columns", Columns);
@@ -1425,6 +1427,99 @@ Handle<Value> ODBCConnection::BeginTransactionSync(const Arguments& args) {
 }
 
 /*
+ * BeginTransaction
+ * 
+ */
+
+Handle<Value> ODBCConnection::BeginTransaction(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::BeginTransaction\n");
+  HandleScope scope;
+
+  REQ_FUN_ARG(0, cb);
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  query_work_data* data = 
+    (query_work_data *) calloc(1, sizeof(query_work_data));
+  
+  if (!data) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+
+  data->cb = Persistent<Function>::New(cb);
+  data->conn = conn;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(),
+    work_req, 
+    UV_BeginTransaction, 
+    (uv_after_work_cb)UV_AfterBeginTransaction);
+
+  return scope.Close(Undefined());
+}
+
+/*
+ * UV_BeginTransaction
+ * 
+ */
+
+void ODBCConnection::UV_BeginTransaction(uv_work_t* req) {
+  DEBUG_PRINTF("ODBCConnection::UV_BeginTransaction\n");
+  
+  query_work_data* data = (query_work_data *)(req->data);
+  
+  //set the connection manual commits
+  data->result = SQLSetConnectAttr(
+    data->conn->self()->m_hDBC,
+    SQL_ATTR_AUTOCOMMIT,
+    (SQLPOINTER) SQL_AUTOCOMMIT_OFF,
+    SQL_NTS);
+}
+
+/*
+ * UV_AfterBeginTransaction
+ * 
+ */
+
+void ODBCConnection::UV_AfterBeginTransaction(uv_work_t* req, int status) {
+  DEBUG_PRINTF("ODBCConnection::UV_AfterBeginTransaction\n");
+  HandleScope scope;
+  
+  open_connection_work_data* data = (open_connection_work_data *)(req->data);
+  
+  Local<Value> argv[1];
+  
+  bool err = false;
+
+  if (!SQL_SUCCEEDED(data->result)) {
+    err = true;
+
+    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
+    
+    argv[0] = objError;
+  }
+
+  TryCatch try_catch;
+
+  data->cb->Call(Context::GetCurrent()->Global(), err ? 1 : 0, argv);
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+
+  data->cb.Dispose();
+  
+  free(data);
+  free(req);
+  
+  scope.Close(Undefined());
+}
+
+/*
  * EndTransactionSync
  * 
  */
@@ -1485,4 +1580,123 @@ Handle<Value> ODBCConnection::EndTransactionSync(const Arguments& args) {
   else {
     return scope.Close(True());
   }
+}
+
+/*
+ * EndTransaction
+ * 
+ */
+
+Handle<Value> ODBCConnection::EndTransaction(const Arguments& args) {
+  DEBUG_PRINTF("ODBCConnection::EndTransaction\n");
+  HandleScope scope;
+
+  REQ_BOOL_ARG(0, rollback);
+  REQ_FUN_ARG(1, cb);
+
+  ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  
+  query_work_data* data = 
+    (query_work_data *) calloc(1, sizeof(query_work_data));
+  
+  if (!data) {
+    V8::LowMemoryNotification();
+    return ThrowException(Exception::Error(String::New("Could not allocate enough memory")));
+  }
+  
+  data->completionType = (rollback->Value()) 
+    ? SQL_ROLLBACK
+    : SQL_COMMIT
+    ;
+  data->cb = Persistent<Function>::New(cb);
+  data->conn = conn;
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(),
+    work_req, 
+    UV_EndTransaction, 
+    (uv_after_work_cb)UV_AfterEndTransaction);
+
+  return scope.Close(Undefined());
+}
+
+/*
+ * UV_EndTransaction
+ * 
+ */
+
+void ODBCConnection::UV_EndTransaction(uv_work_t* req) {
+  DEBUG_PRINTF("ODBCConnection::UV_EndTransaction\n");
+  
+  query_work_data* data = (query_work_data *)(req->data);
+  
+  bool err = false;
+  
+  //Call SQLEndTran
+  SQLRETURN ret = SQLEndTran(
+    SQL_HANDLE_DBC,
+    data->conn->m_hDBC,
+    data->completionType);
+  
+  data->result = ret;
+  
+  if (!SQL_SUCCEEDED(ret)) {
+    err = true;
+  }
+  
+  //Reset the connection back to autocommit
+  ret = SQLSetConnectAttr(
+    data->conn->m_hDBC,
+    SQL_ATTR_AUTOCOMMIT,
+    (SQLPOINTER) SQL_AUTOCOMMIT_ON,
+    SQL_NTS);
+  
+  if (!SQL_SUCCEEDED(ret) && !err) {
+    //there was not an earlier error,
+    //so we shall pass the return code from
+    //this last call.
+    data->result = ret;
+  }
+}
+
+/*
+ * UV_AfterEndTransaction
+ * 
+ */
+
+void ODBCConnection::UV_AfterEndTransaction(uv_work_t* req, int status) {
+  DEBUG_PRINTF("ODBCConnection::UV_AfterEndTransaction\n");
+  HandleScope scope;
+  
+  open_connection_work_data* data = (open_connection_work_data *)(req->data);
+  
+  Local<Value> argv[1];
+  
+  bool err = false;
+
+  if (!SQL_SUCCEEDED(data->result)) {
+    err = true;
+
+    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
+    
+    argv[0] = objError;
+  }
+
+  TryCatch try_catch;
+
+  data->cb->Call(Context::GetCurrent()->Global(), err ? 1 : 0, argv);
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+
+  data->cb.Dispose();
+  
+  free(data);
+  free(req);
+  
+  scope.Close(Undefined());
 }
