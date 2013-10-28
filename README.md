@@ -61,9 +61,15 @@ api
 ### Database
 
 The simple api is based on instances of the `Database` class. You may get an 
-instance in a couple of ways.
+instance in one of the following ways:
 
-By using the helper function:
+```javascript
+require("odbc").open(connectionString, function (err, db){
+  //db is already open now if err is falsy
+});
+```
+
+or by using the helper function:
 
 ```javascript
 var db = require("odbc")();
