@@ -1,15 +1,15 @@
 {
   "name": "odbc",
   "description": "unixodbc bindings for node",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "main": "lib/odbc.js",
   "homepage": "http://github.com/wankdanker/node-odbc/",
   "repository": {
     "type": "git",
     "url": "git://github.com/wankdanker/node-odbc.git"
   },
-  "bugs" : {
-    "url" : "https://github.com/w1nk/node-odbc/issues"
+  "bugs": {
+    "url": "https://github.com/w1nk/node-odbc/issues"
   },
   "contributors": [
     {
