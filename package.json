@@ -8,6 +8,9 @@
     "type": "git",
     "url": "git://github.com/wankdanker/node-odbc.git"
   },
+  "bugs" : {
+    "url" : "https://github.com/w1nk/node-odbc/issues"
+  },
   "contributors": [
     {
       "name": "Dan VerWeire",
