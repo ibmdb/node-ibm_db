@@ -203,7 +203,7 @@ db.open(cn, function (err) {
 });
 ```
 
-#### .closeSync(callback)
+#### .closeSync()
 
 Synchronously close the currently opened database.
 
@@ -287,7 +287,7 @@ Begin a transaction
 
 * **callback** - `callback (err)`
 
-#### .beginTransactionSync(callback)
+#### .beginTransactionSync()
 
 Synchronously begin a transaction
 
@@ -329,7 +329,7 @@ db.beginTransaction(function (err) {
 })
 ```
 
-#### .commitTransactionSync(callback)
+#### .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -391,7 +391,7 @@ db.beginTransaction(function (err) {
 })
 ```
 
-#### .rollbackTransactionSync(callback)
+#### .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
