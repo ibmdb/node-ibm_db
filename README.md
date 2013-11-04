@@ -568,6 +568,21 @@ work better or faster, you can remove the `UNICODE` define in `binding.gyp`
 <snip>
 ```
 
+### timegm vs timelocal
+
+When converting a database time to a C time one may use `timegm` or `timelocal`. See
+`man timegm` for the details of these two functions. By default the node-odbc bindings
+use `timelocal`. If you would prefer for it to use `timegm` then specify the `TIMEGM`
+define in `binding.gyp`
+
+```javascript
+<snip>
+'defines' : [
+  "TIMEGM"
+],
+<snip>
+```
+
 ### Strict Column Naming
 
 When column names are retrieved from ODBC, you can request by SQL_DESC_NAME or

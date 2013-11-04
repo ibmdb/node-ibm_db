@@ -489,9 +489,13 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //and system databases to attempt to determine whether DST is in effect 
         //at the specified time.
         timeInfo.tm_isdst = -1;
-          
-        return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000) 
+#ifdef TIMEGM
+        return scope.Close(Date::New((double(timegm(&timeInfo)) * 1000)
                           + (odbcTime.fraction / 1000000)));
+#else
+        return scope.Close(Date::New((double(timelocal(&timeInfo)) * 1000)
+                          + (odbcTime.fraction / 1000000)));
+#endif
         //return Date::New((double(timegm(&timeInfo)) * 1000) 
         //                  + (odbcTime.fraction / 1000000));
       }
