@@ -1,24 +1,20 @@
 {
   "name": "odbc",
-  "description": "unixodbc bindings for node",
-  "version": "0.6.2",
+  "description": "DB2 bindings for node",
+  "version": "0.0.1",
   "main": "lib/odbc.js",
-  "homepage": "http://github.com/wankdanker/node-odbc/",
+  "homepage": "http://github.com/ibmdb/node-ibm_db/",
   "repository": {
     "type": "git",
-    "url": "git://github.com/wankdanker/node-odbc.git"
+    "url": "git://github.com/ibmdb/node-ibm_db.git"
   },
   "bugs": {
-    "url": "https://github.com/w1nk/node-odbc/issues"
+    "url": "https://github.com/ibmdb/node-ibm_db/issues"
   },
   "contributors": [
     {
-      "name": "Dan VerWeire",
-      "email": "dverweire@gmail.com"
-    },
-    {
-      "name": "Lee Smith",
-      "email": "notwink@gmail.com"
+      "name": "IBM",
+      "email": "opendev@us.ibm.com"
     }
   ],
   "directories": {

@@ -15,26 +15,12 @@
       'conditions' : [
         [ 'OS == "linux"', {
           'libraries' : [ 
-            '-lodbc' 
+            '-ldb2' 
           ],
           'cflags' : [
             '-g'
-          ]
-        }],
-        [ 'OS == "mac"', {
-          'libraries' : [
-            '-L/usr/local/lib',
-            '-lodbc' 
-          ]
-        }],
-        [ 'OS=="win"', {
-          'sources' : [
-            'src/strptime.c',
-            'src/odbc.cpp'
           ],
-          'libraries' : [ 
-            '-lodbccp32.lib' 
-          ]
+	  'ldflags': [ "-Xlinker -rpath -Xlinker '$$ORIGIN/clidriver'" ]
         }]
       ]
     }

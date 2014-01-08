@@ -26,10 +26,7 @@
 #ifdef dynodbc
 #include "dynodbc.h"
 #else
-#include <sql.h>
-#include <sqltypes.h>
-#include <sqlext.h>
-#include <sqlucode.h>
+#include <sqlcli1.h>
 #endif
 
 using namespace v8;
