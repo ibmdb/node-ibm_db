@@ -1,35 +1,31 @@
-node-odbc
----------
+node-ibm_db
+-----------
 
-An asynchronous/synchronous interface for node.js to unixODBC and its supported
-drivers.
+An asynchronous/synchronous interface for node.js to DB2.
 
 requirements
 ------------
 
-* unixODBC binaries and development libraries for module compilation
-  * on Ubuntu/Debian `sudo apt-get install unixodbc unixodbc-dev`
-  * on OSX using macports.org `sudo port unixODBC`
-* odbc drivers for target database
-* properly configured odbc.ini and odbcinst.ini.
+* IBM Data Server Driver
+  * http://publib.boulder.ibm.com/infocenter/db2luw/v9r7/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
 
 install
 -------
 
-After insuring that all requirements are installed you may install by one of the
+After ensuring that all requirements are installed you may install by one of the
 two following options:
 
 ### git
 
 ```bash
-git clone git://github.com/wankdanker/node-odbc.git
-cd node-odbc
+git clone git://github.com/ibmdb/node-ibm_db.git
+cd node-ibm_db
 node-gyp configure build
 ```
 ### npm
 
 ```bash
-npm install odbc
+npm install ibmdb
 ```
 
 quick example

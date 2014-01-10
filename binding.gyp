@@ -2,7 +2,7 @@
   'targets' : [
     {
       'target_name' : 'odbc_bindings',
-      'sources' : [ 
+      'sources' : [
         'src/odbc.cpp',
         'src/odbc_connection.cpp',
         'src/odbc_statement.cpp',
@@ -10,17 +10,34 @@
         'src/dynodbc.cpp'
       ],
       'defines' : [
-        'UNICODE'
+        'UNICODE',
+        'ODBC64'
       ],
       'conditions' : [
-        [ 'OS == "linux"', {
-          'libraries' : [ 
-            '-ldb2' 
+        [ 'OS == "linux" and target_arch =="ia32"', {
+          'libraries' : [
+            '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib32 ',
+            '-ldb2'
+          ],
+          'include_dirs': [
+            '$(IBM_DB_HOME)/include'
           ],
           'cflags' : [
-            '-g'
+            "-g "
           ],
-	  'ldflags': [ "-Xlinker -rpath -Xlinker '$$ORIGIN/clidriver'" ]
+        }],
+
+        [ 'OS == "linux" and target_arch =="x64" ', {
+          'libraries' : [
+            '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ',
+            '-ldb2o'
+          ],
+          'include_dirs': [
+            '$(IBM_DB_HOME)/include'
+          ],
+          'cflags' : [
+            "-g "
+          ],
         }]
       ]
     }
