@@ -6,8 +6,10 @@ An asynchronous/synchronous interface for node.js to DB2.
 requirements
 ------------
 
-* IBM Data Server Driver
+* Install IBM Data Server Driver
   * http://publib.boulder.ibm.com/infocenter/db2luw/v9r7/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
+* Set environment variable IBM_DB_HOME to the above installed cli driver path
+   export IBM_DB_HOME=<installed_dsdriver_location>
 
 install
 -------
