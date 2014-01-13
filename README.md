@@ -27,7 +27,7 @@ node-gyp configure build
 ### npm
 
 ```bash
-npm install ibmdb
+npm install ibm_db
 ```
 
 quick example
