@@ -11,10 +11,10 @@ requirements
 * Set environment variable IBM_DB_HOME to the above installed cli driver path
    * Eg: export IBM_DB_HOME=&lt;installed_dsdriver_location&gt;
 
-Install
+install
 --------
 
-After ensuring that all requirements are installed you may install by one of the
+After ensuring that the above requirement is satisfied you may install by one of the
 two following options:
 
 ### git
@@ -30,11 +30,10 @@ node-gyp configure build
 npm install ibm_db
 ```
 
-* Before running your node.js program source the file db2profile in the DS Driver installation directory
-   * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
-
 quick example
 -------------
+* Before running your node.js program source the file db2profile in the DS Driver installation directory
+   * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 ```javascript
 var db = require('ibm_db')()
