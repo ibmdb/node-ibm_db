@@ -1,5 +1,5 @@
 {
-  "name": "odbc",
+  "name": "ibm_db",
   "description": "DB2 bindings for node",
   "version": "0.0.1",
   "main": "lib/odbc.js",
