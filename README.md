@@ -10,8 +10,7 @@ requirements
   * http://publib.boulder.ibm.com/infocenter/db2luw/v9r7/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
 * Set environment variable IBM_DB_HOME to the above installed cli driver path
    export IBM_DB_HOME=<installed_dsdriver_location>
-
-install
+* Before running your node.js program source the file db2profile in the DS Driver installation directory install
 -------
 
 After ensuring that all requirements are installed you may install by one of the
@@ -34,7 +33,7 @@ quick example
 -------------
 
 ```javascript
-var db = require('odbc')()
+var db = require('ibm_db')()
   , cn = process.env.ODBC_CONNECTION_STRING
   ;
 
@@ -62,7 +61,7 @@ The simple api is based on instances of the `Database` class. You may get an
 instance in one of the following ways:
 
 ```javascript
-require("odbc").open(connectionString, function (err, db){
+require("ibm_db").open(connectionString, function (err, db){
   //db is already open now if err is falsy
 });
 ```
@@ -70,13 +69,13 @@ require("odbc").open(connectionString, function (err, db){
 or by using the helper function:
 
 ```javascript
-var db = require("odbc")();
+var db = require("ibm_db")();
 ``` 
 
 or by creating an instance with the constructor function:
 
 ```javascript
-var Database = require("odbc").Database
+var Database = require("ibm_db").Database
   , db = new Database();
 ```
 
@@ -88,8 +87,8 @@ Open a connection to a database.
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("odbc")()
-	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
 db.open(cn, function (err) {
@@ -107,8 +106,8 @@ Synchronously open a connection to a database.
 * **connectionString** - The ODBC connection string for your database
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 try {
@@ -131,8 +130,8 @@ Issue an asynchronous SQL query to the database which is currently open.
 * **callback** - `callback (err, rows, moreResultSets)`
 
 ```javascript
-var db = require("odbc")()
-	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
 db.open(cn, function (err) {
@@ -164,8 +163,8 @@ Synchronously issue a SQL query to the database that is currently open.
     any '?' characters in `sqlQuery`.
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //blocks until the connection is opened.
@@ -184,8 +183,8 @@ Close the currently opened database.
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("odbc")()
-	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
 db.open(cn, function (err) {
@@ -206,8 +205,8 @@ db.open(cn, function (err) {
 Synchronously close the currently opened database.
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -227,8 +226,8 @@ Prepare a statement for execution.
 Returns a `Statement` object via the callback
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -260,8 +259,8 @@ Synchronously prepare a statement for execution.
 Returns a `Statement` object
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -296,8 +295,8 @@ Commit a transaction
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -332,8 +331,8 @@ db.beginTransaction(function (err) {
 Synchronously commit a transaction
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -358,8 +357,8 @@ Rollback a transaction
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -394,8 +393,8 @@ db.beginTransaction(function (err) {
 Synchronously rollback a transaction
 
 ```javascript
-var db = require("odbc")()
-  , cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+var db = require("ibm_db")()
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
@@ -434,9 +433,9 @@ Get a Database` instance which is already connected to `connectionString`
 * **callback** - `callback (err, db)`
 
 ```javascript
-var Pool = require("odbc").Pool
+var Pool = require("ibm_db").Pool
 	, pool = new Pool()
-	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
 pool.open(cn, function (err, db) {
@@ -458,9 +457,9 @@ Close all connections in the `Pool` instance
 * **callback** - `callback (err)`
 
 ```javascript
-var Pool = require("odbc").Pool
+var Pool = require("ibm_db").Pool
 	, pool = new Pool()
-	, cn = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname"
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
 pool.open(cn, function (err, db) {
@@ -481,12 +480,12 @@ example
 -------
 
 ```javascript
-var odbc = require("odbc")
+var odbc = require("ibm_db")
 	, util = require('util')
 	, db = new odbc.Database()
 	;
 
-var connectionString = "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname";
+var connectionString = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 db.open(connectionString, function(err) {
 	db.query("select * from table", function(err, rows, moreResultSets) {
@@ -625,26 +624,6 @@ var eio = require('eio');
 eio.setMinParallel(threadCount);
 ```
 
-### Using the FreeTDS ODBC driver
-
-* If you have column names longer than 30 characters, you should add 
-  "TDS_Version=7.0" to your connection string to retrive the full column name.
-  * Example : "DRIVER={FreeTDS};SERVER=host;UID=user;PWD=password;DATABASE=dbname;TDS_Version=7.0"
-* Be sure that your odbcinst.ini has the proper threading configuration for your
-  FreeTDS driver. If you choose the incorrect threading model it may cause
-  the thread pool to be blocked by long running queries. This is what 
-  @wankdanker currently uses on Ubuntu 12.04:
-
-```
-[FreeTDS]
-Description     = TDS driver (Sybase/MS SQL)
-Driver          = libtdsodbc.so
-Setup           = libtdsS.so
-CPTimeout       = 120
-CPReuse         = 
-Threading       = 0
-```
-
 contributors
 ------
 * Dan VerWeire (dverweire@gmail.com)
@@ -655,6 +634,7 @@ contributors
 * Joachim Kainz
 * Oleg Efimov
 * paulhendrix
+* IBM
 
 license
 -------
@@ -662,6 +642,8 @@ license
 Copyright (c) 2013 Dan VerWeire <dverweire@gmail.com>
 
 Copyright (c) 2010 Lee Smith <notwink@gmail.com>
+
+Copyright (c) 2014 IBM Corporation <opendev@us.ibm.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal in 
