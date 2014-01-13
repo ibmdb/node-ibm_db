@@ -11,6 +11,7 @@ requirements
 * Set environment variable IBM_DB_HOME to the above installed cli driver path
    export IBM_DB_HOME=<installed_dsdriver_location>
 * Before running your node.js program source the file db2profile in the DS Driver installation directory install
+
 -------
 
 After ensuring that all requirements are installed you may install by one of the
