@@ -7,7 +7,7 @@ requirements
 ------------
 
 * Install IBM Data Server Driver
-  * http://publib.boulder.ibm.com/infocenter/db2luw/v9r7/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
+  * http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
 * Set environment variable IBM_DB_HOME to the above installed cli driver path
    export IBM_DB_HOME=<installed_dsdriver_location>
 * Before running your node.js program source the file db2profile in the DS Driver installation directory install
