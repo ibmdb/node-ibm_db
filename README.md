@@ -1,7 +1,7 @@
 node-ibm_db
 -----------
 
-An asynchronous/synchronous interface for node.js to DB2.
+An asynchronous/synchronous interface for node.js to IBM DB2.
 
 requirements
 ------------
@@ -9,10 +9,10 @@ requirements
 * Install IBM Data Server Driver
   * http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
 * Set environment variable IBM_DB_HOME to the above installed cli driver path
-   export IBM_DB_HOME=<installed_dsdriver_location>
-* Before running your node.js program source the file db2profile in the DS Driver installation directory install
+   * Eg: export IBM_DB_HOME=&lt;installed_dsdriver_location&gt;
 
--------
+Install
+--------
 
 After ensuring that all requirements are installed you may install by one of the
 two following options:
@@ -29,6 +29,9 @@ node-gyp configure build
 ```bash
 npm install ibm_db
 ```
+
+* Before running your node.js program source the file db2profile in the DS Driver installation directory
+   * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 quick example
 -------------
