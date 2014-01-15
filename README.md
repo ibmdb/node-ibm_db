@@ -36,11 +36,9 @@ quick example
    * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 ```javascript
-var db = require('ibm_db')
-  , cn = process.env.ODBC_CONNECTION_STRING
-  ;
+var db = require('ibm_db');
 
-db.open(cn, function (err,conn) {
+db.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP", function (err,conn) {
   if (err) return console.log(err);
   
   conn.query('select * from user where user_id = ?', [42], function (err, data) {
@@ -478,27 +476,6 @@ pool.open(cn, function (err, db) {
 	
 	pool.close(function () {
 		console.log("all connections in the pool are closed");
-	});
-});
-```
-
-example
--------
-
-```javascript
-var db = require("ibm_db")
-	, util = require('util')
-	;
-
-var connectionString = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
-
-db.open(connectionString, function(err, conn) {
-	conn.query("select * from table", function(err, rows, moreResultSets) {
-		console.log(util.inspect(rows, null, 10));
-		
-		conn.close(function() {
-			console.log("Database connection closed");
-		});
 	});
 });
 ```
