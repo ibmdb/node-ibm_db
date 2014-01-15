@@ -36,19 +36,19 @@ quick example
    * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 ```javascript
-var db = require('ibm_db')()
+var db = require('ibm_db')
   , cn = process.env.ODBC_CONNECTION_STRING
   ;
 
-db.open(cn, function (err) {
+db.open(cn, function (err,conn) {
   if (err) return console.log(err);
   
-  db.query('select * from user where user_id = ?', [42], function (err, data) {
+  conn.query('select * from user where user_id = ?', [42], function (err, data) {
     if (err) console.log(err);
     
     console.log(data);
 
-    db.close(function () {
+    conn.close(function () {
       console.log('done');
     });
   });
@@ -133,18 +133,18 @@ Issue an asynchronous SQL query to the database which is currently open.
 * **callback** - `callback (err, rows, moreResultSets)`
 
 ```javascript
-var db = require("ibm_db")()
+var db = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-db.open(cn, function (err) {
+db.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
 
 	//we now have an open connection to the database
 	//so lets get some data
-	db.query("select top 10 * from customers", function (err, rows, moreResultSets) {
+	conn.query("select top 10 * from customers", function (err, rows, moreResultSets) {
 		if (err) {
 			return console.log(err);
 		}
@@ -154,6 +154,8 @@ db.open(cn, function (err) {
 		//if moreResultSets is truthy, then this callback function will be called
 		//again with the next set of rows.
 	});
+	
+	//conn is open here
 });
 ```
 
@@ -186,18 +188,18 @@ Close the currently opened database.
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("ibm_db")()
+var db = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-db.open(cn, function (err) {
+db.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
 	
 	//we now have an open connection to the database
 	
-	db.close(function (err) {
+	conn.close(function (err) {
 		console.log("the database connection is now closed");
 	});
 });
@@ -229,28 +231,28 @@ Prepare a statement for execution.
 Returns a `Statement` object via the callback
 
 ```javascript
-var db = require("ibm_db")()
+var db = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
-db.openSync(cn);
+db.open(cn,funtion(err,conn){
+  conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
+    if (err) {
+      //could not prepare for some reason
+      console.log(err);
+      return db.closeSync();
+    }
 
-db.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
-  if (err) {
-    //could not prepare for some reason
-    console.log(err);
-    return db.closeSync();
-  }
+    //Bind and Execute the statment asynchronously
+    stmt.execute(['something', 42], function (err, result) {
+      result.closeSync();
 
-  //Bind and Execute the statment asynchronously
-  stmt.execute(['something', 42], function (err, result) {
-    result.closeSync();
-
-    //Close the connection
-    db.closeSync();
+      //Close the connection
+    });
   });
-})
+  conn.close();
+});
 ```
 
 #### .prepareSync(sql)
@@ -419,6 +421,7 @@ db.closeSync();
 
 ### Pool
 
+node-ibm_db reuses node-odbc pool. 
 The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
 database connections ready and waiting for you when you call the `open` method.
 
@@ -483,35 +486,22 @@ example
 -------
 
 ```javascript
-var odbc = require("ibm_db")
+var db = require("ibm_db")
 	, util = require('util')
-	, db = new odbc.Database()
 	;
 
 var connectionString = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
-db.open(connectionString, function(err) {
-	db.query("select * from table", function(err, rows, moreResultSets) {
+db.open(connectionString, function(err, conn) {
+	conn.query("select * from table", function(err, rows, moreResultSets) {
 		console.log(util.inspect(rows, null, 10));
 		
-		db.close(function() {
+		conn.close(function() {
 			console.log("Database connection closed");
 		});
 	});
 });
 ```
-
-testing
--------
-
-Tests can be run by executing `npm test` from within the root of the node-odbc
-directory. You can also run the tests by executing `node run-tests.js` from
-within the `/test` directory.
-
-By default, the tests are setup to run against a sqlite3 database which is
-created at test time. This will require proper installation of the sqlite odbc
-driver. On Ubuntu: `sudo apt-get install libsqliteodbc`
-
 build options
 -------------
 
@@ -528,29 +518,6 @@ flag `DEBUG` to the defines section of the `binding.gyp` file and then execute
 ],
 <snip>
 ```
-
-### Dynodbc
-
-You may also enable the ability to load a specific ODBC driver and bypass the 
-ODBC driver management layer. A performance increase of ~5Kqps was seen using
-this method with the libsqlite3odbc driver. To do this, specify the `dynodbc`
-flag in the defines section of the `binding.gyp` file. You will also need to 
-remove any library references in `binding.gyp`. Then execute `node-gyp
-rebuild`.
-
-```javascript
-<snip>
-'defines' : [
-  "dynodbc"
-],
-'conditions' : [
-  [ 'OS == "linux"', {
-    'libraries' : [ 
-      //remove this: '-lodbc' 
-    ],
-<snip>
-```
-
 ### Unicode
 
 By default, UNICODE suppport is enabled. This should provide the most accurate
