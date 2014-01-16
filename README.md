@@ -122,7 +122,7 @@ ibmdb.open(cn, function (err, conn) {
 
 	//we now have an open connection to the database
 	//so lets get some data
-	conn.query("select top 10 * from customers", function (err, rows, moreResultSets) {
+	conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
 		if (err) {
 			console.log(err);
 		} else {
@@ -153,7 +153,7 @@ var ibmdb = require("ibm_db")
 ibmdb.open(cn, function(err, conn){
 
   //blocks until the query is completed and all data has been acquired
-  var rows = conn.querySync("select top 10 * from customers");
+  var rows = conn.querySync("select * from customers fetch first 10 rows only");
 
   console.log(rows);
 })
