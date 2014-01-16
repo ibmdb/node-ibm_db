@@ -149,7 +149,6 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//blocks until the connection is opened.
 ibmdb.open(cn, function(err, conn){
 
   //blocks until the query is completed and all data has been acquired
@@ -213,7 +212,6 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
 ibmdb.open(cn,funtion(err,conn){
   conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
     if (err) {
@@ -246,7 +244,6 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
 ibmdb.open(cn,funtion(err,conn){
   var stmt = conn.prepareSync("insert into hits (col1, col2) VALUES (?, ?)");
 
