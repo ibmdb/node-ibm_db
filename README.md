@@ -36,9 +36,9 @@ quick example
    * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 ```javascript
-var db = require('ibm_db');
+var ibmdb = require('ibm_db');
 
-db.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP", function (err,conn) {
+ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP", function (err,conn) {
   if (err) return console.log(err);
   
   conn.query('select * from user where user_id = ?', [42], function (err, data) {
@@ -62,44 +62,24 @@ The simple api is based on instances of the `Database` class. You may get an
 instance in one of the following ways:
 
 ```javascript
-require("ibm_db").open(connectionString, function (err, db){
-  //db is already open now if err is falsy
+require("ibm_db").open(connectionString, function (err, conn){
+  //conn is already open now if err is falsy
 });
 ```
 
 or by using the helper function:
 
 ```javascript
-var db = require("ibm_db")();
+var ibmdb = require("ibm_db")();
 ``` 
 
 or by creating an instance with the constructor function:
 
 ```javascript
 var Database = require("ibm_db").Database
-  , db = new Database();
+  , ibmdb = new Database();
 ```
 
-#### .open(connectionString, callback)
-
-Open a connection to a database.
-
-* **connectionString** - The ODBC connection string for your database
-* **callback** - `callback (err)`
-
-```javascript
-var db = require("ibm_db")()
-	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-	;
-
-db.open(cn, function (err) {
-	if (err) {
-		return console.log(err);
-	}
-
-	//we now have an open connection to the database
-});
-```
 #### .openSync(connectionString)
 
 Synchronously open a connection to a database.
@@ -107,12 +87,12 @@ Synchronously open a connection to a database.
 * **connectionString** - The ODBC connection string for your database
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")()
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 try {
-  var result = db.openSync(cn);
+  var result = ibmdb.openSync(cn);
 }
 catch (e) {
   console.log(e.message);
@@ -131,11 +111,11 @@ Issue an asynchronous SQL query to the database which is currently open.
 * **callback** - `callback (err, rows, moreResultSets)`
 
 ```javascript
-var db = require("ibm_db")
+var ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-db.open(cn, function (err, conn) {
+ibmdb.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
@@ -144,16 +124,15 @@ db.open(cn, function (err, conn) {
 	//so lets get some data
 	conn.query("select top 10 * from customers", function (err, rows, moreResultSets) {
 		if (err) {
-			return console.log(err);
-		}
+			console.log(err);
+		} else {
 		
-		console.log(rows);
+		  console.log(rows);
+		}
 
 		//if moreResultSets is truthy, then this callback function will be called
 		//again with the next set of rows.
 	});
-	
-	//conn is open here
 });
 ```
 
@@ -166,17 +145,18 @@ Synchronously issue a SQL query to the database that is currently open.
     any '?' characters in `sqlQuery`.
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //blocks until the connection is opened.
-db.openSync(cn);
+ibmdb.open(cn, function(err, conn){
 
-//blocks until the query is completed and all data has been acquired
-var rows = db.querySync("select top 10 * from customers");
+  //blocks until the query is completed and all data has been acquired
+  var rows = conn.querySync("select top 10 * from customers");
 
-console.log(rows);
+  console.log(rows);
+})
 ```
 
 #### .close(callback)
@@ -186,11 +166,11 @@ Close the currently opened database.
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("ibm_db")
+var ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-db.open(cn, function (err, conn) {
+ibmdb.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
@@ -208,15 +188,15 @@ db.open(cn, function (err, conn) {
 Synchronously close the currently opened database.
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")()
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
-db.openSync(cn);
+ibmdb.openSync(cn);
 
 //Blocks until the connection is closed
-db.closeSync();
+ibmdb.closeSync();
 ```
 
 #### .prepare(sql, callback)
@@ -229,17 +209,17 @@ Prepare a statement for execution.
 Returns a `Statement` object via the callback
 
 ```javascript
-var db = require("ibm_db")
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
-db.open(cn,funtion(err,conn){
+ibmdb.open(cn,funtion(err,conn){
   conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return db.closeSync();
+      return conn.closeSync();
     }
 
     //Bind and Execute the statment asynchronously
@@ -247,9 +227,9 @@ db.open(cn,funtion(err,conn){
       result.closeSync();
 
       //Close the connection
+	  conn.close(function(err){}));
     });
   });
-  conn.close();
 });
 ```
 
@@ -262,22 +242,21 @@ Synchronously prepare a statement for execution.
 Returns a `Statement` object
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
 //Blocks until the connection is open
-db.openSync(cn);
+ibmdb.open(cn,funtion(err,conn){
+  var stmt = conn.prepareSync("insert into hits (col1, col2) VALUES (?, ?)");
 
-//Blocks while preparing the statement
-var stmt = db.prepareSync("insert into hits (col1, col2) VALUES (?, ?)")
+  //Bind and Execute the statment asynchronously
+  stmt.execute(['something', 42], function (err, result) {
+    result.closeSync();
 
-//Bind and Execute the statment asynchronously
-stmt.execute(['something', 42], function (err, result) {
-  result.closeSync();
-
-  //Close the connection
-  db.closeSync();
+    //Close the connection
+	conn.close(function(err){}));
+  });
 });
 ```
 
@@ -298,35 +277,35 @@ Commit a transaction
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
-db.openSync(cn);
+ibmdb.open(cn, function(err,conn) {
 
-db.beginTransaction(function (err) {
-  if (err) {
-    //could not begin a transaction for some reason.
-    console.log(err);
-    return db.closeSync();
-  }
-
-  var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
-
-  db.commitTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
-      //error during commit
+      //could not begin a transaction for some reason.
       console.log(err);
-      return db.closeSync();
+      return conn.closeSync();
     }
 
-    console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    //Close the connection
-    db.closeSync();
+    conn.commitTransaction(function (err) {
+      if (err) {
+        //error during commit
+        console.log(err);
+        return conn.closeSync();
+      }
+
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+
+     //Close the connection
+     conn.closeSync();
+    });
   });
-})
+});
 ```
 
 #### .commitTransactionSync()
@@ -334,23 +313,29 @@ db.beginTransaction(function (err) {
 Synchronously commit a transaction
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
-db.openSync(cn);
+ibmdb.open(cn, function(err,conn) {
 
-db.beginTransactionSync();
+  conn.beginTransaction(function (err) {
+    if (err) {
+      //could not begin a transaction for some reason.
+      console.log(err);
+      return conn.closeSync();
+    }
 
-var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-db.commitTransactionSync();
+    conn.commitTransactionSync();
 
-console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
-//Close the connection
-db.closeSync();
+     //Close the connection
+    conn.closeSync();
+  });
+});
 ```
 
 #### .rollbackTransaction(callback)
@@ -360,35 +345,35 @@ Rollback a transaction
 * **callback** - `callback (err)`
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
-db.openSync(cn);
+ibmdb.open(cn, function(err,conn) {
 
-db.beginTransaction(function (err) {
-  if (err) {
-    //could not begin a transaction for some reason.
-    console.log(err);
-    return db.closeSync();
-  }
-
-  var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
-
-  db.rollbackTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
-      //error during rollback
+      //could not begin a transaction for some reason.
       console.log(err);
-      return db.closeSync();
+      return conn.closeSync();
     }
 
-    console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    //Close the connection
-    db.closeSync();
+    conn.rollbackTransaction(function (err) {
+      if (err) {
+        //error during rollback
+        console.log(err);
+        return conn.closeSync();
+      }
+
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+
+     //Close the connection
+     conn.closeSync();
+    });
   });
-})
+});
 ```
 
 #### .rollbackTransactionSync()
@@ -396,23 +381,29 @@ db.beginTransaction(function (err) {
 Synchronously rollback a transaction
 
 ```javascript
-var db = require("ibm_db")()
+var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-//Blocks until the connection is open
-db.openSync(cn);
+ibmdb.open(cn, function(err,conn) {
 
-db.beginTransactionSync();
+  conn.beginTransaction(function (err) {
+    if (err) {
+      //could not begin a transaction for some reason.
+      console.log(err);
+      return conn.closeSync();
+    }
 
-var result = db.querySync("insert into customer (customerCode) values ('stevedave')");
+    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-db.rollbackTransactionSync();
+    conn.rollbackTransactionSync();
 
-console.log(db.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
-//Close the connection
-db.closeSync();
+     //Close the connection
+    conn.closeSync();
+  });
+});
 ```
 
 ----------
