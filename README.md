@@ -1,7 +1,7 @@
 node-ibm_db
 -----------
 
-An asynchronous/synchronous interface for node.js to IBM DB2.
+An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 requirements
 ------------
@@ -84,7 +84,7 @@ var Database = require("ibm_db").Database
 
 Synchronously open a connection to a database.
 
-* **connectionString** - The ODBC connection string for your database
+* **connectionString** - The connection string for your database
 
 ```javascript
 var ibmdb = require("ibm_db")()
@@ -421,7 +421,7 @@ This should probably be changed.
 
 Get a Database` instance which is already connected to `connectionString`
 
-* **connectionString** - The ODBC connection string for your database
+* **connectionString** - The connection string for your database
 * **callback** - `callback (err, db)`
 
 ```javascript
@@ -503,7 +503,7 @@ work better or faster, you can remove the `UNICODE` define in `binding.gyp`
 ### timegm vs timelocal
 
 When converting a database time to a C time one may use `timegm` or `timelocal`. See
-`man timegm` for the details of these two functions. By default the node-odbc bindings
+`man timegm` for the details of these two functions. By default the node-ibm_db bindings
 use `timelocal`. If you would prefer for it to use `timegm` then specify the `TIMEGM`
 define in `binding.gyp`
 
@@ -517,7 +517,7 @@ define in `binding.gyp`
 
 ### Strict Column Naming
 
-When column names are retrieved from ODBC, you can request by SQL_DESC_NAME or
+When column names are retrieved from DB2 CLI, you can request by SQL_DESC_NAME or
 SQL_DESC_LABEL. SQL_DESC_NAME is the exact column name or none if there is none
 defined. SQL_DESC_LABEL is the heading or column name or calculation. 
 SQL_DESC_LABEL is used by default and seems to work well in most cases.
@@ -542,7 +542,7 @@ execute the ODBC functions on a separate thread, uses libeio for its thread
 pool. This thread pool by default is limited to 4 threads.
 
 This means that if you have long running queries spread across multiple 
-instances of odbc.Database() or using odbc.Pool(), you will only be able to 
+instances of ibmdb.Database() or using odbc.Pool(), you will only be able to 
 have 4 concurrent queries.
 
 You can increase the thread pool size by using @developmentseed's [node-eio]
