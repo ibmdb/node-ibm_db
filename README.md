@@ -8,13 +8,12 @@ requirements
 
 * Install IBM Data Server Driver
   * http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
-* Ensure you have run the installDSDriver command as specified in the URL above
-* Set environment variable IBM_DB_HOME to DSDriver installation location.
-   * Eg: say you installed DS Driver at location $HOME/dsdriver . Set the environment variable as below
+* Ensure you have run the installDSDriver command as specified in the URL above. Now set environment the variable IBM_DB_HOME to the installed DSDriver location.
+   * Eg: say you installed DS Driver at location $HOME/dsdriver . Set IBM_DB_HOME as follows
 
-```
-export IBM_DB_HOME=$HOME/dsdriver
-```
+		```
+		export IBM_DB_HOME=$HOME/dsdriver
+		```
 
 install
 --------
