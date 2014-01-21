@@ -11,7 +11,7 @@ requirements
 * Ensure you have run the installDSDriver command as specified in the URL above
 * Set environment variable IBM_DB_HOME to DSDriver installation location.
    * Eg: say you installed DS Driver at location $HOME/dsdriver . Set the environment variable as below
-   *     export IBM_DB_HOME=$HOME/dsdriver
+	  *$ export IBM_DB_HOME=$HOME/dsdriver
 
 install
 --------
