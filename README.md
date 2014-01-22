@@ -21,17 +21,18 @@ install
 After ensuring that the above requirement is satisfied you may install by one of the
 two following options:
 
+### npm
+
+```bash
+npm install ibm_db
+```
+
 ### git
 
 ```bash
 git clone git://github.com/ibmdb/node-ibm_db.git
 cd node-ibm_db
 node-gyp configure build
-```
-### npm
-
-```bash
-npm install ibm_db
 ```
 
 quick example
