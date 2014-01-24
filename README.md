@@ -58,6 +58,10 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
 });
 ```
 
+Discussion Forums
+-----------------
+To start a discussion or need help you can post a topic on node-ibm_db google group https://groups.google.com/forum/#!forum/node-ibm_db
+
 api
 ---
 
