@@ -8,7 +8,7 @@ db.openSync(common.connectionString);
 
 assert.equal(db.connected, true);
   
-db.prepare("select ? as col1", function (err, stmt) {
+db.prepare("select 'abc' as col1 from SYSIBM.SYSDUMMY1", function (err, stmt) {
   assert.equal(err, null);
   assert.equal(stmt.constructor.name, "ODBCStatement");
   

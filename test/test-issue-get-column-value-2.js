@@ -19,7 +19,7 @@ var getSchema = function () {
       return;
     }
  
-    db.describe({database: 'main', schema: 'RETAIL', table: common.tableName }, function (err, rows) {
+    db.describe({database: 'SAMPLE', schema: 'AVINASH', table: common.tableName }, function (err, rows) {
 //    db.query("select * from " + common.tableName, function (err, rows) {
       if (err) {
         console.error("describe error: ", err.message);
@@ -31,7 +31,7 @@ var getSchema = function () {
         console.log("Connection Closed");
         db = null;
         count += 1;
-        if (count < 100) {
+        if (count < 10) {
           setImmediate(getSchema);
         }
         else {

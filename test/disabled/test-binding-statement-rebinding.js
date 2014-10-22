@@ -12,7 +12,9 @@ var common = require("./common")
  */
   
 db.createConnection(function (err, conn) {
-  conn.openSync(common.connectionString);
+	
+	console.log(common.connectionString);
+	conn.openSync(common.connectionString);
   
   conn.createStatement(function (err, stmt) {
     var r, result, caughtError;

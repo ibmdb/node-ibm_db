@@ -37,7 +37,7 @@ function doQuery() {
   connections.forEach(function (db, ix) {
     var seconds = connections.length - ix;
     
-    var query = "WAITFOR DELAY '00:00:0" + seconds + "'; select " + seconds + " as result";
+    var query = "WAITFOR DELAY '00:00:0" + seconds + "'; select " + seconds + " as result from SYSIBM.SYSDUMMY1";
     
     db.query(query, function (err, rows, moreResultSets) {
              

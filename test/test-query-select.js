@@ -6,7 +6,7 @@ var common = require("./common")
 
 db.openSync(common.connectionString);
 
-db.query("select 1 as \"COLINT\", 'some test' as \"COLTEXT\"", function (err, data) {
+db.query("select 1 as \"COLINT\", 'some test' as \"COLTEXT\" FROM SYSIBM.SYSDUMMY1", function (err, data) {
   db.closeSync();
   assert.equal(err, null);
   assert.deepEqual(data, [{ COLINT: '1', COLTEXT: 'some test' }]);

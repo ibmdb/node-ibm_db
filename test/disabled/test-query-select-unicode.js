@@ -6,7 +6,7 @@ var common = require("./common")
 
 db.openSync(common.connectionString);
 
-db.query("select '☯ąčęėįšųūž☎áäàéêèóöòüßÄÖÜ€ шчябы Ⅲ ❤' as UNICODETEXT", function (err, data) {
+db.query("select '☯ąčęėįšųūž☎áäàéêèóöòüßÄÖÜ€ шчябы Ⅲ ❤' as UNICODETEXT FROM SYSIBM.SYSDUMMY1", function (err, data) {
   db.closeSync();
   console.log(data);
   assert.equal(err, null);

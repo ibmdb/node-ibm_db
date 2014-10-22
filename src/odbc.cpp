@@ -275,6 +275,7 @@ Handle<Value> ODBC::CreateConnectionSync(const Arguments& args) {
 Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
   SQLRETURN ret;
   SQLSMALLINT buflen;
+  SQLSMALLINT typebuflen;
 
   //always reset colCount for the current result set to 0;
   *colCount = 0; 
@@ -316,11 +317,24 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     //get the column type and store it directly in column[i].type
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
-                           SQL_DESC_TYPE,
+                           SQL_DESC_CONCISE_TYPE,
                            NULL,
                            0,
                            NULL,
                            &columns[i].type);
+						   
+	columns[i].type_name = new unsigned char[(MAX_FIELD_SIZE)];
+    
+    //set the first byte of type_name to \0 instead of memsetting the entire buffer
+    columns[i].type_name[0] = '\0';
+	
+	ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_TYPE_NAME,
+                           columns[i].type_name,
+                           (SQLSMALLINT) (MAX_FIELD_SIZE),
+                           (SQLSMALLINT *) &typebuflen,
+                           NULL);
   }
   
   return columns;
@@ -355,7 +369,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   //TODO: SQLGetData can supposedly return multiple chunks, need to do this to 
   //retrieve large fields
   int ret; 
-  
+  DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, SQL_TIMESTAMP, SQL_TYPE_TIME);
   switch ((int) column.type) {
     case SQL_INTEGER : 
     case SQL_SMALLINT :
@@ -373,7 +387,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
                     column.index, column.name, column.type, len, ret);
         
-        if (len == SQL_NULL_DATA) {
+        if ((int)len == SQL_NULL_DATA) {
           return scope.Close(Null());
           //return Null();
         }
@@ -402,7 +416,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
          DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
                     column.index, column.name, column.type, len, ret, value);
         
-        if(len == SQL_NULL_DATA) {
+        if((int)len == SQL_NULL_DATA) {
           return scope.Close(Null());
           //return Null();
         }
@@ -426,11 +440,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         (char *) buffer, 
         bufferLength, 
         &len);
+		
+	  DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i type_name=%s len=%i\n", 
+                    column.index, column.name, column.type, column.type_name, len);
 
-      DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i len=%i\n", 
-                    column.index, column.name, column.type, len);
-
-      if(len == SQL_NULL_DATA) {
+      if((int)len == SQL_NULL_DATA) {
         return scope.Close(Null());
         //return Null();
       }
@@ -473,7 +487,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
-      if(len == SQL_NULL_DATA) {
+      if((int)len == SQL_NULL_DATA) {
         return scope.Close(Null());
         //return Null();
       }
@@ -515,7 +529,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
                     column.index, column.name, column.type, len);
 
-      if(len == SQL_NULL_DATA) {
+      if((int)len == SQL_NULL_DATA) {
         return scope.Close(Null());
         //return Null();
       }
@@ -523,6 +537,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return scope.Close(Boolean::New(( *buffer == '0') ? false : true ));
         //return Boolean::New(( *buffer == '0') ? false : true );
       }
+	case SQL_TYPE_TIME:
+		DEBUG_PRINTF("SQL_TIME SELECTED");
     default :
       Local<String> str;
       int count = 0;
@@ -539,7 +555,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
-        if(len == SQL_NULL_DATA) {
+        if((int)len == SQL_NULL_DATA) {
           return scope.Close(Null());
           //return Null();
         }

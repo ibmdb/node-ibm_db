@@ -7,7 +7,7 @@ var common = require("./common")
 db.openSync(common.connectionString);
 assert.equal(db.connected, true);
 
-db.queryResult("select 1 as COLINT, 'some test' as COLTEXT ", function (err, result) {
+db.queryResult("select 1 as COLINT, 'some test' as COLTEXT FROM SYSIBM.SYSDUMMY1", function (err, result) {
   assert.equal(err, null);
   assert.equal(result.constructor.name, "ODBCResult");
   

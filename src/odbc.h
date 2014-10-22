@@ -17,6 +17,7 @@
 
 #ifndef _SRC_ODBC_H
 #define _SRC_ODBC_H
+#define ODBC64
 
 #include <v8.h>
 #include <node.h>
@@ -44,6 +45,7 @@ using namespace node;
 
 typedef struct {
   unsigned char *name;
+  unsigned char *type_name;
   unsigned int len;
   SQLLEN type;
   SQLUSMALLINT index;

@@ -13,11 +13,7 @@ assert.equal(db.connected, false);
 db.open("this is wrong", function(err) {
   console.log(err);
   
-  assert.deepEqual(err, {
-    error: '[node-odbc] SQL_ERROR',
-    message: '[unixODBC][Driver Manager]Data source name not found, and no default driver specified',
-    state: 'IM002'
-  });
+  assert.deepEqual(err.message, '[IBM][CLI Driver] SQL1024N  A database connection does not exist.  SQLSTATE=08003\r\n');
   
   assert.equal(db.connected, false);
 });
