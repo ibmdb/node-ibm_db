@@ -6,7 +6,7 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 requirements
 ------------
 
-* You must have either a DB2 Server (DB2 Express-C) or the IBM Data Server Driver.
+* You must have either a DB2 Server (such as DB2 Express-C) or the IBM Data Server Driver.
 
   * IBM Data Server Driver
      * [Download](http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html)
