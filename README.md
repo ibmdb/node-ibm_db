@@ -6,15 +6,28 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 requirements
 ------------
 
-* Install IBM Data Server Driver
-  * http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
-* Ensure you have run the installDSDriver command as specified in the URL above. Now set the environment variable IBM_DB_HOME to the installed DSDriver location.
-   * Eg: say you installed DS Driver at location $HOME/dsdriver . Set IBM_DB_HOME as follows
+* You must have either a DB2 Server (DB2 Express-C) or the IBM Data Server Driver.
+
+  * IBM Data Server Driver
+     * [Download](http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html)
+     * Ensure you have run the `installDSDriver` command as specified in the URL above. 
+     * Now set the environment variable `IBM_DB_HOME` to the installed DSDriver location.
+        * Eg: say you installed DS Driver at location $HOME/dsdriver . Set `IBM_DB_HOME` as follows:
 
 		```
 		export IBM_DB_HOME=$HOME/dsdriver
 		```
 
+  * DB2 Express-C
+    * [Download](http://www-01.ibm.com/software/data/db2/express-c/download.html)
+    * DB2 Express-C includes the client libraries, so it may be used to connect to either local databases or databases on other servers / platforms.
+     * Now set the environment variable `IBM_DB_HOME` to the configured DB2 instance owner directory.
+        * Eg: For a DB2 instance `db2inst1`, set `IBM_DB_HOME` as follows
+
+		```
+		export IBM_DB_HOME=/home/db2inst1/sqllib
+		```
+    
 install
 --------
 
