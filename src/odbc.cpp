@@ -397,7 +397,8 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       }
       break;
-    case SQL_NUMERIC :
+    /*
+	case SQL_NUMERIC :
     case SQL_DECIMAL :
     case SQL_BIGINT :
     case SQL_FLOAT :
@@ -426,6 +427,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       }
       break;
+	*/
     case SQL_DATETIME :
     case SQL_TIMESTAMP : {
       //I am not sure if this is locale-safe or cross database safe, but it 
@@ -539,6 +541,13 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
 	case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED");
+    case SQL_NUMERIC :
+    case SQL_DECIMAL :
+    case SQL_BIGINT :
+    case SQL_FLOAT :
+    case SQL_REAL :
+    case SQL_DOUBLE :
+		DEBUG_PRINTF("BIG NUMERIC VALUE SELECTED SELECTED");
     default :
       Local<String> str;
       int count = 0;
@@ -827,7 +836,7 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   SQLINTEGER numfields;
   SQLRETURN ret;
   char errorSQLState[14];
-  char errorMessage[512];
+  char errorMessage[1024];
 
   ret = SQLGetDiagField(
     handleType,
