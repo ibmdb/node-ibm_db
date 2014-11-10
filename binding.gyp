@@ -38,6 +38,20 @@
           'cflags' : [
             "-g "
           ],
+        }],
+		
+		[ 'OS=="win" and target_arch =="x64"', {
+          'sources' : [
+            'src/strptime.c',
+            'src/odbc.cpp'
+          ],
+        'libraries': [
+               '$(IBM_DB_HOME)/lib/db2cli.lib',
+               '$(IBM_DB_HOME)/lib/db2api.lib',
+        ],
+		'include_dirs': [
+            '$(IBM_DB_HOME)/include',
+          ],
         }]
       ]
     }
