@@ -1,7 +1,7 @@
 {
   "name": "ibm_db",
   "description": "IBM DB2 and IBM Informix bindings for node",
-  "version": "0.0.3",
+  "version": "0.0.1",
   "main": "lib/odbc.js",
   "homepage": "http://github.com/ibmdb/node-ibm_db/",
   "repository": {
@@ -24,10 +24,12 @@
     "node": ">=0.8.0"
   },
   "scripts": {
-    "preinstall": "node-gyp configure build",
+    "install": "node installer/driverInstall.js && node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME",
     "test": "cd test && node run-tests.js"
   },
   "dependencies": {
-    "bindings": "~1.0.0"
+    "bindings": "~1.0.0",
+    "adm-zip": "*",
+	"tar.gz": "*"
   }
 }
