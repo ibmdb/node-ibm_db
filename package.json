@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "bindings": "~1.0.0",
-    "adm-zip": "*",
-	"tar.gz": "*"
+    "unzip": "*",
+	"tar.gz": "*",
+	"fstream": "*"
   }
 }

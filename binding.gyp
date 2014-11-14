@@ -72,7 +72,7 @@
           ],
         'libraries': [
                '$(IBM_DB_HOME)/lib/db2cli.lib',
-			   '$(IBM_DB_HOME)/db2api.lib',
+			   '$(IBM_DB_HOME)/lib/db2api.lib',
 			   '$(IBM_DB_HOME)/lib/Win32/db2cli.lib',
 			   '$(IBM_DB_HOME)/Win32/db2api.lib',
         ],
@@ -87,11 +87,11 @@
             'src/odbc.cpp'
           ],
         'libraries': [
-			   '<!(pwd)/installer/clidriver/lib/db2cli.lib',
-			   '<!(pwd)/installer/clidriver/db2api.lib'
+			   '$(IBM_DB_HOME)/lib/db2cli.lib',
+               '$(IBM_DB_HOME)/lib/db2api.lib'
         ],
 		'include_dirs': [
-			'<!(pwd)/installer/clidriver/include'
+            '$(IBM_DB_HOME)/include',
           ],
         }]
       ]
