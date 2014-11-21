@@ -110,6 +110,28 @@ catch (e) {
 //we now have an open connection to the database
 ```
 
+or 
+
+```javascript
+var db = ibmdb.openSync(connString);
+
+//This will return the database object using which we can query to the database like 
+
+try {
+	var conn = ibmdb.openSync(connString);
+	conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
+		if (err) {
+			console.log(err);
+		} else {
+		  console.log(rows);
+		}
+		conn.close();	
+	});
+} catch (e) {
+	console.log(e.message);
+}
+```
+
 #### .query(sqlQuery [, bindingParameters], callback)
 
 Issue an asynchronous SQL query to the database which is currently open.

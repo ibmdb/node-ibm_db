@@ -24,7 +24,7 @@
     "node": ">=0.8.0"
   },
   "scripts": {
-    "install": "node installer/driverInstall.js && node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME",
+    "install": "node installer/driverInstall.js",
     "test": "cd test && node run-tests.js"
   },
   "dependencies": {

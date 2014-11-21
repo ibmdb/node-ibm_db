@@ -29,18 +29,19 @@ ibmdb.open(/*common.connectionString*/connString, function(err, conn)
 			param 2: The callback function to execute when the database server responds
 		*/
 		//conn.query("INSERT INTO AVINASH.BIGINTTEST VALUES(?)", ['10205152031467304'], function(err, nodetest, moreResultSets) {
-		conn.query("SELECT * FROM AVINASH.BIGINTTEST;", function(err, nodetest, moreResultSets) {
+		conn.query("SELECT TIMESTAMP_FORMAT('1999-12-31 23:59:59.123', 'YYYY-MM-DD HH24:MI:SS.FF') AS TD FROM SYSIBM.SYSDUMMY1;", function(err, nodetest, moreResultSets) {
 		
 			if(err) {
 				console.log('Error: '+err);
 				process.exit(0);
 			}
-			console.log("INTVAL");
+			console.log('Fetched Row Count: '+nodetest.length);
+			console.log("TIME");
 			console.log("----------");
 
 			for (var i=0;i<nodetest.length;i++)
 			{
-				console.log(nodetest[i].INVAL);
+				console.log(nodetest[i].TD);
 			}
 			console.log("-----------------------");
 

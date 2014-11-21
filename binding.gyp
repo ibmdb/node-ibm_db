@@ -17,7 +17,8 @@
         [ 'OS == "linux" and target_arch =="ia32" and IBM_DB_HOME == ""', {
           'libraries' : [
             '-L<!(pwd)/installer/clidriver/lib -L<!(pwd)/installer/clidriver/lib/lib32 '
-			'-ldb2'
+			'-ldb2',
+			"-Wl,-rpath <!(pwd)/installer/clidriver/lib/lib32;<!(pwd)/installer/clidriver/lib"
           ],
           'include_dirs': [
             '<!(pwd)/installer/clidriver/include'
@@ -30,7 +31,8 @@
 		[ 'OS == "linux" and target_arch =="ia32" and IBM_DB_HOME != "" ', {
           'libraries' : [
             '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib/lib32 '
-			'-ldb2'
+			'-ldb2',
+			"-Wl,-rpath $(IBM_DB_HOME)/lib/lib32;$(IBM_DB_HOME)/lib"
           ],
           'include_dirs': [
             '$(IBM_DB_HOME)/include'
@@ -43,7 +45,8 @@
         [ 'OS == "linux" and target_arch =="x64" and IBM_DB_HOME == "" ', {
           'libraries' : [
             '-L<!(pwd)/installer/clidriver/lib -L<!(pwd)/installer/clidriver/lib/lib64', 
-	     '-ldb2'
+			'-ldb2',
+			"-Wl,-rpath <!(pwd)/installer/clidriver/lib"
           ],
           'include_dirs': [
             '<!(pwd)/installer/clidriver/include'
@@ -56,7 +59,8 @@
         [ 'OS == "linux" and target_arch =="x64" and IBM_DB_HOME != "" ', {
           'libraries' : [
             '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib/lib64', 
-	     '-ldb2'
+			'-ldb2',
+			"-Wl,-rpath $(IBM_DB_HOME)/lib"
           ],
           'include_dirs': [
             '$(IBM_DB_HOME)/include'

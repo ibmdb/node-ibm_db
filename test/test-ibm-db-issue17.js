@@ -28,8 +28,8 @@ ibmdb.open(/*common.connectionString*/connString, function(err, conn)
 			param 1: The SQL query to be issued
 			param 2: The callback function to execute when the database server responds
 		*/
-		//conn.query("INSERT INTO AVINASH.BIGINTTEST VALUES(?)", ['10205152031467304'], function(err, nodetest, moreResultSets) {
-		conn.query("SELECT * FROM AVINASH.BIGINTTEST;", function(err, nodetest, moreResultSets) {
+		conn.query("INSERT INTO AVINASH.BIGINTTEST VALUES(?)", ['10205152031467304'], function(err, nodetest, moreResultSets) {
+		//conn.query("SELECT * FROM AVINASH.BIGINTTEST;", function(err, nodetest, moreResultSets) {
 		
 			if(err) {
 				console.log('Error: '+err);
