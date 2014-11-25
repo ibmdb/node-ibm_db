@@ -16,12 +16,32 @@ var INSTALLER_FILE;
 
 //Function to download file using HTTP.get
 var download_file_httpget = function(file_url) {
-	
+	var readStream;
+	var writeStream;
 	var platform = os.platform();
 	var arch = os.arch();
 	var installerfileURL;
 	
+	var fstream = require('fstream');
+	var unzip = require('unzip');
+				
 	var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
+	
+	if(platform == 'win32') {
+		
+		if(arch == 'x64') {
+			var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
+			readStream = fs.createReadStream(BUILD_FILE);
+			writeStream = fstream.Writer(CURRENT_DIR);
+
+			readStream
+			  .pipe(unzip.Parse())
+			  .pipe(writeStream).on("end", function () {
+			});
+			
+		}
+	}
+	
 	
 	if(process.env.IBM_DB_HOME) {
 		
@@ -42,100 +62,106 @@ var download_file_httpget = function(file_url) {
 			console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
 		}
 		
-		process.exit(0);
-	}
+	} else {
 	
-	if(platform == 'win32') {
+		if(platform == 'win32') {
 		
-		if(arch == 'x64') {
-			installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
-		} else {
-			installerfileURL = installerURL + 'nt32_odbc_cli.zip';
-		}
-	} else if(platform == 'linux') {
-		if(arch == 'x64') {
-			
-			installerfileURL = installerURL + 'linuxx64_odbc_cli.tar.gz';
-		} else {
-			
-			installerfileURL = installerURL + 'linuxia32_odbc_cli.tar.gz';
-		}
-	}
-	
-	if(!installerfileURL) {
-		console.log('Unable to fetch driver download file. Exiting the install process.');
-		process.exit(0);
-	}
-
-	var options = {
-	 host: url.parse(installerfileURL).host,
-	 port: 80,
-	 path: url.parse(installerfileURL).pathname
-	};
-	
-	var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
-
-	var file_name = url.parse(installerfileURL).pathname.split('/').pop();
-	INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
-	var file = fs.createWriteStream(INSTALLER_FILE);
-	
-	console.log('Downloading DB2 ODBC CLI Driver from '+installerfileURL+'...');
-	
-	http.get(options, function(res) {
-		 
-		res.on('data', function(data) {
-	         file.write(data);
-	     }).on('end', function() {
-	         file.end();
-	         
-	     	if(platform == 'win32') {
-	     		
-	     		var fstream = require('fstream');
-		     	var unzip = require('unzip');
-		     	var readStream = fs.createReadStream(INSTALLER_FILE);
-		     	var writeStream = fstream.Writer(DOWNLOAD_DIR);
-
-		     	readStream
-		     	  .pipe(unzip.Parse())
-		     	  .pipe(writeStream);
-		     	
-		     	
-		     	var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-		     	readStream = fs.createReadStream(BUILD_FILE);
-		     	writeStream = fstream.Writer(CURRENT_DIR);
-
-		     	readStream
-		     	  .pipe(unzip.Parse())
-		     	  .pipe(writeStream);
+			if(arch == 'x64') {
+				installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
+			} else {
+				installerfileURL = installerURL + 'nt32_odbc_cli.zip';
+			}
+		} else if(platform == 'linux') {
+			if(arch == 'x64') {
 				
-				console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
-				console.log(license_agreement);
-				  
-	     	} else if(platform == 'linux') {
+				installerfileURL = installerURL + 'linuxx64_odbc_cli.tar.gz';
+			} else {
+				
+				installerfileURL = installerURL + 'linuxia32_odbc_cli.tar.gz';
+			}
+		}
+		
+		if(!installerfileURL) {
+			console.log('Unable to fetch driver download file. Exiting the install process.');
+			process.exit(0);
+		}
 
-	     			var targz = require('tar.gz');
-					var compress = new targz().extract(INSTALLER_FILE, DOWNLOAD_DIR, function(err){
-	     		    if(err) {
-	     		        console.log(err);
-						process.exit(0);
-	     		    }
-					console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
+		var options = {
+		 host: url.parse(installerfileURL).host,
+		 port: 80,
+		 path: url.parse(installerfileURL).pathname
+		};
+		
+		var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
+
+		var file_name = url.parse(installerfileURL).pathname.split('/').pop();
+		INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
+		var file = fs.createWriteStream(INSTALLER_FILE);
+		
+		console.log('Downloading DB2 ODBC CLI Driver from '+installerfileURL+'...');
+		
+		http.get(options, function(res) {
+			 
+			res.on('data', function(data) {
+				 file.write(data);
+			 }).on('end', function() {
+				 file.end();
+				 
+				if(platform == 'win32') {
 					
-					var childProcess = exec("node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME", function (error, stdout, stderr) {
-						console.log(stdout);
-						if (error !== null) {
-							console.log(error);
+					readStream = fs.createReadStream(INSTALLER_FILE);
+					writeStream = fstream.Writer(DOWNLOAD_DIR);
+
+					readStream
+					  .pipe(unzip.Parse())
+					  .pipe(writeStream);
+					
+					console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
+					console.log(license_agreement);
+					  
+				} else if(platform == 'linux') {
+
+						var targz = require('tar.gz');
+						var compress = new targz().extract(INSTALLER_FILE, DOWNLOAD_DIR, function(err){
+						if(err) {
+							console.log(err);
 							process.exit(0);
 						}
-						console.log(license_agreement);
+						console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
+						
+						deleteFolderRecursive = function(path) {
+							var files = [];
+							if( fs.existsSync(path) ) {
+								files = fs.readdirSync(path);
+								files.forEach(function(file,index){
+									var curPath = path + "/" + file;
+									if(fs.lstatSync(curPath).isDirectory()) { // recurse
+										deleteFolderRecursive(curPath);
+									} else { // delete file
+										fs.unlinkSync(curPath);
+									}
+								});
+								fs.rmdirSync(path);
+							}
+						};
+						var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
+						deleteFolderRecursive(WIN_BUILD_FILE);
+						
+						var childProcess = exec("node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME --IBM_DB_HOME_WIN=%IBM_DB_HOME", function (error, stdout, stderr) {
+							console.log(stdout);
+							if (error !== null) {
+								console.log(error);
+								process.exit(0);
+							}
+							console.log(license_agreement);
+						});
+						
 					});
-
-	     		});
-	     	}
-	     	
-	     });
-	 });
-		 
+				}
+				
+			 });
+		 });
+	}
 };
 
 download_file_httpget();

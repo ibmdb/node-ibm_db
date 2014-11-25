@@ -3,23 +3,10 @@ node-ibm_db
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
-requirements
-------------
-
-* Install IBM Data Server Driver
-  * http://pic.dhe.ibm.com/infocenter/db2luw/v10r5/topic/com.ibm.swg.im.dbclient.install.doc/doc/t0054799.html
-* Ensure you have run the installDSDriver command as specified in the URL above. Now set the environment variable IBM_DB_HOME to the installed DSDriver location.
-   * Eg: say you installed DS Driver at location $HOME/dsdriver . Set IBM_DB_HOME as follows
-
-		```
-		export IBM_DB_HOME=$HOME/dsdriver
-		```
-
 install
 --------
 
-After ensuring that the above requirement is satisfied you may install by one of the
-two following options:
+You may install the package using npm install command:
 
 ### npm
 
@@ -27,18 +14,8 @@ two following options:
 npm install ibm_db
 ```
 
-### git
-
-```bash
-git clone git://github.com/ibmdb/node-ibm_db.git
-cd node-ibm_db
-node-gyp configure build
-```
-
 quick example
 -------------
-* Before running your node.js program source the file db2profile in the DS Driver installation directory
-   * Eg: source &lt;installed_dsdriver_location&gt;/db2profile
 
 ```javascript
 var ibmdb = require('ibm_db');
@@ -96,26 +73,8 @@ Synchronously open a connection to a database.
 * **connectionString** - The connection string for your database
 
 ```javascript
-var ibmdb = require("ibm_db")()
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
-
-try {
-  var result = ibmdb.openSync(cn);
-}
-catch (e) {
-  console.log(e.message);
-}
-
-//we now have an open connection to the database
-```
-
-or 
-
-```javascript
-var db = ibmdb.openSync(connString);
-
-//This will return the database object using which we can query to the database like 
+var ibmdb = require("ibm_db"),
+	cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 try {
 	var conn = ibmdb.openSync(connString);
