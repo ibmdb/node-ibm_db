@@ -61,6 +61,10 @@ var download_file_httpget = function(file_url) {
 		if (!fs.existsSync(IBM_DB_LIB)) {
 			console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
 		}
+		if(platform == 'linux') {
+			removeWinBuildArchive();
+		}
+		buildBinary();
 		
 	} else {
 	
@@ -128,7 +132,7 @@ var download_file_httpget = function(file_url) {
 							process.exit(0);
 						}
 						console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
-						
+						/*
 						deleteFolderRecursive = function(path) {
 							var files = [];
 							if( fs.existsSync(path) ) {
@@ -144,23 +148,32 @@ var download_file_httpget = function(file_url) {
 								fs.rmdirSync(path);
 							}
 						};
-						var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-						deleteFolderRecursive(WIN_BUILD_FILE);
-						
-						var childProcess = exec("node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME --IBM_DB_HOME_WIN=%IBM_DB_HOME", function (error, stdout, stderr) {
-							console.log(stdout);
-							if (error !== null) {
-								console.log(error);
-								process.exit(0);
-							}
-							console.log(license_agreement);
-						});
+						*/
+						buildBinary();
+						removeWinBuildArchive();
+						//deleteFolderRecursive(WIN_BUILD_FILE);
 						
 					});
 				}
 				
 			 });
 		 });
+	}
+	
+	function buildBinary() {
+		var childProcess = exec("node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME --IBM_DB_HOME_WIN=%IBM_DB_HOME", function (error, stdout, stderr) {
+			console.log(stdout);
+			if (error !== null) {
+				console.log(error);
+				process.exit(0);
+			}
+			console.log(license_agreement);
+		});
+	}
+	
+	function removeWinBuildArchive() {
+		var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
+		fs.unlinkSync(WIN_BUILD_FILE);
 	}
 };
 
