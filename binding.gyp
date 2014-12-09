@@ -16,68 +16,46 @@
 	"variables": {
 		# Set the linker location, no extra linking needed, just link backwards one directory
 		"ORIGIN_LIB_PATH%": "$$ORIGIN/../../installer/clidriver/lib",
-		"DS_DRIVER_INCLUDE_PATH%": "installer/clidriver/include",
-		"DS_DRIVER_LIB_PATH%": "../installer/clidriver/lib",
 	},
 	'conditions' : [
-        [ 'OS == "linux" and target_arch =="ia32" and IBM_DB_HOME == "" ', {
-			'ldflags' : [
-            	"-Wl,-rpath,'<(ORIGIN_LIB_PATH)' "
-			],	
-			'libraries' : [
-				'-L<(DS_DRIVER_LIB_PATH)', 
-				'-ldb2'
-			],
-			'include_dirs': [
-				'<(DS_DRIVER_INCLUDE_PATH)'
-			],
-			'cflags' : [
-				"-g "
-			],
-        }],
-		
-		[ 'OS == "linux" and target_arch =="ia32" and IBM_DB_HOME != "" ', {
+        [ 'OS == "linux" and target_arch =="ia32" ', {
+		  'conditions' : [
+			[ 'IS_DOWNLOADED == "true" ', {
+				'ldflags' : [
+					"-Wl,-R,'<(ORIGIN_LIB_PATH)' "
+				],
+			}]
+		  ],	
           'libraries' : [
-            '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib/lib32 '
-			'-ldb2',
-			"-Wl,-rpath $(IBM_DB_HOME)/lib/lib32;$(IBM_DB_HOME)/lib"
-          ],
+            	'-L$(IBM_DB_HOME)/lib', 
+				'-ldb2'
+          ],	
           'include_dirs': [
-            '$(IBM_DB_HOME)/include'
-          ],
+				'$(IBM_DB_HOME)/include'
+           ],
           'cflags' : [
             "-g "
           ],
-        }],
-        
-        [ 'OS == "linux" and target_arch =="x64" and IBM_DB_HOME == "" ', {
-		  'ldflags' : [
-            	"-Wl,-rpath,'<(ORIGIN_LIB_PATH)' "
-          ],	
+        }],  
+        [ 'OS == "linux" and target_arch =="x64" ', {
+		  'conditions' : [
+			[ 'IS_DOWNLOADED == "true" ', {
+				'ldflags' : [
+					"-Wl,-R,'<(ORIGIN_LIB_PATH)' "
+				],
+			}]
+		  ],		
           'libraries' : [
-            	'-L<(DS_DRIVER_LIB_PATH)', 
+            	'-L$(IBM_DB_HOME)/lib', 
 				'-ldb2'
           ],	
           'include_dirs': [
-            '<(DS_DRIVER_INCLUDE_PATH)'
+				'$(IBM_DB_HOME)/include'
            ],
           'cflags' : [
             "-g "
           ],
         }],       
-        [ 'OS == "linux" and target_arch =="x64" and IBM_DB_HOME != "" ', {
-          'libraries' : [
-            '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib/lib64', 
-			'-ldb2',
-			"-Wl,-rpath=$(IBM_DB_HOME)/lib"
-          ],
-          'include_dirs': [
-            '$(IBM_DB_HOME)/include'
-           ],
-          'cflags' : [
-            "-g "
-          ],
-        }],
 		[ 'OS=="win" and target_arch =="ia32"', {
           'sources' : [
             'src/strptime.c',

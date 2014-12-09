@@ -51,20 +51,23 @@ var download_file_httpget = function(file_url) {
 		console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
 		
 		if (!fs.existsSync(IBM_DB_HOME)) {
+			console.log(IBM_DB_HOME);
 			console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
 		}
 		
 		if (!fs.existsSync(IBM_DB_INCLUDE)) {
+			console.log(IBM_DB_INCLUDE);
 			console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
 		}
 		
 		if (!fs.existsSync(IBM_DB_LIB)) {
+			console.log(IBM_DB_LIB);
 			console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
 		}
 		if(platform == 'linux') {
 			removeWinBuildArchive();
+			buildBinary(false);
 		}
-		buildBinary();
 		
 	} else {
 	
@@ -122,7 +125,7 @@ var download_file_httpget = function(file_url) {
 					
 					console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
 					console.log(license_agreement);
-					  
+					
 				} else if(platform == 'linux') {
 
 						var targz = require('tar.gz');
@@ -132,26 +135,10 @@ var download_file_httpget = function(file_url) {
 							process.exit(0);
 						}
 						console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
-						/*
-						deleteFolderRecursive = function(path) {
-							var files = [];
-							if( fs.existsSync(path) ) {
-								files = fs.readdirSync(path);
-								files.forEach(function(file,index){
-									var curPath = path + "/" + file;
-									if(fs.lstatSync(curPath).isDirectory()) { // recurse
-										deleteFolderRecursive(curPath);
-									} else { // delete file
-										fs.unlinkSync(curPath);
-									}
-								});
-								fs.rmdirSync(path);
-							}
-						};
-						*/
-						buildBinary();
+						IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+						process.env.IBM_DB_HOME = IBM_DB_HOME;
+						buildBinary(true);
 						removeWinBuildArchive();
-						//deleteFolderRecursive(WIN_BUILD_FILE);
 						
 					});
 				}
@@ -160,8 +147,14 @@ var download_file_httpget = function(file_url) {
 		 });
 	}
 	
-	function buildBinary() {
-		var childProcess = exec("node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME --IBM_DB_HOME_WIN=%IBM_DB_HOME", function (error, stdout, stderr) {
+	function buildBinary(isDownloaded) {
+		var buildString = "node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME --IBM_DB_HOME_WIN=%IBM_DB_HOME%";
+		if(isDownloaded) {
+			buildString = buildString + " --IS_DOWNLOADED=true";
+		} else {
+			buildString = buildString + " --IS_DOWNLOADED=false";
+		}
+		var childProcess = exec(buildString, function (error, stdout, stderr) {
 			console.log(stdout);
 			if (error !== null) {
 				console.log(error);
@@ -175,6 +168,7 @@ var download_file_httpget = function(file_url) {
 		var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
 		fs.unlinkSync(WIN_BUILD_FILE);
 	}
+
 };
 
 download_file_httpget();
