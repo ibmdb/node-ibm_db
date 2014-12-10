@@ -27,7 +27,7 @@
 			}]
 		  ],	
           'libraries' : [
-            	'-L$(IBM_DB_HOME)/lib', 
+            	'-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib32 ', 
 				'-ldb2'
           ],	
           'include_dirs': [
@@ -46,7 +46,7 @@
 			}]
 		  ],		
           'libraries' : [
-            	'-L$(IBM_DB_HOME)/lib', 
+            	'-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ', 
 				'-ldb2'
           ],	
           'include_dirs': [

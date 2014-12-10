@@ -1,7 +1,7 @@
 {
   "name": "ibm_db",
   "description": "IBM DB2 and IBM Informix bindings for node",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "main": "lib/odbc.js",
   "homepage": "http://github.com/ibmdb/node-ibm_db/",
   "repository": {
@@ -12,13 +12,11 @@
     "url": "https://github.com/ibmdb/node-ibm_db/issues"
   },
   "contributors": [
-    {
-      "name": "IBM",
-      "email": "opendev@us.ibm.com"
-    }
+    "IBM <opendev@us.ibm.com>"
   ],
   "directories": {
-    "lib": "."
+    "example": "examples",
+    "test": "test"
   },
   "engines": {
     "node": ">=0.8.0"
@@ -30,7 +28,15 @@
   "dependencies": {
     "bindings": "~1.0.0",
     "unzip": "*",
-	"tar.gz": "*",
-	"fstream": "*"
-  }
+    "tar.gz": "*",
+    "fstream": "*"
+  },
+  "keywords": [
+    "node",
+    "odbc",
+    "db2",
+    "driver"
+  ],
+  "author": "IBM",
+  "license": "MIT"
 }
