@@ -100,16 +100,44 @@ var download_file_httpget = function(file_url) {
 
 		var file_name = url.parse(installerfileURL).pathname.split('/').pop();
 		INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
-		var file = fs.createWriteStream(INSTALLER_FILE);
 		
 		console.log('Downloading DB2 ODBC CLI Driver from '+installerfileURL+'...');
 		
 		http.get(options, function(res) {
-			 
+		
+			if( res.statusCode != 200 ) {
+				log( "Unable to download IBM ODBC and CLI Driver from "+installerfileURL );
+				process.exit(1);
+			}
+
+			//var file = fs.createWriteStream(INSTALLER_FILE);
+			var fileLength = parseInt( res.headers['content-length'] ); 
+			var buf = new Buffer( fileLength );
+			var byteIndex = 0;
+			
 			res.on('data', function(data) {
-				 file.write(data);
+				if( byteIndex + data.length > buf.length ) {
+					log( "Error downloading IBM ODBC and CLI Driver from "+installerfileURL );
+					process.exit(1);
+				}
+				data.copy( buf, byteIndex );
+				byteIndex += data.length;
+				
 			 }).on('end', function() {
-				 file.end();
+				 
+				 if( byteIndex != buf.length ) {
+					log( "Error downloading IBM ODBC and CLI Driver from "+installerfileURL );
+					process.exit(1);
+				}
+
+				var file = fs.openSync( INSTALLER_FILE, 'w');
+				var len = fs.writeSync( file, buf, 0, buf.length, 0 );
+				if( len != buf.length ) {
+
+					log( "Error writing IBM ODBC and CLI Driver to a file" );
+					process.exit(1);
+				}
+				fs.closeSync( file );
 				 
 				if(platform == 'win32') {
 					
@@ -163,7 +191,11 @@ var download_file_httpget = function(file_url) {
 	
 	function removeWinBuildArchive() {
 		var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-		fs.unlinkSync(WIN_BUILD_FILE);
+		fs.exists(WIN_BUILD_FILE, function(exists) {
+			if (exists) {
+				fs.unlinkSync(WIN_BUILD_FILE);
+			}
+		});
 	}
 
 };
