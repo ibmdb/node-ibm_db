@@ -17,7 +17,6 @@
 
 #ifndef _SRC_ODBC_H
 #define _SRC_ODBC_H
-#define ODBC64
 
 #include <v8.h>
 #include <node.h>

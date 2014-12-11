@@ -397,9 +397,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       }
       break;
-    case SQL_NUMERIC :
+	/*
+	case SQL_NUMERIC :
     case SQL_DECIMAL :
     case SQL_BIGINT :
+    */
     case SQL_FLOAT :
     case SQL_REAL :
     case SQL_DOUBLE : {
@@ -539,6 +541,10 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
 	case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED");
+    case SQL_NUMERIC :
+    case SQL_DECIMAL :
+    case SQL_BIGINT :
+		DEBUG_PRINTF("BIG NUMERIC VALUE SELECTED SELECTED");
     default :
       Local<String> str;
       int count = 0;
@@ -827,7 +833,7 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
   SQLINTEGER numfields;
   SQLRETURN ret;
   char errorSQLState[14];
-  char errorMessage[512];
+  char errorMessage[SQL_MAX_MESSAGE_LENGTH];
 
   ret = SQLGetDiagField(
     handleType,
