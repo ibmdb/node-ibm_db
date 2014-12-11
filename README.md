@@ -5,18 +5,8 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 requirements
 ------------
+ If you are on Mac OS, see [MacOS](#mac-os)
 
-* For Mac OS X, you must have a DB2 Server DB2 Express-C.
-
-  * DB2 Express-C
-    * [Download](http://www-01.ibm.com/software/data/db2/express-c/download.html)
-    * DB2 Express-C includes the client libraries, so it may be used to connect to either local databases or databases on other servers / platforms.
-     * Now set the environment variable `IBM_DB_HOME` to the configured DB2 instance owner directory.
-        * Eg: For a DB2 instance `db2inst1`, set `IBM_DB_HOME` as follows
-
-		```
-		export IBM_DB_HOME=/home/db2inst1/sqllib
-		```
     
 install
 --------
@@ -563,6 +553,17 @@ npm install eio
 var eio = require('eio'); 
 eio.setMinParallel(threadCount);
 ```
+
+### Mac OS
+If you are on Mac OS, you must install DB2 Express-C for Mac to obtain the DB2 client library for the Mac OS platform. With the DB2 client library for Mac OS, you can connect from Mac OS to local/remote DB2 servers.
+
+    [Download](http://www-01.ibm.com/software/data/db2/express-c/download.html) and install DB2 Express-C for Mac.
+    Set the environment variable `IBM_DB_HOME` to the configured DB2 instance owner directory.
+         Eg: For a DB2 instance `db2inst1`, set `IBM_DB_HOME` as follows
+
+		```
+		export IBM_DB_HOME=/home/db2inst1/sqllib
+		```
 
 contributors
 ------
