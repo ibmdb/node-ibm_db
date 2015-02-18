@@ -207,7 +207,7 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-ibmdb.open(cn,funtion(err,conn){
+ibmdb.open(cn,function(err,conn){
   conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
@@ -239,7 +239,7 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
   ;
 
-ibmdb.open(cn,funtion(err,conn){
+ibmdb.open(cn,function(err,conn){
   var stmt = conn.prepareSync("insert into hits (col1, col2) VALUES (?, ?)");
 
   //Bind and Execute the statment asynchronously
