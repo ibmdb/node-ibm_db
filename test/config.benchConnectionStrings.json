@@ -1,3 +1,0 @@
-[
-	{ "title" : "DB2", "connectionString" : "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP" }
-]

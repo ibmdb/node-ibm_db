@@ -347,6 +347,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
 void ODBC::FreeColumns(Column* columns, short* colCount) {
   for(int i = 0; i < *colCount; i++) {
       delete [] columns[i].name;
+      delete [] columns[i].type_name;
   }
 
   delete [] columns;

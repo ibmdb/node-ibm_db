@@ -14,6 +14,6 @@ d.run(function() {
    db.open("wrongConnectionString", function (error) {
       console.trace();
 
-      throw new Error();
+      //throw new Error();
     });
 });

@@ -36,6 +36,7 @@ ibmdb.open(common.connectionString, function(err, conn)
 				console.log('Error: '+err);
 				process.exit(0);
 			}
+            conn.querySync("drop table " + testTable);
 
 			/*
 				Close the connection to the database

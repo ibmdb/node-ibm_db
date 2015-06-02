@@ -67,6 +67,37 @@ var Database = require("ibm_db").Database
   , ibmdb = new Database();
 ```
 
+#### .open(connectionString, [options,] callback)
+
+Open a connection to a database.
+
+* **connectionString** - The connection string for your database
+* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
+    loading of native ODBC library for each call of `.open`.
+* **callback** - `callback (err, conn)`
+
+```javascript
+var ibmdb = require("ibm_db");
+var options = {};
+
+var getdata =  function (err, connection) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    connection.query("select 1 from sysibm.sysdymmy1", function (err1, rows) {
+      if (err1) console.log(err1);
+      else console.log(rows);
+      connection.close(function(err2) { });
+    });
+}
+
+ibmdb.open(connectionString, options, getdata);
+ibmdb.open(connectionString, options, getdata);
+ibmdb.open(connectionString, options, getdata);
+
+```
+
 #### .openSync(connectionString)
 
 Synchronously open a connection to a database.
@@ -213,7 +244,8 @@ ibmdb.open(cn,function(err,conn){
 
     //Bind and Execute the statment asynchronously
     stmt.execute(['something', 42], function (err, result) {
-      result.closeSync();
+      if( err ) console.log(err);  
+      else result.closeSync();
 
       //Close the connection
 	  conn.close(function(err){}));

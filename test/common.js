@@ -27,7 +27,7 @@ catch (e) {
 }
 
 try {
-  exports.benchConnectionStrings = require('./config.benchConnectionStrings.json');
+  exports.benchConnectionStrings = require('./config.testConnectionStrings.json');
 }
 catch (e) {
   exports.benchConnectionStrings = [{ title : "DB2", connectionString : exports.connectionString }];
