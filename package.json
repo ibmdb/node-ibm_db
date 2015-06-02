@@ -19,7 +19,7 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=0.8.0"
+    "node": "<0.12.0"
   },
   "scripts": {
     "install": "node installer/driverInstall.js",
