@@ -802,7 +802,8 @@ Handle<Value> ODBCStatement::BindSync(const Arguments& args) {
       "ODBCStatement::BindSync - param[%i]: c_type=%i type=%i "
       "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
       i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
-      &stmt->params[i].length, prm.decimals, prm.buffer
+      &stmt->params[i].length, prm.decimals, 
+      ((prm.length <= 0)? "" : prm.buffer)
     );
 
     ret = SQLBindParameter(
