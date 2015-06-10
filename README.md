@@ -78,23 +78,22 @@ Open a connection to a database.
 
 ```javascript
 var ibmdb = require("ibm_db");
-var options = {};
 
-var getdata =  function (err, connection) {
-    if (err) {
+ibmdb.open(connectionString, function (err, connection) {
+    if (err) 
+    {
       console.log(err);
       return;
     }
     connection.query("select 1 from sysibm.sysdymmy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
-      connection.close(function(err2) { });
+      connection.close(function(err2) { 
+        if(err2) console.log(err2);
+        ibmdb.close(connection);
+      });
     });
-}
-
-ibmdb.open(connectionString, options, getdata);
-ibmdb.open(connectionString, options, getdata);
-ibmdb.open(connectionString, options, getdata);
+};
 
 ```
 
@@ -120,6 +119,24 @@ try {
 	});
 } catch (e) {
 	console.log(e.message);
+}
+```
+
+#### .close(database)
+
+Removes all members of database object.
+
+* **database** - The database object that needs to be freed. Application should
+    call it under the callback function of connection.close to avoid mem leak.
+    
+
+```javascript
+var ibmdb = require("ibm_db");
+
+ibmdb.open(cn, function(err, conn) {
+     conn.close(function (err1) {
+         ibmdb.close(conn);
+     }
 }
 ```
 

@@ -3,7 +3,7 @@ var odbc = require("../");
 //odbc.library = '/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc';
 //odbc.library = '/opt/sqlncli-11.0.1790.0/lib64/libsqlncli-11.0';
 
-exports.connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
+exports.connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=newton;PWD=db2admin;HOSTNAME=hotel.torolab.ibm.com;port=21169;PROTOCOL=TCPIP";
 
 if (process.argv.length === 3) {
   exports.connectionString = process.argv[2];
@@ -12,10 +12,10 @@ if (process.argv.length === 3) {
 exports.connectionObject = {
 	DRIVER : "{DB2 ODBC Driver}",
 	DATABASE : "SAMPLE",
-	HOSTNAME : "localhost",
-	UID : "db2admin",
+	HOSTNAME : "hotel.torolab.ibm.com",
+	UID : "newton",
 	PWD : "db2admin",
-	PORT : "50000",
+	PORT : "21169",
 	PROTOCOL : "TCPIP"
 };
 
