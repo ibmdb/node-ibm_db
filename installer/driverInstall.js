@@ -36,7 +36,8 @@ var download_file_httpget = function(file_url) {
 
 			readStream
 			  .pipe(unzip.Parse())
-			  .pipe(writeStream).on("end", function () {
+			  .pipe(writeStream).on("unpipe", function () {
+				  fs.unlinkSync(BUILD_FILE);
 			});
 			
 		} else {
