@@ -26,8 +26,7 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
   
   conn.query('select * from user where user_id = ?', [42], function (err, data) {
     if (err) console.log(err);
-    
-    console.log(data);
+    else console.log(data);
 
     conn.close(function () {
       console.log('done');
@@ -90,7 +89,6 @@ ibmdb.open(connectionString, function (err, connection) {
       else console.log(rows);
       connection.close(function(err2) { 
         if(err2) console.log(err2);
-        ibmdb.close(connection);
       });
     });
 };
@@ -119,24 +117,6 @@ try {
 	});
 } catch (e) {
 	console.log(e.message);
-}
-```
-
-#### .close(database)
-
-Removes all members of database object.
-
-* **database** - The database object that needs to be freed. Application should
-    call it under the callback function of connection.close to avoid mem leak.
-    
-
-```javascript
-var ibmdb = require("ibm_db");
-
-ibmdb.open(cn, function(err, conn) {
-     conn.close(function (err1) {
-         ibmdb.close(conn);
-     }
 }
 ```
 
@@ -459,7 +439,7 @@ This should probably be changed.
 
 #### .open(connectionString, callback)
 
-Get a Database` instance which is already connected to `connectionString`
+Get a `Database` instance which is already connected to `connectionString`
 
 * **connectionString** - The connection string for your database
 * **callback** - `callback (err, db)`
