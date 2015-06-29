@@ -17,10 +17,12 @@
 #ifndef _SRC_ODBC_STATEMENT_H
 #define _SRC_ODBC_STATEMENT_H
 
+#include <nan.h>
+
 class ODBCStatement : public node::ObjectWrap {
   public:
-   static Persistent<FunctionTemplate> constructor_template;
-   static void Init(v8::Handle<Object> target);
+   static Persistent<Function> constructor;
+   static void Init(v8::Handle<Object> exports);
    
    void Free();
    
@@ -36,39 +38,39 @@ class ODBCStatement : public node::ObjectWrap {
     ~ODBCStatement();
 
     //constructor
-    static Handle<Value> New(const Arguments& args);
+    static NAN_METHOD(New);
 
     //async methods
-    static Handle<Value> Execute(const Arguments& args);
+    static NAN_METHOD(Execute);
     static void UV_Execute(uv_work_t* work_req);
     static void UV_AfterExecute(uv_work_t* work_req, int status);
 
-    static Handle<Value> ExecuteDirect(const Arguments& args);
+    static NAN_METHOD(ExecuteDirect);
     static void UV_ExecuteDirect(uv_work_t* work_req);
     static void UV_AfterExecuteDirect(uv_work_t* work_req, int status);
 
-    static Handle<Value> ExecuteNonQuery(const Arguments& args);
+    static NAN_METHOD(ExecuteNonQuery);
     static void UV_ExecuteNonQuery(uv_work_t* work_req);
     static void UV_AfterExecuteNonQuery(uv_work_t* work_req, int status);
     
-    static Handle<Value> Prepare(const Arguments& args);
+    static NAN_METHOD(Prepare);
     static void UV_Prepare(uv_work_t* work_req);
     static void UV_AfterPrepare(uv_work_t* work_req, int status);
     
-    static Handle<Value> Bind(const Arguments& args);
+    static NAN_METHOD(Bind);
     static void UV_Bind(uv_work_t* work_req);
     static void UV_AfterBind(uv_work_t* work_req, int status);
     
     //sync methods
-    static Handle<Value> CloseSync(const Arguments& args);
-    static Handle<Value> ExecuteSync(const Arguments& args);
-    static Handle<Value> ExecuteDirectSync(const Arguments& args);
-    static Handle<Value> ExecuteNonQuerySync(const Arguments& args);
-    static Handle<Value> PrepareSync(const Arguments& args);
-    static Handle<Value> BindSync(const Arguments& args);
+    static NAN_METHOD(CloseSync);
+    static NAN_METHOD(ExecuteSync);
+    static NAN_METHOD(ExecuteDirectSync);
+    static NAN_METHOD(ExecuteNonQuerySync);
+    static NAN_METHOD(PrepareSync);
+    static NAN_METHOD(BindSync);
     
     struct Fetch_Request {
-      Persistent<Function> callback;
+      NanCallback* callback;
       ODBCStatement *objResult;
       SQLRETURN result;
     };
@@ -90,7 +92,7 @@ class ODBCStatement : public node::ObjectWrap {
 };
 
 struct execute_direct_work_data {
-  Persistent<Function> cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -98,13 +100,13 @@ struct execute_direct_work_data {
 };
 
 struct execute_work_data {
-  Persistent<Function> cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
 };
 
 struct prepare_work_data {
-  Persistent<Function> cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -112,7 +114,7 @@ struct prepare_work_data {
 };
 
 struct bind_work_data {
-  Persistent<Function> cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
 };

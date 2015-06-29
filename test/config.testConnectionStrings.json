@@ -1,3 +1,8 @@
-[
-	{ "title" : "DB2", "connectionString" : "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=newton;PWD=db2admin;HOSTNAME=hotel.torolab.ibm.com;port=21169;PROTOCOL=TCPIP" }
-]
+{ "DRIVER" : "{DB2 ODBC Driver}",
+  "DATABASE" : "SAMPLE",
+  "UID" : "newton",
+  "PWD" : "db2admin",
+  "HOSTNAME" : "hotel.torolab.ibm.com",
+  "PORT" : 21169,
+  "PROTOCOL" : "TCPIP" 
+}

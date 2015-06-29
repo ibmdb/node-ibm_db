@@ -5,8 +5,6 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 install
 --------
-note: node version 0.12.x is not yet supported, much like other native modules. Track 0.12.x progress [here](https://github.com/ibmdb/node-ibm_db/issues/28)
-
 You may install the package using npm install command:
 
 ### npm

@@ -17,11 +17,13 @@
 #ifndef _SRC_ODBC_RESULT_H
 #define _SRC_ODBC_RESULT_H
 
+#include <nan.h>
+
 class ODBCResult : public node::ObjectWrap {
   public:
    static Persistent<String> OPTION_FETCH_MODE;
-   static Persistent<FunctionTemplate> constructor_template;
-   static void Init(v8::Handle<Object> target);
+   static Persistent<Function> constructor;
+   static void Init(v8::Handle<Object> exports);
    
    void Free();
    
@@ -38,30 +40,30 @@ class ODBCResult : public node::ObjectWrap {
     ~ODBCResult();
 
     //constructor
-    static Handle<Value> New(const Arguments& args);
+    static NAN_METHOD(New);
 
     //async methods
-    static Handle<Value> Fetch(const Arguments& args);
+    static NAN_METHOD(Fetch);
     static void UV_Fetch(uv_work_t* work_req);
     static void UV_AfterFetch(uv_work_t* work_req, int status);
 
-    static Handle<Value> FetchAll(const Arguments& args);
+    static NAN_METHOD(FetchAll);
     static void UV_FetchAll(uv_work_t* work_req);
     static void UV_AfterFetchAll(uv_work_t* work_req, int status);
     
     //sync methods
-    static Handle<Value> CloseSync(const Arguments& args);
-    static Handle<Value> MoreResultsSync(const Arguments& args);
-    static Handle<Value> FetchSync(const Arguments& args);
-    static Handle<Value> FetchAllSync(const Arguments& args);
-    static Handle<Value> GetColumnNamesSync(const Arguments& args);
+    static NAN_METHOD(CloseSync);
+    static NAN_METHOD(MoreResultsSync);
+    static NAN_METHOD(FetchSync);
+    static NAN_METHOD(FetchAllSync);
+    static NAN_METHOD(GetColumnNamesSync);
     
     //property getter/setters
-    static Handle<Value> FetchModeGetter(Local<String> property, const AccessorInfo &info);
-    static void FetchModeSetter(Local<String> property, Local<Value> value, const AccessorInfo &info);
+    static NAN_GETTER(FetchModeGetter);
+    static NAN_SETTER(FetchModeSetter);
     
     struct fetch_work_data {
-      Persistent<Function> cb;
+      NanCallback* cb;
       ODBCResult *objResult;
       SQLRETURN result;
       

@@ -1,4 +1,4 @@
-﻿var common = require("./common")
+var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
   , assert = require("assert")

@@ -9,6 +9,9 @@
         'src/odbc_result.cpp',
         'src/dynodbc.cpp'
       ],
+	  'include_dirs': [
+        "<!(node -e \"require('nan')\")"
+      ],
       'defines' : [
         'UNICODE',
         'ODBC64'

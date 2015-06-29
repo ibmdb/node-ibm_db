@@ -3,7 +3,7 @@ var fs = require("fs")
   , spawn = require("child_process").spawn
   , errorCount = 0
   , testCount = 0
-  , testTimeout = 300000  // Let it be 5 min.
+  , testTimeout = 300000  //Let it be 5 min.
   , requestedTest = null
   , files
   ;
