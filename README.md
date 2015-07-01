@@ -5,9 +5,9 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 install
 --------
-You may install the package using npm install command:
+Note: To use ibm_db@0.0.10 on 64bit Windows system, you should install node v0.12.4. The native library build/Release/odbc_bindings.node may fail to load with older version of node on 64bit Windows.
 
-### npm
+You may install the package using npm install command:
 
 ```bash
 npm install ibm_db

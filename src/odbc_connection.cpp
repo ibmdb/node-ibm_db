@@ -236,7 +236,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     SQLSetConnectAttr(
       self->m_hDBC,           //ConnectionHandle
       SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      &timeOut,               //ValuePtr
+      (SQLPOINTER)timeOut,    //ValuePtr
       sizeof(timeOut));       //StringLength
   }
   
@@ -362,7 +362,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
     SQLSetConnectAttr(
       conn->m_hDBC,           //ConnectionHandle
       SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      &timeOut,               //ValuePtr
+      (SQLPOINTER)timeOut,    //ValuePtr
       sizeof(timeOut));       //StringLength
   }
   
