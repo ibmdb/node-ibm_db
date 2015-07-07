@@ -106,7 +106,7 @@ var download_file_httpget = function(file_url) {
 		
 		if(!installerfileURL) {
 			console.log('Unable to fetch driver download file. Exiting the install process.');
-			process.exit(0);
+			process.exit(1);
 		}
 		/*
 		var options = {
@@ -180,7 +180,7 @@ var download_file_httpget = function(file_url) {
 						var compress = new targz().extract(INSTALLER_FILE, DOWNLOAD_DIR, function(err){
 						if(err) {
 							console.log(err);
-							process.exit(0);
+							process.exit(1);
 						}
 						console.log('Download and extraction of DB2 ODBC CLI Driver completed successfully ...');
 						IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
@@ -206,7 +206,7 @@ var download_file_httpget = function(file_url) {
 			console.log(stdout);
 			if (error !== null) {
 				console.log(error);
-				process.exit(0);
+				process.exit(1);
 			}
 
 			if(platform == 'darwin' && arch == 'x64') {
@@ -216,7 +216,7 @@ var download_file_httpget = function(file_url) {
 				var nameToolCmdProcess = exec(nameToolCommand , function (error1, stdout1, stderr1) {
 					if (error1 !== null) {
 						console.log('Error setting up the lib path to odbc_bindings.node file.Error trace:\n'+error1);
-						process.exit(0);
+						process.exit(1);
 					}
 				});
 
