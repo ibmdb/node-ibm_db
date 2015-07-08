@@ -119,8 +119,8 @@ NAN_METHOD(ODBCConnection::New) {
   
   conn->Wrap(args.Holder());
   
-  //set default connectTimeout to 5 seconds
-  conn->connectTimeout = 5;
+  //set default connectTimeout to 30 seconds
+  conn->connectTimeout = 30;
   
   NanReturnValue(args.Holder());
 }

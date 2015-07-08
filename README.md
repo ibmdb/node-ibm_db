@@ -5,8 +5,6 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 install
 --------
-Note: To use ibm_db@0.0.10 on 64bit Windows system, you should install node v0.12.4. The native library build/Release/odbc_bindings.node may fail to load with older version of node on 64bit Windows.
-
 You may install the package using npm install command:
 
 ```bash
@@ -22,7 +20,7 @@ var ibmdb = require('ibm_db');
 ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP", function (err,conn) {
   if (err) return console.log(err);
   
-  conn.query('select * from user where user_id = ?', [42], function (err, data) {
+  conn.query('select 1 from sysibm.sysdummy1', function (err, data) {
     if (err) console.log(err);
     else console.log(data);
 
@@ -429,11 +427,9 @@ node-ibm_db reuses node-odbc pool.
 The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
 database connections ready and waiting for you when you call the `open` method.
 
-If you use a `Pool` instance, any connection that you close will cause another
-connection to be opened for that same connection string. That connection will
-be used the next time you call `Pool.open()` for the same connection string.
-
-This should probably be changed.
+If you use a `Pool` instance, any connection that you close will get added to 
+the list of available connections immediately. Such connection will be used 
+the next time you call `Pool.open()` for the same connection string.
 
 #### .open(connectionString, callback)
 
