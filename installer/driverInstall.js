@@ -37,18 +37,18 @@ var download_file_httpget = function(file_url) {
 			readStream
 			  .pipe(unzip.Parse())
 			  .pipe(writeStream).on("unpipe", function () {
-				  fs.unlinkSync(BUILD_FILE);
-              var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 
-                                    'build\\Release\\odbc_bindings.node');
-              var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR,
-                             'build\\Release\\odbc_bindings.node.0.10.36');
-              fs.exists(ODBC_BINDINGS_V10, function() {
-                if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
-                    fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
-                } else {
-                    fs.unlinkSync(ODBC_BINDINGS_V10);
-                }
-              });
+                fs.unlinkSync(BUILD_FILE);
+                var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 
+                                      'build\\Release\\odbc_bindings.node');
+                var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR,
+                               'build\\Release\\odbc_bindings.node.0.10.36');
+                fs.exists(ODBC_BINDINGS_V10, function() {
+                  if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
+                      fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
+                  } else {
+                      fs.unlinkSync(ODBC_BINDINGS_V10);
+                  }
+                });
 			});
 			
 		} else {
