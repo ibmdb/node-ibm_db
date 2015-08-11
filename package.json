@@ -27,10 +27,10 @@
   },
   "dependencies": {
     "bindings": "~1.0.0",
-    "nan": "~1.8.*",
-    "unzip": "^0.1.11",
-    "tar.gz": "^0.1.1",
-    "fstream": "^1.0.7"
+    "nan": "~1.8.4",
+    "unzip": "~0.1.11",
+    "tar.gz": "~0.1.1",
+    "fstream": "~1.0.7"
   },
   "keywords": [
     "node",
