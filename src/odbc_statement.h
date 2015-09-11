@@ -29,7 +29,7 @@ class ODBCStatement : public node::ObjectWrap {
   protected:
     ODBCStatement() {};
     
-    explicit ODBCStatement(HENV hENV, HDBC hDBC, HSTMT hSTMT): 
+    explicit ODBCStatement(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT): 
       ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
@@ -78,9 +78,9 @@ class ODBCStatement : public node::ObjectWrap {
     ODBCStatement *self(void) { return this; }
 
   protected:
-    HENV m_hENV;
-    HDBC m_hDBC;
-    HSTMT m_hSTMT;
+    SQLHENV m_hENV;
+    SQLHDBC m_hDBC;
+    SQLHSTMT m_hSTMT;
     
     Parameter *params;
     int paramCount;

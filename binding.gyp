@@ -13,15 +13,14 @@
         "<!(node -e \"require('nan')\")"
       ],
       'defines' : [
-        'UNICODE',
-        'ODBC64'
+        'UNICODE'
       ],
 	"variables": {
 		# Set the linker location, no extra linking needed, just link backwards one directory
 		"ORIGIN_LIB_PATH%": "$$ORIGIN/../../installer/clidriver/lib",
 	},
 	'conditions' : [
-        [ 'OS == "linux" and target_arch =="ia32" ', {
+        [ 'OS == "linux" and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32") ', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [
@@ -40,7 +39,7 @@
             "-g "
           ],
         }],  
-        [ 'OS == "linux" and target_arch =="x64" ', {
+        [ 'OS == "linux" and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [

@@ -218,8 +218,8 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
   }
   else {
     Local<Value> args[2];
-    args[0] = NanNew<External>(data->dbo->m_hEnv);
-    args[1] = NanNew<External>(data->hDBC);
+    args[0] = NanNew<External>((void*)data->dbo->m_hEnv);
+    args[1] = NanNew<External>((void*)data->hDBC);
     
     Local<Object> js_result = NanNew<Function>(ODBCConnection::constructor)->NewInstance(2, args);
 
@@ -251,7 +251,7 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
 
   ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
    
-  HDBC hDBC;
+  SQLHDBC hDBC;
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -265,8 +265,8 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   Local<Value> params[2];
-  params[0] = NanNew<External>(dbo->m_hEnv);
-  params[1] = NanNew<External>(hDBC);
+  params[0] = NanNew<External>((void*)dbo->m_hEnv);
+  params[1] = NanNew<External>((void*)hDBC);
 
   Local<Object> js_result = NanNew<Function>(ODBCConnection::constructor)->NewInstance(2, params);
 
@@ -380,7 +380,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     case SQL_INTEGER : 
     case SQL_SMALLINT :
     case SQL_TINYINT : {
-        long value;
+        SQLINTEGER value;
         
         ret = SQLGetData(
           hStmt, 
@@ -898,9 +898,9 @@ Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char*
  * GetAllRecordsSync
  */
 
-Local<Array> ODBC::GetAllRecordsSync (HENV hENV, 
-                                     HDBC hDBC, 
-                                     HSTMT hSTMT,
+Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV, 
+                                     SQLHDBC hDBC, 
+                                     SQLHSTMT hSTMT,
                                      uint16_t* buffer,
                                      int bufferLength) {
   DEBUG_PRINTF("ODBC::GetAllRecordsSync\n");

@@ -119,9 +119,9 @@ NAN_METHOD(ODBCStatement::New) {
   REQ_EXT_ARG(1, js_hdbc);
   REQ_EXT_ARG(2, js_hstmt);
   
-  HENV hENV = static_cast<HENV>(js_henv->Value());
-  HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
-  HSTMT hSTMT = static_cast<HSTMT>(js_hstmt->Value());
+  SQLHENV hENV = static_cast<SQLHENV>((intptr_t)js_henv->Value());
+  SQLHDBC hDBC = static_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
+  SQLHSTMT hSTMT = static_cast<SQLHSTMT>((intptr_t)js_hstmt->Value());
   
   //create a new OBCResult object
   ODBCStatement* stmt = new ODBCStatement(hENV, hDBC, hSTMT);
@@ -211,10 +211,10 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
     Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
-    args[0] = NanNew<External>(self->m_hENV);
-    args[1] = NanNew<External>(self->m_hDBC);
-    args[2] = NanNew<External>(self->m_hSTMT);
-    args[3] = NanNew<External>(canFreeHandle);
+    args[0] = NanNew<External>((void*)self->m_hENV);
+    args[1] = NanNew<External>((void*)self->m_hDBC);
+    args[2] = NanNew<External>((void*)self->m_hSTMT);
+    args[3] = NanNew<External>((void*)canFreeHandle);
     
     // TODO is this object being cleared anywhere? Memory leak?
     Persistent<Object> js_result;
@@ -266,10 +266,10 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
     Local<Value> result[4];
     bool* canFreeHandle = new bool(false);
     
-    result[0] = NanNew<External>(stmt->m_hENV);
-    result[1] = NanNew<External>(stmt->m_hDBC);
-    result[2] = NanNew<External>(stmt->m_hSTMT);
-    result[3] = NanNew<External>(canFreeHandle);
+    result[0] = NanNew<External>((void*)stmt->m_hENV);
+    result[1] = NanNew<External>((void*)stmt->m_hDBC);
+    result[2] = NanNew<External>((void*)stmt->m_hSTMT);
+    result[3] = NanNew<External>((void*)canFreeHandle);
     
     Local<Object> js_result = NanNew(ODBCResult::constructor)->NewInstance(4, result);
 
@@ -496,10 +496,10 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
     Local<Value> args[4];
     bool* canFreeHandle = new bool(false);
     
-    args[0] = NanNew<External>(self->m_hENV);
-    args[1] = NanNew<External>(self->m_hDBC);
-    args[2] = NanNew<External>(self->m_hSTMT);
-    args[3] = NanNew<External>(canFreeHandle);
+    args[0] = NanNew<External>((void*)self->m_hENV);
+    args[1] = NanNew<External>((void*)self->m_hDBC);
+    args[2] = NanNew<External>((void*)self->m_hSTMT);
+    args[3] = NanNew<External>((void*)canFreeHandle);
     
     //TODO persistent leak?
     Persistent<Object> js_result;
@@ -561,10 +561,10 @@ NAN_METHOD(ODBCStatement::ExecuteDirectSync) {
    Local<Value> result[4];
     bool* canFreeHandle = new bool(false);
     
-    result[0] = NanNew<External>(stmt->m_hENV);
-    result[1] = NanNew<External>(stmt->m_hDBC);
-    result[2] = NanNew<External>(stmt->m_hSTMT);
-    result[3] = NanNew<External>(canFreeHandle);
+    result[0] = NanNew<External>((void*)stmt->m_hENV);
+    result[1] = NanNew<External>((void*)stmt->m_hDBC);
+    result[2] = NanNew<External>((void*)stmt->m_hSTMT);
+    result[3] = NanNew<External>((void*)canFreeHandle);
     
     //TODO persistent leak?
     Persistent<Object> js_result;

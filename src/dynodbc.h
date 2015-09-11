@@ -18,23 +18,23 @@ typedef RETCODE (SQL_API * pfnSQLGetData)(
   SQLLEN *       StrLen_or_IndPtr);
 
 typedef RETCODE  (SQL_API * pfnSQLGetFunctions)(
-  HDBC           ConnectionHandle,
+  SQLHDBC           ConnectionHandle,
   SQLUSMALLINT      FunctionId,
   SQLUSMALLINT *    SupportedPtr);
 
 typedef RETCODE (SQL_API * pfnSQLAllocConnect)(
-  HENV        henv,
-  HDBC   FAR *phdbc);
+  SQLHENV        henv,
+  SQLHDBC   FAR *phdbc);
 
 typedef RETCODE (SQL_API * pfnSQLAllocEnv)(
-  HENV   FAR *phenv);
+  SQLHENV   FAR *phenv);
 
 typedef RETCODE (SQL_API * pfnSQLAllocStmt)(
-  HDBC        hdbc,
-  HSTMT  FAR *phstmt);
+  SQLHDBC        hdbc,
+  SQLHSTMT  FAR *phstmt);
 
 typedef RETCODE (SQL_API * pfnSQLBindCol)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UWORD       icol,
   SWORD       fCType,
   PTR         rgbValue,
@@ -42,10 +42,10 @@ typedef RETCODE (SQL_API * pfnSQLBindCol)(
   SDWORD FAR *pcbValue);
 
 typedef RETCODE (SQL_API * pfnSQLCancel)(
-  HSTMT       hstmt);
+  SQLHSTMT       hstmt);
 
 typedef RETCODE (SQL_API * pfnSQLColAttributes)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UWORD       icol,
   UWORD       fDescType,
   PTR         rgbDesc,
@@ -138,7 +138,7 @@ typedef RETCODE (SQL_API * pfnSQLSetEnvAttr)(
 
 
 typedef RETCODE (SQL_API * pfnSQLConnect)(
-  HDBC        hdbc,
+  SQLHDBC        hdbc,
   UCHAR  FAR *szDSN,
   SWORD       cbDSN,
   UCHAR  FAR *szUID,
@@ -147,7 +147,7 @@ typedef RETCODE (SQL_API * pfnSQLConnect)(
   SWORD       cbAuthStr);
 
 typedef RETCODE (SQL_API * pfnSQLDescribeCol)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UWORD       icol,
   UCHAR  FAR *szColName,
   SWORD       cbColNameMax,
@@ -158,12 +158,12 @@ typedef RETCODE (SQL_API * pfnSQLDescribeCol)(
   SWORD  FAR *pfNullable);
 
 typedef RETCODE (SQL_API * pfnSQLDisconnect)(
-  HDBC        hdbc);
+  SQLHDBC        hdbc);
 
 typedef RETCODE (SQL_API * pfnSQLError)(
-  HENV        henv,
-  HDBC        hdbc,
-  HSTMT       hstmt,
+  SQLHENV        henv,
+  SQLHDBC        hdbc,
+  SQLHSTMT       hstmt,
   UCHAR  FAR *szSqlState,
   SDWORD FAR *pfNativeError,
   UCHAR  FAR *szErrorMsg,
@@ -176,10 +176,10 @@ typedef RETCODE (SQL_API * pfnSQLError)(
   SDWORD      cbSqlStr);
 */
 typedef RETCODE (SQL_API * pfnSQLExecute)(
-  HSTMT       hstmt);
+  SQLHSTMT       hstmt);
 
 typedef RETCODE (SQL_API * pfnSQLFetch)(
-  HSTMT       hstmt);
+  SQLHSTMT       hstmt);
 
 typedef RETCODE (SQL_API * pfnSQLGetDiagRec)(
   SQLSMALLINT HandleType, SQLHANDLE Handle,
@@ -208,23 +208,23 @@ typedef RETCODE (SQL_API * pfnSQLColAttribute)(
 
 
 typedef RETCODE (SQL_API * pfnSQLFreeConnect)(
-  HDBC        hdbc);
+  SQLHDBC        hdbc);
 
 typedef RETCODE (SQL_API * pfnSQLFreeEnv)(
-  HENV        henv);
+  SQLHENV        henv);
 
 typedef RETCODE (SQL_API * pfnSQLFreeStmt)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UWORD       fOption);
 
 typedef RETCODE (SQL_API * pfnSQLGetCursorName)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UCHAR  FAR *szCursor,
   SWORD       cbCursorMax,
   SWORD  FAR *pcbCursor);
 
 typedef RETCODE (SQL_API * pfnSQLNumResultCols)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   SWORD  FAR *pccol);
 
 typedef RETCODE (SQL_API * pfnSQLPrepare)(
@@ -236,26 +236,26 @@ typedef RETCODE (SQL_API * pfnSQLPrepare)(
 //  SDWORD      cbSqlStr);
 
 typedef RETCODE (SQL_API * pfnSQLRowCount)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   SQLLEN FAR *pcrow);
 
 typedef RETCODE (SQL_API * pfnSQLSetCursorName)(
-  HSTMT       hstmt,
+  SQLHSTMT       hstmt,
   UCHAR  FAR *szCursor,
   SWORD       cbCursor);
 
 typedef RETCODE (SQL_API * pfnSQLTransact)(
-  HENV        henv,
-  HDBC        hdbc,
+  SQLHENV        henv,
+  SQLHDBC        hdbc,
   UWORD       fType);
 
 typedef RETCODE (SQL_API * pfnSQLSetConnectOption)(
-  HDBC        hdbc,
+  SQLHDBC        hdbc,
   UWORD       fOption,
   UDWORD      vParam);
 
 typedef RETCODE (SQL_API * pfnSQLDrivers)(
-  HENV        henv,
+  SQLHENV        henv,
   UWORD       fDirection,
   UCHAR FAR  *szDriverDesc,
   SWORD       cbDriverDescMax,
@@ -277,7 +277,7 @@ typedef RETCODE (SQL_API * pfnSQLDrivers)(
 //   SDWORD FAR *pcbValue);
 
 typedef RETCODE (SQL_API * pfnSQLDataSources)(
-  HENV        henv,
+  SQLHENV        henv,
   UWORD       fDirection,
   UCHAR  FAR *szDSN,
   SWORD       cbDSNMax,
@@ -287,14 +287,14 @@ typedef RETCODE (SQL_API * pfnSQLDataSources)(
   SWORD  FAR *pcbDescription);
 
 typedef RETCODE (SQL_API * pfnSQLGetInfo)(
-  HDBC        hdbc,
+  SQLHDBC        hdbc,
   UWORD       fInfoType,
   PTR         rgbInfoValue,
   SWORD       cbInfoValueMax,
   SWORD  FAR *pcbInfoValue);
 
 typedef RETCODE (SQL_API * pfnSQLMoreResults)(
-  HSTMT       hstmt);
+  SQLHSTMT       hstmt);
 
 extern pfnSQLGetData            pSQLGetData;
 extern pfnSQLGetFunctions       pSQLGetFunctions;

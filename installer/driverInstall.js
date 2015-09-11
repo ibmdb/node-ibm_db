@@ -98,15 +98,20 @@ var download_file_httpget = function(file_url) {
 			}*/
 		} else if(platform == 'linux') {
 			if(arch == 'x64') {
-				
 				installerfileURL = installerURL + 'linuxx64_odbc_cli.tar.gz';
+			} else if(arch == 's390x') {
+				installerfileURL = installerURL + 's390x64_odbc_cli.tar.gz';
+			} else if(arch == 's390') {
+				installerfileURL = installerURL + 's390_odbc_cli.tar.gz';
+			} else if(arch == 'ppc64') {
+				installerfileURL = installerURL + 'ppc64_odbc_cli.tar.gz';
+			} else if(arch == 'ppc32') {
+				installerfileURL = installerURL + 'ppc32_odbc_cli.tar.gz';
 			} else {
-				
 				installerfileURL = installerURL + 'linuxia32_odbc_cli.tar.gz';
 			}
 		} else if(platform == 'darwin') {
 			if(arch == 'x64') {
-				
 				installerfileURL = installerURL + 'macos64_odbc_cli.tar.gz';
 			} else {
 				console.log('Mac OS 32 bit not supported. Please use an x64 architecture.');

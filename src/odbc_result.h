@@ -30,7 +30,7 @@ class ODBCResult : public node::ObjectWrap {
   protected:
     ODBCResult() {};
     
-    explicit ODBCResult(HENV hENV, HDBC hDBC, HSTMT hSTMT, bool canFreeHandle): 
+    explicit ODBCResult(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, bool canFreeHandle): 
       ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
@@ -77,9 +77,9 @@ class ODBCResult : public node::ObjectWrap {
     ODBCResult *self(void) { return this; }
 
   protected:
-    HENV m_hENV;
-    HDBC m_hDBC;
-    HSTMT m_hSTMT;
+    SQLHENV m_hENV;
+    SQLHDBC m_hDBC;
+    SQLHSTMT m_hSTMT;
     bool m_canFreeHandle;
     int m_fetchMode;
     
