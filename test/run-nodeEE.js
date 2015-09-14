@@ -4,7 +4,7 @@ var fs = require("fs")
   , path = require("path")
   , errorCount = 0
   , testCount = 0
-  , testTimeout = 3000000  //Let it be 50 min.
+  , testTimeout = 300000  //Let it be 50 min.
   , requestedTest = null
   , files
   , moment = require('moment')
@@ -115,7 +115,6 @@ function doNextConnectionString() {
   else {
     if (errorCount) {
       console.log("\nResults : %s of %s tests failed.\n", errorCount, testCount);
-      process.exit(errorCount);
     }
     else {
       console.log("Results : All tests were successful. Total %s tests executed.", testCount);
@@ -124,5 +123,8 @@ function doNextConnectionString() {
     console.log("Total execution time = %s min %s sec.", 
                 parseInt(totalTime/60), parseInt(totalTime%60));
 
+    if (errorCount) {
+      process.exit(errorCount);
+    }
   }
 }
