@@ -4,7 +4,7 @@ var fs = require("fs")
   , path = require("path")
   , errorCount = 0
   , testCount = 0
-  , testTimeout = 3000000  //Let it be 50 min.
+  , testTimeout = 600000  //Let it be 10 min.
   , requestedTest = null
   , files
   , moment = require('moment')
