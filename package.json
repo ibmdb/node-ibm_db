@@ -31,7 +31,7 @@
     "unzip": "~0.1.11",
     "tar.gz": "~0.1.1",
     "fstream": "~1.0.7",
-    "execSync": "~1.0.2"
+    "exec-sync": "~0.1.6"
   },
   "keywords": [
     "node",

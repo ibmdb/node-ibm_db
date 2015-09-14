@@ -8,7 +8,7 @@ var http = require('http');
 var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
-var sh = require('execSync');
+var sh = require('exec-sync');
 
 var installerURL = 'http://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/';
 var CURRENT_DIR = process.cwd();
@@ -253,16 +253,12 @@ var download_file_httpget = function(file_url) {
 			 port: 80,
 			 path: url.parse(installerfileURL).pathname
 			};
-		var proxyStr;
-
-		var result = sh.exec('npm config get proxy');
-		proxyStr = result.stdout.toString().split('\n')[0];
-		if(proxyStr === 'null') {
-			result = sh.exec('npm config get https-proxy');
-			proxyStr = result.stdout.toString().split('\n')[0];
+		var proxyStr = sh('npm config get proxy');
+		if(proxyStr === 'null' || proxyStr === '') {
+			proxyStr = sh('npm config get https-proxy');
 		}
 
-		if(proxyStr === 'null') {
+		if(proxyStr === 'null' || proxyStr === '') {
 			return options;
 		}
 
