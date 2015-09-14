@@ -22,6 +22,7 @@
     "node": ">=0.8.0"
   },
   "scripts": {
+    "preinstall": "node -e 'process.exit(/0.10/.test(process.version))' || npm install exec-sync",
     "install": "node installer/driverInstall.js",
     "test": "cd test && node run-tests.js"
   },
@@ -30,8 +31,7 @@
     "nan": "~1.8.4",
     "unzip": "~0.1.11",
     "tar.gz": "~0.1.1",
-    "fstream": "~1.0.7",
-    "exec-sync": "~0.1.6"
+    "fstream": "~1.0.7"
   },
   "keywords": [
     "node",
