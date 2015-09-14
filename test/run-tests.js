@@ -6,6 +6,7 @@ var fs = require("fs")
   , testTimeout = 300000  //Let it be 5 min.
   , requestedTest = null
   , files
+  , moment = require('moment')
   ;
 
 var filesDisabled = fs.readdirSync("./disabled");
@@ -29,6 +30,8 @@ if (requestedTest) {
     }
   });
 }
+
+var startTime = moment();
 
 doNextConnectionString();
 
@@ -109,7 +112,10 @@ function doNextConnectionString() {
       process.exit(errorCount);
     }
     else {
-      console.log("Results : All tests were successful.");
+      console.log("Results : All tests were successful. Total %s files executed.", testCount);
     }
+    var totalTime = (moment.duration(moment() - startTime))/1000;
+    console.log("Total execution time = %s min %s sec.", 
+                parseInt(totalTime/60), parseInt(totalTime%60));
   }
 }

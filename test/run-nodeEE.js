@@ -7,6 +7,7 @@ var fs = require("fs")
   , testTimeout = 3000000  //Let it be 50 min.
   , requestedTest = null
   , files
+  , moment = require('moment')
   ;
 
 // Check for async module, which is required to run nodeEE test files.
@@ -25,6 +26,7 @@ if (process.argv.length === 3) {
   requestedTest = process.argv[2];
 }
 
+var startTime = moment();
 var connectionStrings = common.testConnectionStrings;
 
 //check to see if the requested test is actually a driver to test
@@ -118,5 +120,9 @@ function doNextConnectionString() {
     else {
       console.log("Results : All tests were successful. Total %s tests executed.", testCount);
     }
+    var totalTime = (moment.duration(moment() - startTime))/1000;
+    console.log("Total execution time = %s min %s sec.", 
+                parseInt(totalTime/60), parseInt(totalTime%60));
+
   }
 }
