@@ -107,15 +107,17 @@ function doNextConnectionString() {
     doNextTest(connectionString);
   }
   else {
+    var totalTime = (moment.duration(moment() - startTime))/1000;
     if (errorCount) {
       console.log("\nResults : %s of %s tests failed.\n", errorCount, testCount);
-      process.exit(errorCount);
     }
     else {
       console.log("Results : All tests were successful. Total %s files executed.", testCount);
     }
-    var totalTime = (moment.duration(moment() - startTime))/1000;
     console.log("Total execution time = %s min %s sec.", 
                 parseInt(totalTime/60), parseInt(totalTime%60));
+    if (errorCount) {
+      process.exit(errorCount);
+    }
   }
 }
