@@ -77,7 +77,7 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, NanCallback* cb);
     static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
-    static Local<Array>  GetAllRecordsSync (HENV hENV, HDBC hDBC, HSTMT hSTMT, uint16_t* buffer, int bufferLength);
+    static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);
 #ifdef dynodbc
     static Handle<Value> LoadODBCLibrary(const Arguments& args);
 #endif
@@ -105,13 +105,13 @@ class ODBC : public node::ObjectWrap {
     ODBC *self(void) { return this; }
 
   protected:
-    HENV m_hEnv;
+    SQLHENV m_hEnv;
 };
 
 struct create_connection_work_data {
   NanCallback* cb;
   ODBC *dbo;
-  HDBC hDBC;
+  SQLHDBC hDBC;
   int result;
 };
 
@@ -131,7 +131,7 @@ struct close_request {
 struct query_request {
   Persistent<Function> cb;
   ODBC *dbo;
-  HSTMT hSTMT;
+  SQLHSTMT hSTMT;
   int affectedRows;
   char *sql;
   char *catalog;

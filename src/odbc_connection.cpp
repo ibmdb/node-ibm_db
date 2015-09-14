@@ -112,8 +112,8 @@ NAN_METHOD(ODBCConnection::New) {
   REQ_EXT_ARG(0, js_henv);
   REQ_EXT_ARG(1, js_hdbc);
   
-  HENV hENV = static_cast<HENV>(js_henv->Value());
-  HDBC hDBC = static_cast<HDBC>(js_hdbc->Value());
+  SQLHENV hENV = static_cast<SQLHENV>((intptr_t)js_henv->Value());
+  SQLHDBC hDBC = static_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
   
   ODBCConnection* conn = new ODBCConnection(hENV, hDBC);
   
@@ -254,7 +254,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   
   if (SQL_SUCCEEDED(ret)) {
-    HSTMT hStmt;
+    SQLHSTMT hStmt;
     
     //allocate a temporary statment
     ret = SQLAllocHandle(SQL_HANDLE_STMT, self->m_hDBC, &hStmt);
@@ -384,7 +384,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
   }
   else {
-    HSTMT hStmt;
+    SQLHSTMT hStmt;
     
     //allocate a temporary statment
     ret = SQLAllocHandle(SQL_HANDLE_STMT, conn->m_hDBC, &hStmt);
@@ -550,7 +550,7 @@ NAN_METHOD(ODBCConnection::CreateStatementSync) {
 
   ODBCConnection* conn = ObjectWrap::Unwrap<ODBCConnection>(args.Holder());
    
-  HSTMT hSTMT;
+  SQLHSTMT hSTMT;
 
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -562,9 +562,9 @@ NAN_METHOD(ODBCConnection::CreateStatementSync) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   Local<Value> params[3];
-  params[0] = NanNew<External>(conn->m_hENV);
-  params[1] = NanNew<External>(conn->m_hDBC);
-  params[2] = NanNew<External>(hSTMT);
+  params[0] = NanNew<External>((void*)conn->m_hENV);
+  params[1] = NanNew<External>((void*)conn->m_hDBC);
+  params[2] = NanNew<External>((void*)hSTMT);
   
   Local<Object> js_result(NanNew<Function>(ODBCStatement::constructor)->NewInstance(3, params));
   
@@ -648,9 +648,9 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
   );
   
   Local<Value> args[3];
-  args[0] = NanNew<External>(data->conn->m_hENV);
-  args[1] = NanNew<External>(data->conn->m_hDBC);
-  args[2] = NanNew<External>(data->hSTMT);
+  args[0] = NanNew<External>((void*)data->conn->m_hENV);
+  args[1] = NanNew<External>((void*)data->conn->m_hDBC);
+  args[2] = NanNew<External>((void*)data->hSTMT);
   
   Local<Object> js_result = NanNew<Function>(ODBCStatement::constructor)->NewInstance(3, args);
 
@@ -901,10 +901,10 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     Local<Value> args[4];
     bool* canFreeHandle = new bool(true);
     
-    args[0] = NanNew<External>(data->conn->m_hENV);
-    args[1] = NanNew<External>(data->conn->m_hDBC);
-    args[2] = NanNew<External>(data->hSTMT);
-    args[3] = NanNew<External>(canFreeHandle);
+    args[0] = NanNew<External>((void*)data->conn->m_hENV);
+    args[1] = NanNew<External>((void*)data->conn->m_hDBC);
+    args[2] = NanNew<External>((void*)data->hSTMT);
+    args[3] = NanNew<External>((void*)canFreeHandle);
     
     Local<Object> js_result = NanNew<Function>(ODBCResult::constructor)->NewInstance(4, args);
 
@@ -977,7 +977,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   Parameter* params = new Parameter[0];
   Parameter prm;
   SQLRETURN ret;
-  HSTMT hSTMT;
+  SQLHSTMT hSTMT;
   int paramCount = 0;
   bool noResultObject = false;
   
@@ -1166,10 +1166,10 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     Local<Value> result[4];
     bool* canFreeHandle = new bool(true);
     
-    result[0] = NanNew<External>(conn->m_hENV);
-    result[1] = NanNew<External>(conn->m_hDBC);
-    result[2] = NanNew<External>(hSTMT);
-    result[3] = NanNew<External>(canFreeHandle);
+    result[0] = NanNew<External>((void*)conn->m_hENV);
+    result[1] = NanNew<External>((void*)conn->m_hDBC);
+    result[2] = NanNew<External>((void*)hSTMT);
+    result[3] = NanNew<External>((void*)canFreeHandle);
     
     Local<Object> js_result = NanNew<Function>(ODBCResult::constructor)->NewInstance(4, result);
 

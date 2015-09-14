@@ -34,7 +34,7 @@ class ODBCConnection : public node::ObjectWrap {
   protected:
     ODBCConnection() {};
     
-    explicit ODBCConnection(HENV hENV, HDBC hDBC): 
+    explicit ODBCConnection(SQLHENV hENV, SQLHDBC hDBC): 
       ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC) {};
@@ -100,8 +100,8 @@ class ODBCConnection : public node::ObjectWrap {
     ODBCConnection *self(void) { return this; }
 
   protected:
-    HENV m_hENV;
-    HDBC m_hDBC;
+    SQLHENV m_hENV;
+    SQLHDBC m_hDBC;
     SQLUSMALLINT canHaveMoreResults;
     bool connected;
     int statements;
@@ -112,14 +112,14 @@ class ODBCConnection : public node::ObjectWrap {
 struct create_statement_work_data {
   NanCallback* cb;
   ODBCConnection *conn;
-  HSTMT hSTMT;
+  SQLHSTMT hSTMT;
   int result;
 };
 
 struct query_work_data {
   NanCallback* cb;
   ODBCConnection *conn;
-  HSTMT hSTMT;
+  SQLHSTMT hSTMT;
   
   Parameter *params;
   int paramCount;
