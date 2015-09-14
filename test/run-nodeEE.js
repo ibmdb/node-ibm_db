@@ -4,21 +4,28 @@ var fs = require("fs")
   , path = require("path")
   , errorCount = 0
   , testCount = 0
-  , testTimeout = 300000  //Let it be 50 min.
+  , testTimeout = 600000  //Let it be 10 min.
   , requestedTest = null
   , files
   , moment = require('moment')
   ;
 
-// Check for async module, which is required to run nodeEE test files.
-// Do not add async in package.json as it is not required during installation.
-// We do not want installation to be dependent on async. Elseo, if async
+// Check for async and module, which is required to run nodeEE test files.
+// Do not add async and moment in package.json as it is not required during installation.
+// We do not want installation to be dependent on async and moment. Elseo, if async or moment
 // fails, installation of ibm_db too will fail.
-// Install async only if it is required.
+// Install async and moment only if it is required.
 if(fs.accessSync(path.resolve("../node_modules/async")))
 {
     console.log("Module async is requied to run nodeEE test cases. Please " +
                 "executed 'npm install async' before running nodeEE test files.");
+    return;
+}
+
+if(fs.accessSync(path.resolve("../node_modules/moment")))
+{
+    console.log("Module moment is requied to run nodeEE test cases. Please " +
+                "executed 'npm install moment' before running nodeEE test files.");
     return;
 }
 
