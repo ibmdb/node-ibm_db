@@ -4,21 +4,21 @@ var fs = require("fs")
   , path = require("path")
   , errorCount = 0
   , testCount = 0
-  , testTimeout = 300000  //Let it be 50 min.
+  , testTimeout = 600000  //Let it be 10 min.
   , requestedTest = null
   , files
   , moment = require('moment')
   ;
 
 // Check for async module, which is required to run nodeEE test files.
-// Do not add async in package.json as it is not required during installation.
-// We do not want installation to be dependent on async. Elseo, if async
-// fails, installation of ibm_db too will fail.
-// Install async only if it is required.
+// Do not add async and moment in package.json as it is not required during installation.
+// We do not want installation to be dependent on async and moment. Else, if async
+// or moment fails to install, installation of ibm_db too will fail.
+// Install async and moment only if it is required.
 if(fs.accessSync(path.resolve("../node_modules/async")))
 {
     console.log("Module async is requied to run nodeEE test cases. Please " +
-                "executed 'npm install async' before running nodeEE test files.");
+                "execute 'npm install async' before running nodeEE test files.");
     return;
 }
 
@@ -113,13 +113,13 @@ function doNextConnectionString() {
     doNextTest(connectionString);
   }
   else {
+    var totalTime = (moment.duration(moment() - startTime))/1000;
     if (errorCount) {
       console.log("\nResults : %s of %s tests failed.\n", errorCount, testCount);
     }
     else {
       console.log("Results : All tests were successful. Total %s tests executed.", testCount);
     }
-    var totalTime = (moment.duration(moment() - startTime))/1000;
     console.log("Total execution time = %s min %s sec.", 
                 parseInt(totalTime/60), parseInt(totalTime%60));
 

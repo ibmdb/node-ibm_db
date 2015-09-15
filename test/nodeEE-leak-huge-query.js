@@ -49,7 +49,7 @@ var common = require("./common"),
 		db.query("create table " + tableOne + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
 			if (err == null)
 			{
-				console.log("Table " + tableOne + " created");
+				//console.log("Table " + tableOne + " created");
 			}
 				
 			else
@@ -61,7 +61,7 @@ var common = require("./common"),
 		db.query("create table " + tableTwo + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
 			if (err == null)
 			{
-				console.log("Table " + tableTwo + " created");
+				//console.log("Table " + tableTwo + " created");
 			}
 				
 			else
@@ -93,7 +93,7 @@ var common = require("./common"),
 		if (err == null)
 		{
 			insertCallBackCount++;
-			console.log("INSERT", insertCallBackCount);
+			//console.log("INSERT", insertCallBackCount);
 		}
 			
 		else
@@ -107,7 +107,7 @@ var common = require("./common"),
 		
 		if (err == null)
 		{
-			console.log ("SELECT STATEMENT SUCCESSFUL");
+			//console.log ("SELECT STATEMENT SUCCESSFUL");
 		}
 			
 		else
@@ -122,7 +122,7 @@ var common = require("./common"),
 		dropCount++;
 		if (err == null)
 		{
-			console.log ("DROP TABLE " + this.tableName + " SUCCESSFUL");
+			//console.log ("DROP TABLE " + this.tableName + " SUCCESSFUL");
 		}
 			
 		else
@@ -139,7 +139,7 @@ var common = require("./common"),
 	function closedbConnection()
 	{
 		db.close(function () {
-			console.log("Database Connection Closed");
+			//console.log("Database Connection Closed");
 			checkMemory();
 		});
 	}
@@ -147,6 +147,6 @@ var common = require("./common"),
 	{
 		global.gc();
 		diffHeapUse =  util.inspect(process.memoryUsage().heapUsed) - initialMemHeap;
-		console.log("DIFFERENCE ", diffHeapUse);
+		//console.log("DIFFERENCE ", diffHeapUse);
 		assert(diffHeapUse < maxDiff);
 	}
