@@ -318,7 +318,7 @@ var download_file_httpget = function(file_url) {
                             };
                             
                             if (proxyConfig.auth) {
-                                options.headers: {
+                                options.headers = {
                                  'Proxy-Authorization': 'Basic ' + new Buffer(proxyConfig.auth).toString('base64')
                                 }
                             }
@@ -339,7 +339,7 @@ var download_file_httpget = function(file_url) {
                     };
 
                     if (proxyConfig.auth) {
-                        options.headers: {
+                        options.headers = {
                          'Proxy-Authorization': 'Basic ' + new Buffer(proxyConfig.auth).toString('base64')
                         }
                     }                    
