@@ -156,7 +156,7 @@ var download_file_httpget = function(file_url) {
     {
         if( res.statusCode != 200 ) 
         {
-            log( "Unable to download IBM ODBC and CLI Driver from " +
+            console.log( "Unable to download IBM ODBC and CLI Driver from " +
                   installerfileURL );
             process.exit(1);
         }
@@ -168,7 +168,7 @@ var download_file_httpget = function(file_url) {
         res.on('data', function(data) {
             if( byteIndex + data.length > buf.length ) 
             {
-                log( "Error downloading IBM ODBC and CLI Driver from " +
+                console.log( "Error downloading IBM ODBC and CLI Driver from " +
                      installerfileURL );
                 process.exit(1);
             }
@@ -177,7 +177,7 @@ var download_file_httpget = function(file_url) {
          }).on('end', function() {
              if( byteIndex != buf.length ) 
              {
-                log( "Error downloading IBM ODBC and CLI Driver from " +
+                console.log( "Error downloading IBM ODBC and CLI Driver from " +
                      installerfileURL );
                 process.exit(1);
              }
@@ -185,7 +185,7 @@ var download_file_httpget = function(file_url) {
              var len = fs.writeSync( file, buf, 0, buf.length, 0 );
              if( len != buf.length ) 
              {
-                log( "Error writing IBM ODBC and CLI Driver to a file" );
+                console.log( "Error writing IBM ODBC and CLI Driver to a file" );
                 process.exit(1);
              }
              fs.closeSync( file );
