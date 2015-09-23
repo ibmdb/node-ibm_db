@@ -316,6 +316,12 @@ var download_file_httpget = function(file_url) {
                              port: url.parse(proxyStr.toString()).port,
                              path: url.parse(installerfileURL).href
                             };
+                            
+                            if (proxyConfig.auth) {
+                                options.headers: {
+                                 'Proxy-Authorization': 'Basic ' + new Buffer(proxyConfig.auth).toString('base64')
+                                }
+                            }
                         }
                     }
                     return http.get(options, downloadCLIDriver); 
@@ -324,12 +330,19 @@ var download_file_httpget = function(file_url) {
             {
                 var splitIndex = proxyStr.toString().lastIndexOf(':');
                 if(splitIndex > 0) {
-                            
+                    
+                    var proxyConfig = url.parse(proxyStr.toString());
                     options = {
-                     host: url.parse(proxyStr.toString()).hostname,
-                     port: url.parse(proxyStr.toString()).port,
-                     path: url.parse(installerfileURL).href
+                     host: proxyConfig.hostname,
+                     port: proxyConfig.port,
+                     path: url.parse(installerfileURL).href,
                     };
+
+                    if (proxyConfig.auth) {
+                        options.headers: {
+                         'Proxy-Authorization': 'Basic ' + new Buffer(proxyConfig.auth).toString('base64')
+                        }
+                    }                    
                 }
                 return http.get(options, downloadCLIDriver); 
             }
