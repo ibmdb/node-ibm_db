@@ -156,7 +156,7 @@ var download_file_httpget = function(file_url) {
     {
         if( res.statusCode != 200 ) 
         {
-            log( "Unable to download IBM ODBC and CLI Driver from " +
+            console.log( "Unable to download IBM ODBC and CLI Driver from " +
                   installerfileURL );
             process.exit(1);
         }
