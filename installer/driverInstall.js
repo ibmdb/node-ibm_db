@@ -20,6 +20,7 @@ var download_file_httpget = function(file_url) {
     var writeStream;
     var platform = os.platform();
     var arch = os.arch();
+    var endian = os.endianness();
     var installerfileURL;
     
     var fstream = require('fstream');
@@ -104,7 +105,10 @@ var download_file_httpget = function(file_url) {
             } else if(arch == 's390') {
                 installerfileURL = installerURL + 's390_odbc_cli.tar.gz';
             } else if(arch == 'ppc64') {
-                installerfileURL = installerURL + 'ppc64_odbc_cli.tar.gz';
+                if(endian == 'LE')
+                    installerfileURL = installerURL + 'ppc64le_odbc_cli.tar.gz';
+                else
+                    installerfileURL = installerURL + 'ppc64_odbc_cli.tar.gz';
             } else if(arch == 'ppc32') {
                 installerfileURL = installerURL + 'ppc32_odbc_cli.tar.gz';
             } else {
