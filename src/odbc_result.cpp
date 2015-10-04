@@ -29,39 +29,39 @@
 using namespace v8;
 using namespace node;
 
-Persistent<Function> ODBCResult::constructor;
-Persistent<String> ODBCResult::OPTION_FETCH_MODE;
+Nan::Persistent<Function> ODBCResult::constructor;
+Nan::Persistent<String> ODBCResult::OPTION_FETCH_MODE;
 
 void ODBCResult::Init(v8::Handle<Object> exports) {
   DEBUG_PRINTF("ODBCResult::Init\n");
-  NanScope();
+  Nan::HandleScope scope;
 
-  Local<FunctionTemplate> constructor_template = NanNew<FunctionTemplate>(New);
+  Local<FunctionTemplate> constructor_template = Nan::New<FunctionTemplate>(New);
 
   // Constructor Template
-  constructor_template->SetClassName(NanNew("ODBCResult"));
+  constructor_template->SetClassName(Nan::New("ODBCResult").ToLocalChecked());
 
   // Reserve space for one Handle<Value>
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1);
-  
-  // Prototype Methods
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAll", FetchAll);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetch", Fetch);
 
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "moreResultsSync", MoreResultsSync);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "closeSync", CloseSync);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchSync", FetchSync);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "fetchAllSync", FetchAllSync);
-  NODE_SET_PROTOTYPE_METHOD(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
+  // Prototype Methods
+  Nan::SetPrototypeMethod(constructor_template, "fetchAll", FetchAll);
+  Nan::SetPrototypeMethod(constructor_template, "fetch", Fetch);
+
+  Nan::SetPrototypeMethod(constructor_template, "moreResultsSync", MoreResultsSync);
+  Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
+  Nan::SetPrototypeMethod(constructor_template, "fetchSync", FetchSync);
+  Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
+  Nan::SetPrototypeMethod(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
 
   // Properties
-  NanAssignPersistent(OPTION_FETCH_MODE, NanNew("fetchMode"));
-  instance_template->SetAccessor(NanNew("fetchMode"), FetchModeGetter, FetchModeSetter);
-  
+  OPTION_FETCH_MODE.Reset(Nan::New("fetchMode").ToLocalChecked());
+  Nan::SetAccessor(instance_template, Nan::New("fetchMode").ToLocalChecked(), FetchModeGetter, FetchModeSetter);
+
   // Attach the Database Constructor to the target object
-  NanAssignPersistent(constructor, constructor_template->GetFunction());
-  exports->Set(NanNew("ODBCResult"),
+  constructor.Reset(constructor_template->GetFunction());
+  exports->Set(Nan::New("ODBCResult").ToLocalChecked(),
                constructor_template->GetFunction());
 }
 
@@ -72,17 +72,17 @@ ODBCResult::~ODBCResult() {
 
 void ODBCResult::Free() {
   DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
-  
+
   if (m_hSTMT && m_canFreeHandle) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
+
     SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
-    
-    m_hSTMT = NULL;
-  
+
+    m_hSTMT = (SQLHSTMT) NULL;
+
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
-  
+
   if (bufferLength > 0) {
     bufferLength = 0;
     free(buffer);
@@ -91,34 +91,34 @@ void ODBCResult::Free() {
 
 NAN_METHOD(ODBCResult::New) {
   DEBUG_PRINTF("ODBCResult::New\n");
-  NanScope();
-  
+  Nan::HandleScope scope;
+
   REQ_EXT_ARG(0, js_henv);
   REQ_EXT_ARG(1, js_hdbc);
   REQ_EXT_ARG(2, js_hstmt);
   REQ_EXT_ARG(3, js_canFreeHandle);
-  
+
   SQLHENV hENV = static_cast<SQLHENV>((intptr_t)js_henv->Value());
   SQLHDBC hDBC = static_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
   SQLHSTMT hSTMT = static_cast<SQLHSTMT>((intptr_t)js_hstmt->Value());
   bool* canFreeHandle = static_cast<bool *>(js_canFreeHandle->Value());
-  
+
   //create a new OBCResult object
   ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, *canFreeHandle);
-  
+
   DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X canFreeHandle=%X\n",
     objODBCResult->m_hENV,
     objODBCResult->m_hDBC,
     objODBCResult->m_hSTMT,
     objODBCResult->m_canFreeHandle
   );
-  
+
   //free the pointer to canFreeHandle
   delete canFreeHandle;
 
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE - 1;
-  
+
   //initialze a buffer for this object
   objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength + 1);
   //TODO: make sure the malloc succeeded
@@ -128,25 +128,25 @@ NAN_METHOD(ODBCResult::New) {
 
   //default fetchMode to FETCH_OBJECT
   objODBCResult->m_fetchMode = FETCH_OBJECT;
-  
-  objODBCResult->Wrap(args.Holder());
-  
-  NanReturnValue(args.Holder());
+
+  objODBCResult->Wrap(info.Holder());
+
+  info.GetReturnValue().Set(info.Holder());
 }
 
 NAN_GETTER(ODBCResult::FetchModeGetter) {
-  NanScope();
+  Nan::HandleScope scope;
 
-  ODBCResult *obj = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
 
-  NanReturnValue(NanNew(obj->m_fetchMode));
+  info.GetReturnValue().Set(Nan::New(obj->m_fetchMode));
 }
 
 NAN_SETTER(ODBCResult::FetchModeSetter) {
-  NanScope();
+  Nan::HandleScope scope;
 
-  ODBCResult *obj = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
+  ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
   if (value->IsNumber()) {
     obj->m_fetchMode = value->Int32Value();
   }
@@ -158,79 +158,79 @@ NAN_SETTER(ODBCResult::FetchModeSetter) {
 
 NAN_METHOD(ODBCResult::Fetch) {
   DEBUG_PRINTF("ODBCResult::Fetch\n");
-  NanScope();
-  
-  ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
+  Nan::HandleScope scope;
+
+  ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  
+
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
-  
+
   Local<Function> cb;
-   
+
   //set the fetch mode to the default of this instance
   data->fetchMode = objODBCResult->m_fetchMode;
-  
-  if (args.Length() == 1 && args[0]->IsFunction()) {
-    cb = Local<Function>::Cast(args[0]);
+
+  if (info.Length() == 1 && info[0]->IsFunction()) {
+    cb = Local<Function>::Cast(info[0]);
   }
-  else if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsFunction()) {
-    cb = Local<Function>::Cast(args[1]);  
-    
-    Local<Object> obj = args[0]->ToObject();
-    
-    Local<String> fetchModeKey = NanNew<String>(OPTION_FETCH_MODE);
+  else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
+    cb = Local<Function>::Cast(info[1]);
+
+    Local<Object> obj = info[0]->ToObject();
+
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       data->fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
   }
   else {
-    return NanThrowTypeError("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.");
+    return Nan::ThrowTypeError("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
-  
-  data->cb = new NanCallback(cb);
-  
+
+  data->cb = new Nan::Callback(cb);
+
   data->objResult = objODBCResult;
   work_req->data = data;
-  
+
   uv_queue_work(
-    uv_default_loop(), 
-    work_req, 
-    UV_Fetch, 
+    uv_default_loop(),
+    work_req,
+    UV_Fetch,
     (uv_after_work_cb)UV_AfterFetch);
 
   objODBCResult->Ref();
 
-  NanReturnValue(NanUndefined());
+  info.GetReturnValue().Set(Nan::Undefined());
 }
 
 void ODBCResult::UV_Fetch(uv_work_t* work_req) {
   DEBUG_PRINTF("ODBCResult::UV_Fetch\n");
-  
+
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
-  
+
   data->result = SQLFetch(data->objResult->m_hSTMT);
 }
 
 void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   DEBUG_PRINTF("ODBCResult::UV_AfterFetch\n");
-  NanScope();
-  
+  Nan::HandleScope scope;
+
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
-  
+
   SQLRETURN ret = data->result;
   //TODO: we should probably define this on the work data so we
   //don't have to keep creating it?
-  Local<Object> objError;
+  Local<Value> objError;
   bool moreWork = true;
   bool error = false;
-  
+
   if (data->objResult->colCount == 0) {
     data->objResult->columns = ODBC::GetColumns(
-      data->objResult->m_hSTMT, 
+      data->objResult->m_hSTMT,
       &data->objResult->colCount);
   }
-  
+
   //check to see if the result has no columns
   if (data->objResult->colCount == 0) {
     //this means
@@ -240,9 +240,9 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   else if (ret == SQL_ERROR)  {
     moreWork = false;
     error = true;
-    
+
     objError = ODBC::GetSQLError(
-      SQL_HANDLE_STMT, 
+      SQL_HANDLE_STMT,
       data->objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -252,11 +252,11 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   }
 
   if (moreWork) {
-    Handle<Value> args[2];
+    Handle<Value> info[2];
 
-    args[0] = NanNull();
+    info[0] = Nan::Null();
     if (data->fetchMode == FETCH_ARRAY) {
-      args[1] = ODBC::GetRecordArray(
+      info[1] = ODBC::GetRecordArray(
         data->objResult->m_hSTMT,
         data->objResult->columns,
         &data->objResult->colCount,
@@ -264,7 +264,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
         data->objResult->bufferLength);
     }
     else {
-      args[1] = ODBC::GetRecordTuple(
+      info[1] = ODBC::GetRecordTuple(
         data->objResult->m_hSTMT,
         data->objResult->columns,
         &data->objResult->colCount,
@@ -272,9 +272,9 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
         data->objResult->bufferLength);
     }
 
-    TryCatch try_catch;
+    Nan::TryCatch try_catch;
 
-    data->cb->Call(2, args);
+    data->cb->Call(2, info);
     delete data->cb;
 
     if (try_catch.HasCaught()) {
@@ -283,34 +283,34 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   }
   else {
     ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
-    
-    Handle<Value> args[2];
-    
+
+    Handle<Value> info[2];
+
     //if there was an error, pass that as arg[0] otherwise Null
     if (error) {
-      args[0] = objError;
+      info[0] = objError;
     }
     else {
-      args[0] = NanNull();
+      info[0] = Nan::Null();
     }
-    
-    args[1] = NanNull();
 
-    TryCatch try_catch;
+    info[1] = Nan::Null();
 
-    data->cb->Call(2, args);
+    Nan::TryCatch try_catch;
+
+    data->cb->Call(2, info);
     delete data->cb;
 
     if (try_catch.HasCaught()) {
       FatalException(try_catch);
     }
   }
-  
+
   data->objResult->Unref();
-  
+
   free(data);
   free(work_req);
-  
+
   return;
 }
 
@@ -320,32 +320,32 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
 
 NAN_METHOD(ODBCResult::FetchSync) {
   DEBUG_PRINTF("ODBCResult::FetchSync\n");
-  NanScope();
-  
-  ODBCResult* objResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
+  Nan::HandleScope scope;
 
-  Local<Object> objError;
+  ODBCResult* objResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  Local<Value> objError;
   bool moreWork = true;
   bool error = false;
   int fetchMode = objResult->m_fetchMode;
-  
-  if (args.Length() == 1 && args[0]->IsObject()) {
-    Local<Object> obj = args[0]->ToObject();
-    
-    Local<String> fetchModeKey = NanNew<String>(OPTION_FETCH_MODE);
+
+  if (info.Length() == 1 && info[0]->IsObject()) {
+    Local<Object> obj = info[0]->ToObject();
+
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
   }
-  
+
   SQLRETURN ret = SQLFetch(objResult->m_hSTMT);
 
   if (objResult->colCount == 0) {
     objResult->columns = ODBC::GetColumns(
-      objResult->m_hSTMT, 
+      objResult->m_hSTMT,
       &objResult->colCount);
   }
-  
+
   //check to see if the result has no columns
   if (objResult->colCount == 0) {
     moreWork = false;
@@ -354,9 +354,9 @@ NAN_METHOD(ODBCResult::FetchSync) {
   else if (ret == SQL_ERROR)  {
     moreWork = false;
     error = true;
-    
+
     objError = ODBC::GetSQLError(
-      SQL_HANDLE_STMT, 
+      SQL_HANDLE_STMT,
       objResult->m_hSTMT,
       (char *) "Error in ODBCResult::UV_AfterFetch");
   }
@@ -367,7 +367,7 @@ NAN_METHOD(ODBCResult::FetchSync) {
 
   if (moreWork) {
     Handle<Value> data;
-    
+
     if (fetchMode == FETCH_ARRAY) {
       data = ODBC::GetRecordArray(
         objResult->m_hSTMT,
@@ -384,20 +384,20 @@ NAN_METHOD(ODBCResult::FetchSync) {
         objResult->buffer,
         objResult->bufferLength);
     }
-    
-    NanReturnValue(data);
+
+    info.GetReturnValue().Set(data);
   }
   else {
     ODBC::FreeColumns(objResult->columns, &objResult->colCount);
 
     //if there was an error, pass that as arg[0] otherwise Null
     if (error) {
-      NanThrowError(objError);
-      
-      NanReturnValue(NanNull());
+      Nan::ThrowError(objError);
+
+      info.GetReturnValue().Set(Nan::Null());
     }
     else {
-      NanReturnValue(NanNull());
+      info.GetReturnValue().Set(Nan::Null());
     }
   }
 }
@@ -408,77 +408,77 @@ NAN_METHOD(ODBCResult::FetchSync) {
 
 NAN_METHOD(ODBCResult::FetchAll) {
   DEBUG_PRINTF("ODBCResult::FetchAll\n");
-  NanScope();
-  
-  ODBCResult* objODBCResult = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
+  Nan::HandleScope scope;
+
+  ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  
+
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
-  
+
   Local<Function> cb;
-  
+
   data->fetchMode = objODBCResult->m_fetchMode;
-  
-  if (args.Length() == 1 && args[0]->IsFunction()) {
-    cb = Local<Function>::Cast(args[0]);
+
+  if (info.Length() == 1 && info[0]->IsFunction()) {
+    cb = Local<Function>::Cast(info[0]);
   }
-  else if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsFunction()) {
-    cb = Local<Function>::Cast(args[1]);  
-    
-    Local<Object> obj = args[0]->ToObject();
-    
-    Local<String> fetchModeKey = NanNew<String>(OPTION_FETCH_MODE);
+  else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
+    cb = Local<Function>::Cast(info[1]);
+
+    Local<Object> obj = info[0]->ToObject();
+
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       data->fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
   }
   else {
-    NanThrowTypeError("ODBCResult::FetchAll(): 1 or 2 arguments are required. The last argument must be a callback function.");
+    Nan::ThrowTypeError("ODBCResult::FetchAll(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
-  
-  NanAssignPersistent(data->rows, NanNew<Array>());
+
+  data->rows.Reset(Nan::New<Array>());
   data->errorCount = 0;
   data->count = 0;
-  NanAssignPersistent(data->objError, NanNew<Object>());
-  
-  data->cb = new NanCallback(cb);
+  data->objError.Reset(Nan::New<Object>());
+
+  data->cb = new Nan::Callback(cb);
   data->objResult = objODBCResult;
-  
+
   work_req->data = data;
-  
+
   uv_queue_work(uv_default_loop(),
-    work_req, 
-    UV_FetchAll, 
+    work_req,
+    UV_FetchAll,
     (uv_after_work_cb)UV_AfterFetchAll);
 
   data->objResult->Ref();
 
-  NanReturnValue(NanUndefined());
+  info.GetReturnValue().Set(Nan::Undefined());
 }
 
 void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
   DEBUG_PRINTF("ODBCResult::UV_FetchAll\n");
-  
+
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
-  
+
   data->result = SQLFetch(data->objResult->m_hSTMT);
  }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll\n");
-  NanScope();
-  
+  Nan::HandleScope scope;
+
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
-  
+
   ODBCResult* self = data->objResult->self();
-  
+
   bool doMoreWork = true;
-  
+
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
   }
-  
+
   //check to see if the result set has columns
   if (self->colCount == 0) {
     //this most likely means that the query was something like
@@ -488,13 +488,13 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   //check to see if there was an error
   else if (data->result == SQL_ERROR)  {
     data->errorCount++;
-    
-    NanAssignPersistent(data->objError, ODBC::GetSQLError(
-      SQL_HANDLE_STMT, 
+
+    data->objError.Reset(ODBC::GetSQLError(
+      SQL_HANDLE_STMT,
       self->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
     ));
-    
+
     doMoreWork = false;
   }
   //check to see if we are at the end of the recordset
@@ -503,10 +503,10 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   }
   else {
     //TODO: !important: persistent forces us to set this to a local handle, but do we need to recopy it back to persistent handle?
-    Local<Array> rows = NanNew(data->rows);
+    Local<Array> rows = Nan::New(data->rows);
     if (data->fetchMode == FETCH_ARRAY) {
       rows->Set(
-        NanNew(data->count), 
+        Nan::New(data->count),
         ODBC::GetRecordArray(
           self->m_hSTMT,
           self->columns,
@@ -517,7 +517,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     }
     else {
       rows->Set(
-        NanNew(data->count), 
+        Nan::New(data->count),
         ODBC::GetRecordTuple(
           self->m_hSTMT,
           self->columns,
@@ -528,35 +528,35 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     }
     data->count++;
   }
-  
+
   if (doMoreWork) {
     //Go back to the thread pool and fetch more data!
     uv_queue_work(
       uv_default_loop(),
-      work_req, 
-      UV_FetchAll, 
+      work_req,
+      UV_FetchAll,
       (uv_after_work_cb)UV_AfterFetchAll);
   }
   else {
     ODBC::FreeColumns(self->columns, &self->colCount);
-    
-    Handle<Value> args[2];
-    
+
+    Handle<Value> info[2];
+
     if (data->errorCount > 0) {
-      args[0] = NanNew(data->objError);
+      info[0] = Nan::New(data->objError);
     }
     else {
-      args[0] = NanNull();
+      info[0] = Nan::Null();
     }
-    
-    args[1] = NanNew(data->rows);
 
-    TryCatch try_catch;
+    info[1] = Nan::New(data->rows);
 
-    data->cb->Call(2, args);
+    Nan::TryCatch try_catch;
+
+    data->cb->Call(2, info);
     delete data->cb;
-    NanDisposePersistent(data->rows);
-    NanDisposePersistent(data->objError);
+    data->rows.Reset();
+    data->objError.Reset();
 
     if (try_catch.HasCaught()) {
       FatalException(try_catch);
@@ -566,7 +566,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     free(data);
     free(work_req);
 
-    self->Unref(); 
+    self->Unref();
   }
 }
 
@@ -576,62 +576,62 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
 
 NAN_METHOD(ODBCResult::FetchAllSync) {
   DEBUG_PRINTF("ODBCResult::FetchAllSync\n");
-  NanScope();
-  
-  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
-  Local<Object> objError = NanNew<Object>();
-  
+  Nan::HandleScope scope;
+
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  Local<Value> objError = Nan::New<Object>();
+
   SQLRETURN ret;
   int count = 0;
   int errorCount = 0;
   int fetchMode = self->m_fetchMode;
 
-  if (args.Length() == 1 && args[0]->IsObject()) {
-    Local<Object> obj = args[0]->ToObject();
-    
-    Local<String> fetchModeKey = NanNew<String>(OPTION_FETCH_MODE);
+  if (info.Length() == 1 && info[0]->IsObject()) {
+    Local<Object> obj = info[0]->ToObject();
+
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
   }
-  
+
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
   }
-  
-  Local<Array> rows = NanNew<Array>();
-  
+
+  Local<Array> rows = Nan::New<Array>();
+
   //Only loop through the recordset if there are columns
   if (self->colCount > 0) {
     //loop through all records
     while (true) {
       ret = SQLFetch(self->m_hSTMT);
-      
+
       //check to see if there was an error
       if (ret == SQL_ERROR)  {
         errorCount++;
-        
+
         objError = ODBC::GetSQLError(
-          SQL_HANDLE_STMT, 
+          SQL_HANDLE_STMT,
           self->m_hSTMT,
           (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
             " your query did not have a result set."
         );
-        
+
         break;
       }
-      
+
       //check to see if we are at the end of the recordset
       if (ret == SQL_NO_DATA) {
         ODBC::FreeColumns(self->columns, &self->colCount);
-        
+
         break;
       }
 
       if (fetchMode == FETCH_ARRAY) {
         rows->Set(
-          NanNew(count), 
+          Nan::New(count),
           ODBC::GetRecordArray(
             self->m_hSTMT,
             self->columns,
@@ -642,7 +642,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
       }
       else {
         rows->Set(
-          NanNew(count), 
+          Nan::New(count),
           ODBC::GetRecordTuple(
             self->m_hSTMT,
             self->columns,
@@ -657,66 +657,66 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   else {
     ODBC::FreeColumns(self->columns, &self->colCount);
   }
-  
+
   //throw the error object if there were errors
   if (errorCount > 0) {
-    NanThrowError(objError);
+    Nan::ThrowError(objError);
   }
-  
-  NanReturnValue(rows);
+
+  info.GetReturnValue().Set(rows);
 }
 
 /*
  * CloseSync
- * 
+ *
  */
 
 NAN_METHOD(ODBCResult::CloseSync) {
   DEBUG_PRINTF("ODBCResult::CloseSync\n");
-  NanScope();
-  
+  Nan::HandleScope scope;
+
   OPT_INT_ARG(0, closeOption, SQL_DESTROY);
-  
-  ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
- 
-  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i\n", 
+
+  ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i\n",
                closeOption, result->m_canFreeHandle);
-  
+
   if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
     result->Free();
   }
   else if (closeOption == SQL_DESTROY && !result->m_canFreeHandle) {
     //We technically can't free the handle so, we'll SQL_CLOSE
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
+
     SQLFreeStmt(result->m_hSTMT, SQL_CLOSE);
-  
+
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   else {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
+
     SQLFreeStmt(result->m_hSTMT, closeOption);
-  
+
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
-  
-  NanReturnValue(NanTrue());
+
+  info.GetReturnValue().Set(Nan::True());
 }
 
 NAN_METHOD(ODBCResult::MoreResultsSync) {
   DEBUG_PRINTF("ODBCResult::MoreResultsSync\n");
-  NanScope();
-  
-  ODBCResult* result = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
+  Nan::HandleScope scope;
+
+  ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
   if (ret == SQL_ERROR) {
-    NanThrowError(ODBC::GetSQLError(SQL_HANDLE_STMT, result->m_hSTMT, (char *)"[node-odbc] Error in ODBCResult::MoreResultsSync"));
+    Nan::ThrowError(ODBC::GetSQLError(SQL_HANDLE_STMT, result->m_hSTMT, (char *)"[node-odbc] Error in ODBCResult::MoreResultsSync"));
   }
 
-  NanReturnValue(SQL_SUCCEEDED(ret) || ret == SQL_ERROR ? NanTrue() : NanFalse());
+  info.GetReturnValue().Set(SQL_SUCCEEDED(ret) || ret == SQL_ERROR ? Nan::True() : Nan::False());
 }
 
 /*
@@ -725,20 +725,20 @@ NAN_METHOD(ODBCResult::MoreResultsSync) {
 
 NAN_METHOD(ODBCResult::GetColumnNamesSync) {
   DEBUG_PRINTF("ODBCResult::GetColumnNamesSync\n");
-  NanScope();
-  
-  ODBCResult* self = ObjectWrap::Unwrap<ODBCResult>(args.Holder());
-  
-  Local<Array> cols = NanNew<Array>();
-  
+  Nan::HandleScope scope;
+
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  Local<Array> cols = Nan::New<Array>();
+
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
   }
-  
+
   for (int i = 0; i < self->colCount; i++) {
-    cols->Set(NanNew(i),
-              NanNew((const char *) self->columns[i].name));
+    cols->Set(Nan::New(i),
+              Nan::New((const char *) self->columns[i].name).ToLocalChecked());
   }
-    
-  NanReturnValue(cols);
+
+  info.GetReturnValue().Set(cols);
 }

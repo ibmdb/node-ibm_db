@@ -27,10 +27,10 @@
   },
   "dependencies": {
     "bindings": "~1.0.0",
-    "nan": "~1.8.4",
-    "unzip": "~0.1.11",
+    "fstream": "~1.0.7",
+    "nan": "^2.0.9",
     "tar.gz": "~0.1.1",
-    "fstream": "~1.0.7"
+    "unzip": "~0.1.11"
   },
   "keywords": [
     "node",
@@ -39,5 +39,8 @@
     "driver"
   ],
   "author": "IBM",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "moment": "^2.10.6"
+  }
 }
