@@ -19,24 +19,24 @@
 
 #include <nan.h>
 
-class ODBCResult : public node::ObjectWrap {
+class ODBCResult : public Nan::ObjectWrap {
   public:
-   static Persistent<String> OPTION_FETCH_MODE;
-   static Persistent<Function> constructor;
+   static Nan::Persistent<String> OPTION_FETCH_MODE;
+   static Nan::Persistent<Function> constructor;
    static void Init(v8::Handle<Object> exports);
-   
+
    void Free();
-   
+
   protected:
     ODBCResult() {};
-    
-    explicit ODBCResult(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, bool canFreeHandle): 
-      ObjectWrap(),
+
+    explicit ODBCResult(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, bool canFreeHandle):
+      Nan::ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
       m_hSTMT(hSTMT),
       m_canFreeHandle(canFreeHandle) {};
-     
+
     ~ODBCResult();
 
     //constructor
@@ -50,30 +50,30 @@ class ODBCResult : public node::ObjectWrap {
     static NAN_METHOD(FetchAll);
     static void UV_FetchAll(uv_work_t* work_req);
     static void UV_AfterFetchAll(uv_work_t* work_req, int status);
-    
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(MoreResultsSync);
     static NAN_METHOD(FetchSync);
     static NAN_METHOD(FetchAllSync);
     static NAN_METHOD(GetColumnNamesSync);
-    
+
     //property getter/setters
     static NAN_GETTER(FetchModeGetter);
     static NAN_SETTER(FetchModeSetter);
-    
+
     struct fetch_work_data {
-      NanCallback* cb;
+      Nan::Callback* cb;
       ODBCResult *objResult;
       SQLRETURN result;
-      
+
       int fetchMode;
       int count;
       int errorCount;
-      Persistent<Array> rows;
-      Persistent<Object> objError;
+      Nan::Persistent<Array> rows;
+      Nan::Persistent<Value> objError;
     };
-    
+
     ODBCResult *self(void) { return this; }
 
   protected:
@@ -82,7 +82,7 @@ class ODBCResult : public node::ObjectWrap {
     SQLHSTMT m_hSTMT;
     bool m_canFreeHandle;
     int m_fetchMode;
-    
+
     uint16_t *buffer;
     int bufferLength;
     Column *columns;
