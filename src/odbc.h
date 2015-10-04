@@ -61,9 +61,9 @@ typedef struct {
   SQLSMALLINT  decimals;
 } Parameter;
 
-class ODBC : public node::ObjectWrap {
+class ODBC : public Nan::Nan::ObjectWrap {
   public:
-    static Persistent<Function> constructor;
+    static Nan::Persistent<Function> constructor;
     static uv_mutex_t g_odbcMutex;
     static uv_async_t g_async;
     
@@ -73,13 +73,13 @@ class ODBC : public node::ObjectWrap {
     static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
     static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
-    static Handle<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, NanCallback* cb);
-    static Handle<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, NanCallback* cb);
+    static Handle<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
+    static Handle<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
     static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
     static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);
 #ifdef dynodbc
-    static Handle<Value> LoadODBCLibrary(const Arguments& args);
+    static Handle<Value> LoadODBCLibrary(const Arguments& info);
 #endif
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     
@@ -109,27 +109,27 @@ class ODBC : public node::ObjectWrap {
 };
 
 struct create_connection_work_data {
-  NanCallback* cb;
+  Nan::Callback* cb;
   ODBC *dbo;
   SQLHDBC hDBC;
   int result;
 };
 
 struct open_request {
-  Persistent<Function> cb;
+  Nan::Persistent<Function> cb;
   ODBC *dbo;
   int result;
   char connection[1];
 };
 
 struct close_request {
-  Persistent<Function> cb;
+  Nan::Persistent<Function> cb;
   ODBC *dbo;
   int result;
 };
 
 struct query_request {
-  Persistent<Function> cb;
+  Nan::Persistent<Function> cb;
   ODBC *dbo;
   SQLHSTMT hSTMT;
   int affectedRows;
@@ -163,77 +163,77 @@ struct query_request {
 #endif
 
 #define REQ_ARGS(N)                                                     \
-  if (args.Length() < (N))                                              \
-    return NanThrowTypeError("Expected " #N "arguments");
+  if (info.Length() < (N))                                              \
+    return Nan::ThrowTypeError("Expected " #N "arguments");
 
 //Require String Argument; Save String as Utf8
 #define REQ_STR_ARG(I, VAR)                                             \
-  if (args.Length() <= (I) || !args[I]->IsString())                     \
-    return NanThrowTypeError("Argument " #I " must be a string");       \
-  String::Utf8Value VAR(args[I]->ToString());
+  if (info.Length() <= (I) || !info[I]->IsString())                     \
+    return Nan::ThrowTypeError("Argument " #I " must be a string");       \
+  String::Utf8Value VAR(info[I]->ToString());
 
 //Require String Argument; Save String as Wide String (UCS2)
 #define REQ_WSTR_ARG(I, VAR)                                             \
-  if (args.Length() <= (I) || !args[I]->IsString())                     \
-    return NanThrowTypeError("Argument " #I " must be a string");       \
-  String::Value VAR(args[I]->ToString());
+  if (info.Length() <= (I) || !info[I]->IsString())                     \
+    return Nan::ThrowTypeError("Argument " #I " must be a string");       \
+  String::Value VAR(info[I]->ToString());
 
 //Require String Argument; Save String as Object
 #define REQ_STRO_ARG(I, VAR)                                             \
-  if (args.Length() <= (I) || !args[I]->IsString())                     \
-    return NanThrowTypeError("Argument " #I " must be a string");       \
-  Local<String> VAR(args[I]->ToString());
+  if (info.Length() <= (I) || !info[I]->IsString())                     \
+    return Nan::ThrowTypeError("Argument " #I " must be a string");       \
+  Local<String> VAR(info[I]->ToString());
 
 //Require String or Null Argument; Save String as Utf8
 #define REQ_STR_OR_NULL_ARG(I, VAR)                                             \
-  if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) )   \
-    return NanThrowTypeError("Argument " #I " must be a string or null");       \
-  String::Utf8Value VAR(args[I]->ToString());
+  if ( info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull()) )   \
+    return Nan::ThrowTypeError("Argument " #I " must be a string or null");       \
+  String::Utf8Value VAR(info[I]->ToString());
 
 //Require String or Null Argument; Save String as Wide String (UCS2)
 #define REQ_WSTR_OR_NULL_ARG(I, VAR)                                              \
-  if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) )     \
-    return NanThrowTypeError("Argument " #I " must be a string or null");         \
-  String::Value VAR(args[I]->ToString());
+  if ( info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull()) )     \
+    return Nan::ThrowTypeError("Argument " #I " must be a string or null");         \
+  String::Value VAR(info[I]->ToString());
 
 //Require String or Null Argument; save String as String Object
 #define REQ_STRO_OR_NULL_ARG(I, VAR)                                              \
-  if ( args.Length() <= (I) || (!args[I]->IsString() && !args[I]->IsNull()) ) {   \
-    NanThrowTypeError("Argument " #I " must be a string or null");                \
-    NanReturnUndefined();                                                         \
+  if ( info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull()) ) {   \
+    Nan::ThrowTypeError("Argument " #I " must be a string or null");                \
+    return;                                                         \
   }                                                                               \
-  Local<String> VAR(args[I]->ToString());
+  Local<String> VAR(info[I]->ToString());
 
 #define REQ_FUN_ARG(I, VAR)                                             \
-  if (args.Length() <= (I) || !args[I]->IsFunction())                   \
-    return NanThrowTypeError("Argument " #I " must be a function");     \
-  Local<Function> VAR = Local<Function>::Cast(args[I]);
+  if (info.Length() <= (I) || !info[I]->IsFunction())                   \
+    return Nan::ThrowTypeError("Argument " #I " must be a function");     \
+  Local<Function> VAR = Local<Function>::Cast(info[I]);
 
 #define REQ_BOOL_ARG(I, VAR)                                            \
-  if (args.Length() <= (I) || !args[I]->IsBoolean())                    \
-    return NanThrowTypeError("Argument " #I " must be a boolean");      \
-  Local<Boolean> VAR = (args[I]->ToBoolean());
+  if (info.Length() <= (I) || !info[I]->IsBoolean())                    \
+    return Nan::ThrowTypeError("Argument " #I " must be a boolean");      \
+  Local<Boolean> VAR = (info[I]->ToBoolean());
   
 #define REQ_EXT_ARG(I, VAR)                                             \
-  if (args.Length() <= (I) || !args[I]->IsExternal())                   \
-    return NanThrowTypeError("Argument " #I " invalid");                \
-  Local<External> VAR = Local<External>::Cast(args[I]);
+  if (info.Length() <= (I) || !info[I]->IsExternal())                   \
+    return Nan::ThrowTypeError("Argument " #I " invalid");                \
+  Local<External> VAR = Local<External>::Cast(info[I]);
 
 #define OPT_INT_ARG(I, VAR, DEFAULT)                                    \
   int VAR;                                                              \
-  if (args.Length() <= (I)) {                                           \
+  if (info.Length() <= (I)) {                                           \
     VAR = (DEFAULT);                                                    \
-  } else if (args[I]->IsInt32()) {                                      \
-    VAR = args[I]->Int32Value();                                        \
+  } else if (info[I]->IsInt32()) {                                      \
+    VAR = info[I]->Int32Value();                                        \
   } else {                                                              \
-    return NanThrowTypeError("Argument " #I " must be an integer");     \
+    return Nan::ThrowTypeError("Argument " #I " must be an integer");     \
   }
 
 
 // From node v10 NODE_DEFINE_CONSTANT
 #define NODE_ODBC_DEFINE_CONSTANT(constructor_template, constant)       \
-  (constructor_template)->Set(NanNew<String>(#constant),                \
-                NanNew<Number>(constant),                               \
+  (constructor_template)->Set(Nan::New<String>(#constant),                \
+                Nan::New<Number>(constant),                               \
                 static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
 
 #endif
