@@ -14,6 +14,8 @@ You may install the package using npm install command:
 ```bash
 npm install ibm_db
 ```
+For NodeJS V 4.x, use below command:
+`npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support`
 
 quick example
 -------------
