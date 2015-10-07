@@ -137,7 +137,7 @@ NAN_METHOD(ODBCResult::New) {
 NAN_GETTER(ODBCResult::FetchModeGetter) {
   Nan::HandleScope scope;
 
-  ODBCResult *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
 
   info.GetReturnValue().Set(Nan::New(obj->m_fetchMode));
 }
@@ -145,7 +145,7 @@ NAN_GETTER(ODBCResult::FetchModeGetter) {
 NAN_SETTER(ODBCResult::FetchModeSetter) {
   Nan::HandleScope scope;
 
-  ODBCResult *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   if (value->IsNumber()) {
     obj->m_fetchMode = value->Int32Value();
@@ -160,7 +160,7 @@ NAN_METHOD(ODBCResult::Fetch) {
   DEBUG_PRINTF("ODBCResult::Fetch\n");
   Nan::HandleScope scope;
   
-  ODBCResult* objODBCResult = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -322,7 +322,7 @@ NAN_METHOD(ODBCResult::FetchSync) {
   DEBUG_PRINTF("ODBCResult::FetchSync\n");
   Nan::HandleScope scope;
   
-  ODBCResult* objResult = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* objResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
 
   Local<Object> objError;
   bool moreWork = true;
@@ -410,7 +410,7 @@ NAN_METHOD(ODBCResult::FetchAll) {
   DEBUG_PRINTF("ODBCResult::FetchAll\n");
   Nan::HandleScope scope;
   
-  ODBCResult* objODBCResult = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -578,7 +578,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   DEBUG_PRINTF("ODBCResult::FetchAllSync\n");
   Nan::HandleScope scope;
   
-  ODBCResult* self = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   Local<Object> objError = Nan::New<Object>();
   
@@ -677,7 +677,7 @@ NAN_METHOD(ODBCResult::CloseSync) {
   
   OPT_INT_ARG(0, closeOption, SQL_DESTROY);
   
-  ODBCResult* result = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
  
   DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i\n", 
                closeOption, result->m_canFreeHandle);
@@ -708,7 +708,7 @@ NAN_METHOD(ODBCResult::MoreResultsSync) {
   DEBUG_PRINTF("ODBCResult::MoreResultsSync\n");
   Nan::HandleScope scope;
   
-  ODBCResult* result = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   SQLRETURN ret = SQLMoreResults(result->m_hSTMT);
 
@@ -727,7 +727,7 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync) {
   DEBUG_PRINTF("ODBCResult::GetColumnNamesSync\n");
   Nan::HandleScope scope;
   
-  ODBCResult* self = Nan::Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   Local<Array> cols = Nan::New<Array>();
   

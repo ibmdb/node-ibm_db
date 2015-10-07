@@ -19,7 +19,7 @@
 
 #include <nan.h>
 
-class ODBCStatement : public Nan::Nan::ObjectWrap {
+class ODBCStatement : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<Function> constructor;
    static void Init(v8::Handle<Object> exports);
@@ -30,7 +30,7 @@ class ODBCStatement : public Nan::Nan::ObjectWrap {
     ODBCStatement() {};
     
     explicit ODBCStatement(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT): 
-      Nan::Nan::ObjectWrap(),
+      Nan::ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
       m_hSTMT(hSTMT) {};

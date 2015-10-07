@@ -155,7 +155,7 @@ NAN_METHOD(ODBCStatement::Execute) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -249,7 +249,7 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
   
   Nan::HandleScope scope;
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
   
@@ -288,7 +288,7 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuery) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -384,7 +384,7 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuerySync) {
   
   Nan::HandleScope scope;
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
   
@@ -427,7 +427,7 @@ NAN_METHOD(ODBCStatement::ExecuteDirect) {
   REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -541,7 +541,7 @@ NAN_METHOD(ODBCStatement::ExecuteDirectSync) {
   REQ_STR_ARG(0, sql);
 #endif
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   SQLRETURN ret = SQLExecDirect(
     stmt->m_hSTMT,
@@ -587,7 +587,7 @@ NAN_METHOD(ODBCStatement::PrepareSync) {
 
   REQ_STRO_ARG(0, sql);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
 
   SQLRETURN ret;
 
@@ -635,7 +635,7 @@ NAN_METHOD(ODBCStatement::Prepare) {
   REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -747,7 +747,7 @@ NAN_METHOD(ODBCStatement::BindSync) {
     return Nan::ThrowTypeError("Argument 1 must be an Array");
   }
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   DEBUG_PRINTF("ODBCStatement::BindSync m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
     stmt->m_hENV,
@@ -847,7 +847,7 @@ NAN_METHOD(ODBCStatement::Bind) {
   
   REQ_FUN_ARG(1, cb);
 
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -1000,7 +1000,7 @@ NAN_METHOD(ODBCStatement::CloseSync) {
 
   OPT_INT_ARG(0, closeOption, SQL_DESTROY);
   
-  ODBCStatement* stmt = Nan::Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   DEBUG_PRINTF("ODBCStatement::CloseSync closeOption=%i\n", 
                closeOption);

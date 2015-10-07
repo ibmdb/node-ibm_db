@@ -128,7 +128,7 @@ NAN_METHOD(ODBCConnection::New) {
 NAN_GETTER(ODBCConnection::ConnectedGetter) {
   Nan::HandleScope scope;
 
-  ODBCConnection *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
   info.GetReturnValue().Set(obj->connected ? Nan::True() : Nan::False());
 }
@@ -136,7 +136,7 @@ NAN_GETTER(ODBCConnection::ConnectedGetter) {
 NAN_GETTER(ODBCConnection::ConnectTimeoutGetter) {
   Nan::HandleScope scope;
 
-  ODBCConnection *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
   info.GetReturnValue().Set(Nan::New<Number>(obj->connectTimeout));
 }
@@ -144,7 +144,7 @@ NAN_GETTER(ODBCConnection::ConnectTimeoutGetter) {
 NAN_SETTER(ODBCConnection::ConnectTimeoutSetter) {
   Nan::HandleScope scope;
 
-  ODBCConnection *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   if (value->IsNumber()) {
     obj->connectTimeout = value->Uint32Value();
@@ -154,7 +154,7 @@ NAN_SETTER(ODBCConnection::ConnectTimeoutSetter) {
 NAN_GETTER(ODBCConnection::LoginTimeoutGetter) {
   Nan::HandleScope scope;
 
-  ODBCConnection *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
   info.GetReturnValue().Set(Nan::New<Number>(obj->loginTimeout));
 }
@@ -162,7 +162,7 @@ NAN_GETTER(ODBCConnection::LoginTimeoutGetter) {
 NAN_SETTER(ODBCConnection::LoginTimeoutSetter) {
   Nan::HandleScope scope;
 
-  ODBCConnection *obj = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   if (value->IsNumber()) {
     obj->connectTimeout = value->Int32Value();
@@ -183,7 +183,7 @@ NAN_METHOD(ODBCConnection::Open) {
   REQ_FUN_ARG(1, cb);
 
   //get reference to the connection object
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   //create a uv work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
@@ -335,7 +335,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   REQ_STRO_ARG(0, connection);
 
   //get reference to the connection object
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
  
   DEBUG_PRINTF("ODBCConnection::OpenSync : connectTimeout=%i, loginTimeout = %i\n", *&(conn->connectTimeout), *&(conn->loginTimeout));
 
@@ -436,7 +436,7 @@ NAN_METHOD(ODBCConnection::Close) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -521,7 +521,7 @@ NAN_METHOD(ODBCConnection::CloseSync) {
   DEBUG_PRINTF("ODBCConnection::CloseSync\n");
   Nan::HandleScope scope;
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   //TODO: check to see if there are any open statements
   //on this connection
@@ -548,7 +548,7 @@ NAN_METHOD(ODBCConnection::CreateStatementSync) {
   DEBUG_PRINTF("ODBCConnection::CreateStatementSync\n");
   Nan::HandleScope scope;
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
    
   SQLHSTMT hSTMT;
 
@@ -582,7 +582,7 @@ NAN_METHOD(ODBCConnection::CreateStatement) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
     
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
@@ -685,7 +685,7 @@ NAN_METHOD(ODBCConnection::Query) {
   
   Local<String> sql;
   
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -972,7 +972,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   String::Utf8Value* sql;
 #endif
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   Parameter* params = new Parameter[0];
   Parameter prm;
@@ -1190,7 +1190,7 @@ NAN_METHOD(ODBCConnection::Tables) {
   REQ_STRO_OR_NULL_ARG(3, type);
   Local<Function> cb = Local<Function>::Cast(info[4]);
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -1302,7 +1302,7 @@ NAN_METHOD(ODBCConnection::Columns) {
   
   Local<Function> cb = Local<Function>::Cast(info[4]);
   
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -1406,7 +1406,7 @@ NAN_METHOD(ODBCConnection::BeginTransactionSync) {
   DEBUG_PRINTF("ODBCConnection::BeginTransactionSync\n");
   Nan::HandleScope scope;
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   SQLRETURN ret;
 
@@ -1439,7 +1439,7 @@ NAN_METHOD(ODBCConnection::BeginTransaction) {
 
   REQ_FUN_ARG(0, cb);
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   
@@ -1529,7 +1529,7 @@ NAN_METHOD(ODBCConnection::EndTransactionSync) {
   DEBUG_PRINTF("ODBCConnection::EndTransactionSync\n");
   Nan::HandleScope scope;
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   REQ_BOOL_ARG(0, rollback);
   
@@ -1595,7 +1595,7 @@ NAN_METHOD(ODBCConnection::EndTransaction) {
   REQ_BOOL_ARG(0, rollback);
   REQ_FUN_ARG(1, cb);
 
-  ODBCConnection* conn = Nan::Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   

@@ -19,7 +19,7 @@
 
 #include <nan.h>
 
-class ODBCResult : public Nan::Nan::ObjectWrap {
+class ODBCResult : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_FETCH_MODE;
    static Nan::Persistent<Function> constructor;
@@ -31,7 +31,7 @@ class ODBCResult : public Nan::Nan::ObjectWrap {
     ODBCResult() {};
     
     explicit ODBCResult(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, bool canFreeHandle): 
-      Nan::Nan::ObjectWrap(),
+      Nan::ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
       m_hSTMT(hSTMT),

@@ -20,7 +20,7 @@
 
 #include <nan.h>
 
-class ODBCConnection : public Nan::Nan::ObjectWrap {
+class ODBCConnection : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_SQL;
    static Nan::Persistent<String> OPTION_PARAMS;
@@ -35,7 +35,7 @@ class ODBCConnection : public Nan::Nan::ObjectWrap {
     ODBCConnection() {};
     
     explicit ODBCConnection(SQLHENV hENV, SQLHDBC hDBC): 
-      Nan::Nan::ObjectWrap(),
+      Nan::ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC) {};
      

@@ -166,7 +166,7 @@ NAN_METHOD(ODBC::CreateConnection) {
   Nan::Callback *callback = new Nan::Callback(cb);
   //REQ_FUN_ARG(0, cb);
 
-  ODBC* dbo = Nan::Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
+  ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
   
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
@@ -249,7 +249,7 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
   DEBUG_PRINTF("ODBC::CreateConnectionSync\n");
   Nan::HandleScope scope;
 
-  ODBC* dbo = Nan::Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
+  ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
    
   SQLHDBC hDBC;
   

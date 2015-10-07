@@ -61,7 +61,7 @@ typedef struct {
   SQLSMALLINT  decimals;
 } Parameter;
 
-class ODBC : public Nan::Nan::ObjectWrap {
+class ODBC : public Nan::ObjectWrap {
   public:
     static Nan::Persistent<Function> constructor;
     static uv_mutex_t g_odbcMutex;
