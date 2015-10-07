@@ -1197,7 +1197,7 @@ NAN_METHOD(ODBCConnection::Tables) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    Nan::NanLowMemoryNotification();
+    Nan::LowMemoryNotification();
     Nan::ThrowError("Could not allocate enough memory");
     return;
   }
@@ -1308,7 +1308,7 @@ NAN_METHOD(ODBCConnection::Columns) {
   query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    Nan::NanLowMemoryNotification();
+    Nan::LowMemoryNotification();
     Nan::ThrowError("Could not allocate enough memory");
     return;
   }
@@ -1446,7 +1446,7 @@ NAN_METHOD(ODBCConnection::BeginTransaction) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    Nan::NanLowMemoryNotification();
+    Nan::LowMemoryNotification();
     return Nan::ThrowError("Could not allocate enough memory");
   }
 
@@ -1602,7 +1602,7 @@ NAN_METHOD(ODBCConnection::EndTransaction) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    Nan::NanLowMemoryNotification();
+    Nan::LowMemoryNotification();
     return Nan::ThrowError("Could not allocate enough memory");
   }
   
