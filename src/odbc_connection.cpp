@@ -94,7 +94,7 @@ void ODBCConnection::Free() {
     if (m_hDBC) {
       SQLDisconnect(m_hDBC);
       SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
-      m_hDBC = NULL;
+      m_hDBC = (SQLHDBC)NULL;
     }
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -236,7 +236,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     SQLSetConnectAttr(
       self->m_hDBC,           //ConnectionHandle
       SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      (SQLPOINTER)timeOut,    //ValuePtr
+      (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
       sizeof(timeOut));       //StringLength
   }
   
@@ -292,7 +292,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   if (data->result) {
     err = true;
 
-    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
+    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
     
     argv[0] = objError;
   }
@@ -339,7 +339,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
  
   DEBUG_PRINTF("ODBCConnection::OpenSync : connectTimeout=%i, loginTimeout = %i\n", *&(conn->connectTimeout), *&(conn->loginTimeout));
 
-  Local<Object> objError;
+  Local<Value> objError;
   SQLRETURN ret;
   bool err = false;
   
@@ -362,7 +362,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
     SQLSetConnectAttr(
       conn->m_hDBC,           //ConnectionHandle
       SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      (SQLPOINTER)timeOut,    //ValuePtr
+      (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
       sizeof(timeOut));       //StringLength
   }
   
@@ -562,9 +562,9 @@ NAN_METHOD(ODBCConnection::CreateStatementSync) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   Local<Value> params[3];
-  params[0] = Nan::New<External>((void*)conn->m_hENV);
-  params[1] = Nan::New<External>((void*)conn->m_hDBC);
-  params[2] = Nan::New<External>((void*)hSTMT);
+  params[0] = Nan::New<External>((void*)(intptr_t)conn->m_hENV);
+  params[1] = Nan::New<External>((void*)(intptr_t)conn->m_hDBC);
+  params[2] = Nan::New<External>((void*)(intptr_t)hSTMT);
   
   Local<Object> js_result(Nan::New<Function>(ODBCStatement::constructor)->NewInstance(3, params));
   
@@ -648,14 +648,14 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status) {
   );
   
   Local<Value> info[3];
-  info[0] = Nan::New<External>((void*)data->conn->m_hENV);
-  info[1] = Nan::New<External>((void*)data->conn->m_hDBC);
-  info[2] = Nan::New<External>((void*)data->hSTMT);
+  info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
+  info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
+  info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
   
   Local<Object> js_result = Nan::New<Function>(ODBCStatement::constructor)->NewInstance(3, info);
 
-  info[0] = Nan::New<Value>(Nan::Null());
-  info[1] = Nan::New(js_result);
+  info[0] = Nan::Null();
+  info[1] = js_result;
 
 
   Nan::TryCatch try_catch;
@@ -755,7 +755,6 @@ NAN_METHOD(ODBCConnection::Query) {
         data->paramCount = 0;
       }
       
-      Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (obj->Has(optionParamsKey) && obj->Get(optionParamsKey)->IsBoolean()) {
         data->noResultObject = obj->Get(optionParamsKey)->ToBoolean()->Value();
       }
@@ -892,8 +891,8 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     Local<Value> info[2];
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New<Value>(Nan::True());
+    info[0] = Nan::Null();
+    info[1] = Nan::True();
     
     data->cb->Call(2, info);
   }
@@ -901,9 +900,9 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     Local<Value> info[4];
     bool* canFreeHandle = new bool(true);
     
-    info[0] = Nan::New<External>((void*)data->conn->m_hENV);
-    info[1] = Nan::New<External>((void*)data->conn->m_hDBC);
-    info[2] = Nan::New<External>((void*)data->hSTMT);
+    info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
+    info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
+    info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
     info[3] = Nan::New<External>((void*)canFreeHandle);
     
     Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, info);
@@ -912,9 +911,9 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     if (data->result == SQL_ERROR) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-odbc] SQL_ERROR");
     } else {
-      info[0] = Nan::New<Value>(Nan::Null());
+      info[0] = Nan::Null();
     }
-    info[1] = Nan::New(js_result);
+    info[1] = js_result;
     
     data->cb->Call(2, info);
   }
@@ -1024,7 +1023,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
       
       Local<Object> obj = info[0]->ToObject();
       
-      Local<String> optionSqlKey = Nan::New<String>(OPTION_SQL).ToLocalChecked();
+      Local<String> optionSqlKey = Nan::New<String>(OPTION_SQL);
       if (obj->Has(optionSqlKey) && obj->Get(optionSqlKey)->IsString()) {
 #ifdef UNICODE
         sql = new String::Value(obj->Get(optionSqlKey)->ToString());
@@ -1166,9 +1165,9 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     Local<Value> result[4];
     bool* canFreeHandle = new bool(true);
     
-    result[0] = Nan::New<External>((void*)conn->m_hENV);
-    result[1] = Nan::New<External>((void*)conn->m_hDBC);
-    result[2] = Nan::New<External>((void*)hSTMT);
+    result[0] = Nan::New<External>((void*) (intptr_t) conn->m_hENV);
+    result[1] = Nan::New<External>((void*) (intptr_t) conn->m_hDBC);
+    result[2] = Nan::New<External>((void*) (intptr_t) hSTMT);
     result[3] = Nan::New<External>((void*)canFreeHandle);
     
     Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, result);
@@ -1198,7 +1197,7 @@ NAN_METHOD(ODBCConnection::Tables) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    NanLowMemoryNotification();
+    Nan::NanLowMemoryNotification();
     Nan::ThrowError("Could not allocate enough memory");
     return;
   }
@@ -1309,7 +1308,7 @@ NAN_METHOD(ODBCConnection::Columns) {
   query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    NanLowMemoryNotification();
+    Nan::NanLowMemoryNotification();
     Nan::ThrowError("Could not allocate enough memory");
     return;
   }
@@ -1418,7 +1417,7 @@ NAN_METHOD(ODBCConnection::BeginTransactionSync) {
     SQL_NTS);
   
   if (!SQL_SUCCEEDED(ret)) {
-    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
+    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
     
     Nan::ThrowError(objError);
     
@@ -1447,7 +1446,7 @@ NAN_METHOD(ODBCConnection::BeginTransaction) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    NanLowMemoryNotification();
+    Nan::NanLowMemoryNotification();
     return Nan::ThrowError("Could not allocate enough memory");
   }
 
@@ -1501,7 +1500,7 @@ void ODBCConnection::UV_AfterBeginTransaction(uv_work_t* req, int status) {
   if (!SQL_SUCCEEDED(data->result)) {
     err = true;
 
-    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
+    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
     
     argv[0] = objError;
   }
@@ -1533,7 +1532,7 @@ NAN_METHOD(ODBCConnection::EndTransactionSync) {
   
   REQ_BOOL_ARG(0, rollback);
   
-  Local<Object> objError;
+  Local<Value> objError;
   SQLRETURN ret;
   bool error = false;
   SQLSMALLINT completionType = (rollback->Value()) 
@@ -1603,7 +1602,7 @@ NAN_METHOD(ODBCConnection::EndTransaction) {
     (query_work_data *) calloc(1, sizeof(query_work_data));
   
   if (!data) {
-    NanLowMemoryNotification();
+    Nan::NanLowMemoryNotification();
     return Nan::ThrowError("Could not allocate enough memory");
   }
   
@@ -1681,7 +1680,7 @@ void ODBCConnection::UV_AfterEndTransaction(uv_work_t* req, int status) {
   if (!SQL_SUCCEEDED(data->result)) {
     err = true;
 
-    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
+    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
     
     argv[0] = objError;
   }

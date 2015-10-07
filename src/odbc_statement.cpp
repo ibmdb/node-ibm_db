@@ -101,7 +101,7 @@ void ODBCStatement::Free() {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
-    m_hSTMT = NULL;
+    m_hSTMT = (SQLHSTMT)NULL;
     
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
@@ -211,17 +211,17 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
     Local<Value> info[4];
     bool* canFreeHandle = new bool(false);
     
-    info[0] = Nan::New<External>((void*)self->m_hENV);
-    info[1] = Nan::New<External>((void*)self->m_hDBC);
-    info[2] = Nan::New<External>((void*)self->m_hSTMT);
+    info[0] = Nan::New<External>((void*) (intptr_t) self->m_hENV);
+    info[1] = Nan::New<External>((void*) (intptr_t) self->m_hDBC);
+    info[2] = Nan::New<External>((void*) (intptr_t) self->m_hSTMT);
     info[3] = Nan::New<External>((void*)canFreeHandle);
     
     // TODO is this object being cleared anywhere? Memory leak?
     Nan::Persistent<Object> js_result;
     js_result.Reset(Nan::New(ODBCResult::constructor)->NewInstance(4, info));
 
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New(js_result);
+    info[0] = Nan::Null();
+    info[1] = js_result;
 
     Nan::TryCatch try_catch;
 
@@ -266,9 +266,9 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
     Local<Value> result[4];
     bool* canFreeHandle = new bool(false);
     
-    result[0] = Nan::New<External>((void*)stmt->m_hENV);
-    result[1] = Nan::New<External>((void*)stmt->m_hDBC);
-    result[2] = Nan::New<External>((void*)stmt->m_hSTMT);
+    result[0] = Nan::New<External>((void*) (intptr_t) stmt->m_hENV);
+    result[1] = Nan::New<External>((void*) (intptr_t) stmt->m_hDBC);
+    result[2] = Nan::New<External>((void*) (intptr_t) stmt->m_hSTMT);
     result[3] = Nan::New<External>((void*)canFreeHandle);
     
     Local<Object> js_result = Nan::New(ODBCResult::constructor)->NewInstance(4, result);
@@ -355,8 +355,8 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
     
     Local<Value> info[2];
 
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New<Value>(Nan::New<Number>(rowCount));
+    info[0] = Nan::Null();
+    info[1] = Nan::New<Number>(rowCount);
 
     Nan::TryCatch try_catch;
     
@@ -496,17 +496,17 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
     Local<Value> info[4];
     bool* canFreeHandle = new bool(false);
     
-    info[0] = Nan::New<External>((void*)self->m_hENV);
-    info[1] = Nan::New<External>((void*)self->m_hDBC);
-    info[2] = Nan::New<External>((void*)self->m_hSTMT);
+    info[0] = Nan::New<External>((void*) (intptr_t) self->m_hENV);
+    info[1] = Nan::New<External>((void*) (intptr_t) self->m_hDBC);
+    info[2] = Nan::New<External>((void*) (intptr_t) self->m_hSTMT);
     info[3] = Nan::New<External>((void*)canFreeHandle);
     
     //TODO persistent leak?
     Nan::Persistent<Object> js_result;
     js_result.Reset(Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, info));
 
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New(js_result);
+    info[0] = Nan::Null();
+    info[1] = js_result;
 
     Nan::TryCatch try_catch;
 
@@ -561,9 +561,9 @@ NAN_METHOD(ODBCStatement::ExecuteDirectSync) {
    Local<Value> result[4];
     bool* canFreeHandle = new bool(false);
     
-    result[0] = Nan::New<External>((void*)stmt->m_hENV);
-    result[1] = Nan::New<External>((void*)stmt->m_hDBC);
-    result[2] = Nan::New<External>((void*)stmt->m_hSTMT);
+    result[0] = Nan::New<External>((void*) (intptr_t) stmt->m_hENV);
+    result[1] = Nan::New<External>((void*) (intptr_t) stmt->m_hDBC);
+    result[2] = Nan::New<External>((void*) (intptr_t) stmt->m_hSTMT);
     result[3] = Nan::New<External>((void*)canFreeHandle);
     
     //TODO persistent leak?
@@ -713,8 +713,8 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
   else {
     Local<Value> info[2];
 
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New<Value>(Nan::True());
+    info[0] = Nan::Null();
+    info[1] = Nan::True();
 
     Nan::TryCatch try_catch;
 
@@ -828,7 +828,7 @@ NAN_METHOD(ODBCStatement::BindSync) {
     info.GetReturnValue().Set(Nan::False());
   }
 
-  info.GetReturnValue().Set(Nan::Undefined());
+  //info.GetReturnValue().Set(Nan::Undefined());
 }
 
 /*
@@ -970,8 +970,8 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {
   else {
     Local<Value> info[2];
 
-    info[0] = Nan::New<Value>(Nan::Null());
-    info[1] = Nan::New<Value>(Nan::True());
+    info[0] = Nan::Null();
+    info[1] = Nan::True();
 
     Nan::TryCatch try_catch;
 

@@ -78,7 +78,7 @@ void ODBCResult::Free() {
     
     SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
     
-    m_hSTMT = NULL;
+    m_hSTMT = (SQLHSTMT)NULL;
   
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
@@ -179,7 +179,7 @@ NAN_METHOD(ODBCResult::Fetch) {
     
     Local<Object> obj = info[0]->ToObject();
     
-    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       data->fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
@@ -221,7 +221,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
   SQLRETURN ret = data->result;
   //TODO: we should probably define this on the work data so we
   //don't have to keep creating it?
-  Local<Object> objError;
+  Local<Value> objError;
   bool moreWork = true;
   bool error = false;
   
@@ -324,7 +324,7 @@ NAN_METHOD(ODBCResult::FetchSync) {
   
   ODBCResult* objResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
 
-  Local<Object> objError;
+  Local<Value> objError;
   bool moreWork = true;
   bool error = false;
   int fetchMode = objResult->m_fetchMode;
@@ -332,7 +332,7 @@ NAN_METHOD(ODBCResult::FetchSync) {
   if (info.Length() == 1 && info[0]->IsObject()) {
     Local<Object> obj = info[0]->ToObject();
     
-    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
@@ -428,7 +428,7 @@ NAN_METHOD(ODBCResult::FetchAll) {
     
     Local<Object> obj = info[0]->ToObject();
     
-    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       data->fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
@@ -489,7 +489,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   else if (data->result == SQL_ERROR)  {
     data->errorCount++;
     
-    NanAssignPersistent(data->objError, ODBC::GetSQLError(
+    data->objError.Reset(ODBC::GetSQLError(
       SQL_HANDLE_STMT, 
       self->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
@@ -580,7 +580,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   
   ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
-  Local<Object> objError = Nan::New<Object>();
+  Local<Value> objError = Nan::New<Object>();
   
   SQLRETURN ret;
   int count = 0;
@@ -590,7 +590,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   if (info.Length() == 1 && info[0]->IsObject()) {
     Local<Object> obj = info[0]->ToObject();
     
-    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
       fetchMode = obj->Get(fetchModeKey)->ToInt32()->Value();
     }
@@ -737,7 +737,7 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync) {
   
   for (int i = 0; i < self->colCount; i++) {
     cols->Set(Nan::New(i),
-              Nan::New((const char *) self->columns[i].name));
+              Nan::New((const char *) self->columns[i].name).ToLocalChecked());
   }
     
   info.GetReturnValue().Set(cols);

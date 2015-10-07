@@ -71,7 +71,7 @@ class ODBCResult : public Nan::ObjectWrap {
       int count;
       int errorCount;
       Nan::Persistent<Array> rows;
-      Nan::Persistent<Object> objError;
+      Nan::Persistent<Value> objError;
     };
     
     ODBCResult *self(void) { return this; }

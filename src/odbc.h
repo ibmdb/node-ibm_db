@@ -75,8 +75,8 @@ class ODBC : public Nan::ObjectWrap {
     static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
     static Handle<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
-    static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
-    static Local<Object> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
+    static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
+    static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
     static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);
 #ifdef dynodbc
     static Handle<Value> LoadODBCLibrary(const Arguments& info);
@@ -232,7 +232,7 @@ struct query_request {
 
 // From node v10 NODE_DEFINE_CONSTANT
 #define NODE_ODBC_DEFINE_CONSTANT(constructor_template, constant)       \
-  (constructor_template)->Set(Nan::New<String>(#constant),                \
+  (constructor_template)->Set(Nan::New<String>(#constant).ToLocalChecked(),\
                 Nan::New<Number>(constant),                               \
                 static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
 
