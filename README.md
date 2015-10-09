@@ -16,6 +16,11 @@ For NodeJS V 4.x, use below command:
 ```bash
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
 ```
+Note: Currently, node-ibm_db is not supported on Windows using NodeJS V4.x.
+
+un-install
+----------
+To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
 
 quick example
 -------------
@@ -36,6 +41,10 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
   });
 });
 ```
+
+For z/OS and iSeries Connectivity
+---------------------------------
+For connectivity against DB2 for LUW or Informix Server using node-ibm_db, no license file is required. However, if you want to use node-ibm_db against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect license for it. You can buy db2connect license from IBM. The connectivity can be enabled either on server using db2connectactivate utility or using client specific license file. If you have client side license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
 Discussion Forums
 -----------------
