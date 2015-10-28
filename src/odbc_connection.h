@@ -20,12 +20,12 @@
 
 #include <nan.h>
 
-class ODBCConnection : public Nan::ObjectWrap {
+class ODBCConnection : public node::ObjectWrap {
   public:
-   static Nan::Persistent<String> OPTION_SQL;
-   static Nan::Persistent<String> OPTION_PARAMS;
-   static Nan::Persistent<String> OPTION_NORESULTS;
-   static Nan::Persistent<Function> constructor;
+   static Persistent<String> OPTION_SQL;
+   static Persistent<String> OPTION_PARAMS;
+   static Persistent<String> OPTION_NORESULTS;
+   static Persistent<Function> constructor;
    
    static void Init(v8::Handle<Object> exports);
    
@@ -35,7 +35,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     ODBCConnection() {};
     
     explicit ODBCConnection(SQLHENV hENV, SQLHDBC hDBC): 
-      Nan::ObjectWrap(),
+      ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC) {};
      
@@ -92,7 +92,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(EndTransactionSync);
     
     struct Fetch_Request {
-      Nan::Callback* callback;
+      NanCallback* callback;
       ODBCConnection *objResult;
       SQLRETURN result;
     };
@@ -110,14 +110,14 @@ class ODBCConnection : public Nan::ObjectWrap {
 };
 
 struct create_statement_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCConnection *conn;
   SQLHSTMT hSTMT;
   int result;
 };
 
 struct query_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCConnection *conn;
   SQLHSTMT hSTMT;
   
@@ -140,7 +140,7 @@ struct query_work_data {
 };
 
 struct open_connection_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCConnection *conn;
   int result;
   int connectionLength;
@@ -148,7 +148,7 @@ struct open_connection_work_data {
 };
 
 struct close_connection_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCConnection *conn;
   int result;
 };

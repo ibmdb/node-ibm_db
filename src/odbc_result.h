@@ -19,10 +19,10 @@
 
 #include <nan.h>
 
-class ODBCResult : public Nan::ObjectWrap {
+class ODBCResult : public node::ObjectWrap {
   public:
-   static Nan::Persistent<String> OPTION_FETCH_MODE;
-   static Nan::Persistent<Function> constructor;
+   static Persistent<String> OPTION_FETCH_MODE;
+   static Persistent<Function> constructor;
    static void Init(v8::Handle<Object> exports);
    
    void Free();
@@ -31,7 +31,7 @@ class ODBCResult : public Nan::ObjectWrap {
     ODBCResult() {};
     
     explicit ODBCResult(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, bool canFreeHandle): 
-      Nan::ObjectWrap(),
+      ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
       m_hSTMT(hSTMT),
@@ -63,15 +63,15 @@ class ODBCResult : public Nan::ObjectWrap {
     static NAN_SETTER(FetchModeSetter);
     
     struct fetch_work_data {
-      Nan::Callback* cb;
+      NanCallback* cb;
       ODBCResult *objResult;
       SQLRETURN result;
       
       int fetchMode;
       int count;
       int errorCount;
-      Nan::Persistent<Array> rows;
-      Nan::Persistent<Value> objError;
+      Persistent<Array> rows;
+      Persistent<Object> objError;
     };
     
     ODBCResult *self(void) { return this; }

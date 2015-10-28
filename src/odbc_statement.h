@@ -19,9 +19,9 @@
 
 #include <nan.h>
 
-class ODBCStatement : public Nan::ObjectWrap {
+class ODBCStatement : public node::ObjectWrap {
   public:
-   static Nan::Persistent<Function> constructor;
+   static Persistent<Function> constructor;
    static void Init(v8::Handle<Object> exports);
    
    void Free();
@@ -30,7 +30,7 @@ class ODBCStatement : public Nan::ObjectWrap {
     ODBCStatement() {};
     
     explicit ODBCStatement(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT): 
-      Nan::ObjectWrap(),
+      ObjectWrap(),
       m_hENV(hENV),
       m_hDBC(hDBC),
       m_hSTMT(hSTMT) {};
@@ -70,7 +70,7 @@ class ODBCStatement : public Nan::ObjectWrap {
     static NAN_METHOD(BindSync);
     
     struct Fetch_Request {
-      Nan::Callback* callback;
+      NanCallback* callback;
       ODBCStatement *objResult;
       SQLRETURN result;
     };
@@ -92,7 +92,7 @@ class ODBCStatement : public Nan::ObjectWrap {
 };
 
 struct execute_direct_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -100,13 +100,13 @@ struct execute_direct_work_data {
 };
 
 struct execute_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
 };
 
 struct prepare_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -114,7 +114,7 @@ struct prepare_work_data {
 };
 
 struct bind_work_data {
-  Nan::Callback* cb;
+  NanCallback* cb;
   ODBCStatement *stmt;
   int result;
 };

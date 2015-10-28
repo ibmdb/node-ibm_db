@@ -41,16 +41,16 @@ using namespace node;
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
-Nan::Persistent<Function> ODBC::constructor;
+Persistent<Function> ODBC::constructor;
 
 void ODBC::Init(v8::Handle<Object> exports) {
   DEBUG_PRINTF("ODBC::Init\n");
-  Nan::HandleScope scope;
+  NanScope();
 
-  Local<FunctionTemplate> constructor_template = Nan::New<FunctionTemplate>(New);
+  Local<FunctionTemplate> constructor_template = NanNew<FunctionTemplate>(New);
 
   // Constructor Template
-  constructor_template->SetClassName(Nan::New("ODBC").ToLocalChecked());
+  constructor_template->SetClassName(NanNew("ODBC"));
 
   // Reserve space for one Handle<Value>
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
@@ -63,21 +63,21 @@ void ODBC::Init(v8::Handle<Object> exports) {
 
 #endif
   PropertyAttribute constant_attributes = static_cast<PropertyAttribute>(ReadOnly | DontDelete);
-  constructor_template->Set(Nan::New<String>("SQL_CLOSE").ToLocalChecked(), Nan::New<Number>(SQL_CLOSE), constant_attributes);
-  constructor_template->Set(Nan::New<String>("SQL_DROP").ToLocalChecked(), Nan::New<Number>(SQL_DROP), constant_attributes);
-  constructor_template->Set(Nan::New<String>("SQL_UNBIND").ToLocalChecked(), Nan::New<Number>(SQL_UNBIND), constant_attributes);
-  constructor_template->Set(Nan::New<String>("SQL_RESET_PARAMS").ToLocalChecked(), Nan::New<Number>(SQL_RESET_PARAMS), constant_attributes);
-  constructor_template->Set(Nan::New<String>("SQL_DESTROY").ToLocalChecked(), Nan::New<Number>(SQL_DESTROY), constant_attributes);
-  constructor_template->Set(Nan::New<String>("FETCH_ARRAY").ToLocalChecked(), Nan::New<Number>(FETCH_ARRAY), constant_attributes);
+  constructor_template->Set(NanNew<String>("SQL_CLOSE"), NanNew<Number>(SQL_CLOSE), constant_attributes);
+  constructor_template->Set(NanNew<String>("SQL_DROP"), NanNew<Number>(SQL_DROP), constant_attributes);
+  constructor_template->Set(NanNew<String>("SQL_UNBIND"), NanNew<Number>(SQL_UNBIND), constant_attributes);
+  constructor_template->Set(NanNew<String>("SQL_RESET_PARAMS"), NanNew<Number>(SQL_RESET_PARAMS), constant_attributes);
+  constructor_template->Set(NanNew<String>("SQL_DESTROY"), NanNew<Number>(SQL_DESTROY), constant_attributes);
+  constructor_template->Set(NanNew<String>("FETCH_ARRAY"), NanNew<Number>(FETCH_ARRAY), constant_attributes);
   NODE_ODBC_DEFINE_CONSTANT(constructor_template, FETCH_OBJECT);
   
   // Prototype Methods
-  Nan::SetPrototypeMethod(constructor_template, "createConnection", CreateConnection);
-  Nan::SetPrototypeMethod(constructor_template, "createConnectionSync", CreateConnectionSync);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnection", CreateConnection);
+  NODE_SET_PROTOTYPE_METHOD(constructor_template, "createConnectionSync", CreateConnectionSync);
 
   // Attach the Database Constructor to the target object
-  constructor.Reset(constructor_template->GetFunction());
-  exports->Set(Nan::New("ODBC").ToLocalChecked(),
+  NanAssignPersistent(constructor, constructor_template->GetFunction());
+  exports->Set(NanNew("ODBC"),
                constructor_template->GetFunction());
   
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
@@ -112,7 +112,7 @@ void ODBC::Free() {
     
     if (m_hEnv) {
       SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
-      m_hEnv = (SQLHENV)NULL;      
+      m_hEnv = NULL;      
     }
 
     uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -121,12 +121,12 @@ void ODBC::Free() {
 
 NAN_METHOD(ODBC::New) {
   DEBUG_PRINTF("ODBC::New\n");
-  Nan::HandleScope scope;
+  NanScope();
   ODBC* dbo = new ODBC();
   
-  dbo->Wrap(info.Holder());
+  dbo->Wrap(args.Holder());
 
-  dbo->m_hEnv = (SQLHENV)NULL;
+  dbo->m_hEnv = NULL;
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
   
@@ -138,15 +138,15 @@ NAN_METHOD(ODBC::New) {
   if (!SQL_SUCCEEDED(ret)) {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
     
-    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
+    Local<Object> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
     
-    return Nan::ThrowError(objError);
+    return NanThrowError(objError);
   }
   
   // Use ODBC 3.x behavior
   SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, SQL_IS_UINTEGER);
   
-  info.GetReturnValue().Set(info.Holder());
+  NanReturnValue(args.Holder());
 }
 
 //void ODBC::WatcherCallback(uv_async_t *w, int revents) {
@@ -160,13 +160,13 @@ NAN_METHOD(ODBC::New) {
 
 NAN_METHOD(ODBC::CreateConnection) {
   DEBUG_PRINTF("ODBC::CreateConnection\n");
-  Nan::HandleScope scope;
+  NanScope();
 
-  Local<Function> cb = info[0].As<Function>();
-  Nan::Callback *callback = new Nan::Callback(cb);
+  Local<Function> cb = args[0].As<Function>();
+  NanCallback *callback = new NanCallback(cb);
   //REQ_FUN_ARG(0, cb);
 
-  ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
   
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
@@ -184,7 +184,7 @@ NAN_METHOD(ODBC::CreateConnection) {
 
   dbo->Ref();
 
-  info.GetReturnValue().Set(Nan::Undefined());
+  NanReturnValue(NanUndefined());
 }
 
 void ODBC::UV_CreateConnection(uv_work_t* req) {
@@ -203,34 +203,34 @@ void ODBC::UV_CreateConnection(uv_work_t* req) {
 
 void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
   DEBUG_PRINTF("ODBC::UV_AfterCreateConnection\n");
-  Nan::HandleScope scope;
+  NanScope();
 
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
   
-  Nan::TryCatch try_catch;
+  TryCatch try_catch;
   
   if (!SQL_SUCCEEDED(data->result)) {
-    Local<Value> info[1];
+    Local<Value> args[1];
     
-    info[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
+    args[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
     
-    data->cb->Call(1, info);
+    data->cb->Call(1, args);
   }
   else {
-    Local<Value> info[2];
-    info[0] = Nan::New<External>((void*)(intptr_t)data->dbo->m_hEnv);
-    info[1] = Nan::New<External>((void*)(intptr_t)data->hDBC);
+    Local<Value> args[2];
+    args[0] = NanNew<External>((void*)data->dbo->m_hEnv);
+    args[1] = NanNew<External>((void*)data->hDBC);
     
-    Local<Object> js_result = Nan::New<Function>(ODBCConnection::constructor)->NewInstance(2, info);
+    Local<Object> js_result = NanNew<Function>(ODBCConnection::constructor)->NewInstance(2, args);
 
-    info[0] = Nan::Null();
-    info[1] = js_result;
+    args[0] = NanNew<Value>(NanNull());
+    args[1] = NanNew(js_result);
 
-    data->cb->Call(2, info);
+    data->cb->Call(2, args);
   }
   
   if (try_catch.HasCaught()) {
-      Nan::FatalException(try_catch);
+    FatalException(try_catch);
   }
 
   
@@ -247,9 +247,9 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
 
 NAN_METHOD(ODBC::CreateConnectionSync) {
   DEBUG_PRINTF("ODBC::CreateConnectionSync\n");
-  Nan::HandleScope scope;
+  NanScope();
 
-  ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
+  ODBC* dbo = ObjectWrap::Unwrap<ODBC>(args.Holder());
    
   SQLHDBC hDBC;
   
@@ -265,12 +265,12 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   Local<Value> params[2];
-  params[0] = Nan::New<External>((void*)(intptr_t)dbo->m_hEnv);
-  params[1] = Nan::New<External>((void*)(intptr_t)hDBC);
+  params[0] = NanNew<External>((void*)dbo->m_hEnv);
+  params[1] = NanNew<External>((void*)hDBC);
 
-  Local<Object> js_result = Nan::New<Function>(ODBCConnection::constructor)->NewInstance(2, params);
+  Local<Object> js_result = NanNew<Function>(ODBCConnection::constructor)->NewInstance(2, params);
 
-  info.GetReturnValue().Set(js_result);
+  NanReturnValue(js_result);
 }
 
 /*
@@ -366,7 +366,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
                                         uint16_t* buffer, int bufferLength) {
-  Nan::EscapableHandleScope scope;
+  NanEscapableScope();
   SQLLEN len = 0;
 
   //reset the buffer
@@ -394,19 +394,19 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret);
         
         if ((int)len == SQL_NULL_DATA) {
-          return scope.Escape(Nan::Null());
+          return NanEscapeScope(NanNull());
         }
         else if((int)len == sizeof(int)){
-          return scope.Escape(Nan::New<Number>((int)value));
+          return NanEscapeScope(NanNew<Number>((int)value));
         }
         else if((int)len == sizeof(short)){
-          return scope.Escape(Nan::New<Number>((short)value));
+          return NanEscapeScope(NanNew<Number>((short)value));
         }
         else if((int)len == sizeof(long)){
-          return scope.Escape(Nan::New<Number>((long)value));
+          return NanEscapeScope(NanNew<Number>((long)value));
         }
         else {
-          return scope.Escape(Nan::New<Number>(value));
+          return NanEscapeScope(NanNew<Number>(value));
         }
       }
       break;
@@ -432,11 +432,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len, ret, value);
         
         if((int)len == SQL_NULL_DATA) {
-          return scope.Escape(Nan::Null());
+          return NanEscapeScope(NanNull());
           //return Null();
         }
         else {
-          return scope.Escape(Nan::New<Number>(value));
+          return NanEscapeScope(NanNew<Number>(value));
           //return Number::New(value);
         }
       }
@@ -460,7 +460,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, column.type_name, len);
 
       if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
+        return NanEscapeScope(NanNull());
         //return Null();
       }
       else {
@@ -472,21 +472,21 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         timeInfo.tm_isdst = -1;
           
         //return Date::New((double(mktime(&timeInfo)) * 1000));
-        return scope.Escape(Nan::New<Date>(double(mktime(&timeInfo)) * 1000));
+        return NanEscapeScope(NanNew<Date>(double(mktime(&timeInfo)) * 1000));
       }
 #else
       struct tm timeInfo = { 
-        .tm_sec = 0
-        , .tm_min = 0
-        , .tm_hour = 0
-        , .tm_mday = 0
-        , .tm_mon = 0
-        , .tm_year = 0
-        , .tm_wday = 0
-        , .tm_yday = 0
-        , .tm_isdst = 0
-        , .tm_gmtoff = 0
-        , .tm_zone = 0
+        tm_sec : 0
+        , tm_min : 0
+        , tm_hour : 0
+        , tm_mday : 0
+        , tm_mon : 0
+        , tm_year : 0
+        , tm_wday : 0
+        , tm_yday : 0
+        , tm_isdst : 0
+        , tm_gmtoff : 0
+        , tm_zone : 0
       };
 
       SQL_TIMESTAMP_STRUCT odbcTime;
@@ -503,7 +503,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
+        return NanEscapeScope(NanNull());
         //return Null();
       }
       else {
@@ -519,12 +519,14 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //at the specified time.
         timeInfo.tm_isdst = -1;
 #ifdef TIMEGM
-        return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000)
-                          + (odbcTime.fraction / 1000000)).ToLocalChecked());
+        return NanEscapeScope(NanNew<Date>((double(timegm(&timeInfo)) * 1000)
+                          + (odbcTime.fraction / 1000000)));
 #else
-        return scope.Escape(Nan::New<Date>((double(timelocal(&timeInfo)) * 1000)
-                          + (odbcTime.fraction / 1000000)).ToLocalChecked());
+        return NanEscapeScope(NanNew<Date>((double(timelocal(&timeInfo)) * 1000)
+                          + (odbcTime.fraction / 1000000)));
 #endif
+        //return Date::New((double(timegm(&timeInfo)) * 1000) 
+        //                  + (odbcTime.fraction / 1000000));
       }
 #endif
     } break;
@@ -543,11 +545,11 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                     column.index, column.name, column.type, len);
 
       if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
+        return NanEscapeScope(NanNull());
         //return Null();
       }
       else {
-        return scope.Escape(Nan::New((*buffer == '0') ? false : true));
+        return NanEscapeScope(NanNew((*buffer == '0') ? false : true));
       }
 	case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED");
@@ -572,7 +574,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                       column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
 
         if((int)len == SQL_NULL_DATA) {
-          return scope.Escape(Nan::Null());
+          return NanEscapeScope(NanNull());
           //return Null();
         }
         
@@ -586,17 +588,17 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           if (count == 0) {
             //no concatenation required, this is our first pass
 #ifdef UNICODE
-            str = Nan::New((uint16_t*) buffer).ToLocalChecked();
+            str = NanNew((uint16_t*) buffer);
 #else
-            str = Nan::New((char *) buffer).ToLocalChecked();
+            str = NanNew((char *) buffer);
 #endif
           }
           else {
             //we need to concatenate
 #ifdef UNICODE
-            str = String::Concat(str, Nan::New((uint16_t*) buffer).ToLocalChecked());
+            str = String::Concat(str, NanNew((uint16_t*) buffer));
 #else
-            str = String::Concat(str, Nan::New((char *) buffer).ToLocalChecked());
+            str = String::Concat(str, NanNew((char *) buffer));
 #endif
           }
           
@@ -614,17 +616,17 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           //Not sure if throwing here will work out well for us but we can try
           //since we should have a valid handle and the error is something we 
           //can look into
-          Nan::ThrowError(ODBC::GetSQLError(
+          NanThrowError(ODBC::GetSQLError(
              SQL_HANDLE_STMT,
              hStmt,
              (char *) "[node-odbc] Error in ODBC::GetColumnValue"
            ));
-          return scope.Escape(Nan::Undefined());
+          return NanEscapeScope(NanUndefined());
           break;
         }
       } while (true);
       
-      return scope.Escape(str);
+      return NanEscapeScope(str);
   }
 }
 
@@ -635,21 +637,21 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, uint16_t* buffer,
                                          int bufferLength) {
-  Nan::EscapableHandleScope scope;
+  NanEscapableScope();
   
-  Local<Object> tuple = Nan::New<Object>();
+  Local<Object> tuple = NanNew<Object>();
         
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
-    tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
+    tuple->Set( NanNew((uint16_t *) columns[i].name),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #else
-    tuple->Set( Nan::New((const char *) columns[i].name).ToLocalChecked(),
+    tuple->Set( NanNew((const char *) columns[i].name),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
   
-  return scope.Escape(tuple);
+  return NanEscapeScope(tuple);
 }
 
 /*
@@ -659,16 +661,16 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
 Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, uint16_t* buffer,
                                          int bufferLength) {
-  Nan::EscapableHandleScope scope;
+  NanEscapableScope();
   
-  Local<Array> array = Nan::New<Array>();
+  Local<Array> array = NanNew<Array>();
         
   for(int i = 0; i < *colCount; i++) {
-    array->Set( Nan::New(i),
+    array->Set( NanNew(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
   
-  return scope.Escape(array);
+  return NanEscapeScope(array);
 }
 
 /*
@@ -784,10 +786,10 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
 
 Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       SQLHANDLE handle, 
-                                      Nan::Callback* cb) {
-  Nan::EscapableHandleScope scope;
+                                      NanCallback* cb) {
+  NanEscapableScope();
   
-  return scope.Escape(CallbackSQLError(
+  return NanEscapeScope(CallbackSQLError(
     handleType,
     handle,
     (char *) "[node-odbc] SQL_ERROR",
@@ -797,41 +799,41 @@ Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
 Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       SQLHANDLE handle,
                                       char* message,
-                                      Nan::Callback* cb) {
-  Nan::EscapableHandleScope scope;
+                                      NanCallback* cb) {
+  NanEscapableScope();
   
-  Local<Value> objError = ODBC::GetSQLError(
+  Local<Object> objError = ODBC::GetSQLError(
     handleType, 
     handle, 
     message
   );
   
-  Local<Value> info[1];
-  info[0] = objError;
-  cb->Call(1, info);
+  Local<Value> args[1];
+  args[0] = objError;
+  cb->Call(1, args);
   
-  return scope.Escape(Nan::Undefined());
+  return NanEscapeScope(NanUndefined());
 }
 
 /*
  * GetSQLError
  */
 
-Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
-  Nan::EscapableHandleScope scope;
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
+  NanEscapableScope();
   
-  return scope.Escape(GetSQLError(
+  return NanEscapeScope(GetSQLError(
     handleType,
     handle,
     (char *) "[node-odbc] SQL_ERROR"));
 }
 
-Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
-  Nan::EscapableHandleScope scope;
+Local<Object> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
+  NanEscapableScope();
   
   DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%p\n", handleType, handle);
   
-  Local<Object> objError = Nan::New<Object>();
+  Local<Object> objError = NanNew<Object>();
 
   SQLINTEGER i = 0;
   SQLINTEGER native;
@@ -853,8 +855,8 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
 
   // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
   DEBUG_PRINTF("ODBC::GetSQLError : called SQLGetDiagField; ret=%i\n", ret);
-  Local<Array> errors = Nan::New<Array>();
-  objError->Set(Nan::New("errors").ToLocalChecked(), errors);
+  Local<Array> errors = NanNew<Array>();
+  objError->Set(NanNew("errors"), errors);
   
   for (i = 0; i < numfields; i++){
     DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
@@ -874,22 +876,22 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
     if (SQL_SUCCEEDED(ret)) {
       DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);
       
-      objError->Set(Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
+      objError->Set(NanNew("error"), NanNew(message));
 #ifdef UNICODE
-      objError->SetPrototype(Exception::Error(Nan::New((uint16_t *) errorMessage).ToLocalChecked()));
-      objError->Set(Nan::New("message").ToLocalChecked(), Nan::New((uint16_t *) errorMessage).ToLocalChecked());
-      objError->Set(Nan::New("state").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState).ToLocalChecked());
+      objError->SetPrototype(Exception::Error(NanNew((uint16_t *) errorMessage)));
+      objError->Set(NanNew("message"), NanNew((uint16_t *) errorMessage));
+      objError->Set(NanNew("state"), NanNew((uint16_t *) errorSQLState));
 #else
-      objError->SetPrototype(Exception::Error(Nan::New(errorMessage).ToLocalChecked()));
-      objError->Set(Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
-      objError->Set(Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
+      objError->SetPrototype(Exception::Error(NanNew(errorMessage)));
+      objError->Set(NanNew("message"), NanNew(errorMessage));
+      objError->Set(NanNew("state"), NanNew(errorSQLState));
 #endif
     } else if (ret == SQL_NO_DATA) {
       break;
     }
   }
   
-  return scope.Escape(objError);
+  return NanEscapeScope(objError);
 }
 
 /*
@@ -903,9 +905,9 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
                                      int bufferLength) {
   DEBUG_PRINTF("ODBC::GetAllRecordsSync\n");
   
-  Nan::EscapableHandleScope scope;
+  NanEscapableScope();
   
-  Local<Value> objError = Nan::New<Object>();
+  Local<Object> objError = NanNew<Object>();
   
   int count = 0;
   int errorCount = 0;
@@ -913,7 +915,7 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
   
   Column* columns = GetColumns(hSTMT, &colCount);
   
-  Local<Array> rows = Nan::New<Array>();
+  Local<Array> rows = NanNew<Array>();
   
   //loop through all records
   while (true) {
@@ -943,7 +945,7 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
     }
 
     rows->Set(
-      Nan::New(count), 
+      NanNew(count), 
       ODBC::GetRecordTuple(
         hSTMT,
         columns,
@@ -956,24 +958,24 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
   }
   //TODO: what do we do about errors!?!
   //we throw them
-  return scope.Escape(rows);
+  return NanEscapeScope(rows);
 }
 
 #ifdef dynodbc
 NAN_METHOD(ODBC::LoadODBCLibrary) {
-  Nan::HandleScope scope;
+  NanScope();
   
   REQ_STR_ARG(0, js_library);
   
   bool result = DynLoadODBC(*js_library);
   
-  info.GetReturnValue().Set((result) ? True() : False());
+  NanReturnValue((result) ? True() : False());
 }
 #endif
 
 extern "C" void init(v8::Handle<Object> exports) {
 #ifdef dynodbc
-  exports->Set(Nan::New("loadODBCLibrary").ToLocalChecked(),
+  exports->Set(NanNew("loadODBCLibrary"),
         FunctionTemplate::New(ODBC::LoadODBCLibrary)->GetFunction());
 #endif
   
