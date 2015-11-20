@@ -522,7 +522,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return NanEscapeScope(NanNew<Date>((double(timegm(&timeInfo)) * 1000)
                           + (odbcTime.fraction / 1000000)));
 #else
-        return NanEscapeScope(NanNew<Date>((double(timelocal(&timeInfo)) * 1000)
+        return NanEscapeScope(NanNew<Date>((double(mktime(&timeInfo)) * 1000)
                           + (odbcTime.fraction / 1000000)));
 #endif
         //return Date::New((double(timegm(&timeInfo)) * 1000) 
