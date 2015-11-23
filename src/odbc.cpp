@@ -522,7 +522,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000)
                           + (odbcTime.fraction / 1000000)).ToLocalChecked());
 #else
-        return scope.Escape(Nan::New<Date>((double(timelocal(&timeInfo)) * 1000)
+        return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000)
                           + (odbcTime.fraction / 1000000)).ToLocalChecked());
 #endif
       }

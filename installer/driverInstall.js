@@ -78,7 +78,8 @@ var download_file_httpget = function(file_url) {
         }
         if( platform != 'win32') {
             
-            if(platform == 'linux' || (platform == 'darwin' && arch == 'x64')) {
+            if((platform == 'linux') || (platform =='aix') ||
+	       (platform == 'darwin' && arch == 'x64')) {
                 removeWinBuildArchive();
                 buildBinary(false);
             } else {
@@ -125,7 +126,18 @@ var download_file_httpget = function(file_url) {
                 return;
             }
         } 
-        else 
+        else if(platfrom == 'aix')
+	{
+	    if(arch == 'ppc')
+	    {
+	        installerfileURL = installerURL + 'aix32_odbc_cli.tar.gz';
+	    }
+            else
+	    {
+	        installerfileURL = installerURL + 'aix64_odbc_cli.tar.gz';
+	    }
+        } 
+	else 
         {
             installerfileURL = installerURL + platform + arch + 
                                '_odbc_cli.tar.gz';
