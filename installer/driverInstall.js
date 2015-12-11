@@ -126,7 +126,7 @@ var download_file_httpget = function(file_url) {
                 return;
             }
         } 
-        else if(platfrom == 'aix')
+        else if(platform == 'aix')
         {
             if(arch == 'ppc')
             {
