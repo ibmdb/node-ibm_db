@@ -87,15 +87,16 @@ Open a connection to a database.
 * **callback** - `callback (err, conn)`
 
 ```javascript
-var ibmdb = require("ibm_db");
+var ibmdb = require("ibm_db")
+  , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
 
-ibmdb.open(connectionString, function (err, connection) {
+ibmdb.open(connStr, function (err, connection) {
     if (err) 
     {
       console.log(err);
       return;
     }
-    connection.query("select 1 from sysibm.sysdymmy1", function (err1, rows) {
+    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
       connection.close(function(err2) { 
@@ -434,6 +435,36 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
+### .debug(value)
+
+Enable console logs.
+
+* **value** - true/false.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
+
+ibmdb.debug(true);  // Enable console logs.
+
+ibmdb.open(cn, function (err, connection) {
+    if (err)
+    {
+        console.log(err);
+        return;
+    }
+    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+        if (err1) console.log(err1);
+        else console.log(rows);
+
+        ibmdb.debug(false);  // Disable console logs.
+
+        connection.close(function(err2) {
+            if(err2) console.log(err2);
+        });
+    });
+});
+```
 ----------
 
 ### Pool
