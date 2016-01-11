@@ -5,7 +5,6 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, Linux on z and Linux on Power PC.
 
-Note: Node.js V4.x is not supported.
 
 install
 --------
