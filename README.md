@@ -16,7 +16,7 @@ For NodeJS V 4.x, use below command:
 ```bash
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
 ```
-Update: node-ibm_db is now supported on Windows using NodeJS V4.x.
+Update: node-ibm_db is now available on Windows using NodeJS V4.x.
 
 un-install
 ----------
