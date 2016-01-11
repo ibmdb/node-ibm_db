@@ -20,7 +20,7 @@
 		"ORIGIN_LIB_PATH%": "$$ORIGIN/../../installer/clidriver/lib",
 	},
 	'conditions' : [
-        [ '(OS == "linux" or OS == "aix") and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32") ', {
+        [ '(OS == "linux" and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32")) or (OS == "aix" and target_arch == "ppc")', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [

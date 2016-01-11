@@ -443,8 +443,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       break;
     case SQL_DATETIME :
     case SQL_TIMESTAMP : {
-      //I am not sure if this is locale-safe or cross database safe, but it 
-      //works for me on MSSQL
+
 #ifdef _WIN32
       struct tm timeInfo = {};
 
@@ -475,6 +474,19 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         return NanEscapeScope(NanNew<Date>(double(mktime(&timeInfo)) * 1000));
       }
 #else
+  #ifdef _AIX
+      struct tm timeInfo = { 
+        tm_sec : 0
+        , tm_min : 0
+        , tm_hour : 0
+        , tm_mday : 0
+        , tm_mon : 0
+        , tm_year : 0
+        , tm_wday : 0
+        , tm_yday : 0
+        , tm_isdst : 0
+      };
+  #else
       struct tm timeInfo = { 
         tm_sec : 0
         , tm_min : 0
@@ -488,6 +500,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         , tm_gmtoff : 0
         , tm_zone : 0
       };
+  #endif
 
       SQL_TIMESTAMP_STRUCT odbcTime;
       

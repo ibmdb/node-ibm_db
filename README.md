@@ -3,7 +3,7 @@ node-ibm_db
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
-**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, Linux on z and Linux on Power PC.
+**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
 
 install
 --------
@@ -16,8 +16,6 @@ For NodeJS V 4.x, use below command:
 ```bash
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
 ```
-Update: node-ibm_db is now available on Windows using NodeJS V4.x.
-
 un-install
 ----------
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
