@@ -44,6 +44,10 @@ For z/OS and iSeries Connectivity
 ---------------------------------
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, no license file is required. However, if you want to use node-ibm_db against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect license for it. You can buy db2connect license from IBM. The connectivity can be enabled either on server using db2connectactivate utility or on client using client side license file. If you have client side license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
+For AIX install issue
+---------------------
+If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
+
 Discussion Forums
 -----------------
 To start a discussion or need help you can post a topic on node-ibm_db google group https://groups.google.com/forum/#!forum/node-ibm_db
