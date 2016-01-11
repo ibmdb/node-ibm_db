@@ -12,7 +12,7 @@ You may install the package using npm install command:
 ```bash
 npm install ibm_db
 ```
-For NodeJS V 4.x, use below command:
+For NodeJS V4.0 onwards, use below command on non-Windows platforms:
 ```bash
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
 ```
@@ -101,7 +101,7 @@ ibmdb.open(connStr, function (err, connection) {
         if(err2) console.log(err2);
       });
     });
-};
+});
 
 ```
 
