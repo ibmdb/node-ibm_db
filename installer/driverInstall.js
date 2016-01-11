@@ -40,14 +40,21 @@ var download_file_httpget = function(file_url) {
               .pipe(writeStream).on("unpipe", function () {
                 fs.unlinkSync(BUILD_FILE);
                 var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 
-                                      'build\\Release\\odbc_bindings.node');
+                              'build\\Release\\odbc_bindings.node');
                 var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR,
-                               'build\\Release\\odbc_bindings.node.0.10.36');
+                              'build\\Release\\odbc_bindings.node.0.10.36');
+                var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR,
+                              'build\\Release\\odbc_bindings.node.0.12.7');
                 fs.exists(ODBC_BINDINGS_V10, function() {
                   if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
                       fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
+                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
+                      fs.renameSync(ODBC_BINDINGS_V12, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V10);
                   } else {
                       fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
                   }
                 });
             });
