@@ -772,11 +772,12 @@ Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       Nan::Callback* cb) {
   Nan::EscapableHandleScope scope;
   
-  return scope.Escape(CallbackSQLError(
+  Local<Value> objError = CallbackSQLError(
     handleType,
     handle,
     (char *) "[node-odbc] SQL_ERROR",
-    cb));
+    cb);
+  return scope.Escape(objError);
 }
 
 Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
