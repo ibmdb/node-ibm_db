@@ -118,7 +118,7 @@
             "-g "
           ],
         }], 
-		[ 'OS != "linux" and OS != "win" and OS != "darwin" and target_arch == "x64" ', {
+		[ 'OS != "linux" and OS != "win" and OS != "mac" and target_arch == "x64" ', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [

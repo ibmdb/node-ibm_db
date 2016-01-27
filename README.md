@@ -14,7 +14,7 @@ npm install ibm_db
 ```
 For NodeJS V4.0 onwards, use below command on non-Windows platforms:
 ```bash
-npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
+npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
 un-install
 ----------
@@ -47,6 +47,11 @@ For connectivity against DB2 for LUW or Informix Server using node-ibm_db, no li
 For AIX install issue
 ---------------------
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
+
+For MacOS Connectivity Issue
+----------------------------
+After `npm install ibm_db` run below command to avoid SQL1042C error:
+`export DYLD_LIBRARY_PATH=<node_modules_dir>/ibm_db/installer/clidriver/lib/icc:$DYLD_LIBRARYPATH`
 
 Discussion Forums
 -----------------
