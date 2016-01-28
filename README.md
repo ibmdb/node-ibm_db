@@ -12,10 +12,6 @@ You may install the package using npm install command:
 ```bash
 npm install ibm_db
 ```
-For NodeJS V4.0 onwards, use below command on non-Windows platforms:
-```bash
-npm install git+https://git@github.com/ibmdb/node-ibm_db.git
-```
 un-install
 ----------
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
