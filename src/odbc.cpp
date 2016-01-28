@@ -451,37 +451,16 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 #ifdef _WIN32
       struct tm timeInfo = {};
 
-      ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, &odbcTime, bufferLength, &len);
+      ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
+              &odbcTime, bufferLength, &len);
 #else
   #ifdef _AIX
-      struct tm timeInfo = {
-            .tm_sec = 0
-	      , .tm_min = 0
-	      , .tm_hour = 0
-	      , .tm_mday = 0
-	      , .tm_mon = 0
-	      , .tm_year = 0
-	      , .tm_wday = 0
-	      , .tm_yday = 0
-	      , .tm_isdst = 0
-	};
+      struct tm timeInfo = {0,0,0,0,0,0,0,0,0};
   #else
-      struct tm timeInfo = {
-            .tm_sec = 0
-	      , .tm_min = 0
-	      , .tm_hour = 0
-	      , .tm_mday = 0
-	      , .tm_mon = 0
-	      , .tm_year = 0
-	      , .tm_wday = 0
-	      , .tm_yday = 0
-	      , .tm_isdst = 0
-	      , .tm_gmtoff = 0
-	      , .tm_zone = 0
-	};
+      struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
   #endif
-      ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, &odbcTime, bufferLength, &len);
-
+      ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, 
+              &odbcTime, bufferLength, &len);
 #endif
 
       DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", column.index, column.name, column.type, len);
