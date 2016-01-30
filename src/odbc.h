@@ -72,9 +72,9 @@ class ODBC : public Nan::ObjectWrap {
     static void FreeColumns(Column* columns, short* colCount);
     static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
     static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
-    static Handle<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
+    static Local<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Handle<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
-    static Handle<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
+    static Local<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
     static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);

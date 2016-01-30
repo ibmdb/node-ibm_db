@@ -620,7 +620,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
  * GetRecordArray
  */
 
-Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
+Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, uint16_t* buffer,
                                          int bufferLength) {
   Nan::EscapableHandleScope scope;
@@ -759,7 +759,7 @@ Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
   return scope.Escape(objError);
 }
 
-Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+Local<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       SQLHANDLE handle,
                                       char* message,
                                       Nan::Callback* cb) {
