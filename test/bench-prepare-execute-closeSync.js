@@ -1,7 +1,8 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 10000
+  , iterations = 100
+  //, iterations = 10000
   ;
 
 db.open(common.connectionString, function(err){ 
@@ -19,7 +20,7 @@ function issueQuery3(done) {
   var count = 0
     , time = new Date().getTime();
   
-  var stmt = db.prepareSync('select ? as test');
+  var stmt = db.prepareSync('select cast(? as INTEGER) as test from sysibm.sysdummy1');
   
   for (var x = 0; x < iterations; x++) {
     (function (x) {
