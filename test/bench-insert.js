@@ -4,17 +4,17 @@ var common = require("./common")
 
 db.open(common.connectionString, function(err){ 
 	if (err) {
-		console.error(err);
+		console.log(err);
 		process.exit(1);
 	}
-	
+	dropTable();	
 	createTable();
 });
 
 function createTable() {
 	db.query("create table bench_insert (str varchar(50))", function (err) {
 		if (err) {
-			console.error(err);
+			console.log(err);
 			return finish();
 		}
 		
@@ -23,19 +23,18 @@ function createTable() {
 }
 
 function dropTable() {
-	db.query("drop table bench_insert", function (err) {
-		if (err) {
-			console.error(err);
-			return finish();
-		}
-		
-		return finish();
-	});
+    try { 
+        db.querySync("drop table bench_insert")
+    }catch(e){
+    //    console.log(e);
+    // do nothing if the table doesn't exist
+    }
 }
 
 function insertData() {
 	var count = 0
-		, iterations = 10000
+		, iterations = 100
+		//, iterations = 10000
 		, time = new Date().getTime();
 	
 	for (var x = 0; x < iterations; x++) {
@@ -45,7 +44,7 @@ function insertData() {
 
 	function cb (err) {
 		if (err) {
-			console.error(err);
+			console.log(err);
 			return finish();
 		}
 		
