@@ -1,7 +1,8 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 10000
+  //, iterations = 10000
+  , iterations = 100
   ;
 
 db.open(common.connectionString, function(err){ 
@@ -20,7 +21,7 @@ function issueQuery1(done) {
     , time = new Date().getTime();
   
   for (var x = 0; x < iterations; x++) {
-    db.query("select 1 + ? as test", [1], cb);
+    db.query("select 1 + ? as test from sysibm.sysdummy1", [1], cb);
   }
   
   function cb (err, data) {
