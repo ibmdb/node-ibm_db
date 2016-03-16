@@ -1,7 +1,8 @@
 var common = require("./common")
   , odbc = require("../")
   , db = new odbc.Database()
-  , iterations = 10000
+  //, iterations = 10000
+  , iterations = 100
   ;
 
 db.open(common.connectionString, function(err){ 
@@ -20,7 +21,7 @@ function issueQuery1(done) {
     , time = new Date().getTime();
   
   for (var x = 0; x < iterations; x++) {
-    db.query("select 1 + ? as test", [1], cb);
+    db.query("select 1 + ? as test from sysibm.sysdummy1", [1], cb);
   }
   
   function cb (err, data) {
@@ -30,9 +31,8 @@ function issueQuery1(done) {
     }
     
     if (++count == iterations) {
-      var elapsed = new Date().getTime() - time;
-      
-      console.log("%d queries issued in %d seconds, %d/sec : Query", count, elapsed/1000, Math.floor(count/(elapsed/1000)));
+      var elapsed = (new Date().getTime() - time)/1000;
+      process.stdout.write("(" + count + " queries issued in " + elapsed + " seconds, " + (count/elapsed).toFixed(2) + " query/sec)");
       return done();
     }
   }
