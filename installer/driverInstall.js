@@ -45,16 +45,25 @@ var download_file_httpget = function(file_url) {
                               'build\\Release\\odbc_bindings.node.0.10.36');
                 var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR,
                               'build\\Release\\odbc_bindings.node.0.12.7');
+				var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR,
+                              'build\\Release\\odbc_bindings.node.4.4.2');
                 fs.exists(ODBC_BINDINGS_V10, function() {
                   if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
                       fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
                       fs.unlinkSync(ODBC_BINDINGS_V12);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
                   } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
                       fs.renameSync(ODBC_BINDINGS_V12, ODBC_BINDINGS);
                       fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
+                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) {
+                      fs.renameSync(ODBC_BINDINGS_V4, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
                   } else {
                       fs.unlinkSync(ODBC_BINDINGS_V10);
                       fs.unlinkSync(ODBC_BINDINGS_V12);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
                   }
                 });
             });
@@ -236,6 +245,7 @@ var download_file_httpget = function(file_url) {
                     }
                     console.log('Download and extraction of DB2 ODBC ' +
                                 'CLI Driver completed successfully ...');
+                    console.log(license_agreement);
                     IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                     process.env.IBM_DB_HOME = IBM_DB_HOME;
                     buildBinary(true);
