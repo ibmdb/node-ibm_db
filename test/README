@@ -1,0 +1,19 @@
+IBM DB Test Suite
+
+
+Connection info must be specified in the environment. 
+For example, by sourcing the following ENV Vars:
+export IBM_DB_DBNAME=<Database Name>
+export IBM_DB_UID=<Username>
+export IBM_DB_PWD=<Password>
+export IBM_DB_HOSTNAME=<Hostname or IP>
+export IBM_DB_PORT=<Database Port>
+
+OR,
+    If not using ENV Vars,Update connection info in 
+    ibm_db/test/config.testConnectionStrings.json file.
+
+Connection info set in ENV vars will take priority over
+connection info in config.testConnectionStrings.json file, 
+if connection info is set at both places.
+

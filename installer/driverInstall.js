@@ -40,14 +40,30 @@ var download_file_httpget = function(file_url) {
               .pipe(writeStream).on("unpipe", function () {
                 fs.unlinkSync(BUILD_FILE);
                 var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 
-                                      'build\\Release\\odbc_bindings.node');
+                              'build\\Release\\odbc_bindings.node');
                 var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR,
-                               'build\\Release\\odbc_bindings.node.0.10.36');
+                              'build\\Release\\odbc_bindings.node.0.10.36');
+                var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR,
+                              'build\\Release\\odbc_bindings.node.0.12.7');
+				var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR,
+                              'build\\Release\\odbc_bindings.node.4.4.2');
                 fs.exists(ODBC_BINDINGS_V10, function() {
                   if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
                       fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
+                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
+                      fs.renameSync(ODBC_BINDINGS_V12, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
+                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) {
+                      fs.renameSync(ODBC_BINDINGS_V4, ODBC_BINDINGS);
+                      fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
                   } else {
                       fs.unlinkSync(ODBC_BINDINGS_V10);
+                      fs.unlinkSync(ODBC_BINDINGS_V12);
+                      fs.unlinkSync(ODBC_BINDINGS_V4);
                   }
                 });
             });
@@ -78,7 +94,8 @@ var download_file_httpget = function(file_url) {
         }
         if( platform != 'win32') {
             
-            if(platform == 'linux' || (platform == 'darwin' && arch == 'x64')) {
+            if((platform == 'linux') || (platform =='aix') || 
+               (platform == 'darwin' && arch == 'x64')) {
                 removeWinBuildArchive();
                 buildBinary(false);
             } else {
@@ -125,6 +142,17 @@ var download_file_httpget = function(file_url) {
                 return;
             }
         } 
+        else if(platform == 'aix')
+        {
+            if(arch == 'ppc')
+            {
+                installerfileURL = installerURL + 'aix32_odbc_cli.tar.gz';
+            }
+            else
+            {
+                installerfileURL = installerURL + 'aix64_odbc_cli.tar.gz';
+            }
+        }
         else 
         {
             installerfileURL = installerURL + platform + arch + 
@@ -217,6 +245,7 @@ var download_file_httpget = function(file_url) {
                     }
                     console.log('Download and extraction of DB2 ODBC ' +
                                 'CLI Driver completed successfully ...');
+                    console.log(license_agreement);
                     IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                     process.env.IBM_DB_HOME = IBM_DB_HOME;
                     buildBinary(true);

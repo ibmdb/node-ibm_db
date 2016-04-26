@@ -221,7 +221,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
     js_result.Reset(Nan::New(ODBCResult::constructor)->NewInstance(4, info));
 
     info[0] = Nan::Null();
-    info[1] = js_result;
+    info[1] = Nan::New(js_result);
 
     Nan::TryCatch try_catch;
 
@@ -506,7 +506,7 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t* req, int status) {
     js_result.Reset(Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, info));
 
     info[0] = Nan::Null();
-    info[1] = js_result;
+    info[1] = Nan::New(js_result);
 
     Nan::TryCatch try_catch;
 

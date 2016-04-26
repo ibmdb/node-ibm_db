@@ -3,7 +3,7 @@ node-ibm_db
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
-**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, Linux on z and Linux on Power PC.
+**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
 
 install
 --------
@@ -12,12 +12,6 @@ You may install the package using npm install command:
 ```bash
 npm install ibm_db
 ```
-For NodeJS V 4.x, use below command:
-```bash
-npm install git+https://git@github.com/ibmdb/node-ibm_db.git#v4_support
-```
-Note: Currently, node-ibm_db is not supported on Windows using NodeJS V4.x.
-
 un-install
 ----------
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
@@ -45,6 +39,15 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
 For z/OS and iSeries Connectivity
 ---------------------------------
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, no license file is required. However, if you want to use node-ibm_db against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect license for it. You can buy db2connect license from IBM. The connectivity can be enabled either on server using db2connectactivate utility or on client using client side license file. If you have client side license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
+
+For AIX install issue
+---------------------
+If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
+
+For MacOS Connectivity Issue
+----------------------------
+After `npm install ibm_db` run below command to avoid SQL1042C error:
+`export DYLD_LIBRARY_PATH=<node_modules_dir>/ibm_db/installer/clidriver/lib/icc:$DYLD_LIBRARYPATH`
 
 Discussion Forums
 -----------------
@@ -87,22 +90,23 @@ Open a connection to a database.
 * **callback** - `callback (err, conn)`
 
 ```javascript
-var ibmdb = require("ibm_db");
+var ibmdb = require("ibm_db")
+  , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
 
-ibmdb.open(connectionString, function (err, connection) {
+ibmdb.open(connStr, function (err, connection) {
     if (err) 
     {
       console.log(err);
       return;
     }
-    connection.query("select 1 from sysibm.sysdymmy1", function (err1, rows) {
+    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
       connection.close(function(err2) { 
         if(err2) console.log(err2);
       });
     });
-};
+});
 
 ```
 
@@ -434,6 +438,36 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
+### .debug(value)
+
+Enable console logs.
+
+* **value** - true/false.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
+
+ibmdb.debug(true);  // Enable console logs.
+
+ibmdb.open(cn, function (err, connection) {
+    if (err)
+    {
+        console.log(err);
+        return;
+    }
+    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+        if (err1) console.log(err1);
+        else console.log(rows);
+
+        ibmdb.debug(false);  // Disable console logs.
+
+        connection.close(function(err2) {
+            if(err2) console.log(err2);
+        });
+    });
+});
+```
 ----------
 
 ### Pool

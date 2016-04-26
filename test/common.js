@@ -1,7 +1,4 @@
 var odbc = require("../");
-//odbc.library = '/usr/lib/odbc/libsqlite3odbc-0.91';
-//odbc.library = '/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc';
-//odbc.library = '/opt/sqlncli-11.0.1790.0/lib64/libsqlncli-11.0';
 
 //exports.connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
 exports.connectionString = "";
@@ -20,6 +17,13 @@ catch (e) {
 	PROTOCOL : "TCPIP"
   };
 }
+
+exports.connectionObject.DATABASE = process.env.IBM_DB_DBNAME  || exports.connectionObject.DATABASE;
+exports.connectionObject.HOSTNAME = process.env.IBM_DB_HOSTNAME || exports.connectionObject.HOSTNAME;
+exports.connectionObject.UID     = process.env.IBM_DB_UID      || exports.connectionObject.UID;
+exports.connectionObject.PWD     = process.env.IBM_DB_PWD      || exports.connectionObject.PWD;
+exports.connectionObject.PORT    = process.env.IBM_DB_PORT     || exports.connectionObject.PORT;
+exports.connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || exports.connectionObject.PROTOCOL;
 
 for(key in exports.connectionObject) 
 {

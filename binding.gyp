@@ -20,7 +20,7 @@
 		"ORIGIN_LIB_PATH%": "$$ORIGIN/../../installer/clidriver/lib",
 	},
 	'conditions' : [
-        [ 'OS == "linux" and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32") ', {
+        [ '(OS == "linux" and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32")) or (OS == "aix" and target_arch == "ppc")', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [
@@ -39,7 +39,7 @@
             "-g "
           ],
         }],  
-        [ 'OS == "linux" and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")', {
+        [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [
@@ -58,7 +58,7 @@
             "-g "
           ],
         }],
-		[ 'OS == "mac" and target_arch =="x64" ', {
+        [ 'OS == "mac" and target_arch =="x64" ', {
 		  'xcode_settings': {
 			'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
 		  },
@@ -118,7 +118,7 @@
             "-g "
           ],
         }], 
-		[ 'OS != "linux" and OS != "win" and OS != "darwin" and target_arch == "x64" ', {
+		[ 'OS != "linux" and OS != "win" and OS != "mac" and target_arch == "x64" ', {
 		  'conditions' : [
 			[ 'IS_DOWNLOADED == "true" ', {
 				'ldflags' : [

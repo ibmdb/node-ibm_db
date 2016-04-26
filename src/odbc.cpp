@@ -445,62 +445,25 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     case SQL_TIMESTAMP : {
       //I am not sure if this is locale-safe or cross database safe, but it 
       //works for me on MSSQL
+
+       SQL_TIMESTAMP_STRUCT odbcTime;
+
 #ifdef _WIN32
       struct tm timeInfo = {};
 
-      ret = SQLGetData(
-        hStmt, 
-        column.index, 
-        SQL_C_CHAR,
-        (char *) buffer, 
-        bufferLength, 
-        &len);
-		
-	  DEBUG_PRINTF("ODBC::GetColumnValue - W32 Timestamp: index=%i name=%s type=%i type_name=%s len=%i\n", 
-                    column.index, column.name, column.type, column.type_name, len);
-
-      if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
-        //return Null();
-      }
-      else {
-        strptime((char *) buffer, "%Y-%m-%d %H:%M:%S", &timeInfo);
-
-        //a negative value means that mktime() should use timezone information 
-        //and system databases to attempt to determine whether DST is in effect 
-        //at the specified time.
-        timeInfo.tm_isdst = -1;
-          
-        //return Date::New((double(mktime(&timeInfo)) * 1000));
-        return scope.Escape(Nan::New<Date>(double(mktime(&timeInfo)) * 1000));
-      }
+      ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
+              &odbcTime, bufferLength, &len);
 #else
-      struct tm timeInfo = { 
-        .tm_sec = 0
-        , .tm_min = 0
-        , .tm_hour = 0
-        , .tm_mday = 0
-        , .tm_mon = 0
-        , .tm_year = 0
-        , .tm_wday = 0
-        , .tm_yday = 0
-        , .tm_isdst = 0
-        , .tm_gmtoff = 0
-        , .tm_zone = 0
-      };
+  #ifdef _AIX
+      struct tm timeInfo = {0,0,0,0,0,0,0,0,0};
+  #else
+      struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
+  #endif
+      ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, 
+              &odbcTime, bufferLength, &len);
+#endif
 
-      SQL_TIMESTAMP_STRUCT odbcTime;
-      
-      ret = SQLGetData(
-        hStmt, 
-        column.index, 
-        SQL_C_TYPE_TIMESTAMP,
-        &odbcTime, 
-        bufferLength, 
-        &len);
-
-      DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", 
-                    column.index, column.name, column.type, len);
+      DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", column.index, column.name, column.type, len);
 
       if((int)len == SQL_NULL_DATA) {
         return scope.Escape(Nan::Null());
@@ -518,16 +481,17 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //and system databases to attempt to determine whether DST is in effect 
         //at the specified time.
         timeInfo.tm_isdst = -1;
+
 #ifdef TIMEGM
-        return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000)
-                          + (odbcTime.fraction / 1000000)).ToLocalChecked());
+        return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) + (odbcTime.fraction / 1000000)).ToLocalChecked());
 #else
-        return scope.Escape(Nan::New<Date>((double(timelocal(&timeInfo)) * 1000)
-                          + (odbcTime.fraction / 1000000)).ToLocalChecked());
+        return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) + (odbcTime.fraction / 1000000)).ToLocalChecked());
+
 #endif
       }
-#endif
-    } break;
+    } 
+    
+    break;
     case SQL_BIT :
       //again, i'm not sure if this is cross database safe, but it works for 
       //MSSQL
@@ -656,7 +620,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
  * GetRecordArray
  */
 
-Handle<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
+Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
                                          short* colCount, uint16_t* buffer,
                                          int bufferLength) {
   Nan::EscapableHandleScope scope;
@@ -787,14 +751,15 @@ Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       Nan::Callback* cb) {
   Nan::EscapableHandleScope scope;
   
-  return scope.Escape(CallbackSQLError(
+  Local<Value> objError = CallbackSQLError(
     handleType,
     handle,
     (char *) "[node-odbc] SQL_ERROR",
-    cb));
+    cb);
+  return scope.Escape(objError);
 }
 
-Handle<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
+Local<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       SQLHANDLE handle,
                                       char* message,
                                       Nan::Callback* cb) {
