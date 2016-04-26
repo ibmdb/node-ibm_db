@@ -86,11 +86,11 @@ or
 npm install ibm_db
 ```
 
-Update config.testConnectionStrings.json with your credentials
+4. Update config.testConnectionStrings.json with your credentials
 
 ```
-4. cd ibm_db/test/
-5. vi config.testConnectionStrings.json
+cd ibm_db/test/
+vi config.testConnectionStrings.json
 ```
 
 It's Done.
@@ -100,8 +100,44 @@ It's Done.
 ```
 1. mkdir nodeapp
 2. cd nodeapp
-```
-
-```
 3. git clone https://github.com/ibmdb/node-ibm_db/
 ```
+
+4. Set "IBM_DB_HOME" with 'clidriver' path, for example clidriver path is : /home/mysystem/clidriver
+
+```
+export IBM_DB_HOME=/home/mysystem/clidriver
+```
+
+5. Install node-gyp and other dependencies (refer package.json)
+
+```
+npm install -g node-gyp
+npm install moment
+npm install nan@2.2.0
+npm install bindings@1.0.0
+etc...
+```
+
+6. Set "/node-ibm_db/node_modules/" path into system PATH.
+
+```
+export PATH=/home/mysystem/nodeapp/node-ibm_db/node_modules/.bin:$PATH
+```
+
+7. Run node-gyp configure build command.
+
+```
+node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false --verbose
+```
+
+8. Update config.testConnectionStrings.json with your credentials
+
+```
+cd node-ibm_db/test/
+vi config.testConnectionStrings.json
+```
+
+It's Done.
+
+## <a name="insaix"></a> 3. Node-ibm_db Installation on AIX.
