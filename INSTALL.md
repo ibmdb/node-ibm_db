@@ -50,3 +50,18 @@ Python 2.7 is needed by node-gyp.
 ## <a name="inslnx"></a> 2. Node-ibm_db Installation on Linux.
 
 ### 2.1 Install Node.js
+
+Download the
+[Node.js Linux binaries](http://nodejs.org) [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
+extract the file, for example into `/mynode`:
+
+```
+cd /mynode
+tar -xzf node-v4.2.2-linux-x64.tar.gz
+```
+
+Set PATH to include Node.js:
+
+```
+export PATH=/mynode/node-v4.2.2-linux-x64/bin:$PATH
+```
