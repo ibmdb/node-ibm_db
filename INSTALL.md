@@ -79,18 +79,19 @@ using directory `/nodeapp` for example.
 ```
 
 ```
-3. npm install git+https://git@github.com/ibmdb/node-ibm_db.git
+3. npm install ibm_db
 ```
 or
 ```
-npm install ibm_db
+npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
 
 ```
-4. Update config.testConnectionStrings.json with your credentials
+4. Update config.testConnectionStrings.json with your credentials and run test.
 
 cd ibm_db/test/
 vi config.testConnectionStrings.json
+node run-tests.js
 ```
 
 It's Done.
@@ -132,10 +133,11 @@ node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false --ver
 ```
 
 ```
-8. Update config.testConnectionStrings.json with your credentials
+8. Update config.testConnectionStrings.json with your credentials and run test.
 
 cd node-ibm_db/test/
 vi config.testConnectionStrings.json
+node run-tests.js
 ```
 
 It's Done.
