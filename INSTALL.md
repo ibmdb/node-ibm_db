@@ -68,3 +68,40 @@ export PATH=/mynode/node-v4.2.2-linux-x64/bin:$PATH
 
 ### 2.2 Install node-ibm_db
 
+Following are the steps to install [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) from github or npm.
+using directory `/nodeapp` for example.
+
+#### 2.2.1 Direct Installation.
+
+```
+1. mkdir nodeapp
+2. cd nodeapp
+```
+
+```
+3. npm install git+https://git@github.com/ibmdb/node-ibm_db.git
+```
+or
+```
+npm install ibm_db
+```
+
+Update config.testConnectionStrings.json with your credentials
+
+```
+4. cd ibm_db/test/
+5. vi config.testConnectionStrings.json
+```
+
+It's Done.
+
+#### 2.2.2 Manual Installation by using git clone.
+
+```
+1. mkdir nodeapp
+2. cd nodeapp
+```
+
+```
+3. git clone https://github.com/ibmdb/node-ibm_db/
+```
