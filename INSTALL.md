@@ -52,7 +52,7 @@ Python 2.7 is needed by node-gyp.
 ### 2.1 Install Node.js
 
 Download the
-[Node.js Linux binaries](http://nodejs.org) [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
+[Node.js Linux binaries](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
 extract the file, for example into `/mynode`:
 
 ```
@@ -65,3 +65,6 @@ Set PATH to include Node.js:
 ```
 export PATH=/mynode/node-v4.2.2-linux-x64/bin:$PATH
 ```
+
+### 2.2 Install node-ibm_db
+
