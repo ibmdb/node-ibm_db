@@ -157,4 +157,4 @@ cd /mynode
 
 ### 3.2 Install node-ibm_db
 
-Follow the same steps mentioned in <a name="inslnx"> [*Node-ibm_db Installation on Linux*]</a>.
+Follow the same steps mentioned in <a name="inslnx">Node-ibm_db Installation on Linux</a>.
