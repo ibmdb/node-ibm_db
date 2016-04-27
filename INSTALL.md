@@ -47,6 +47,7 @@ Install a newer compiler or upgrade older one.
 
 Python 2.7 is needed by node-gyp.
 
+
 ## <a name="inslnx"></a> 2. Node-ibm_db Installation on Linux.
 
 ### 2.1 Install Node.js
@@ -142,6 +143,7 @@ node run-tests.js
 
 It's Done.
 
+
 ## <a name="insaix_p"></a> 3. Node-ibm_db Installation on AIX on Power Systems.
 
 ### 3.1 Install Node.js for AIX
@@ -158,6 +160,7 @@ cd /mynode
 ### 3.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
+
 
 ## <a name="inslnx_z"></a> 4. Installation on Linux on System z.
 
