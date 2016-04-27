@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 
 1. [Overview](#Installation)
 2. [Node-ibm_db Installation on Linux](#inslnx)
-3. [Node-ibm_db Installation on AIX](#insaix)
+3. [Node-ibm_db Installation on AIX on Power Systems](#insaix_p)
 4. [Node-ibm_db Installation on Linux on z](#inslnx_z)
 5. [Node-ibm_db Installation on Linux on Power PC](#inslnx_p) 
 6. [Node-ibm_db Installation on MacOS](#insmac)
@@ -142,4 +142,19 @@ node run-tests.js
 
 It's Done.
 
-## <a name="insaix"></a> 3. Node-ibm_db Installation on AIX.
+## <a name="insaix_p"></a> 3. Node-ibm_db Installation on AIX on Power Systems.
+
+### 3.1 Install Node.js for AIX
+
+Download the
+[Node.js AIX binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
+execute the binary file, for example into `/mynode`:
+
+```
+cd /mynode
+./ibm-4.4.3.0-node-v4.4.3-aix-ppc64.bin
+```
+
+### 3.2 Install node-ibm_db
+
+Follow the same steps mentioned in <a name="inslnx"> [*Node-ibm_db Installation on Linux*]</a>.
