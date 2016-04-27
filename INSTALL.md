@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 1. [Overview](#Installation)
 2. [Node-ibm_db Installation on Linux](#inslnx)
 3. [Node-ibm_db Installation on AIX on Power Systems](#insaix_p)
-4. [Node-ibm_db Installation on Linux on z](#inslnx_z)
+4. [Node-ibm_db Installation on Linux on System z](#inslnx_z)
 5. [Node-ibm_db Installation on Linux on Power PC](#inslnx_p) 
 6. [Node-ibm_db Installation on MacOS](#insmac)
 7. [Node-ibm_db Installation on Windows](#inswin)
@@ -156,5 +156,22 @@ cd /mynode
 ```
 
 ### 3.2 Install node-ibm_db
+
+Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
+
+## <a name="inslnx_z"></a> 4. Installation on Linux on System z.
+
+### 4.1 Install Node.js for AIX
+
+Download the
+[Node.js Linux on System z binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
+execute the binary file, for example into `/mynode`:
+
+```
+cd /mynode
+./ibm-4.4.3.0-node-v4.4.3-linux-s390x.bin
+```
+
+### 4.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
