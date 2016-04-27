@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 2. [Node-ibm_db Installation on Linux](#inslnx)
 3. [Node-ibm_db Installation on AIX on Power Systems](#insaix_p)
 4. [Node-ibm_db Installation on Linux on System z](#inslnx_z)
-5. [Node-ibm_db Installation on Linux on Power PC](#inslnx_p) 
+5. [Node-ibm_db Installation on Linux on Power System](#inslnx_p) 
 6. [Node-ibm_db Installation on MacOS](#insmac)
 7. [Node-ibm_db Installation on Windows](#inswin)
 
@@ -37,7 +37,7 @@ Following are the steps to create a Node.js installation for testing.
 
 This node-ibm_db release has been tested with Node 0.10.36, 0.12.7, 4.2.1, 4.2.2, 4.2.6 LTS versions
 and 5.0.0, 5.3.0, 5.10.1 Stable versions on 64-bit/32-bit IBM Linux, IBm AIX, MacOS, Linux on z, 
-Linux on Power PC and Windows.
+Linux on Power System and Windows.
 
 ### Prerequisites
 
@@ -162,9 +162,9 @@ cd /mynode
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
 
-## <a name="inslnx_z"></a> 4. Installation on Linux on System z.
+## <a name="inslnx_z"></a> 4. Node-ibm_db Installation on Linux on System z.
 
-### 4.1 Install Node.js for AIX
+### 4.1 Install Node.js for Linux on System z
 
 Download the
 [Node.js Linux on System z binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
@@ -176,5 +176,23 @@ cd /mynode
 ```
 
 ### 4.2 Install node-ibm_db
+
+Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
+
+
+## <a name="inslnx_p"></a> 5. Node-ibm_db Installation on Linux on Power System.
+
+### 5.1 Install Node.js for Linux on Power System
+
+Download the
+[Node.js Linux on Power System binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
+execute the binary file, for example into `/mynode`:
+
+```
+cd /mynode
+./ibm-4.4.3.0-node-v4.4.3-linux-ppc64.bin
+```
+
+### 5.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
