@@ -7,11 +7,24 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 install
 --------
+
+### Prerequisites:
+
+- For higher versions of node (When building with Node 4 onwards) the compiler must support
+C++11. Note the default compiler on RHEL 6 does not have the required support.
+Install a newer compiler or upgrade older one.
+
+- Python 2.7 is needed by node-gyp.
+
 You may install the package using npm install command:
 
-```bash
+```
 npm install ibm_db
 ```
+
+For more installation details refer: [INSTALL](https://github.com/rhtpandeyIN/node-ibm_db/blob/master/INSTALL.md).
+
+
 un-install
 ----------
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
