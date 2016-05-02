@@ -22,7 +22,7 @@ You may install the package using npm install command:
 npm install ibm_db
 ```
 
-For more installation details refer: [INSTALL](https://github.com/rhtpandeyIN/node-ibm_db/blob/master/INSTALL.md).
+For more installation details refer: [INSTALL](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
 un-install
