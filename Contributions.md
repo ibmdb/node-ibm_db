@@ -18,7 +18,19 @@ This section provides the guidelines for contributing code to the `node-ibm_db` 
 <a name='general contribution requirements'></a>
 ###General Contributions Requirements
 
-We will be glad to take a look at the code you wish to contribute to `node-ibm_db` project. We cannot guarantee that the code will be included. Contributions of general interest and written according to the following guidelines have a better chance of becoming a part of `node-ibm_db` project. For any significant new functionality, contact the `node-ibm_db` project development team through `node-ibm_db` google-groups (https://github.com/ibmdb/node-ibm_db/) first, and discuss the features, design and scope of the possible contribution. This helps ensure that the contribution is expected and will be welcome, that it will fit in well with the rest of `node-ibm_db` project, and that it does not overlap with other development work that may be underway. For Bug Fixes, issue a Pull Request against our github repo. While you are considering contributing code to `node-ibm_db` project, make sure that the legal terms are acceptable to you and your organization. Here are several things to keep in mind when developing a potential contribution to the `node-ibm_db` project: 1. During implementation, try to mimic the style already present in the `node-ibm_db` project source code. 2. Always provide enough test code and test cases. It is endeavor that the drivers/adapters are well tested. Make sure that your tests are integrated into test suite. New tests and the complete test suite should pass or give expected results. 3. Test on more than one platform. It is good to combine testing on Windows with testing on Linux, Mac OS X or another Unix platform. It is always good to try to mix big and little endian platforms. 4. Each contribution should contain everything that will allow building, testing and running IBM_DB with the contribution. This usually includes: source code, build files and test files.
+We will be glad to take a look at the code you wish to contribute to `node-ibm_db` project. We cannot guarantee that the code will be included. Contributions of general interest and written according to the following guidelines have a better chance of becoming a part of `node-ibm_db` project. For any significant new functionality, contact the `node-ibm_db` project development team through `node-ibm_db` google-groups (https://github.com/ibmdb/node-ibm_db/) first, and discuss the features, design and scope of the possible contribution. This helps ensure that the contribution is expected and will be welcome, that it will fit in well with the rest of `node-ibm_db` project, and that it does not overlap with other development work that may be underway. For Bug Fixes, issue a Pull Request against our github repo. While you are considering contributing code to `node-ibm_db` project, make sure that the legal terms are acceptable to you and your organization. 
+
+```
+Here are several things to keep in mind when developing a potential contribution to the `node-ibm_db` project: 
+
+1. During implementation, try to mimic the style already present in the `node-ibm_db` project source code. 
+2. Always provide enough test code and test cases. It is endeavor that the drivers/adapters are well tested. 
+   Make sure that your tests are integrated into test suite. New tests and the complete test suite should pass or give expected results. 
+3. Test on more than one platform. It is good to combine testing on Windows with testing on Linux, Mac OS X or another Unix platform. 
+   It is always good to try to mix big and little endian platforms. 
+4. Each contribution should contain everything that will allow building, testing and running IBM_DB with the contribution. 
+   This usually includes: source code, build files and test files.
+```
 
 <a name='legal issues'></a>
 ###Legal Issues
@@ -27,9 +39,10 @@ We will be glad to take a look at the code you wish to contribute to `node-ibm_d
 
 ####One-Time Contributors
 
-If you would like to make a contribution only once or infrequently, please use the [`node-ibm_db` Joint Copyright Assignment–onetime contribution](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Assignment%20-%20onetime.pdf) form. The contribution will be identified by a Pull Request ID which is unique to the contribution and entered into the form. Therefore, please make sure that there is an Pull Request in github repo, or submit one. 
+If you would like to make a contribution only once or infrequently, please use the [node-ibm_db Joint Copyright Assignment–onetime contribution](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Assignment%20-%20onetime.pdf) form. The contribution will be identified by a Pull Request ID which is unique to the contribution and entered into the form. Therefore, please make sure that there is an Pull Request in github repo, or submit one. 
 
-The code contribution will be evaluated by IBM team. The IBM team may request updates, for example for better conformance with the IBM design principles, coding and testing guidelines, or performance. Such updates can be contributed without exchanging another form: An IBM team member commits related materials into the github source code repository using the same Pull Request ID that was entered into the copyright assignment form.
+The code contribution will be evaluated by IBM team. The IBM team may request updates, for example for better conformance with the IBM design principles, coding and testing guidelines, or performance. 
+Such updates can be contributed without exchanging another form: An IBM team member commits related materials into the github source code repository using the same Pull Request ID that was entered into the copyright assignment form.
 
 ####Ongoing Contributors
 
@@ -37,9 +50,9 @@ If you are interested in making frequent contributions to the `node-ibm_db` proj
 
 In this case, the relationship between the contributor and the IBM team is much closer: One or more authors belonging to the contributor may have commit access to the `node-ibm_db` project’s github source code repository. With this direct access come additional responsibilities including an understanding that the contributor will work to follow the technical guidelines for contributions, and agreement to adhere to the terms of the copyright assignment forms for all future contributions.
 
-The process for ongoing contributors involves two types of forms: Initially, and only once, an ongoing contributor submits a [`node-ibm_db` Joint Copyright Assignment – ongoing contributor](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Assignment%20-%20ongoing.pdf) form agreeing to essentially the same terms as in the one-time contributor form, for all future contributions.
+The process for ongoing contributors involves two types of forms: Initially, and only once, an ongoing contributor submits a [node-ibm_db Joint Copyright Assignment – ongoing contributor](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Assignment%20-%20ongoing.pdf) form agreeing to essentially the same terms as in the one-time contributor form, for all future contributions.
 
-The contributor must also send another form, [Addendum to `node-ibm_db` Joint Copyright Assignment for ongoing contributor: Authors](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Addendum%20-%20ongoing.pdf), for the initial set and each addition of authors to `node-ibm_db` contributions, before any contributions from these authors are committed into the `node-ibm_db` projects’ github source code repository. (Only new, additional authors need to be listed on each such form.) The contributor agrees to ensure that all of these authors agree to adhere to the terms of the associated Joint Copyright Assignment by Ongoing Contributor Agreement.
+The contributor must also send another form, [Addendum to node-ibm_db Joint Copyright Assignment for ongoing contributor: Authors](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Addendum%20-%20ongoing.pdf), for the initial set and each addition of authors to `node-ibm_db` contributions, before any contributions from these authors are committed into the `node-ibm_db` projects’ github source code repository. (Only new, additional authors need to be listed on each such form.) The contributor agrees to ensure that all of these authors agree to adhere to the terms of the associated Joint Copyright Assignment by Ongoing Contributor Agreement.
 
 Some of an ongoing contributor's authors may be given commit access to the `node-ibm_db` project’s github source code repository. Their committer IDs need to be established before completing the Authors Addendum form, so that these committer IDs can be entered there. (The committer IDs will be activated only after the form is received.)
 
