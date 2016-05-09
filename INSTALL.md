@@ -137,8 +137,8 @@ node run-tests.js
 ```
 
 It's Done.
---------------------------------------------
 
+--------------------------------------------
 ### <a name="insaix_p"></a> 
 3. Node-ibm_db Installation on AIX on Power Systems.
 -------------------------------------------------------
@@ -157,8 +157,8 @@ cd /mynode
 #### 3.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
---------------------------------------------
 
+--------------------------------------------
 ### <a name="inslnx_z"></a> 
 4. Node-ibm_db Installation on Linux on System z.
 ---------------------------------------------------
@@ -177,8 +177,8 @@ cd /mynode
 #### 4.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
---------------------------------------------
 
+--------------------------------------------
 ### <a name="inslnx_p"></a> 
 5. Node-ibm_db Installation on Linux on Power System.
 -------------------------------------------------------
@@ -197,8 +197,8 @@ cd /mynode
 #### 5.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
---------------------------------------------
 
+--------------------------------------------
 ### <a name="insmac"></a> 
 6. Node-ibm_db Installation on MacOS.
 --------------------------------------------
@@ -212,8 +212,8 @@ extract the file.
 #### 6.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
---------------------------------------------
 
+--------------------------------------------
 ### <a name="inswin"></a> 
 7. Node-ibm_db Installation on Windows.
 --------------------------------------------
@@ -251,8 +251,8 @@ node run-tests.js
 ```
 
 It's Done.
---------------------------------------------
 
+--------------------------------------------
 ### <a name="inswinbld"></a> 
 8. Node-ibm_db How to Manually Build on Windows.
 ---------------------------------------------------
@@ -327,4 +327,3 @@ Note: This command will run only in windows command prompt.
 11. Check for `\node-ibm_db\build\Release\odbc_bindings.node` file, If it's there
     Well Done :)
 ```
---------------------------------------------
