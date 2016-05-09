@@ -19,6 +19,7 @@ FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TOR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 DEALINGS IN THE SOFTWARE.
 
+---------------------------------------------------
 ## Contents
 
 1. [Overview](#Installation)
@@ -30,6 +31,7 @@ DEALINGS IN THE SOFTWARE.
 7. [Node-ibm_db Installation on Windows](#inswin)
 8. [Node-ibm_db How to Manually Build on Windows](#inswinbld)
 
+---------------------------------------------------
 ## <a name="overview"></a> 1. Overview
 
 The [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) is an asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
@@ -40,11 +42,11 @@ This node-ibm_db release has been tested with Node 0.10.36, 0.12.7, 4.2.1, 4.2.2
 and 5.0.0, 5.3.0, 5.10.1 Stable versions on 64-bit/32-bit IBM Linux, IBM AIX, MacOS, Linux on z, 
 Linux on Power System and Windows.
 
-
+---------------------------------------------------
 ### <a name="inslnx"></a> 
 2. Node-ibm_db Installation on Linux.
---------------------------------------------
 
+--------------------------------------------
 #### 2.1 Install Node.js
 
 Download the
@@ -141,8 +143,8 @@ It's Done.
 --------------------------------------------
 ### <a name="insaix_p"></a> 
 3. Node-ibm_db Installation on AIX on Power Systems.
--------------------------------------------------------
 
+-------------------------------------------------------
 #### 3.1 Install Node.js for AIX
 
 Download the
@@ -161,8 +163,8 @@ Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 --------------------------------------------
 ### <a name="inslnx_z"></a> 
 4. Node-ibm_db Installation on Linux on System z.
----------------------------------------------------
 
+---------------------------------------------------
 #### 4.1 Install Node.js for Linux on System z
 
 Download the
@@ -181,8 +183,8 @@ Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 --------------------------------------------
 ### <a name="inslnx_p"></a> 
 5. Node-ibm_db Installation on Linux on Power System.
--------------------------------------------------------
 
+-------------------------------------------------------
 #### 5.1 Install Node.js for Linux on Power System
 
 Download the
@@ -201,8 +203,8 @@ Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 --------------------------------------------
 ### <a name="insmac"></a> 
 6. Node-ibm_db Installation on MacOS.
---------------------------------------------
 
+--------------------------------------------
 #### 6.1 Install Node.js for Mac
 
 Download the
@@ -216,8 +218,8 @@ Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 --------------------------------------------
 ### <a name="inswin"></a> 
 7. Node-ibm_db Installation on Windows.
---------------------------------------------
 
+--------------------------------------------
 #### 7.1 Install Node.js for Windows
 
 Download the
@@ -255,8 +257,8 @@ It's Done.
 --------------------------------------------
 ### <a name="inswinbld"></a> 
 8. Node-ibm_db How to Manually Build on Windows.
----------------------------------------------------
 
+---------------------------------------------------
 #### 8.1 Install Node.js for Windows
 
 Download the
