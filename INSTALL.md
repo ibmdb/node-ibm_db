@@ -41,9 +41,11 @@ and 5.0.0, 5.3.0, 5.10.1 Stable versions on 64-bit/32-bit IBM Linux, IBM AIX, Ma
 Linux on Power System and Windows.
 
 
-## <a name="inslnx"></a> 2. Node-ibm_db Installation on Linux.
+### <a name="inslnx"></a> 
+2. Node-ibm_db Installation on Linux.
+--------------------------------------------
 
-### 2.1 Install Node.js
+#### 2.1 Install Node.js
 
 Download the
 [Node.js Linux binaries](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
@@ -60,12 +62,12 @@ Set PATH to include Node.js:
 export PATH=/mynode/node-v4.2.2-linux-x64/bin:$PATH
 ```
 
-### 2.2 Install node-ibm_db
+#### 2.2 Install node-ibm_db
 
 Following are the steps to install [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) from github or npm.
 using directory `/nodeapp` for example.
 
-#### 2.2.1 Direct Installation.
+##### 2.2.1 Direct Installation.
 
 ```
 1. mkdir nodeapp
@@ -90,7 +92,7 @@ node run-tests.js
 
 It's Done.
 
-#### 2.2.2 Manual Installation by using git clone.
+##### 2.2.2 Manual Installation by using git clone.
 
 ```
 1. mkdir nodeapp
@@ -137,9 +139,11 @@ node run-tests.js
 It's Done.
 
 
-## <a name="insaix_p"></a> 3. Node-ibm_db Installation on AIX on Power Systems.
+### <a name="insaix_p"></a> 
+3. Node-ibm_db Installation on AIX on Power Systems.
+-------------------------------------------------------
 
-### 3.1 Install Node.js for AIX
+#### 3.1 Install Node.js for AIX
 
 Download the
 [Node.js AIX binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
@@ -150,14 +154,16 @@ cd /mynode
 ./ibm-4.4.3.0-node-v4.4.3-aix-ppc64.bin
 ```
 
-### 3.2 Install node-ibm_db
+#### 3.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
 
-## <a name="inslnx_z"></a> 4. Node-ibm_db Installation on Linux on System z.
+### <a name="inslnx_z"></a> 
+4. Node-ibm_db Installation on Linux on System z.
+---------------------------------------------------
 
-### 4.1 Install Node.js for Linux on System z
+#### 4.1 Install Node.js for Linux on System z
 
 Download the
 [Node.js Linux on System z binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
@@ -168,14 +174,16 @@ cd /mynode
 ./ibm-4.4.3.0-node-v4.4.3-linux-s390x.bin
 ```
 
-### 4.2 Install node-ibm_db
+#### 4.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
 
-## <a name="inslnx_p"></a> 5. Node-ibm_db Installation on Linux on Power System.
+### <a name="inslnx_p"></a> 
+5. Node-ibm_db Installation on Linux on Power System.
+-------------------------------------------------------
 
-### 5.1 Install Node.js for Linux on Power System
+#### 5.1 Install Node.js for Linux on Power System
 
 Download the
 [Node.js Linux on Power System binaries](https://developer.ibm.com/node/sdk/#overview) from IBM SDK for Node.js and
@@ -186,33 +194,37 @@ cd /mynode
 ./ibm-4.4.3.0-node-v4.4.3-linux-ppc64.bin
 ```
 
-### 5.2 Install node-ibm_db
+#### 5.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
 
-## <a name="insmac"></a> 6. Node-ibm_db Installation on MacOS.
+### <a name="insmac"></a> 
+6. Node-ibm_db Installation on MacOS.
+--------------------------------------------
 
-### 6.1 Install Node.js for Mac
+#### 6.1 Install Node.js for Mac
 
 Download the
 [Node.js MacOS binaries](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
 extract the file.
 
-### 6.2 Install node-ibm_db
+#### 6.2 Install node-ibm_db
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
 
-## <a name="inswin"></a> 7. Node-ibm_db Installation on Windows.
+### <a name="inswin"></a> 
+7. Node-ibm_db Installation on Windows.
+--------------------------------------------
 
-### 7.1 Install Node.js for Windows
+#### 7.1 Install Node.js for Windows
 
 Download the
 [Node.js Windows binary/installer](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
 install it.
 
-### 7.2 Install node-ibm_db
+#### 7.2 Install node-ibm_db
 
 Following are the steps to install [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) from github or npm.
 using directory `/nodeapp` for example.
@@ -241,15 +253,17 @@ node run-tests.js
 It's Done.
 
 
-## <a name="inswinbld"></a> 8. Node-ibm_db How to Manually Build on Windows.
+### <a name="inswinbld"></a> 
+8. Node-ibm_db How to Manually Build on Windows.
+---------------------------------------------------
 
-### 8.1 Install Node.js for Windows
+#### 8.1 Install Node.js for Windows
 
 Download the
 [Node.js Windows binary/installer](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
 install it.
 
-### 8.2 Make Build node-ibm_db
+#### 8.2 Make Build node-ibm_db
 
 Following are the steps to make build of [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db).
 using directory `/nodeapp` for example.
