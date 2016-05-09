@@ -20,8 +20,8 @@ This section provides the guidelines for contributing code to the `node-ibm_db` 
 
 We will be glad to take a look at the code you wish to contribute to `node-ibm_db` project. We cannot guarantee that the code will be included. Contributions of general interest and written according to the following guidelines have a better chance of becoming a part of `node-ibm_db` project. For any significant new functionality, contact the `node-ibm_db` project development team through `node-ibm_db` google-groups (https://github.com/ibmdb/node-ibm_db/) first, and discuss the features, design and scope of the possible contribution. This helps ensure that the contribution is expected and will be welcome, that it will fit in well with the rest of `node-ibm_db` project, and that it does not overlap with other development work that may be underway. For Bug Fixes, issue a Pull Request against our github repo. While you are considering contributing code to `node-ibm_db` project, make sure that the legal terms are acceptable to you and your organization. 
 
-```
-Here are several things to keep in mind when developing a potential contribution to the `node-ibm_db` project: 
+
+####Here are several things to keep in mind when developing a potential contribution to the `node-ibm_db` project: 
 
 1. During implementation, try to mimic the style already present in the `node-ibm_db` project source code. 
 2. Always provide enough test code and test cases. It is endeavor that the drivers/adapters are well tested. 
@@ -30,7 +30,7 @@ Here are several things to keep in mind when developing a potential contribution
    It is always good to try to mix big and little endian platforms. 
 4. Each contribution should contain everything that will allow building, testing and running IBM_DB with the contribution. 
    This usually includes: source code, build files and test files.
-```
+
 
 <a name='legal issues'></a>
 ###Legal Issues
