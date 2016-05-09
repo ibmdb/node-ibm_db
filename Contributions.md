@@ -11,12 +11,12 @@ This section provides the guidelines for contributing code to the `node-ibm_db` 
 3. [Legal Issues](#legal issues) section discusses the legal implications of your contribution.
 
 <a name='why contribute'></a>
-###Why Contribute?
+### 1. Why Contribute?
 
 `node-ibm_db` project allows Node.js based applications to use DB2 and Informix (IDS) Data Servers. Our goal is to provide top of the line support on all widely used platforms. By contributing your code to `node-ibm_db` project, you will get the benefit of continuing improvement by the team and the community, as well as testing and multi-platform portability. In addition, it saves you from having to re-merge your own additions into IBM_DB each time you upgrade to a new release.
 
 <a name='general contribution requirements'></a>
-###General Contributions Requirements
+### 2. General Contributions Requirements
 
 We will be glad to take a look at the code you wish to contribute to `node-ibm_db` project. We cannot guarantee that the code will be included. Contributions of general interest and written according to the following guidelines have a better chance of becoming a part of `node-ibm_db` project. For any significant new functionality, contact the `node-ibm_db` project development team through `node-ibm_db` google-groups (https://github.com/ibmdb/node-ibm_db/) first, and discuss the features, design and scope of the possible contribution. This helps ensure that the contribution is expected and will be welcome, that it will fit in well with the rest of `node-ibm_db` project, and that it does not overlap with other development work that may be underway. For Bug Fixes, issue a Pull Request against our github repo. While you are considering contributing code to `node-ibm_db` project, make sure that the legal terms are acceptable to you and your organization. 
 
@@ -33,18 +33,18 @@ We will be glad to take a look at the code you wish to contribute to `node-ibm_d
 
 
 <a name='legal issues'></a>
-###Legal Issues
+### 3. Legal Issues
 
 *In order for your code to be contributed, you need to assign to IBM joint copyright ownership in the contribution. You retain joint ownership in the contribution without restriction. (For the complete set of terms, please see the forms mentioned below.) The sections below describe two processes, for one-time and ongoing contributors. In either case, please sign the form(s) and send the scanned copy to IBM (opendev@us.ibm.com) for review. After review, IBM team will look at the code for evaluation. Please consult a legal representative if you do not understand the implications of the copyright assignment.*
 
-####One-Time Contributors
+#### 3.1 One-Time Contributors
 
 If you would like to make a contribution only once or infrequently, please use the [node-ibm_db Joint Copyright Assignment–onetime contribution](http://ibm-db.googlecode.com/files/node-ibm_db%20Joint%20Copyright%20Assignment%20-%20onetime.pdf) form. The contribution will be identified by a Pull Request ID which is unique to the contribution and entered into the form. Therefore, please make sure that there is an Pull Request in github repo, or submit one. 
 
 The code contribution will be evaluated by IBM team. The IBM team may request updates, for example for better conformance with the IBM design principles, coding and testing guidelines, or performance. 
 Such updates can be contributed without exchanging another form: An IBM team member commits related materials into the github source code repository using the same Pull Request ID that was entered into the copyright assignment form.
 
-####Ongoing Contributors
+#### 3.2 Ongoing Contributors
 
 If you are interested in making frequent contributions to the `node-ibm_db` project, then the IBM team may agree to invite you as an ongoing contributor. Ongoing contributors may be individuals but are more typically expected to be companies with one or more people (“authors”) writing different parts of one or more contributions.
 
