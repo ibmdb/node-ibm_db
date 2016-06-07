@@ -314,8 +314,6 @@ var download_file_httpget = function(file_url) {
         
         var child = exec('npm config get proxy', function(error, stdout, stderr)
           {
-            //console.log('stdout: ' + stdout.toString().split('\n')[0]);
-            //console.log('stderr: ' + stderr);
             if (error !== null) 
             {
                 console.log('Error occurred while fetching proxy ' +
@@ -344,11 +342,17 @@ var download_file_httpget = function(file_url) {
                         var splitIndex = proxyStr.toString().lastIndexOf(':');
                         if(splitIndex > 0) 
                         {
+                            var proxyUrl = url.parse(proxyStr.toString());
                             options = {
-                             host: url.parse(proxyStr.toString()).hostname,
-                             port: url.parse(proxyStr.toString()).port,
+                             host: proxyUrl.hostname,
+                             port: proxyUrl.port,
                              path: url.parse(installerfileURL).href
                             };
+                            if (proxyUrl.auth) 
+                            {
+                               options.headers = { 'Proxy-Authorization': 'Basic '
+                                   + new Buffer(proxyUrl.auth).toString('base64') };
+                            }
                         }
                     }
                     return http.get(options, downloadCLIDriver); 
@@ -357,12 +361,17 @@ var download_file_httpget = function(file_url) {
             {
                 var splitIndex = proxyStr.toString().lastIndexOf(':');
                 if(splitIndex > 0) {
-                            
+                    var proxyUrl = url.parse(proxyStr.toString());
                     options = {
-                     host: url.parse(proxyStr.toString()).hostname,
-                     port: url.parse(proxyStr.toString()).port,
+                     host: proxyUrl.hostname,
+                     port: proxyUrl.port,
                      path: url.parse(installerfileURL).href
                     };
+                    if (proxyUrl.auth) 
+                    {
+                       options.headers = { 'Proxy-Authorization': 'Basic '
+                           + new Buffer(proxyUrl.auth).toString('base64') };
+                    }
                 }
                 return http.get(options, downloadCLIDriver); 
             }
