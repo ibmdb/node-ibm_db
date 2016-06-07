@@ -5,16 +5,18 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
 
-install
---------
-
-### Prerequisites:
+Prerequisite
+------------
 
 - For higher versions of node (When building with Node 4 onwards) the compiler must support
 C++11. Note the default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
 - Python 2.7 is needed by node-gyp.
+- You need not to install any db2 ODBC client driver for connectivity. Just install ibm_db and it is ready for use.
+
+install
+--------
 
 You may install the package using npm install command:
 
@@ -23,7 +25,6 @@ npm install ibm_db
 ```
 
 For more installation details refer: [INSTALL](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
-
 
 un-install
 ----------
@@ -51,16 +52,18 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
 
 For z/OS and iSeries Connectivity
 ---------------------------------
-For connectivity against DB2 for LUW or Informix Server using node-ibm_db, no license file is required. However, if you want to use node-ibm_db against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect license for it. You can buy db2connect license from IBM. The connectivity can be enabled either on server using db2connectactivate utility or on client using client side license file. If you have client side license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
+For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
+no license file is required. However, if you want to use node-ibm_db 
+against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect 
+license if server is not db2connectactivated to accept unlimited number of 
+client connection. You can buy db2connect license from IBM. The connectivity 
+can be enabled either on server using db2connectactivate utility or on client 
+using client side license file. If you have client side license file, just 
+copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
 For AIX install issue
 ---------------------
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
-
-For MacOS Connectivity Issue
-----------------------------
-After `npm install ibm_db` run below command to avoid SQL1042C error:
-`export DYLD_LIBRARY_PATH=<node_modules_dir>/ibm_db/installer/clidriver/lib/icc:$DYLD_LIBRARYPATH`
 
 Discussion Forums
 -----------------
