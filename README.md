@@ -65,12 +65,18 @@ For AIX install issue
 ---------------------
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
 
-Discussion Forums
------------------
-To start a discussion or need help you can post a topic on node-ibm_db google group https://groups.google.com/forum/#!forum/node-ibm_db
+Need Help?
+---------
+If you encountered any issue with ibm_db, first check for existing solution or
+work-around under `issues` or on google groups forum. Links are:   
+    
+https://github.com/ibmdb/node-ibm_db/issues    
+https://groups.google.com/forum/#!forum/node-ibm_db   
+   
+If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-api
----
+APIs
+----
 
 ### Database
 
@@ -546,6 +552,42 @@ pool.open(cn, function (err, db) {
 	});
 });
 ```
+
+How to build ibm_db from source code
+------------------------------------
+
+First, you should have a supported C++ compiler installed in the system. 
+node.js add-on binary of ibm_db has source code in C++. For node.js V4 
+onwards your compiler must support C++11 syntax. For node.js v4 on linux, 
+you should have g++ 4.8.3 or later version. On Windows, you should have 
+Visual Studio to build the ibm_db code. node-gyp uses msbuild.exe on Windows.
+   
+As ibm_db uses ODBC/CLI driver to communicate with IBM Database Servers, you should have a db2 client or server installed locally. You can download DB2 client drivers from here: http://www-01.ibm.com/support/docview.wss?uid=swg27007053
+   
+Now set environment variable IBM_DB_HOME to point to the above installed db2 client directory. Example:   
+If db2 client is installed as `D:\dsdriver` on Windows, run this command:   
+`set IBM_DB_HOME=D:\dsdriver`   
+
+If db2 client is installed as /home/user/sqllib on non-windows, run this command:   
+`export IBM_DB_HOME=/home/user/sqllib`   
+
+Now, download source code of ibm_db from github or clone it; install 
+dependent packages mentioned in package.json and run below commands to 
+compile it on Linux/Unix platforms:
+```
+cd <ibm_db directory>
+export PATH=$IBM_DB_HOME/lib:$IBM_DB_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$IBM_DB_HOME/lib:$LD_LIBRARY_PATH
+npm install -g node-gyp
+npm install bindings@1.0.0
+npm install nan@2.2.0
+export PATH=`pwd`/node_modules/.bin:$PATH
+node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false
+```
+
+Thats it! Now, ibm_db is ready for use. For non-LU platforms, use similar platform specific commands.
+
+
 build options
 -------------
 
