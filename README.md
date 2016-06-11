@@ -276,7 +276,7 @@ ibmdb.open(cn,function(err,conn){
       else result.closeSync();
 
       //Close the connection
-	  conn.close(function(err){}));
+	  conn.close(function(err){});
     });
   });
 });
@@ -303,7 +303,7 @@ ibmdb.open(cn,function(err,conn){
     result.closeSync();
 
     //Close the connection
-	conn.close(function(err){}));
+	conn.close(function(err){});
   });
 });
 ```
