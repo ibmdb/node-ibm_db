@@ -35,6 +35,8 @@
 #include "strptime.h"
 #endif
 
+#define FILE_PARAM 3
+
 using namespace v8;
 using namespace node;
 
@@ -56,12 +58,6 @@ void ODBC::Init(v8::Handle<Object> exports) {
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1);
   
-  // Constants
-#if (NODE_MODULE_VERSION < NODE_0_12_MODULE_VERSION)
-
-#else
-
-#endif
   PropertyAttribute constant_attributes = static_cast<PropertyAttribute>(ReadOnly | DontDelete);
   constructor_template->Set(Nan::New<String>("SQL_CLOSE").ToLocalChecked(), Nan::New<Number>(SQL_CLOSE), constant_attributes);
   constructor_template->Set(Nan::New<String>("SQL_DROP").ToLocalChecked(), Nan::New<Number>(SQL_DROP), constant_attributes);
@@ -644,102 +640,259 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
   *paramCount = values->Length();
   
   Parameter* params = (Parameter *) malloc(*paramCount * sizeof(Parameter));
+  memset(params, '\0', *paramCount * sizeof(Parameter));
 
   for (int i = 0; i < *paramCount; i++) {
     Local<Value> value = values->Get(i);
     
+    params[i].paramtype     = SQL_PARAM_INPUT;
     params[i].size          = 0;
     params[i].length        = SQL_NULL_DATA;
     params[i].buffer_length = 0;
     params[i].decimals      = 0;
 
-    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %X\n",
+    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %p\n",
                  i, &params[i].length);
 
-    if (value->IsString()) {
-      Local<String> string = value->ToString();
-      int length = string->Length();
-      
-      params[i].c_type        = SQL_C_TCHAR;
-#ifdef UNICODE
-      params[i].type          = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
-      params[i].buffer_length = (length * sizeof(uint16_t)) + sizeof(uint16_t);
-#else
-      params[i].type          = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
-      params[i].buffer_length = string->Utf8Length() + 1;
-#endif
-      params[i].buffer        = malloc(params[i].buffer_length);
-      params[i].size          = params[i].buffer_length;
-      params[i].length        = SQL_NTS;//params[i].buffer_length;
-
-#ifdef UNICODE
-      string->Write((uint16_t *) params[i].buffer);
-#else
-      string->WriteUtf8((char *) params[i].buffer);
-#endif
-
-      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsString(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i "
-                   "value=%s\n", i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length, 
-                   (char*) params[i].buffer);
+    if (value->IsArray()) 
+    {
+      Local<Array> paramArray = Local<Array>::Cast(value);
+      int arrlen = paramArray->Length();
+      for (int j = 0; j < arrlen; j++)
+      {
+          Local<Value> val = paramArray->Get(j);
+          switch(j)
+          {
+              case 0:
+                  if(val->IsInt32())
+                      params[i].paramtype = val->IntegerValue();
+                  break;
+              case 1:
+                  if(val->IsInt32())
+                      params[i].c_type = val->IntegerValue();
+                  else
+                      params[i].c_type = SQL_C_CHAR;
+                  break;
+              case 2:
+                  if(val->IsInt32())
+                      params[i].type = val->IntegerValue();
+                  else
+                      params[i].type = SQL_CHAR;
+                  break;
+              case 3:
+                  if(val->IsString())
+                  {
+                      GetStringParam(val, &params[i], i+1);
+                  }
+                  else if (val->IsNull()) {
+                      GetNullParam(&params[i], i+1);
+                  }
+                  else if (val->IsInt32()) {
+                      GetInt32Param(val, &params[i], i+1);
+                  }
+                  else if (val->IsNumber()) {
+                      GetNumberParam(val, &params[i], i+1);
+                  }
+                  else if (val->IsBoolean()) {
+                      GetBoolParam(val, &params[i], i+1);
+                  }
+                  break;
+              default:
+                  break;
+          }
+      }
+    }
+    else if (value->IsString()) {
+        GetStringParam(value, &params[i], i+1);
     }
     else if (value->IsNull()) {
-      params[i].c_type = SQL_C_DEFAULT;
-      params[i].type   = SQL_VARCHAR;
-      params[i].length = SQL_NULL_DATA;
-
-      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNull(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                   i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length);
+        GetNullParam(&params[i], i+1);
     }
     else if (value->IsInt32()) {
-      int64_t  *number = new int64_t(value->IntegerValue());
-      params[i].c_type = SQL_C_SBIGINT;
-      params[i].type   = SQL_BIGINT;
-      params[i].buffer = number;
-      params[i].length = 0;
-      
-      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsInt32(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i "
-                   "value=%lld\n", i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length,
-                   *number);
+        GetInt32Param(value, &params[i], i+1);
     }
     else if (value->IsNumber()) {
-      double *number   = new double(value->NumberValue());
-      
-      params[i].c_type        = SQL_C_DOUBLE;
-      params[i].type          = SQL_DECIMAL;
-      params[i].buffer        = number;
-      params[i].buffer_length = sizeof(double);
-      params[i].length        = params[i].buffer_length;
-      params[i].decimals      = 7;
-      params[i].size          = sizeof(double);
-
-      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsNumber(): params[%i] "
-                  "c_type=%i type=%i buffer_length=%i size=%i length=%i "
-		  "value=%f\n",
-                  i, params[i].c_type, params[i].type,
-                  params[i].buffer_length, params[i].size, params[i].length,
-		  *number);
+        GetNumberParam(value, &params[i], i+1);
     }
     else if (value->IsBoolean()) {
-      bool *boolean    = new bool(value->BooleanValue());
-      params[i].c_type = SQL_C_BIT;
-      params[i].type   = SQL_BIT;
-      params[i].buffer = boolean;
-      params[i].length = 0;
-      
-      DEBUG_PRINTF("ODBC::GetParametersFromArray - IsBoolean(): params[%i] "
-                   "c_type=%i type=%i buffer_length=%i size=%i length=%i\n",
-                   i, params[i].c_type, params[i].type,
-                   params[i].buffer_length, params[i].size, params[i].length);
+        GetBoolParam(value, &params[i], i+1);
     }
   } 
-  
   return params;
+}
+
+void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
+{
+    Local<String> string = value->ToString();
+    int length = string->Length();
+      
+    param->length        = SQL_NTS;
+    if(!param->c_type || (param->c_type == SQL_CHAR))
+        param->c_type = SQL_C_TCHAR;
+    #ifdef UNICODE
+    if(!param->type || (param->type == SQL_CHAR))
+        param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
+    if(param->c_type != SQL_C_BINARY)
+        param->buffer_length = (length * sizeof(uint16_t)) + sizeof(uint16_t);
+    #else
+    if(!param->type || (param->type == SQL_CHAR))
+        param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
+    if(param->c_type != SQL_C_BINARY)
+        param->buffer_length = string->Utf8Length() + 1;
+    #endif
+    if(param->c_type == SQL_C_BINARY || param->paramtype == FILE_PARAM)
+    {
+        param->buffer_length = length;
+        param->length        = length; 
+    }
+    param->size          = param->buffer_length;
+    param->buffer        = malloc(param->buffer_length);
+
+    if(param->paramtype == FILE_PARAM)
+        string->WriteUtf8((char *) param->buffer);
+    else if(param->c_type == SQL_C_BINARY)
+        string->WriteOneByte((uint8_t *)param->buffer);
+    else
+    {
+        #ifdef UNICODE
+        string->Write((uint16_t *) param->buffer);
+        #else
+        string->WriteUtf8((char *) param->buffer);
+        #endif
+    }
+
+    if(param->paramtype == FILE_PARAM)  // For SQLBindFileToParam()
+    {
+    /*
+       SQLRETURN SQLBindFileToParam (
+                 SQLHSTMT          StatementHandle,   // hstmt 
+                 SQLUSMALLINT      TargetType,        // i 
+                 SQLSMALLINT       DataType,          // type 
+                 SQLCHAR           *FileName,         // buffer
+                 SQLSMALLINT       *FileNameLength,   // NULL
+                 SQLUINTEGER       *FileOptions,      // SQL_FILE_READ = 2 -> fileOption
+                 SQLSMALLINT       MaxFileNameLength, // buffer_length -> decimals
+                 SQLINTEGER        *IndicatorValue);  // 0 -> fileIndicator
+    */
+        param->decimals = param->buffer_length;
+        param->fileOption = SQL_FILE_READ;
+        param->fileIndicator = 0;
+    }
+
+    DEBUG_PRINTF("ODBC::GetStringParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer=%s, buffer_length=%i, "
+                 "length=%i\n", num, param->paramtype, param->c_type, 
+                 param->type, param->size, param->decimals, 
+                 (char *)param->buffer, param->buffer_length, param->length);
+}
+
+void ODBC::GetNullParam(Parameter * param, int num)
+{
+    param->c_type = SQL_C_DEFAULT;
+    param->type   = SQL_VARCHAR;
+    param->length = SQL_NULL_DATA;
+
+    DEBUG_PRINTF("ODBC::GetNullParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer_length=%i, length=%i\n",
+                 num, param->paramtype, param->c_type, param->type, param->size,
+                 param->decimals, param->buffer_length, param->length);
+}
+
+void ODBC::GetInt32Param(Local<Value> value, Parameter * param, int num)
+{
+    int64_t  *number = new int64_t(value->IntegerValue());
+    param->c_type = SQL_C_SBIGINT;
+    if(!param->type || (param->type == 1)) 
+        param->type = SQL_BIGINT;
+    param->buffer = number;
+    param->length = sizeof(number);
+      
+    DEBUG_PRINTF("ODBC::GetInt32Param: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer=%lld, buffer_length=%i, "
+                 "length=%i\n",
+                 num, param->paramtype, param->c_type, param->type, param->size,
+                 param->decimals, *number, param->buffer_length, param->length);
+}
+
+void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
+{
+    double *number   = new double(value->NumberValue());
+      
+    if(!param->c_type || (param->c_type == SQL_C_CHAR)) 
+        param->c_type    = SQL_C_DOUBLE;
+    if(!param->type || (param->type == SQL_CHAR)) 
+        param->type      = SQL_DECIMAL;
+    param->buffer        = number;
+    param->buffer_length = sizeof(double);
+    param->length        = param->buffer_length;
+    param->decimals      = 7;
+    param->size          = sizeof(double);
+
+    DEBUG_PRINTF("ODBC::GetNumberParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer=%f, buffer_length=%i, "
+                 "length=%i\n",
+                 num, param->paramtype, param->c_type, param->type, param->size,
+                 param->decimals, *number, param->buffer_length, param->length);
+}
+
+void ODBC::GetBoolParam(Local<Value> value, Parameter * param, int num)
+{
+    bool *boolean    = new bool(value->BooleanValue());
+    param->c_type = SQL_C_BIT;
+    if(!param->type || (param->type == SQL_CHAR)) 
+        param->type   = SQL_BIT;
+    param->buffer = boolean;
+    param->length = 0;
+      
+    DEBUG_PRINTF("ODBC::GetBoolParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer_length=%i, length=%i\n",
+                 num, param->paramtype, param->c_type, param->type, param->size,
+                 param->decimals, param->buffer_length, param->length);
+}
+
+SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
+{
+    SQLRETURN ret = SQL_SUCCESS;
+    Parameter prm;
+
+    for (int i = 0; i < count; i++) 
+    {
+        prm = params[i];
+
+        DEBUG_PRINTF(
+          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
+          "buffer_length=%i size=%i length=%i &length=%p\n", i, prm.c_type, prm.type,
+          prm.buffer_length, prm.size, prm.length, &params[i].length);
+
+        if(prm.paramtype == FILE_PARAM)  // FILE
+        {
+            ret = SQLBindFileToParam (
+                      hSTMT,               // StatementHandle, 
+                      i + 1,               // TargetType, 
+                      prm.type,            // DataType, 
+                      (SQLCHAR *)prm.buffer,          // *FileName, 
+                      NULL,                // *FileNameLength, // NULL 0r SQL_NTS
+                      &params[i].fileOption,     // *FileOptions,  // SQL_FILE_READ = 2
+                      prm.decimals,        // MaxFileNameLength, 
+                      &params[i].fileIndicator); // *IndicatorValue); // 0 
+        }
+        else
+            ret = SQLBindParameter(
+                      hSTMT,                    //StatementHandle
+                      i + 1,                    //ParameterNumber
+                      prm.paramtype,            //InputOutputType
+                      prm.c_type,               //ValueType
+                      prm.type,                 //ParameterType
+                      prm.size,                 //ColumnSize
+                      prm.decimals,             //DecimalDigits
+                      prm.buffer,               //ParameterValuePtr
+                      prm.buffer_length,        //BufferLength
+                      //using &prm.length did not work here...
+                      &params[i].length);       //StrLen_or_IndPtr
+
+        if (ret == SQL_ERROR) {break;}
+    }
+    return ret;
 }
 
 /*
@@ -794,7 +947,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
   Nan::EscapableHandleScope scope;
   
-  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%p\n", handleType, handle);
+  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%i\n", handleType, handle);
   
   Local<Object> objError = Nan::New<Object>();
 

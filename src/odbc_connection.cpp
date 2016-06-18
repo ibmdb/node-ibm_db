@@ -806,7 +806,6 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
   
   query_work_data* data = (query_work_data *)(req->data);
   
-  Parameter prm;
   SQLRETURN ret;
   
   uv_mutex_lock(&ODBC::g_odbcMutex);
@@ -834,29 +833,8 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-      for (int i = 0; i < data->paramCount; i++) {
-        prm = data->params[i];
-        
-        DEBUG_PRINTF(
-          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
-          "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
-          prm.buffer_length, prm.size, prm.length, &data->params[i].length);
 
-        ret = SQLBindParameter(
-          data->hSTMT,              //StatementHandle
-          i + 1,                    //ParameterNumber
-          SQL_PARAM_INPUT,          //InputOutputType
-          prm.c_type,               //ValueType
-          prm.type,                 //ParameterType
-          prm.size,                 //ColumnSize
-          prm.decimals,             //DecimalDigits
-          prm.buffer,               //ParameterValuePtr
-          prm.buffer_length,        //BufferLength
-          //using &prm.length did not work here...
-          &data->params[i].length); //StrLen_or_IndPtr
-        
-        if (ret == SQL_ERROR) {break;}
-      }
+      ret = ODBC::BindParameters( data->hSTMT, data->params, data->paramCount ) ;
 
       if (SQL_SUCCEEDED(ret)) {
         ret = SQLExecute(data->hSTMT);
@@ -927,23 +905,9 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   delete data->cb;
 
   if (data->paramCount) {
-    Parameter prm;
-    // free parameters
-    for (int i = 0; i < data->paramCount; i++) {
-      if (prm = data->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break; 
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-    
-    free(data->params);
+      FREE_PARAMS( data->params, data->paramCount ) ;
   }
-  
+
   free(data->sql);
   free(data->catalog);
   free(data->schema);
@@ -974,7 +938,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   Parameter* params = new Parameter[0];
-  Parameter prm;
   SQLRETURN ret;
   SQLHSTMT hSTMT;
   int paramCount = 0;
@@ -1072,7 +1035,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
 
   uv_mutex_unlock(&ODBC::g_odbcMutex);
 
-  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%p\n", hSTMT);
+  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%i\n", hSTMT);
   
   //check to see if should excute a direct or a parameter bound query
   if (!SQL_SUCCEEDED(ret)) {
@@ -1093,49 +1056,15 @@ NAN_METHOD(ODBCConnection::QuerySync) {
       sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-      for (int i = 0; i < paramCount; i++) {
-        prm = params[i];
-        
-        DEBUG_PRINTF(
-          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
-          "buffer_length=%i size=%i length=%i &length=%X\n", i, prm.c_type, prm.type, 
-          prm.buffer_length, prm.size, prm.length, &params[i].length);
 
-        ret = SQLBindParameter(
-          hSTMT,                    //StatementHandle
-          i + 1,                    //ParameterNumber
-          SQL_PARAM_INPUT,          //InputOutputType
-          prm.c_type,               //ValueType
-          prm.type,                 //ParameterType
-          prm.size,                 //ColumnSize
-          prm.decimals,             //DecimalDigits
-          prm.buffer,               //ParameterValuePtr
-          prm.buffer_length,        //BufferLength
-          //using &prm.length did not work here...
-          &params[i].length);       //StrLen_or_IndPtr
-        
-        if (ret == SQL_ERROR) {break;}
-      }
+      ret = ODBC::BindParameters( hSTMT, params, paramCount ) ;
 
       if (SQL_SUCCEEDED(ret)) {
         ret = SQLExecute(hSTMT);
       }
     }
     
-    // free parameters
-    for (int i = 0; i < paramCount; i++) {
-      if (prm = params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break;
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-    
-    free(params);
+    FREE_PARAMS( params, paramCount ) ;
   }
   
   delete sql;

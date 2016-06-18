@@ -76,25 +76,7 @@ void ODBCStatement::Free() {
   DEBUG_PRINTF("ODBCStatement::Free\n");
   //if we previously had parameters, then be sure to free them
   if (paramCount) {
-    int count = paramCount;
-    paramCount = 0;
-    
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < count; i++) {
-      if (prm = params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break;
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    free(params);
+      FREE_PARAMS( params, paramCount ) ;
   }
   
   if (m_hSTMT) {
@@ -738,15 +720,14 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status) {
  * 
  */
 
-NAN_METHOD(ODBCStatement::BindSync) {
+NAN_METHOD(ODBCStatement::BindSync) 
+{
   DEBUG_PRINTF("ODBCStatement::BindSync\n");
-  
   Nan::HandleScope scope;
 
   if ( !info[0]->IsArray() ) {
     return Nan::ThrowTypeError("Argument 1 must be an Array");
   }
-
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   DEBUG_PRINTF("ODBCStatement::BindSync m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
@@ -758,25 +739,7 @@ NAN_METHOD(ODBCStatement::BindSync) {
   //if we previously had parameters, then be sure to free them
   //before allocating more
   if (stmt->paramCount) {
-    int count = stmt->paramCount;
-    stmt->paramCount = 0;
-    
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < count; i++) {
-      if (prm = stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break;
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    free(stmt->params);
+      FREE_PARAMS( stmt->params, stmt->paramCount ) ;
   }
   
   stmt->params = ODBC::GetParametersFromArray(
@@ -784,36 +747,8 @@ NAN_METHOD(ODBCStatement::BindSync) {
     &stmt->paramCount);
   
   SQLRETURN ret = SQL_SUCCESS;
-  Parameter prm;
-  
-  for (int i = 0; i < stmt->paramCount; i++) {
-    prm = stmt->params[i];
-    
-    DEBUG_PRINTF(
-      "ODBCStatement::BindSync - param[%i]: c_type=%i type=%i "
-      "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
-      i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
-      &stmt->params[i].length, prm.decimals,
-      ((prm.length <= 0)? "" : prm.buffer) 
-    );
 
-    ret = SQLBindParameter(
-      stmt->m_hSTMT,        //StatementHandle
-      i + 1,                      //ParameterNumber
-      SQL_PARAM_INPUT,            //InputOutputType
-      prm.c_type,                 //ValueType
-      prm.type,                   //ParameterType
-      prm.size,                   //ColumnSize
-      prm.decimals,               //DecimalDigits
-      prm.buffer,                 //ParameterValuePtr
-      prm.buffer_length,          //BufferLength
-      //using &prm.length did not work here...
-      &stmt->params[i].length);   //StrLen_or_IndPtr
-
-    if (ret == SQL_ERROR) {
-      break;
-    }
-  }
+  ret = ODBC::BindParameters( stmt->m_hSTMT, stmt->params, stmt->paramCount ) ;
 
   if (SQL_SUCCEEDED(ret)) {
     info.GetReturnValue().Set(Nan::True());
@@ -857,25 +792,7 @@ NAN_METHOD(ODBCStatement::Bind) {
   //if we previously had parameters, then be sure to free them
   //before allocating more
   if (stmt->paramCount) {
-    int count = stmt->paramCount;
-    stmt->paramCount = 0;
-    
-    Parameter prm;
-    
-    //free parameter memory
-    for (int i = 0; i < count; i++) {
-      if (prm = stmt->params[i], prm.buffer != NULL) {
-        switch (prm.c_type) {
-          case SQL_C_WCHAR:   free(prm.buffer);             break;
-          case SQL_C_CHAR:    free(prm.buffer);             break; 
-          case SQL_C_SBIGINT: delete (int64_t *)prm.buffer; break;
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;
-        }
-      }
-    }
-
-    free(stmt->params);
+      FREE_PARAMS( stmt->params, stmt->paramCount ) ;
   }
   
   data->stmt = stmt;
@@ -916,38 +833,8 @@ void ODBCStatement::UV_Bind(uv_work_t* req) {
     data->stmt->m_hSTMT
   );
   
-  SQLRETURN ret = SQL_SUCCESS;
-  Parameter prm;
-  
-  for (int i = 0; i < data->stmt->paramCount; i++) {
-    prm = data->stmt->params[i];
-    
-    DEBUG_PRINTF(
-      "ODBCStatement::UV_Bind - param[%i]: c_type=%i type=%i "
-      "buffer_length=%i size=%i length=%i &length=%X decimals=%i value=%s\n",
-      i, prm.c_type, prm.type, prm.buffer_length, prm.size, prm.length, 
-      &data->stmt->params[i].length, prm.decimals, prm.buffer
-    );
-
-    ret = SQLBindParameter(
-      data->stmt->m_hSTMT,        //StatementHandle
-      i + 1,                      //ParameterNumber
-      SQL_PARAM_INPUT,            //InputOutputType
-      prm.c_type,                 //ValueType
-      prm.type,                   //ParameterType
-      prm.size,                   //ColumnSize
-      prm.decimals,               //DecimalDigits
-      prm.buffer,                 //ParameterValuePtr
-      prm.buffer_length,          //BufferLength
-      //using &prm.length did not work here...
-      &data->stmt->params[i].length);   //StrLen_or_IndPtr
-
-    if (ret == SQL_ERROR) {
-      break;
-    }
-  }
-
-  data->result = ret;
+  data->result = ODBC::BindParameters( data->stmt->m_hSTMT, 
+                 data->stmt->params, data->stmt->paramCount ) ;
 }
 
 void ODBCStatement::UV_AfterBind(uv_work_t* req, int status) {

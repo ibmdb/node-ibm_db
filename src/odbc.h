@@ -42,6 +42,23 @@ using namespace node;
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
 
+// Free Bind Parameters 
+#define FREE_PARAMS( params, count )                                 \
+    Parameter prm;                                                   \
+    for (int i = 0; i < count; i++) {                                \
+      if (prm = params[i], prm.buffer != NULL) {                     \
+        switch (prm.c_type) {                                        \
+          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;   \
+          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;   \
+          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;   \
+          case SQL_C_CHAR:                                           \
+          case SQL_C_WCHAR:                                          \
+          default:            free(prm.buffer);             break;   \
+        }                                                            \
+      }                                                              \
+    }                                                                \
+    free(params);                                                    \
+    count = 0;
 
 typedef struct {
   unsigned char *name;
@@ -52,13 +69,16 @@ typedef struct {
 } Column;
 
 typedef struct {
+  SQLSMALLINT  paramtype;
   SQLSMALLINT  c_type;
   SQLSMALLINT  type;
-  SQLLEN       size;
-  void        *buffer;
+  SQLULEN      size;
+  SQLSMALLINT  decimals;
+  SQLPOINTER   buffer;
   SQLLEN       buffer_length;    
   SQLLEN       length;
-  SQLSMALLINT  decimals;
+  SQLUINTEGER  fileOption;    // For BindFileToParam
+  SQLINTEGER   fileIndicator; // For BindFileToParam
 } Parameter;
 
 class ODBC : public Nan::ObjectWrap {
@@ -82,6 +102,7 @@ class ODBC : public Nan::ObjectWrap {
     static Handle<Value> LoadODBCLibrary(const Arguments& info);
 #endif
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
+    static SQLRETURN  BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
     
     void Free();
     
@@ -89,6 +110,12 @@ class ODBC : public Nan::ObjectWrap {
     ODBC() {}
 
     ~ODBC();
+
+    static void GetStringParam(Local<Value> value, Parameter * param, int num);
+    static void GetNullParam(Parameter * param, int num);
+    static void GetInt32Param(Local<Value> value, Parameter * param, int num);
+    static void GetNumberParam(Local<Value> value, Parameter * param, int num);
+    static void GetBoolParam(Local<Value> value, Parameter * param, int num);
 
     static NAN_METHOD(New);
 
