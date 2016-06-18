@@ -346,7 +346,7 @@ var download_file_httpget = function(file_url) {
                             options = {
                                 host: proxyUrl.hostname,
                                 port: proxyUrl.port,
-                                path: url.parse(installerfileURL).href
+                                path: url.parse(installerfileURL).href,
                                 headers: {
                                     Host: url.parse(installerfileURL).hostname
                                 }
