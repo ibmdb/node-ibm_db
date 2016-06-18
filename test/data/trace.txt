@@ -1,0 +1,347 @@
+<db2trc_header>
+Marker                  :  @TRACE@
+Trace version           :      7.0
+Platform                : Darwin
+Build level             : special_35187
+maxBufferSize           : 2097152 bytes (2 MB)
+auxBufferSize           : 0 bytes (0 MB)
+allocationCount         : 1
+DB2TRCD pid             : 0
+Trace destination       : <shared memory buffer>
+numSuspended            : 0
+Trace starting time     : 2016-06-18-19.32.13.983116+330
+Buffer size             : 2097152 bytes (2 MB)
+Allow buffer to wrap    : yes
+Mask                    : *.*.*.*.*
+Timestamps              : disabled
+PID.TID mask            : all
+Fixed data mask #1      : all
+Fixed data mask #2      : all
+Max system errors       : infinite
+Treat this rc as sys err: none
+Member mask             : none
+Application handle mask : none
+Application ID mask     : none
+
+</db2trc_header>
+
+pid = 76802 tid = 123145304682496 node = -1
+
+1           sqloxult_app exit
+2           sqloxltc_app entry
+3           sqloxltc_app exit
+4           sqloxult_app entry
+5           sqloxult_app exit
+6           sqloxltc_app entry
+7           sqloxltc_app exit
+8           sqloxult_app entry
+9           sqloxult_app exit
+10          sqloxltc_app entry
+11          sqloxltc_app exit
+12          sqloxult_app entry
+13          sqloxult_app exit
+14          sqloxltc_app entry
+15          sqloxltc_app exit
+16          sqloxult_app entry
+17          sqloxult_app exit
+18          sqloxltc_app entry
+19          sqloxltc_app exit
+20          sqloxult_app entry
+21          sqloxult_app exit
+22          sqloxltc_app entry
+23          sqloxltc_app exit
+24          sqloxult_app entry
+25          sqloxult_app exit
+26          sqloxltc_app entry
+27          sqloxltc_app exit
+28          sqloxult_app entry
+29          sqloxult_app exit
+30          sqloxltc_app entry
+31          sqloxltc_app exit
+32          sqloxult_app entry
+33          sqloxult_app exit
+34          sqloxltc_app entry
+35          sqloxltc_app exit
+401         sqloxltc_app entry
+402         sqloxltc_app exit
+403         sqloxult_app entry
+404         sqloxult_app exit
+405         SQLDriverConnect2 entry
+406         | CLI_utlValidateLength entry
+407         | CLI_utlValidateLength exit
+408         | CLI_memAlloc entry
+409         | | sqlogmblkEx entry
+410         | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+411         | | | sqlogmblkExTrace entry
+412         | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+413         | | | sqlogmblkExTrace exit
+414         | | sqlogmblkEx exit
+415         | CLI_memAlloc exit
+416         | CLI_utlValidateLength entry
+417         | CLI_utlValidateLength exit
+418         | CLI_valParameter entry
+436         | sqlogmblkEx entry
+437         | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+438         | | sqlogmblkExTrace entry
+439         | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+440         | | sqlogmblkExTrace exit
+441         | sqlogmblkEx exit
+442         SQLDriverConnect2 data [probe 50]
+467         | CLI_memAlloc entry
+468         | | sqlogmblkEx entry
+469         | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+470         | | | sqlogmblkExTrace entry
+471         | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+472         | | | sqlogmblkExTrace exit
+473         | | sqlogmblkEx exit
+474         | CLI_memAlloc exit
+475         | CLI_memFree entry
+476         | | sqlofmblkEx entry
+477         | | sqlofmblkEx mbt [Marker:PD_OSS_FREED_MEMORY ]
+478         | | | sqlofmblkExTrace entry
+479         | | | sqlofmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_FREE ]
+480         | | | sqlofmblkExTrace exit
+481         | | sqlofmblkEx exit
+482         | CLI_memFree exit
+483         | CLI_memFree entry
+484         | | sqlofmblkEx entry
+485         | | sqlofmblkEx mbt [Marker:PD_OSS_FREED_MEMORY ]
+486         | | | sqlofmblkExTrace entry
+487         | | | sqlofmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_FREE ]
+488         | | | sqlofmblkExTrace exit
+489         | | sqlofmblkEx exit
+490         | CLI_memFree exit
+491         | CLI_memFree entry
+492         | | sqlofmblkEx entry
+493         | | sqlofmblkEx mbt [Marker:PD_OSS_FREED_MEMORY ]
+494         | | | sqlofmblkExTrace entry
+495         | | | sqlofmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_FREE ]
+496         | | | sqlofmblkExTrace exit
+497         | | sqlofmblkEx exit
+498         | CLI_memFree exit
+499         | CLI_rccBuildRCCConnStr entry
+500         | | CLI_memAlloc entry
+501         | | | sqlogmblkEx entry
+502         | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+503         | | | | sqlogmblkExTrace entry
+504         | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+505         | | | | sqlogmblkExTrace exit
+506         | | | sqlogmblkEx exit
+507         | | CLI_memAlloc exit
+508         | | rccConfig::getInstance entry
+509         | | | CLI_utlGetCfgPath entry
+510         | | | | sqloGetConfigPath entry
+511         | | | | | sqloInstanceLocalDataPath entry
+512         | | | | | sqloInstanceLocalDataPath exit
+513         | | | | sqloGetConfigPath exit
+514         | | | | sqloGetEnvInternal entry
+515         | | | | sqloGetEnvInternal exit [rc = 0x870F0104 = -2029059836 = RC_ENV_NOT_FOUND]
+516         | | | CLI_utlGetCfgPath data [probe 10]
+517         | | | CLI_utlGetCfgPath exit
+518         | | | rccConfig::getInstance entry
+519         | | | | sqloxltc_app entry
+520         | | | | sqloxltc_app exit
+521         | | | rccConfig::getInstance data [probe 31]
+522         | | | rccConfig::getInstance data [probe 35]
+523         | | | | sqloxult_app entry
+524         | | | | sqloxult_app exit
+525         | | | rccConfig::getInstance exit
+526         | | rccConfig::getInstance exit
+527         | | rccConfig::getParamsForDb entry
+528         | | | rccConfig::findDb entry
+529         | | | rccConfig::findDb exit
+530         | | | rccList::rccList entry
+531         | | | | rccList::add entry
+532         | | | | rccList::add exit
+533         | | | rccList::rccList exit
+534         | | rccConfig::getParamsForDb exit
+535         | | rccList::rccList entry
+536         | | | rccList::add entry
+537         | | | rccList::add exit
+538         | | rccList::rccList exit
+539         | | rccParamEntry::convertToCLIParam entry
+540         | | rccParamEntry::convertToCLIParam exit
+541         | | rccList::~rccList entry
+542         | | rccList::~rccList exit
+543         | | rccList::~rccList entry
+544         | | rccList::~rccList exit
+545         | CLI_rccBuildRCCConnStr exit
+546         | CLI_utlGetInfo entry
+547         | CLI_utlGetInfo exit
+548         SQLDriverConnect2 data [probe 95]
+549         | SQLConnect2 entry
+550         | | CLI_memAlloc entry
+551         | | | sqlogmblkEx entry
+552         | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+553         | | | | sqlogmblkExTrace entry
+554         | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+555         | | | | sqlogmblkExTrace exit
+556         | | | sqlogmblkEx exit
+557         | | CLI_memAlloc exit
+558         | | CLI_memAlloc entry
+559         | | | sqlogmblkEx entry
+560         | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+561         | | | | sqlogmblkExTrace entry
+562         | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+563         | | | | sqlogmblkExTrace exit
+564         | | | sqlogmblkEx exit
+565         | | CLI_memAlloc exit
+566         | | CLI_memAlloc entry
+567         | | | sqlogmblkEx entry
+568         | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+569         | | | | sqlogmblkExTrace entry
+570         | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+571         | | | | sqlogmblkExTrace exit
+572         | | | sqlogmblkEx exit
+573         | | CLI_memAlloc exit
+574         | | CLI_sqlConnect entry
+14612       | | | CLI_sqlOpen exit
+14613       | | | csmCountRemainingResults entry
+14614       | | | csmCountRemainingResults data [probe 5]
+14615       | | | csmCountRemainingResults data [probe 10]
+14616       | | | csmCountRemainingResults data [probe 20]
+14617       | | | csmCountRemainingResults exit
+14618       | | SQLExecute2 exit
+14619       | | CLI_execCheckAndPrepareForFailoverRetry entry
+14620       | | CLI_execCheckAndPrepareForFailoverRetry data [probe 10]
+14621       | | CLI_execCheckAndPrepareForFailoverRetry exit
+14622       | | CLI_utlGetInfo entry
+14623       | | CLI_utlGetInfo exit
+
+
+pid = 76802 tid = 123145304145920 node = -1
+
+11052       sqloGetEnvInternal entry
+11053       sqloGetEnvInternal exit [rc = 0x870F0104 = -2029059836 = RC_ENV_NOT_FOUND]
+11054       SQLBindParameter entry
+11055       | sqloxltc_app entry
+11056       | sqloxltc_app exit
+11057       | sqleAttachCtx entry
+11058       | | sqloxltc_app entry
+11059       | | sqloxltc_app exit
+11060       | | sqloxult_app entry
+11061       | | sqloxult_app exit
+11062       | | sqleDetachCtx entry
+11063       | | | sqloxltc_app entry
+11064       | | | sqloxltc_app exit
+11065       | | | sqlo_remove_static_data entry
+11066       | | | sqlo_remove_static_data exit
+11067       | | | sqloxult_app entry
+11068       | | | sqloxult_app exit
+11069       | | sqleDetachCtx exit
+11070       | | sqlo_create_static_data entry
+11071       | | sqlo_create_static_data exit
+11072       | sqleAttachCtx exit
+11073       SQLBindParameter mbt [Marker:PD_CLI_APP_CTX_PTR ]
+11074       | CLI_utlGetInfo entry
+11075       | CLI_utlGetInfo exit
+11076       | CLI_utlGetInfo entry
+11077       | CLI_utlGetInfo exit
+11078       | sqlogmt2 entry
+11079       | sqlogmt2 exit
+11080       | sqloxltc_app entry
+11081       | sqloxltc_app exit
+11082       | sqloxult_app entry
+11083       | sqloxult_app exit
+11084       | sqloxltc_app entry
+11085       | sqloxltc_app exit
+11086       | sqloxult_app entry
+11087       | sqloxult_app exit
+11088       | CLI_utlGetInfo entry
+11089       | CLI_utlGetInfo exit
+11090       | sqloxltc_app entry
+11243       | SQLSetParam2 entry
+11244       | | CLI_descrAllocCArray entry
+11245       | | | CLI_memAlloc entry
+11246       | | | | sqlogmblkEx entry
+11247       | | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+11248       | | | | | sqlogmblkExTrace entry
+11249       | | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+11250       | | | | | sqlogmblkExTrace exit
+11251       | | | | sqlogmblkEx exit
+11252       | | | CLI_memAlloc exit
+11253       | | CLI_descrAllocCArray exit
+11254       | | CLI_descrAllocSQLArray entry
+11255       | | | CLI_memAlloc entry
+11256       | | | | sqlogmblkEx entry
+11257       | | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+11258       | | | | | sqlogmblkExTrace entry
+11259       | | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+11260       | | | | | sqlogmblkExTrace exit
+11261       | | | | sqlogmblkEx exit
+11262       | | | CLI_memAlloc exit
+11263       | | CLI_descrAllocSQLArray exit
+11264       | SQLSetParam2 exit
+11265       | CLI_utlGetInfo entry
+11266       | CLI_utlGetInfo exit
+11267       | sqlogmt2 entry
+11268       | sqlogmt2 exit
+11306       SQLBindParameter exit
+11307       sqloGetEnvInternal entry
+11308       sqloGetEnvInternal exit [rc = 0x870F0104 = -2029059836 = RC_ENV_NOT_FOUND]
+11309       SQLBindParameter entry
+11310       | sqloxltc_app entry
+11311       | sqloxltc_app exit
+11312       SQLBindParameter mbt [Marker:PD_CLI_APP_CTX_PTR ]
+11313       | CLI_utlGetInfo entry
+11314       | CLI_utlGetInfo exit
+11315       | CLI_utlGetInfo entry
+11316       | CLI_utlGetInfo exit
+11317       | sqlogmt2 entry
+11318       | sqlogmt2 exit
+11319       | sqloxltc_app entry
+11320       | sqloxltc_app exit
+11321       | sqloxult_app entry
+11322       | sqloxult_app exit
+11498       | sqlogmt2 entry
+11525       SQLBindParameter exit
+11526       SQLBindFileToParam entry
+11527       | sqloxltc_app entry
+11528       | sqloxltc_app exit
+11529       SQLBindFileToParam mbt [Marker:PD_CLI_APP_CTX_PTR ]
+11530       | CLI_utlGetInfo entry
+11531       | CLI_utlGetInfo exit
+11532       | CLI_utlGetInfo entry
+11533       | CLI_utlGetInfo exit
+11534       | sqlogmt2 entry
+11535       | sqlogmt2 exit
+11670       | sqloxult_app exit
+11671       | SQLBindFileToParam2 entry
+11672       | | CLI_utlCheckPointer entry
+11673       | | CLI_utlCheckPointer exit
+11674       | | CLI_utlCheckPointer entry
+11675       | | CLI_utlCheckPointer exit
+11676       | | CLI_utlValidateLength entry
+11677       | | CLI_utlValidateLength exit
+11678       | | CLI_memAlloc entry
+11679       | | | sqlogmblkEx entry
+11680       | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+11681       | | | | sqlogmblkExTrace entry
+11682       | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+11683       | | | | sqlogmblkExTrace exit
+11684       | | | sqlogmblkEx exit
+11685       | | CLI_memAlloc exit
+11686       | | CLI_memAlloc entry
+11687       | | | sqlogmblkEx entry
+11688       | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+11689       | | | | sqlogmblkExTrace entry
+11690       | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+11691       | | | | sqlogmblkExTrace exit
+11692       | | | sqlogmblkEx exit
+11693       | | CLI_memAlloc exit
+11694       | | CLI_memAlloc entry
+11695       | | | sqlogmblkEx entry
+11696       | | | sqlogmblkEx mbt [Marker:PD_OSS_ALLOCATED_MEMORY ]
+11697       | | | | sqlogmblkExTrace entry
+11698       | | | | sqlogmblkExTrace mbt [Marker:PD_SQLOMEM_TRACE_BLOCK_ALLOC ]
+11699       | | | | sqlogmblkExTrace exit
+11700       | | | sqlogmblkEx exit
+11701       | | CLI_memAlloc exit
+11702       | SQLBindFileToParam2 exit
+11703       | CLI_utlGetInfo entry
+11704       | CLI_utlGetInfo exit
+11705       | sqlogmt2 entry
+11706       | sqlogmt2 exit
+11707       | sqloxltc_app entry
+11708       | sqloxltc_app exit
+11744       SQLBindFileToParam exit
