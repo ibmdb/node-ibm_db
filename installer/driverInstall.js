@@ -344,9 +344,12 @@ var download_file_httpget = function(file_url) {
                         {
                             var proxyUrl = url.parse(proxyStr.toString());
                             options = {
-                             host: proxyUrl.hostname,
-                             port: proxyUrl.port,
-                             path: url.parse(installerfileURL).href
+                                host: proxyUrl.hostname,
+                                port: proxyUrl.port,
+                                path: url.parse(installerfileURL).href
+                                headers: {
+                                    Host: url.parse(installerfileURL).hostname
+                                }
                             };
                             if (proxyUrl.auth) 
                             {
