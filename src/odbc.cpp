@@ -751,7 +751,14 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     if(param->paramtype == FILE_PARAM)
         string->WriteUtf8((char *) param->buffer);
     else if(param->c_type == SQL_C_BINARY)
+    {
+#if (NODE_MODULE_VERSION < NODE_0_12_MODULE_VERSION)
         memcpy(param->buffer, &string, param->buffer_length);
+        //param->buffer = &string;
+#else
+        string->WriteOneByte((uint8_t *)param->buffer);
+#endif
+    }
     else
     {
         #ifdef UNICODE
