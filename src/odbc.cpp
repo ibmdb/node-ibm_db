@@ -751,7 +751,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     if(param->paramtype == FILE_PARAM)
         string->WriteUtf8((char *) param->buffer);
     else if(param->c_type == SQL_C_BINARY)
-        string->WriteOneByte((uint8_t *)param->buffer);
+        memcpy(param->buffer, &string, param->buffer_length);
     else
     {
         #ifdef UNICODE
