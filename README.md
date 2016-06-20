@@ -314,6 +314,44 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
+#### .execute([bindingParameters], callback)
+
+Execute a prepared statement.
+
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](https://github.com/ibmdb/node-ibm_db#bindingparameters) doc for detail.
+* **callback** - `callback (err, stmt)`
+
+Returns a `Statement` object via the callback
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
+  ;
+
+ibmdb.open(cn,function(err,conn){
+  conn.querySync("create table mytab (id int, photo BLOB(30K))");
+  conn.prepare("insert into mytab (id, photo) VALUES (?, ?)", function (err, stmt) {
+    if (err) {
+      //could not prepare for some reason
+      console.log(err);
+      return conn.closeSync();
+    }
+
+    // Create params object
+    var img = {ParamType:"FILE", DataType: "BLOB", "Data": "smile.jpg"};
+
+    //Bind and Execute the statment asynchronously
+    stmt.execute([ 42, img ], function (err, result) {
+      if( err ) console.log(err);  
+      else result.closeSync();
+
+      //Close the connection
+	  conn.close(function(err){});
+    });
+  });
+});
+```
+
 #### .beginTransaction(callback)
 
 Begin a transaction
@@ -490,6 +528,50 @@ ibmdb.open(cn, function (err, connection) {
     });
 });
 ```
+### bindingParameters
+Bind arguments for each parameter marker(?) in SQL query.
+These parameters can be used with query(), querySync, bind(), execute() APIs.
+bindingParameters is an array of Values like: [val1, val2, ...]
+Each value in itself can be an array or Object holing multiple bind options.
+If parameters are not an integer or string, it is recomended to pass an Object with different bind options. The object can have following keys:
+
+`{"ParamType":"INPUT", CType:"BINARY", SQLType:"BLOB",DataType: "BLOB", Data:imgfile}`
+
+Either SQLType or DataType must be used. If SQLType is used, DataType will be ignored.
+
+* **ParmType**: Type of the Parameter. Supported Values are:
+ - INPUT - Bind the parameter using SQL_PARAM_INPUT(defined in ibm_db/installer/clidriver/include/sqlext.h file). It is used as input value and it is the default value, if you don't use this key in object.
+ - OUTPUT - Bind the parameter using SQL_PARAM_OUTPUT. It is basically used for Stored Procedure call which has output parameters.
+ - INOUT - Bind the parameter using SQL_PARAM_INPUT_OUTPUT. It is also used for Stored Procedure call.
+ - FILE  - It tells the Data is a filename that contains actual data to load. If you want to load an image to database, use this input type along with DataType as BLOB for binary file.  
+   f.e. `{ParamType: "FILE", DataType: "BLOB", Data: "mypic.jpg"}`
+
+* **CType**: C Data type of the parameter to be bound. Default value is CHAR.
+* **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR
+* **DataType**: Same as SQLType. Use either SQLType or DataType. Added for simple name. Default Value is CHAR.
+* **Data**: Its value is actuall data for the parameter. For binary data, it should represent the full buffer containing binary data. For ParamType:"FILE", it must have the filename on disc that contains data. It is mandatory key in the data Object.
+
+* Few example of bidningParameters that we can use in node.js program:
+```
+[18, 'string']
+[3, 5, 3.8, 'string', 9.1]
+[18, [1, 1, 1, 'string']]
+[[1, 1, 1, 18], [1, 1, 1, 'string']]
+[18, {ParamType:"INPUT", "Data": "string"}]
+[18, {ParamType:"INPUT", CType: "CHAR", SQLType: "CHAR", "Data": "string"}]
+[38, {ParamType:"INPUT", SQLType: "CHAR", "Data": "string"}]
+[38, {ParamType:"INPUT", DataType: "CHAR", "Data": "string"}]
+[[1,1,1,38], {"Data": "string"}]
+[38, {ParamType:"INPUT", DataType: "CLOB", "Data": var1}] - here var1 contains full CLOB data to be inserted.
+[38, {ParamType:"FILE", DataType: "CLOB", "Data": filename}] - here filename is the name of file which has large character data.
+```
+The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
+
+Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:   
+
+ - [test-blob-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-insert.js) - To insert a BLOB and CLOB data using memory buffer. Application need to read the file contents and then use as bind parameter.
+ - [test-blob-file.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-file.js) - To insert an image file and large text file directly to database without reading it by application.
+
 ----------
 
 ### Pool
