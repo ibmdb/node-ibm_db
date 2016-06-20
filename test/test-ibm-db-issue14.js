@@ -1,8 +1,8 @@
+/* Test program to access DB2 sample database  */
 /*require the ibm_db module*/
 var common = require("./common")
   , ibmdb = require("../");
 
-console.log("Test program to access DB2 sample database");
 var testTable = 'BIGINTTEST';
 var testValues = [10205152031467301, 10205152031467303];
 

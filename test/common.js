@@ -31,9 +31,9 @@ for(key in exports.connectionObject)
                                exports.connectionObject[key] + ";" ;
 }
 
-if (process.argv.length === 3) {
-  exports.connectionString = process.argv[2];
-}
+//if (process.argv.length === 3) {
+//  exports.connectionString = process.argv[2];
+//}
 
 exports.testConnectionStrings = [{ title : "DB2", 
                         connectionString : exports.connectionString }];

@@ -50,7 +50,7 @@ function doTest(file, connectionString) {
   test.on("exit", function (code, signal) {
     clearTimeout(timer);
     
-    if (code != 0) {
+    if (code && code != 0) {
       errorCount += 1;
       
       process.stdout.write("\033[01;31mfail \033[01;0m ");
