@@ -18,11 +18,11 @@ ibmdb.open(cn, function (err,conn)
       conn.querySync("drop table mytab");
   } catch (e) {};
   try {
-    conn.querySync("create table mytab (empId int, photo BLOB(30K), trace CLOB(20K))");
+    conn.querySync("create table mytab (empId int, photo BLOB(1M), trace CLOB(1M))");
     } catch (e) {};
   
-  var img1= fs.readFileSync('data/smile.jpg','binary');
-  var text= fs.readFileSync('data/trace.txt','ascii');
+  var img1= fs.readFileSync('data/phool.jpg','binary');
+  var text= fs.readFileSync('data/trc.fmt','ascii');
 
   var len1 = img1.length;
   var len2 = text.length;
@@ -68,21 +68,21 @@ ibmdb.open(cn, function (err,conn)
           else 
           {
             data = result.fetchAllSync();
-            fs.writeFileSync('smile2.jpg', data[0].PHOTO, 'hex');
-            fs.writeFileSync('trace2.txt', data[0].TRACE, 'ascii');
+            fs.writeFileSync('phool2.jpg', data[0].PHOTO, 'hex');
+            fs.writeFileSync('trc2.fmt', data[0].TRACE, 'ascii');
             try {
                 conn.querySync("drop table mytab");
             } catch (e) {};
             result.closeSync();
   
-            var size1 = fs.statSync("smile2.jpg")["size"];
-            var size2 = fs.statSync("trace2.txt")["size"];
+            var size1 = fs.statSync("phool2.jpg")["size"];
+            var size2 = fs.statSync("trc2.fmt")["size"];
             console.log("Lengths after select = " + size1+ ", " + size2);
             assert(len1, size1);
             assert(len2, size2);
 
-            fs.unlinkSync("smile2.jpg");
-            fs.unlink("trace2.txt", function () { console.log('done'); });
+            fs.unlinkSync("phool2.jpg");
+            fs.unlink("trc2.fmt", function () { console.log('done'); });
           }
         });
       });
