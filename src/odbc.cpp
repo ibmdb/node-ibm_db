@@ -289,15 +289,13 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
   }
   
   Column *columns = new Column[*colCount];
+  char colname[MAX_FIELD_SIZE];
 
   for (int i = 0; i < *colCount; i++) {
     //save the index number of this column
     columns[i].index = i + 1;
-    //TODO:that's a lot of memory for each field name....
-    columns[i].name = new unsigned char[MAX_FIELD_SIZE];
-    
-    //set the first byte of name to \0 instead of memsetting the entire buffer
-    columns[i].name[0] = '\0';
+    colname[0] = '\0';
+    buflen = 0;
     
     //get the column name
     ret = SQLColAttribute( hStmt,
@@ -307,13 +305,21 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
 #else
                            SQL_DESC_LABEL,
 #endif
-                           columns[i].name,
+                           colname,
                            (SQLSMALLINT) MAX_FIELD_SIZE,
-                           (SQLSMALLINT *) &buflen,
+                           &buflen,
                            NULL);
     
     //store the len attribute
     columns[i].len = buflen;
+    if(buflen> 0)
+    {
+        columns[i].name = new unsigned char[buflen+2];
+        memcpy(columns[i].name, colname, buflen);
+        columns[i].name[buflen] = '\0';
+        columns[i].name[buflen+1] = '\0';
+    }
+    DEBUG_PRINTF("ODBC::GetColumns index = %i, buflen=%i\n", columns[i].index, buflen);
     
     //get the column type and store it directly in column[i].type
     ret = SQLColAttribute( hStmt,
@@ -361,33 +367,33 @@ void ODBC::FreeColumns(Column* columns, short* colCount) {
  */
 
 Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
-                                        uint16_t* buffer, int bufferLength) {
+                                    uint16_t* buffer, int bufferLength) 
+{
   Nan::EscapableHandleScope scope;
   SQLLEN len = 0;
+  int ret; 
 
+  DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, 
+                SQL_TIMESTAMP, SQL_TYPE_TIME);
   //reset the buffer
   buffer[0] = '\0';
 
-  //TODO: SQLGetData can supposedly return multiple chunks, need to do this to 
-  //retrieve large fields
-  int ret; 
-  DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, SQL_TIMESTAMP, SQL_TYPE_TIME);
-  switch ((int) column.type) {
+  switch ((int) column.type) 
+  {
     case SQL_INTEGER : 
     case SQL_SMALLINT :
-    case SQL_TINYINT : {
+    case SQL_TINYINT : 
+      {
         SQLINTEGER value;
-        
-        ret = SQLGetData(
-          hStmt, 
-          column.index, 
-          SQL_C_SLONG,
-          &value, 
-          sizeof(value), 
-          &len);
+        ret = SQLGetData( hStmt, 
+                          column.index, 
+                          SQL_C_SLONG,
+                          &value, 
+                          sizeof(value), 
+                          &len);
         
         DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
-                    column.index, column.name, column.type, len, ret);
+                     column.index, column.name, column.type, len, ret);
         
         if ((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
@@ -406,163 +412,170 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       }
       break;
-	/*
-	case SQL_NUMERIC :
-    case SQL_DECIMAL :
-    case SQL_BIGINT :
-    */
+
     case SQL_FLOAT :
     case SQL_REAL :
-    case SQL_DOUBLE : {
+    case SQL_DOUBLE : 
+      {
         double value;
+        ret = SQLGetData( hStmt, 
+                          column.index, 
+                          SQL_C_DOUBLE,
+                          &value, 
+                          sizeof(value), 
+                          &len);
         
-        ret = SQLGetData(
-          hStmt, 
-          column.index, 
-          SQL_C_DOUBLE,
-          &value, 
-          sizeof(value), 
-          &len);
-        
-         DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
-                    column.index, column.name, column.type, len, ret, value);
+        DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
+                     column.index, column.name, column.type, len, ret, value);
         
         if((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
-          //return Null();
         }
         else {
           return scope.Escape(Nan::New<Number>(value));
-          //return Number::New(value);
         }
       }
       break;
     case SQL_DATETIME :
-    case SQL_TIMESTAMP : {
-      //I am not sure if this is locale-safe or cross database safe, but it 
-      //works for me on MSSQL
+    case SQL_TIMESTAMP : 
+      {
+        SQL_TIMESTAMP_STRUCT odbcTime;
 
-       SQL_TIMESTAMP_STRUCT odbcTime;
+        #ifdef _WIN32
+        struct tm timeInfo = {};
+        ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
+                         &odbcTime, sizeof(odbcTime), &len);
+        #else
+          #ifdef _AIX
+          struct tm timeInfo = {0,0,0,0,0,0,0,0,0};
+          #else
+          struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
+          #endif
+          ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, 
+                           &odbcTime, sizeof(odbcTime), &len);
+        #endif
 
-#ifdef _WIN32
-      struct tm timeInfo = {};
-
-      ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
-              &odbcTime, bufferLength, &len);
-#else
-  #ifdef _AIX
-      struct tm timeInfo = {0,0,0,0,0,0,0,0,0};
-  #else
-      struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
-  #endif
-      ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, 
-              &odbcTime, bufferLength, &len);
-#endif
-
-      DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s type=%i len=%i\n", column.index, column.name, column.type, len);
-
-      if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
-        //return Null();
-      }
-      else {
-        timeInfo.tm_year = odbcTime.year - 1900;
-        timeInfo.tm_mon = odbcTime.month - 1;
-        timeInfo.tm_mday = odbcTime.day;
-        timeInfo.tm_hour = odbcTime.hour;
-        timeInfo.tm_min = odbcTime.minute;
-        timeInfo.tm_sec = odbcTime.second;
-
-        //a negative value means that mktime() should use timezone information 
-        //and system databases to attempt to determine whether DST is in effect 
-        //at the specified time.
-        timeInfo.tm_isdst = -1;
-
-#ifdef TIMEGM
-        return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) + (odbcTime.fraction / 1000000)).ToLocalChecked());
-#else
-        return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) + (odbcTime.fraction / 1000000)).ToLocalChecked());
-
-#endif
-      }
-    } 
-    
-    break;
-    case SQL_BIT :
-      //again, i'm not sure if this is cross database safe, but it works for 
-      //MSSQL
-      ret = SQLGetData(
-        hStmt, 
-        column.index, 
-        SQL_C_CHAR,
-        (char *) buffer, 
-        bufferLength, 
-        &len);
-
-      DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
-                    column.index, column.name, column.type, len);
-
-      if((int)len == SQL_NULL_DATA) {
-        return scope.Escape(Nan::Null());
-        //return Null();
-      }
-      else {
-        return scope.Escape(Nan::New((*buffer == '0') ? false : true));
-      }
-	case SQL_TYPE_TIME:
-		DEBUG_PRINTF("SQL_TIME SELECTED");
-    case SQL_NUMERIC :
-    case SQL_DECIMAL :
-    case SQL_BIGINT :
-		DEBUG_PRINTF("BIG NUMERIC VALUE SELECTED SELECTED");
-    default :
-      Local<String> str;
-      int count = 0;
-      
-      do {
-        ret = SQLGetData(
-          hStmt,
-          column.index,
-          SQL_C_TCHAR,
-          (char *) buffer,
-          bufferLength,
-          &len);
-
-        DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i value=%s ret=%i bufferLength=%i\n", 
-                      column.index, column.name, column.type, len,(char *) buffer, ret, bufferLength);
+        DEBUG_PRINTF("ODBC::GetColumnValue - Unix Timestamp: index=%i name=%s "
+                     "type=%i len=%i\n", column.index, column.name, column.type, len);
 
         if((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
-          //return Null();
+        }
+        else {
+          timeInfo.tm_year = odbcTime.year - 1900;
+          timeInfo.tm_mon = odbcTime.month - 1;
+          timeInfo.tm_mday = odbcTime.day;
+          timeInfo.tm_hour = odbcTime.hour;
+          timeInfo.tm_min = odbcTime.minute;
+          timeInfo.tm_sec = odbcTime.second;
+
+          //a negative value means that mktime() should use timezone information 
+          //and system databases to attempt to determine whether DST is in effect 
+          //at the specified time.
+          timeInfo.tm_isdst = -1;
+
+          #ifdef TIMEGM
+          return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) + 
+                      (odbcTime.fraction / 1000000)).ToLocalChecked());
+          #else
+          return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) + 
+                      (odbcTime.fraction / 1000000)).ToLocalChecked());
+
+          #endif
+        }
+      } 
+      break;
+
+    case SQL_BIT :
+      {
+        char bit[4] = {'\0'};
+        ret = SQLGetData( hStmt,
+                          column.index,
+                          SQL_C_CHAR,
+                          &bit,
+                          4,
+                          &len);
+
+        DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
+                      column.index, column.name, column.type, len);
+
+        if((int)len == SQL_NULL_DATA) {
+            return scope.Escape(Nan::Null());
+        }
+        else {
+            return scope.Escape(Nan::New((*bit == '0') ? false : true));
+        }
+      }
+      break;
+	/*
+	case SQL_NUMERIC :
+    case SQL_DECIMAL :
+    case SQL_BIGINT :
+    case SQL_BLOB :
+    */
+	case SQL_TYPE_TIME:
+		DEBUG_PRINTF("SQL_TIME SELECTED\n");
+    case SQL_NUMERIC :
+        if((int) column.type == SQL_NUMERIC)
+          DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
+    case SQL_DECIMAL :
+        if((int) column.type == SQL_DECIMAL)
+          DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
+    case SQL_BIGINT :
+        if((int) column.type == SQL_BIGINT)
+          DEBUG_PRINTF("BIGINT DATA SELECTED\n");
+    case SQL_BLOB :
+        if((int) column.type == SQL_BLOB)
+          DEBUG_PRINTF("BLOB DATA SELECTED\n");
+    default :
+      Local<String> str;
+      int count = 0;
+
+      do {
+        ret = SQLGetData( hStmt,
+                          column.index,
+                          SQL_C_TCHAR,
+                          (char *) buffer,
+                          bufferLength,
+                          &len);
+
+        DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
+                     "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
+                     column.type, len,(char *) buffer, ret, bufferLength);
+
+        if((int)len == SQL_NULL_DATA) {
+          return scope.Escape(Nan::Null());
         }
         
         if (SQL_NO_DATA == ret) {
           //we have captured all of the data
           break;
         }
-        else if (SQL_SUCCEEDED(ret)) {
+        else if (SQL_SUCCEEDED(ret)) 
+        {
           //we have not captured all of the data yet
-          
-          if (count == 0) {
+          if (count == 0) 
+          {
             //no concatenation required, this is our first pass
-#ifdef UNICODE
+            #ifdef UNICODE
             str = Nan::New((uint16_t*) buffer).ToLocalChecked();
-#else
+            #else
             str = Nan::New((char *) buffer).ToLocalChecked();
-#endif
+            #endif
           }
-          else {
+          else 
+          {
             //we need to concatenate
-#ifdef UNICODE
+            #ifdef UNICODE
             str = String::Concat(str, Nan::New((uint16_t*) buffer).ToLocalChecked());
-#else
+            #else
             str = String::Concat(str, Nan::New((char *) buffer).ToLocalChecked());
-#endif
+            #endif
           }
-          
           count += 1;
         }
-        else {
+        else 
+        {
           //an error has occured
           //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
 
@@ -570,10 +583,6 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           //immediately. Memory errors are bound to follow as we must be in an
           //inconsisant state.
           assert(ret != SQL_INVALID_HANDLE);
-
-          //Not sure if throwing here will work out well for us but we can try
-          //since we should have a valid handle and the error is something we 
-          //can look into
           Nan::ThrowError(ODBC::GetSQLError(
              SQL_HANDLE_STMT,
              hStmt,
@@ -583,7 +592,6 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           break;
         }
       } while (true);
-      
       return scope.Escape(str);
   }
 }
