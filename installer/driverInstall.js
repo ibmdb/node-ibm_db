@@ -9,7 +9,7 @@ var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
 
-var installerURL = 'http://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/';
+var installerURL = process.env.ODBC_CLI_MIRROR || 'http://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/';
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 

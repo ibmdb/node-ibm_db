@@ -77,9 +77,13 @@ using directory `/nodeapp` for example.
 ```
 or
 ```
+ODBC_CLI_MIRROR=http://url_to_mirror/ npm install ibm_db
+```
+or
+```
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
-
+or
 ```
 4. Update config.testConnectionStrings.json with your credentials and run test.
 
