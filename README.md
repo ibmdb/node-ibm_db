@@ -4,7 +4,8 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
 
-# Prerequisite
+## Prerequisite
+----------------
 
 - For higher versions of node (When building with Node 4 onwards) the compiler must support
 C++11. Note the default compiler on RHEL 6 does not have the required support.
@@ -14,7 +15,8 @@ Install a newer compiler or upgrade older one.
 
 - You need not to install any db2 ODBC client driver for connectivity. Just install ibm_db and it is ready for use.
 
-# Install
+## Install
+------------
 
 You may install the package using npm install command:
 
@@ -25,7 +27,8 @@ npm install ibm_db
 For more installation details refer: [INSTALL](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
-# Quick Example
+## Quick Example
+------------------
 
 ```javascript
 var ibmdb = require('ibm_db');
@@ -44,12 +47,14 @@ ibmdb.open("DRIVER={DB2};DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=pas
 });
 ```
 
-# Un-Install
+## Un-Install
+----------------
 
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
 
 
-# For z/OS and iSeries Connectivity
+## For z/OS and iSeries Connectivity
+-------------------------------------
 
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
 no license file is required. However, if you want to use node-ibm_db 
@@ -60,11 +65,13 @@ can be enabled either on server using db2connectactivate utility or on client
 using client side license file. If you have client side license file, just 
 copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
-# For AIX install issue
+## For AIX install issue
+-------------------------
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
 
-# Need Help?
+## Need Help?
+--------------
 
 If you encountered any issue with ibm_db, first check for existing solution or
 work-around under `issues` or on google groups forum. Links are:   
@@ -74,7 +81,8 @@ https://groups.google.com/forum/#!forum/node-ibm_db
    
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-# Database APIs
+## Database APIs
+-----------------
 
 The simple api is based on instances of the `Database` class. You may get an 
 instance in one of the following ways:
@@ -115,7 +123,7 @@ var Database = require("ibm_db").Database
 15. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
 
 
-## <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
+### <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
 
 Open a connection to a database.
 
@@ -145,7 +153,7 @@ ibmdb.open(connStr, function (err, connection) {
 
 ```
 
-## <a name="openSyncApi"></a> 2) .openSync(connectionString)
+### <a name="openSyncApi"></a> 2) .openSync(connectionString)
 
 Synchronously open a connection to a database.
 
@@ -170,7 +178,7 @@ try {
 }
 ```
 
-## <a name="queryApi"></a> 3) .query(sqlQuery [, bindingParameters], callback)
+### <a name="queryApi"></a> 3) .query(sqlQuery [, bindingParameters], callback)
 
 Issue an asynchronous SQL query to the database which is currently open.
 
@@ -205,7 +213,7 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-## <a name="querySyncApi"></a> 4) .querySync(sqlQuery [, bindingParameters])
+### <a name="querySyncApi"></a> 4) .querySync(sqlQuery [, bindingParameters])
 
 Synchronously issue a SQL query to the database that is currently open.
 
@@ -227,7 +235,7 @@ ibmdb.open(cn, function(err, conn){
 })
 ```
 
-## <a name="closeApi"></a> 5) .close(callback)
+### <a name="closeApi"></a> 5) .close(callback)
 
 Close the currently opened database.
 
@@ -251,7 +259,7 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-## <a name="closeSyncApi"></a> 6) .closeSync()
+### <a name="closeSyncApi"></a> 6) .closeSync()
 
 Synchronously close the currently opened database.
 
@@ -267,7 +275,7 @@ ibmdb.openSync(cn);
 ibmdb.closeSync();
 ```
 
-## <a name="prepareApi"></a> 7) .prepare(sql, callback)
+### <a name="prepareApi"></a> 7) .prepare(sql, callback)
 
 Prepare a statement for execution.
 
@@ -301,7 +309,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-## <a name="prepareSyncApi"></a> 8) .prepareSync(sql)
+### <a name="prepareSyncApi"></a> 8) .prepareSync(sql)
 
 Synchronously prepare a statement for execution.
 
@@ -327,7 +335,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-## <a name="executeApi"></a> 9) .execute([bindingParameters], callback)
+### <a name="executeApi"></a> 9) .execute([bindingParameters], callback)
 
 Execute a prepared statement.
 
@@ -365,17 +373,17 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-## <a name="beginTransactionApi"></a> 10) .beginTransaction(callback)
+### <a name="beginTransactionApi"></a> 10) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-## <a name="beginTransactionSyncApi"></a> 11) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 11) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-## <a name="commitTransactionApi"></a> 12) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 12) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -413,7 +421,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-## <a name="commitTransactionSyncApi"></a> 13) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 13) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -443,7 +451,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-## <a name="rollbackTransactionApi"></a> 14) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 14) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -481,7 +489,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-## <a name="rollbackTransactionSyncApi"></a> 15) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 15) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -511,7 +519,8 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-# Pool APIs
+## Pool APIs
+-------------
 
 node-ibm_db reuses node-odbc pool. 
 The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
@@ -524,7 +533,7 @@ the next time you call `Pool.open()` for the same connection string.
 1.  [.open(connectionString, callback)](#openPoolApi)
 2.  [.close(callback)](#closePoolApi)
 
-## <a name="openPoolApi"></a> 1) .open(connectionString, callback)
+### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
 Get a `Database` instance which is already connected to `connectionString`
 
@@ -549,7 +558,7 @@ pool.open(cn, function (err, db) {
 });
 ```
 
-## <a name="closePoolApi"></a> 2) .close(callback)
+### <a name="closePoolApi"></a> 2) .close(callback)
 
 Close all connections in the `Pool` instance
 
@@ -575,7 +584,8 @@ pool.open(cn, function (err, db) {
 });
 ```
 
-# .debug(value)
+## .debug(value)
+------------------
 
 Enable console logs.
 
@@ -605,7 +615,8 @@ ibmdb.open(cn, function (err, connection) {
     });
 });
 ```
-# bindingParameters
+## bindingParameters
+-------------------------
 
 Bind arguments for each parameter marker(?) in SQL query.
 These parameters can be used with query(), querySync, bind(), execute() APIs.
@@ -653,9 +664,10 @@ Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2.
 ----------
 
 
-# Build Options
+## Build Options
+------------------
 
-## Debug
+### Debug
 
 If you would like to enable debugging messages to be displayed you can add the 
 flag `DEBUG` to the defines section of the `binding.gyp` file and then execute 
@@ -669,7 +681,7 @@ flag `DEBUG` to the defines section of the `binding.gyp` file and then execute
 <snip>
 ```
 
-## Unicode
+### Unicode
 
 By default, UNICODE suppport is enabled. This should provide the most accurate
 way to get Unicode strings submitted to your database. For best results, you 
@@ -686,7 +698,7 @@ work better or faster, you can remove the `UNICODE` define in `binding.gyp`
 <snip>
 ```
 
-## timegm vs timelocal
+### timegm vs timelocal
 
 When converting a database time to a C time one may use `timegm` or `timelocal`. See
 `man timegm` for the details of these two functions. By default the node-ibm_db bindings
@@ -701,7 +713,7 @@ define in `binding.gyp`
 <snip>
 ```
 
-## Strict Column Naming
+### Strict Column Naming
 
 When column names are retrieved from DB2 CLI, you can request by SQL_DESC_NAME or
 SQL_DESC_LABEL. SQL_DESC_NAME is the exact column name or none if there is none
@@ -722,7 +734,7 @@ define in `binding.gyp`
 tips
 ----
 
-## Using node < v0.10 on Linux
+### Using node < v0.10 on Linux
 
 Be aware that through node v0.9 the uv_queue_work function, which is used to 
 execute the ODBC functions on a separate thread, uses libeio for its thread 
@@ -735,18 +747,19 @@ have 4 concurrent queries.
 You can increase the thread pool size by using @developmentseed's [node-eio]
 (https://github.com/developmentseed/node-eio).
 
-### install: 
+#### install: 
 ```bash
 npm install eio
 ```
 
-### usage:
+#### usage:
 ```javascript
 var eio = require('eio'); 
 eio.setMinParallel(threadCount);
 ```
 
-# contributors
+## Contributors
+-----------------
 
 * Dan VerWeire (dverweire@gmail.com)
 * Lee Smith (notwink@gmail.com)
@@ -759,7 +772,8 @@ eio.setMinParallel(threadCount);
 * IBM
 
 
-# license
+## License
+--------------
 
 Copyright (c) 2013 Dan VerWeire <dverweire@gmail.com>
 
