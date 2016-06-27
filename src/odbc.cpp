@@ -688,11 +688,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                       params[i].type = SQL_CHAR;
                   break;
               case 3:
-                  if(val->IsString())
-                  {
-                      GetStringParam(val, &params[i], i+1);
-                  }
-                  else if (val->IsNull()) {
+                  if (val->IsNull()) {
                       GetNullParam(&params[i], i+1);
                   }
                   else if (val->IsInt32()) {
@@ -703,6 +699,10 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                   }
                   else if (val->IsBoolean()) {
                       GetBoolParam(val, &params[i], i+1);
+                  }
+                  else
+                  {
+                      GetStringParam(val, &params[i], i+1);
                   }
                   break;
               default:

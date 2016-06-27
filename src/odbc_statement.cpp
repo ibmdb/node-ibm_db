@@ -112,7 +112,7 @@ NAN_METHOD(ODBCStatement::New) {
   stmt->bufferLength = MAX_VALUE_SIZE;
   
   //initialze a buffer for this object
-  stmt->buffer = (uint16_t *) malloc(stmt->bufferLength);
+  stmt->buffer = (uint16_t *) malloc(stmt->bufferLength+2);
   //TODO: make sure the malloc succeeded
 
   //set the initial colCount to 0

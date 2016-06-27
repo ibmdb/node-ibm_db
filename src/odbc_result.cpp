@@ -120,7 +120,7 @@ NAN_METHOD(ODBCResult::New) {
   objODBCResult->bufferLength = MAX_VALUE_SIZE;
   
   //initialze a buffer for this object
-  objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength);
+  objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength+2);
   //TODO: make sure the malloc succeeded
 
   //set the initial colCount to 0
