@@ -34,7 +34,7 @@ using namespace v8;
 using namespace node;
 
 #define MAX_FIELD_SIZE 1024
-#define MAX_VALUE_SIZE 1048574
+#define MAX_VALUE_SIZE 2048574
 
 #define MODE_COLLECT_AND_CALLBACK 1
 #define MODE_CALLBACK_FOR_EACH 2

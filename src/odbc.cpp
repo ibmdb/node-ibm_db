@@ -340,10 +340,9 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
                            SQL_DESC_TYPE_NAME,
                            columns[i].type_name,
                            (SQLSMALLINT) (MAX_FIELD_SIZE),
-                           (SQLSMALLINT *) &typebuflen,
+                           &typebuflen,
                            NULL);
   }
-  
   return columns;
 }
 
@@ -372,6 +371,14 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   Nan::EscapableHandleScope scope;
   SQLLEN len = 0;
   int ret; 
+  Local<String> str;
+  SQLSMALLINT ctype = SQL_C_TCHAR;
+  char * errmsg = (char *) "[node-odbc] Error in ODBC::GetColumnValue";
+#ifdef UNICODE
+  int terCharLen = 2;
+#else
+  int terCharLen = 1;
+#endif
 
   DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, 
                 SQL_TIMESTAMP, SQL_TYPE_TIME);
@@ -526,72 +533,76 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           DEBUG_PRINTF("BIGINT DATA SELECTED\n");
     case SQL_BLOB :
         if((int) column.type == SQL_BLOB)
-          DEBUG_PRINTF("BLOB DATA SELECTED\n");
+        {
+            //terCharLen = 0;
+            //ctype = SQL_C_BINARY;
+            DEBUG_PRINTF("BLOB DATA SELECTED\n");
+        }
     default :
-      Local<String> str;
-      int count = 0;
+        len = 0;
+      ret = SQLGetData( hStmt,
+                        column.index,
+                        ctype,
+                        (char *) buffer,
+                        bufferLength + terCharLen,
+                        &len);
 
-      do {
-        ret = SQLGetData( hStmt,
-                          column.index,
-                          SQL_C_TCHAR,
-                          (char *) buffer,
-                          bufferLength,
-                          &len);
+      DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
+                   "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
+                   column.type, len,(char *) buffer, ret, bufferLength);
 
-        DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
-                     "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
-                     column.type, len,(char *) buffer, ret, bufferLength);
+      if( ret == SQL_SUCCESS_WITH_INFO )
+      {
+          uint16_t * tmp_out_ptr = NULL;
+          int newbufflen = len + bufferLength;
+          tmp_out_ptr = (uint16_t *)malloc( newbufflen + terCharLen);
+          if(tmp_out_ptr == NULL)
+          {
+            ret = -3;
+            errmsg = (char*)"Failed to allocate memory buffer for column data.";
+            DEBUG_PRINTF("Failed to allocate memory buffer of size %d\n", newbufflen + terCharLen);
+          }
+          else
+          {
+            memcpy(tmp_out_ptr, (char *) buffer, bufferLength);
+            //free((uint16_t *)buffer);
+            buffer = tmp_out_ptr;
+            ret = SQLGetData( hStmt,
+                              column.index,
+                              ctype,
+                              (char *) buffer + bufferLength,
+                              newbufflen + terCharLen,
+                              &len);
+            DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
+                         "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
+                         column.type, len, (char *)buffer, ret, newbufflen);
+          }
+      }
 
-        if((int)len == SQL_NULL_DATA) {
+      if((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
-        }
-        
-        if (SQL_NO_DATA == ret) {
-          //we have captured all of the data
-          break;
-        }
-        else if (SQL_SUCCEEDED(ret)) 
-        {
-          //we have not captured all of the data yet
-          if (count == 0) 
-          {
-            //no concatenation required, this is our first pass
-            #ifdef UNICODE
-            str = Nan::New((uint16_t*) buffer).ToLocalChecked();
-            #else
-            str = Nan::New((char *) buffer).ToLocalChecked();
-            #endif
-          }
-          else 
-          {
-            //we need to concatenate
-            #ifdef UNICODE
-            str = String::Concat(str, Nan::New((uint16_t*) buffer).ToLocalChecked());
-            #else
-            str = String::Concat(str, Nan::New((char *) buffer).ToLocalChecked());
-            #endif
-          }
-          count += 1;
-        }
-        else 
-        {
-          //an error has occured
-          //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
-
-          //If we have an invalid handle, then stuff is way bad and we should abort
-          //immediately. Memory errors are bound to follow as we must be in an
-          //inconsisant state.
-          assert(ret != SQL_INVALID_HANDLE);
-          Nan::ThrowError(ODBC::GetSQLError(
-             SQL_HANDLE_STMT,
-             hStmt,
-             (char *) "[node-odbc] Error in ODBC::GetColumnValue"
-           ));
-          return scope.Escape(Nan::Undefined());
-          break;
-        }
-      } while (true);
+      }
+      else if (SQL_SUCCEEDED(ret)) 
+      {
+          #ifdef UNICODE
+          str = Nan::New((uint16_t*) buffer).ToLocalChecked();
+          #else
+          str = Nan::New((char *) buffer).ToLocalChecked();
+          #endif
+      }
+      else 
+      {
+        DEBUG_PRINTF("ODBC::GetColumnValue - An error has occurred, ret = %i\n", ret);
+        //an error has occured
+        //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
+        //If we have an invalid handle, then stuff is way bad and we should abort
+        //immediately. Memory errors are bound to follow as we must be in an
+        //inconsisant state.
+        assert(ret != SQL_INVALID_HANDLE);
+        Nan::ThrowError(ODBC::GetSQLError( SQL_HANDLE_STMT, hStmt, errmsg));
+        return scope.Escape(Nan::Undefined());
+        break;
+      }
       return scope.Escape(str);
   }
 }
