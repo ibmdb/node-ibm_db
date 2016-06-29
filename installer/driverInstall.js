@@ -13,6 +13,8 @@ var installerURL = 'http://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
+installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
+installerURL = installerURL + "/";
 
 //Function to download file using HTTP.get
 var download_file_httpget = function(file_url) {
@@ -164,13 +166,6 @@ var download_file_httpget = function(file_url) {
                         'install process.');
             process.exit(1);
         }
-        /*
-        var options = {
-         host: url.parse(installerfileURL).host,
-         port: 80,
-         path: url.parse(installerfileURL).pathname
-        };
-        */
         
         var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
@@ -180,7 +175,15 @@ var download_file_httpget = function(file_url) {
         console.log('Downloading DB2 ODBC CLI Driver from ' +
                     installerfileURL+'...');
 
-        buildHttpOptions(installerfileURL);
+        fs.stat(installerfileURL, function (err, stats) {
+            if (err) {
+                buildHttpOptions(installerfileURL);
+            }
+            else if(stats.isFile()) 
+                copyAndExtractDriver(fs.readFileSync(installerfileURL));
+            else
+                buildHttpOptions(installerfileURL);
+        });
 
     }  // * END OF EXECUTION */
         
@@ -213,48 +216,49 @@ var download_file_httpget = function(file_url) {
                      installerfileURL );
                 process.exit(1);
              }
-              var file = fs.openSync( INSTALLER_FILE, 'w');
-             var len = fs.writeSync( file, buf, 0, buf.length, 0 );
-             if( len != buf.length ) 
-             {
-                console.log( "Error writing IBM ODBC and CLI Driver to a file" );
-                process.exit(1);
-             }
-             fs.closeSync( file );
-             if(platform == 'win32') 
-             {
-                readStream = fs.createReadStream(INSTALLER_FILE);
-                writeStream = fstream.Writer(DOWNLOAD_DIR);
-
-                readStream.pipe(unzip.Parse()).pipe(writeStream);
-                console.log('Download and extraction of DB2 ODBC ' +
-                            'CLI Driver completed successfully ...');
-                console.log(license_agreement);
-             } 
-             //CLI Driver file for all platforms other than windows 
-             //is a tar.gz file
-             else 
-             /*if(platform == 'linux' ||(platform =='darwin' &&arch=='x64'))*/ 
-             {
-                var targz = require('tar.gz');
-                var compress = new targz().extract(INSTALLER_FILE, 
-                                         DOWNLOAD_DIR, function(err){
-                    if(err) {
-                        console.log(err);
-                      process.exit(1);
-                    }
-                    console.log('Download and extraction of DB2 ODBC ' +
-                                'CLI Driver completed successfully ...');
-                    console.log(license_agreement);
-                    IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
-                    process.env.IBM_DB_HOME = IBM_DB_HOME;
-                    buildBinary(true);
-                    removeWinBuildArchive();
-                });
-             }
+             copyAndExtractDriver(buf);
          });
     } // downloadCLIDriver
     
+    function copyAndExtractDriver(buf)
+    {
+        var file = fs.openSync( INSTALLER_FILE, 'w');
+        var len = fs.writeSync( file, buf, 0, buf.length, 0 );
+        if( len != buf.length ) 
+        {
+            console.log( "Error writing IBM ODBC and CLI Driver to a file" );
+            process.exit(1);
+        }
+        fs.closeSync( file );
+        if(platform == 'win32') 
+        {
+            readStream = fs.createReadStream(INSTALLER_FILE);
+            writeStream = fstream.Writer(DOWNLOAD_DIR);
+
+            readStream.pipe(unzip.Parse()).pipe(writeStream);
+            console.log('Download and extraction of DB2 ODBC ' +
+                        'CLI Driver completed successfully ...');
+            console.log(license_agreement);
+        } 
+        else 
+        {
+            var targz = require('tar.gz');
+            var compress = new targz().extract(INSTALLER_FILE, DOWNLOAD_DIR, function(err){
+                if(err) {
+                    console.log(err);
+                    process.exit(1);
+                }
+                console.log('Download and extraction of DB2 ODBC ' +
+                            'CLI Driver completed successfully ...');
+                console.log(license_agreement);
+                IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+                process.env.IBM_DB_HOME = IBM_DB_HOME;
+                buildBinary(true);
+                removeWinBuildArchive();
+            });
+        }
+    }
+
     function buildBinary(isDownloaded) 
     {
         var buildString = "node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME";
@@ -286,7 +290,6 @@ var download_file_httpget = function(file_url) {
                         process.exit(1);
                     }
                 });
-                console.log(license_agreement);
             }
         });
     } //buildBinary

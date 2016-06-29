@@ -79,10 +79,15 @@ or
 ```
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
-
+or
 ```
-4. Update config.testConnectionStrings.json with your credentials and run test.
+export IBM_DB_INSTALLER_URL=<local path or url of folder contains odbc_cli.tar.gz file>
+npm install ibm_db
+```
+ibm_db will use the odbc_cli driver from IBM_DB_INSTALLER_URL env variable and will not download from default location used by installer/driverInstall.js
 
+4. Update config.testConnectionStrings.json with your credentials and run test.
+```
 cd ibm_db/test/
 vi config.testConnectionStrings.json
 node run-tests.js
