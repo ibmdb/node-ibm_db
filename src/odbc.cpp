@@ -531,15 +531,24 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     case SQL_BIGINT :
         if((int) column.type == SQL_BIGINT)
           DEBUG_PRINTF("BIGINT DATA SELECTED\n");
+    case SQL_DBCLOB:
+        if((int) column.type == SQL_DBCLOB)
+        {
+            ctype = SQL_C_DBCHAR;
+            terCharLen = 2;
+            DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
+        }
     case SQL_BLOB :
         if((int) column.type == SQL_BLOB)
         {
-            //terCharLen = 0;
-            //ctype = SQL_C_BINARY;
+            terCharLen = 0;
+            ctype = SQL_C_BINARY;
             DEBUG_PRINTF("BLOB DATA SELECTED\n");
         }
     default :
-        len = 0;
+      uint16_t * tmp_out_ptr = NULL;
+      int newbufflen = 0;
+      len = 0;
       ret = SQLGetData( hStmt,
                         column.index,
                         ctype,
@@ -548,13 +557,15 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                         &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
-                   "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
-                   column.type, len,(char *) buffer, ret, bufferLength);
+                   "ret=%i bufferLength=%i\n", column.index, column.name, 
+                   column.type, len, ret, bufferLength);
+      newbufflen = len;
 
       if( ret == SQL_SUCCESS_WITH_INFO )
       {
-          uint16_t * tmp_out_ptr = NULL;
-          int newbufflen = len + bufferLength;
+          newbufflen = len + bufferLength;
+          if(newbufflen + terCharLen > 0x3fffffff)
+              terCharLen = 0x3fffffff - terCharLen;
           tmp_out_ptr = (uint16_t *)malloc( newbufflen + terCharLen);
           if(tmp_out_ptr == NULL)
           {
@@ -565,8 +576,9 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           else
           {
             memcpy(tmp_out_ptr, (char *) buffer, bufferLength);
-            //free((uint16_t *)buffer);
+            //free((uint8_t *)buffer);
             buffer = tmp_out_ptr;
+            len = 0;
             ret = SQLGetData( hStmt,
                               column.index,
                               ctype,
@@ -574,8 +586,9 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                               newbufflen + terCharLen,
                               &len);
             DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
-                         "value=%s ret=%i bufferLength=%i\n", column.index, column.name, 
-                         column.type, len, (char *)buffer, ret, newbufflen);
+                         "ret=%i bufferLength=%i\n", column.index, column.name, 
+                         column.type, len, ret, newbufflen);
+            newbufflen = len + bufferLength;
           }
       }
 
@@ -584,11 +597,17 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       else if (SQL_SUCCEEDED(ret)) 
       {
-          #ifdef UNICODE
-          str = Nan::New((uint16_t*) buffer).ToLocalChecked();
-          #else
-          str = Nan::New((char *) buffer).ToLocalChecked();
-          #endif
+          if(ctype == SQL_C_BINARY)
+              str = Nan::NewOneByteString((uint8_t *) buffer, newbufflen).ToLocalChecked();
+          else {
+            #ifdef UNICODE
+            str = Nan::New((uint16_t *) buffer).ToLocalChecked();
+            #else
+            str = Nan::New((char *) buffer).ToLocalChecked();
+            #endif
+          }
+          if(tmp_out_ptr) free(tmp_out_ptr);
+          //return scope.Escape(Nan::CopyBuffer((char*)buffer, 39767).ToLocalChecked());
       }
       else 
       {

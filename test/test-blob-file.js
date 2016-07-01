@@ -62,7 +62,7 @@ ibmdb.open(cn, function (err,conn)
           else 
           {
             data = result.fetchAllSync();
-            fs.writeFileSync('phool2.jpg', data[0].PHOTO, 'hex');
+            fs.writeFileSync('phool2.jpg', data[0].PHOTO, 'binary');
             fs.writeFileSync('trc2.fmt', data[0].TRACE, 'ascii');
             try {
                 conn.querySync("drop table mytab");

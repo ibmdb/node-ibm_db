@@ -6,7 +6,12 @@ var common = require("./common")
     , ibmdb = require("../")
     , assert = require("assert")
     , fs = require('fs')
-    , cn = common.connectionString;
+    , cn = common.connectionString
+    , inputfile1 = 'data/phool.jpg'
+    , inputfile2 = 'data/trc.fmt'
+    , outputfile1 = 'phool2.jpg'
+    , outputfile2 = 'trc2.fmt'
+    ;
 
 ibmdb.open(cn, function (err,conn) 
 {
@@ -21,8 +26,8 @@ ibmdb.open(cn, function (err,conn)
     conn.querySync("create table mytab (empId int, photo BLOB(1M), trace CLOB(1M))");
     } catch (e) {};
   
-  var img1= fs.readFileSync('data/phool.jpg','binary');
-  var text= fs.readFileSync('data/trc.fmt','ascii');
+  var img1= fs.readFileSync(inputfile1,'binary');
+  var text= fs.readFileSync(inputfile2,'ascii');
 
   var len1 = img1.length;
   var len2 = text.length;
@@ -68,21 +73,21 @@ ibmdb.open(cn, function (err,conn)
           else 
           {
             data = result.fetchAllSync();
-            fs.writeFileSync('phool2.jpg', data[0].PHOTO, 'hex');
-            fs.writeFileSync('trc2.fmt', data[0].TRACE, 'ascii');
+            fs.writeFileSync(outputfile1, data[0].PHOTO, 'binary');
+            fs.writeFileSync(outputfile2, data[0].TRACE, 'ascii');
             try {
                 conn.querySync("drop table mytab");
             } catch (e) {};
             result.closeSync();
   
-            var size1 = fs.statSync("phool2.jpg")["size"];
-            var size2 = fs.statSync("trc2.fmt")["size"];
+            var size1 = fs.statSync(outputfile1)["size"];
+            var size2 = fs.statSync(outputfile2)["size"];
             console.log("Lengths after select = " + size1+ ", " + size2);
             assert(len1, size1);
             assert(len2, size2);
 
-            fs.unlinkSync("phool2.jpg");
-            fs.unlink("trc2.fmt", function () { console.log('done'); });
+            fs.unlinkSync(outputfile1);
+            fs.unlink(outputfile2, function () { console.log('done'); });
           }
         });
       });
