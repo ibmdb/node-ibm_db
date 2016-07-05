@@ -80,19 +80,25 @@ var download_file_httpget = function(file_url) {
     {
         IBM_DB_HOME = process.env.IBM_DB_HOME;
         IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
-        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+        if (arch == 'x64' && fs.existsSync(IBM_DB_HOME + "/lib64")) {
+        	IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
+        } else if (arch == 'ia32' && fs.existsSync(IBM_DB_HOME + "/lib32")) {
+        	IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+	} else {
+        	IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+	}
         console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
         
         if (!fs.existsSync(IBM_DB_HOME)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log('Environment variable IBM_DB_HOME is not set to the correct directory: Directory does not exist. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         
         if (!fs.existsSync(IBM_DB_INCLUDE)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Did not find include directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         
         if (!fs.existsSync(IBM_DB_LIB)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Did not find lib directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         if( platform != 'win32') {
             
