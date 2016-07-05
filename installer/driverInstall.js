@@ -80,28 +80,38 @@ var download_file_httpget = function(file_url) {
     {
         IBM_DB_HOME = process.env.IBM_DB_HOME;
         IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
-        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+        if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
+           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
+        } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
+           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+        } else {
+           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+        }
         console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
         
         if (!fs.existsSync(IBM_DB_HOME)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
+                        'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         
         if (!fs.existsSync(IBM_DB_INCLUDE)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
+                        'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         
         if (!fs.existsSync(IBM_DB_LIB)) {
-            console.log('Environment variable IBM_DB_HOME is not set to the correct directory. Please check if you have set the IBM_DB_HOME environment variable\'s value correctly.');
+            console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
+                        'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
         if( platform != 'win32') {
-            
+            if(!fs.existsSync(IBM_DB_HOME + "/lib"))
+                fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
+
             if((platform == 'linux') || (platform =='aix') || 
                (platform == 'darwin' && arch == 'x64')) {
                 removeWinBuildArchive();
                 buildBinary(false);
             } else {
-                
                 console.log('Building binaries for node-ibm_db. This platform is not completely supported, you might encounter errors. In such cases please open an issue on our repository, https://github.com/ibmdb/node-ibm_db.');
                 buildBinary(false);
             }
