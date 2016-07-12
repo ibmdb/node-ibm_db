@@ -863,9 +863,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     //with Nan::True()
     
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
-   
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     Local<Value> info[2];
@@ -887,7 +885,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result == SQL_ERROR) {
-      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-odbc] SQL_ERROR");
+      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
     } else {
       info[0] = Nan::Null();
     }
@@ -945,8 +943,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   
   //Check arguments for different variations of calling this function
   if (info.Length() == 2) {
-    //handle QuerySync("sql string", [params]);
-    
     if ( !info[0]->IsString() ) {
       return Nan::ThrowTypeError("ODBCConnection::QuerySync(): Argument 0 must be an String.");
     }
@@ -1071,12 +1067,16 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   
   //check to see if there was an error during execution
   if (ret == SQL_ERROR) {
-    Nan::ThrowError(ODBC::GetSQLError(
+    //Free stmt handle and then throw error.
+    Local<Value> err = ODBC::GetSQLError(
       SQL_HANDLE_STMT,
       hSTMT,
-      (char *) "[node-odbc] Error in ODBCConnection::QuerySync"
-    ));
-    
+      (char *) "[node-ibm_db] Error in ODBCConnection::QuerySync while executing query."
+    );
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    Nan::ThrowError(err);
     return;
   }
   else if (noResultObject) {
