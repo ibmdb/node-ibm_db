@@ -105,12 +105,10 @@ void ODBC::Free() {
   DEBUG_PRINTF("ODBC::Free\n");
   if (m_hEnv) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     if (m_hEnv) {
       SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
       m_hEnv = (SQLHENV)NULL;      
     }
-
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
 }
@@ -646,6 +644,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   
   Local<Object> tuple = Nan::New<Object>();
         
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
     tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
@@ -655,6 +654,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(tuple);
 }
@@ -670,10 +670,12 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   
   Local<Array> array = Nan::New<Array>();
         
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
     array->Set( Nan::New(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(array);
 }
