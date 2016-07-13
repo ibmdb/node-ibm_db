@@ -621,8 +621,9 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //inconsisant state.
         if(ret == SQL_INVALID_HANDLE)
         {
-          fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i\n", 
-                  ret, hStmt >> 16 & 0x0000ffff, hStmt & 0x0000ffff);
+          fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
+                  ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
+                  hStmt & 0x0000ffff, (int) column.type, column.index);
           assert(ret != SQL_INVALID_HANDLE);
         }
         Nan::ThrowError(ODBC::GetSQLError( SQL_HANDLE_STMT, hStmt, errmsg));
