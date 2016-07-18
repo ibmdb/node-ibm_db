@@ -54,6 +54,7 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   
   // Properties
   //Nan::SetAccessor(instance_template, Nan::New("mode").ToLocalChecked(), ModeGetter, ModeSetter);
+  Nan::SetAccessor(instance_template, Nan::New("systemNaming").ToLocalChecked(), SystemNamingGetter, SystemNamingSetter);
   Nan::SetAccessor(instance_template, Nan::New("connected").ToLocalChecked(), ConnectedGetter);
   Nan::SetAccessor(instance_template, Nan::New("connectTimeout").ToLocalChecked(), ConnectTimeoutGetter, ConnectTimeoutSetter);
   Nan::SetAccessor(instance_template, Nan::New("loginTimeout").ToLocalChecked(), LoginTimeoutGetter, LoginTimeoutSetter);
@@ -122,7 +123,25 @@ NAN_METHOD(ODBCConnection::New) {
   //set default connectTimeout to 30 seconds
   conn->connectTimeout = 30;
   
+  conn->systemNaming = false;
+
   info.GetReturnValue().Set(info.Holder());
+}
+
+NAN_GETTER(ODBCConnection::SystemNamingGetter) {
+  Nan::HandleScope scope;
+
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  info.GetReturnValue().Set(obj->systemNaming ? Nan::True() : Nan::False());
+}
+
+NAN_SETTER(ODBCConnection::SystemNamingSetter) {
+  Nan::HandleScope scope;
+
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  obj->systemNaming = value->BooleanValue();
 }
 
 NAN_GETTER(ODBCConnection::ConnectedGetter) {
@@ -240,6 +259,16 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
       sizeof(timeOut));       //StringLength
   }
   
+  bool systemNaming = self->systemNaming;
+
+  if (systemNaming) {
+    SQLSetConnectAttr(
+      self->m_hDBC,           //ConnectionHandle
+      SQL_ATTR_DBC_SYS_NAMING, //Attribute
+      (SQLPOINTER)SQL_TRUE,    //ValuePtr
+      SQL_IS_INTEGER);       //StringLength
+  }
+
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   int ret = SQLDriverConnect(
@@ -366,6 +395,16 @@ NAN_METHOD(ODBCConnection::OpenSync) {
       sizeof(timeOut));       //StringLength
   }
   
+  bool systemNaming = conn->systemNaming;
+
+  if (systemNaming) {
+    SQLSetConnectAttr(
+      conn->m_hDBC,           //ConnectionHandle
+      SQL_ATTR_DBC_SYS_NAMING, //Attribute
+      (SQLPOINTER)SQL_TRUE,    //ValuePtr
+      SQL_IS_INTEGER);       //StringLength
+  }
+
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   ret = SQLDriverConnect(

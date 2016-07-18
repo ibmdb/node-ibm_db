@@ -45,6 +45,8 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(New);
 
     //Property Getter/Setters
+    static NAN_GETTER(SystemNamingGetter);
+    static NAN_SETTER(SystemNamingSetter);
     static NAN_GETTER(ConnectedGetter);
     static NAN_GETTER(ConnectTimeoutGetter);
     static NAN_SETTER(ConnectTimeoutSetter);
@@ -103,6 +105,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     SQLHENV m_hENV;
     SQLHDBC m_hDBC;
     SQLUSMALLINT canHaveMoreResults;
+    bool systemNaming;
     bool connected;
     int statements;
     int connectTimeout;
