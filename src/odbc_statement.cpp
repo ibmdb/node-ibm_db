@@ -81,10 +81,8 @@ void ODBCStatement::Free() {
   
   if (m_hSTMT) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
-    
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     if (bufferLength > 0) {

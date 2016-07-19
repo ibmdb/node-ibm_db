@@ -67,6 +67,7 @@ void ODBCResult::Init(v8::Handle<Object> exports) {
 
 ODBCResult::~ODBCResult() {
   DEBUG_PRINTF("ODBCResult::~ODBCResult m_hSTMT=%x\n", m_hSTMT);
+    if(m_hSTMT)
   this->Free();
 }
 
@@ -75,11 +76,9 @@ void ODBCResult::Free() {
   
   if (m_hSTMT && m_canFreeHandle) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
-    SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
-    
+    if(m_hSTMT)
+        SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
-  
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
@@ -87,6 +86,7 @@ void ODBCResult::Free() {
     bufferLength = 0;
     free(buffer);
   }
+  DEBUG_PRINTF("ODBCResult::Free() Done.\n");
 }
 
 NAN_METHOD(ODBCResult::New) {
@@ -664,6 +664,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   }
   
   info.GetReturnValue().Set(rows);
+  DEBUG_PRINTF("ODBCResult::FetchAllSync() Done.\n");
 }
 
 /*
@@ -702,6 +703,7 @@ NAN_METHOD(ODBCResult::CloseSync) {
   }
   
   info.GetReturnValue().Set(Nan::True());
+  DEBUG_PRINTF("ODBCResult::CloseSync() Done.\n");
 }
 
 NAN_METHOD(ODBCResult::MoreResultsSync) {

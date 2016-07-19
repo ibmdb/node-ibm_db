@@ -105,12 +105,10 @@ void ODBC::Free() {
   DEBUG_PRINTF("ODBC::Free\n");
   if (m_hEnv) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     if (m_hEnv) {
       SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
       m_hEnv = (SQLHENV)NULL;      
     }
-
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
 }
@@ -548,6 +546,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     default :
       uint16_t * tmp_out_ptr = NULL;
       int newbufflen = 0;
+      int secondGetData = 0;
       len = 0;
       ret = SQLGetData( hStmt,
                         column.index,
@@ -589,13 +588,16 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                          "ret=%i bufferLength=%i\n", column.index, column.name, 
                          column.type, len, ret, newbufflen);
             newbufflen = len + bufferLength;
+            secondGetData = 1;
           }
       }
 
       if((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
       }
-      else if (SQL_SUCCEEDED(ret)) 
+      // In case of secondGetData, we already have result from first getdata
+      // so return the result irrespective of ret as we already have some data.
+      else if (SQL_SUCCEEDED(ret) || secondGetData) 
       {
           if(ctype == SQL_C_BINARY)
               str = Nan::NewOneByteString((uint8_t *) buffer, newbufflen).ToLocalChecked();
@@ -617,7 +619,13 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //If we have an invalid handle, then stuff is way bad and we should abort
         //immediately. Memory errors are bound to follow as we must be in an
         //inconsisant state.
-        assert(ret != SQL_INVALID_HANDLE);
+        if(ret == SQL_INVALID_HANDLE)
+        {
+          fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
+                  ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
+                  hStmt & 0x0000ffff, (int) column.type, column.index);
+          assert(ret != SQL_INVALID_HANDLE);
+        }
         Nan::ThrowError(ODBC::GetSQLError( SQL_HANDLE_STMT, hStmt, errmsg));
         return scope.Escape(Nan::Undefined());
         break;
@@ -637,6 +645,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   
   Local<Object> tuple = Nan::New<Object>();
         
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
     tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
@@ -646,6 +655,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(tuple);
 }
@@ -661,10 +671,12 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   
   Local<Array> array = Nan::New<Array>();
         
+  uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
     array->Set( Nan::New(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(array);
 }
@@ -1047,7 +1059,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
       objError->Set(Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
       objError->Set(Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
 #endif
-    } else if (ret == SQL_NO_DATA) {
+    } else {
       break;
     }
   }

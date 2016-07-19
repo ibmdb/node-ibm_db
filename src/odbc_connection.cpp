@@ -815,8 +815,6 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
                   data->conn->m_hDBC, 
                   &data->hSTMT );
 
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-
   //check to see if should excute a direct or a parameter bound query
   if (!data->paramCount) {
     // execute the query directly
@@ -841,6 +839,7 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
       }
     }
   }
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   // this will be checked later in UV_AfterQuery
   data->result = ret;
@@ -863,9 +862,8 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     //with Nan::True()
     
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
-   
+    data->hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     Local<Value> info[2];
@@ -887,7 +885,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result == SQL_ERROR) {
-      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-odbc] SQL_ERROR");
+      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
     } else {
       info[0] = Nan::Null();
     }
@@ -945,8 +943,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   
   //Check arguments for different variations of calling this function
   if (info.Length() == 2) {
-    //handle QuerySync("sql string", [params]);
-    
     if ( !info[0]->IsString() ) {
       return Nan::ThrowTypeError("ODBCConnection::QuerySync(): Argument 0 must be an String.");
     }
@@ -1033,10 +1029,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
                   conn->m_hDBC, 
                   &hSTMT );
 
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-
   DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%i\n", hSTMT);
-  
   //check to see if should excute a direct or a parameter bound query
   if (!SQL_SUCCEEDED(ret)) {
     //We'll check again later
@@ -1063,31 +1056,34 @@ NAN_METHOD(ODBCConnection::QuerySync) {
         ret = SQLExecute(hSTMT);
       }
     }
-    
     FREE_PARAMS( params, paramCount ) ;
   }
   
+  uv_mutex_unlock(&ODBC::g_odbcMutex);
   delete sql;
   
   //check to see if there was an error during execution
   if (ret == SQL_ERROR) {
-    Nan::ThrowError(ODBC::GetSQLError(
+    //Free stmt handle and then throw error.
+    Local<Value> err = ODBC::GetSQLError(
       SQL_HANDLE_STMT,
       hSTMT,
-      (char *) "[node-odbc] Error in ODBCConnection::QuerySync"
-    ));
-    
+      (char *) "[node-ibm_db] Error in ODBCConnection::QuerySync while executing query."
+    );
+    uv_mutex_lock(&ODBC::g_odbcMutex);
+    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
+    hSTMT = (SQLHSTMT)NULL;
+    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    Nan::ThrowError(err);
     return;
   }
   else if (noResultObject) {
     //if there is not result object requested then
     //we must destroy the STMT ourselves.
     uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
-   
+    hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
-    
     info.GetReturnValue().Set(Nan::True());
   }
   else {
