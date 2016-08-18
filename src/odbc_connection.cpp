@@ -72,6 +72,8 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "beginTransactionSync", BeginTransactionSync);
   Nan::SetPrototypeMethod(constructor_template, "endTransaction", EndTransaction);
   Nan::SetPrototypeMethod(constructor_template, "endTransactionSync", EndTransactionSync);
+
+  Nan::SetPrototypeMethod(constructor_template, "setIsolationLevel", SetIsolationLevel);
   
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
@@ -1623,4 +1625,48 @@ void ODBCConnection::UV_AfterEndTransaction(uv_work_t* req, int status) {
   
   free(data);
   free(req);
+}
+
+/*
+ * SetIsolationLevel
+ * 
+ */
+
+NAN_METHOD(ODBCConnection::SetIsolationLevel) {
+  DEBUG_PRINTF("ODBCConnection::SetIsolationLevel\n");
+  Nan::HandleScope scope;
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  OPT_INT_ARG(0, isolationLevel, SQL_TXN_READ_COMMITTED)
+
+  Local<Value> objError;
+  SQLRETURN ret;
+  bool error = false;
+
+  //set the connection manual commits
+  ret = SQLSetConnectAttr(
+    conn->m_hDBC,
+    SQL_ATTR_TXN_ISOLATION,
+    (SQLPOINTER) isolationLevel,
+    SQL_NTS);
+
+  DEBUG_PRINTF("ODBCConnection::SetIsolationLevel isolationLevel=%d; ret=%d\n",
+               isolationLevel, ret);
+
+  //check how the transaction went
+  if (!SQL_SUCCEEDED(ret)) {
+    error = true;
+
+    objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
+  }
+
+  if (error) {
+    Nan::ThrowError(objError);
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+  else {
+    info.GetReturnValue().Set(Nan::True());
+  }
 }
