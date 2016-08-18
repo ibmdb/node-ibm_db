@@ -6,6 +6,9 @@ var common = require("./common")
 ibmdb.open(cn, function(err, conn) {
   if(err) return console.log(err);
 
+  try{
+    conn.querySync("drop table mytab1");
+    } catch (e) {}
   conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
   conn.query('select 1 from sysibm.sysdummy1', [23], function (err, data) {
     if (err) console.log(err);
