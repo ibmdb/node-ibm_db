@@ -90,6 +90,8 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(QuerySync);
     static NAN_METHOD(BeginTransactionSync);
     static NAN_METHOD(EndTransactionSync);
+
+    static NAN_METHOD(SetIsolationLevel);
     
     struct Fetch_Request {
       Nan::Callback* callback;
