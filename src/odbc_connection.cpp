@@ -755,8 +755,9 @@ NAN_METHOD(ODBCConnection::Query) {
         data->paramCount = 0;
       }
       
-      if (obj->Has(optionParamsKey) && obj->Get(optionParamsKey)->IsBoolean()) {
-        data->noResultObject = obj->Get(optionParamsKey)->ToBoolean()->Value();
+      Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
+      if (obj->Has(optionNoResultsKey) && obj->Get(optionNoResultsKey)->IsBoolean()) {
+        data->noResultObject = obj->Get(optionNoResultsKey)->ToBoolean()->Value();
       }
       else {
         data->noResultObject = false;
@@ -859,7 +860,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   if (data->result != SQL_ERROR && data->noResultObject) {
     //We have been requested to not create a result object
     //this means we should release the handle now and call back
-    //with Nan::True()
+    //with Nan::False() indicating no result set returned
     
     uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
@@ -868,7 +869,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     
     Local<Value> info[2];
     info[0] = Nan::Null();
-    info[1] = Nan::True();
+    info[1] = Nan::False();
     
     data->cb->Call(2, info);
   }
