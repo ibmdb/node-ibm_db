@@ -252,12 +252,13 @@ var download_file_httpget = function(file_url) {
         } 
         else 
         {
-            var targz = require('tar.gz');
-            var compress = new targz().extract(INSTALLER_FILE, DOWNLOAD_DIR, function(err){
+            var targz = require('targz');
+            var compress = targz.decompress({src: INSTALLER_FILE, dest:  DOWNLOAD_DIR}, function(err){
                 if(err) {
                     console.log(err);
                     process.exit(1);
                 }
+		else {
                 console.log('Download and extraction of DB2 ODBC ' +
                             'CLI Driver completed successfully ...');
                 console.log(license_agreement);
@@ -265,7 +266,8 @@ var download_file_httpget = function(file_url) {
                 process.env.IBM_DB_HOME = IBM_DB_HOME;
                 buildBinary(true);
                 removeWinBuildArchive();
-            });
+            	}
+	    });
         }
     }
 
