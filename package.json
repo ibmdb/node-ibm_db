@@ -40,5 +40,10 @@
     "driver"
   ],
   "author": "IBM",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "async": "^2.0.1",
+    "bluebird": "^3.4.3",
+    "moment": "^2.14.1"
+  }
 }
