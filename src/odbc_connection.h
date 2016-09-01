@@ -88,6 +88,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(CreateStatementSync);
     static NAN_METHOD(OpenSync);
     static NAN_METHOD(QuerySync);
+    static NAN_METHOD(CallSync);
     static NAN_METHOD(BeginTransactionSync);
     static NAN_METHOD(EndTransactionSync);
     

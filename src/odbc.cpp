@@ -635,6 +635,142 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 }
 
 /*
+ * GetOutputParameter
+ */
+
+Handle<Value> ODBC::GetOutputParameter( Parameter prm ) 
+{
+  Nan::EscapableHandleScope scope;
+  Local<String> str;
+
+  DEBUG_PRINTF("SQL Type of parameter: %i\n",prm.type);
+  switch ((int) prm.type) 
+  {
+    case SQL_INTEGER : 
+    case SQL_SMALLINT :
+    case SQL_TINYINT : 
+    case SQL_NUMERIC :
+        if((int) prm.type == SQL_NUMERIC)
+          DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
+    case SQL_BIGINT :
+        if((int) prm.type == SQL_BIGINT)
+          DEBUG_PRINTF("BIGINT DATA SELECTED\n");
+      {
+        if((int)prm.length == SQL_NULL_DATA)
+        {
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i val=%i\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, prm.buffer);
+          return scope.Escape(Nan::Null());
+        }
+        else if((int)prm.length == sizeof(int)){
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i intval=%i\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(int*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(int*)prm.buffer));
+        }
+        else if((int)prm.length == sizeof(short)){
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i shortval=%i\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(short*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(short*)prm.buffer));
+        }
+        else if((int)prm.length == sizeof(long)){
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i longval=%i\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(long*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(long*)prm.buffer));
+        }
+        else {
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i charval=%s\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(char*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(char *)prm.buffer));
+        }
+      }
+      break;
+
+    case SQL_DECIMAL :
+        if((int) prm.type == SQL_DECIMAL)
+          DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
+    case SQL_FLOAT :
+    case SQL_REAL :
+    case SQL_DOUBLE : 
+      {
+        if((int)prm.length == SQL_NULL_DATA)
+        {
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
+                       "type=%i buf_len=%i len=%i nullval=%f\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, prm.buffer);
+          return scope.Escape(Nan::Null());
+        }
+        else {
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
+                       "type=%i buf_len=%i len=%i floatval=%f\n", 
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(double*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(double*)prm.buffer));
+        }
+      }
+      break;
+
+    case SQL_BIT :
+      {
+        DEBUG_PRINTF("ODBC::GetOutputParameter - Bit: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%f\n", 
+                     prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                     prm.length, prm.buffer);
+        if((int)prm.length == SQL_NULL_DATA) {
+            return scope.Escape(Nan::Null());
+        }
+        else {
+            return scope.Escape(Nan::New((*((char*)prm.buffer) == '0') ? false : true));
+        }
+      }
+      break;
+	/*
+    case SQL_BLOB :
+    case SQL_DATETIME :
+    case SQL_TIMESTAMP : 
+    */
+    case SQL_TYPE_TIME:
+		DEBUG_PRINTF("SQL_TIME SELECTED\n");
+    case SQL_DBCLOB:
+        if((int) prm.type == SQL_DBCLOB)
+        {
+            DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
+        }
+    case SQL_BLOB :
+        if((int) prm.type == SQL_BLOB)
+        {
+            DEBUG_PRINTF("BLOB DATA SELECTED\n");
+        }
+    default :
+      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%f\n", 
+                   prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                   prm.length, prm.buffer);
+      if((int)prm.length == SQL_NULL_DATA) {
+          return scope.Escape(Nan::Null());
+      }
+      if(prm.c_type == SQL_C_BINARY)
+          str = Nan::NewOneByteString((uint8_t *) prm.buffer, prm.length).ToLocalChecked();
+      else {
+        #ifdef UNICODE
+        str = Nan::New((uint16_t *) prm.buffer).ToLocalChecked();
+        #else
+        str = Nan::New((char *) prm.buffer).ToLocalChecked();
+        #endif
+      }
+      return scope.Escape(str);
+  }
+}
+
+/*
  * GetRecordTuple
  */
 
@@ -747,6 +883,10 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
                       GetStringParam(val, &params[i], i+1);
                   }
                   break;
+              case 4:
+                  if(val->IsInt32())
+                      params[i].buffer_length = val->IntegerValue();
+                  break;
               default:
                   break;
           }
@@ -774,7 +914,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
 void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 {
     Local<String> string = value->ToString();
-    int length = string->Length();
+    int length = param->buffer_length;
+    if(!length) length = string->Length();
       
     param->length        = SQL_NTS;
     if(!param->c_type || (param->c_type == SQL_CHAR))
@@ -928,7 +1069,7 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
                       i + 1,               // TargetType, 
                       prm.type,            // DataType, 
                       (SQLCHAR *)prm.buffer,          // *FileName, 
-                      NULL,                // *FileNameLength, // NULL 0r SQL_NTS
+                      NULL,                // *FileNameLength, // NULL or SQL_NTS
                       &params[i].fileOption,     // *FileOptions,  // SQL_FILE_READ = 2
                       prm.decimals,        // MaxFileNameLength, 
                       &params[i].fileIndicator); // *IndicatorValue); // 0 
