@@ -1,4 +1,5 @@
 // Test case to verify result of OUT and INOUT Parameters in a Strored Procedure.
+// When SP is called using conn.query() assynchronously.
 
 var common = require("./common")
   , ibmdb = require("../")
@@ -20,16 +21,24 @@ ibmdb.open(cn, function (err, conn)
     var param2 = {ParamType:"OUTPUT", DataType:1, Data:0};
     var param3 = {ParamType:"INOUT", DataType:1, Data:"abc", Length:30};
 
-    result = conn.querySync(query, [param1, param2, param3]);
-    assert.deepEqual(result, [ 4, 'verygood' ]);
-    console.log("Output Parameters V2 = ", result[0], ", V3 = ", result[1]);
-
-    conn.querySync("drop procedure proc1");
+    conn.query(query, [param1, param2, param3], function(err, result){
+        if(err) console.log(err);
+        else {
+            console.log("return value = ", result[0], result[1]);
+            conn.querySync("drop procedure proc1");
+            conn.closeSync();
+        }
+        assert.deepEqual(result, [ 4, 'verygood' ]);
+    });
     conn.querySync("create or replace procedure proc2 (IN v1 INTEGER) BEGIN END");
-    result = conn.querySync("call proc2(?)", [param1]);
-    assert.equal(result, true);
-    conn.querySync("drop procedure proc2");
-    conn.closeSync();
-    console.log('done');
+    conn.query("call proc2(?)", [param1], function(err, result){
+        if(err) console.log(err);
+        else {
+          conn.querySync("drop procedure proc2");
+          conn.closeSync();
+          console.log('done');
+        }
+        assert.equal(result, true);
+    });
 });
 
