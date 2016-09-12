@@ -25,6 +25,11 @@ exports.connectionObject.PWD     = process.env.IBM_DB_PWD      || exports.connec
 exports.connectionObject.PORT    = process.env.IBM_DB_PORT     || exports.connectionObject.PORT;
 exports.connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || exports.connectionObject.PROTOCOL;
 
+//checks if schema is defined
+if (process.env.IBM_DB_SCHEMA !== 'undefined') {
+    exports.connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA || exports.connectionObject.CURRENTSCHEMA;
+}
+
 for(key in exports.connectionObject) 
 {
     exports.connectionString = exports.connectionString + key + "=" +

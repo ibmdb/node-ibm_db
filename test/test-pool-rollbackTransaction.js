@@ -8,6 +8,9 @@ pool.open(cn, function (err, conn) {
   if (err) {
     return console.log(err);
   }
+  try {
+    conn.querySync("drop table mytab4");
+  } catch(e) {};
   conn.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason. 
