@@ -67,7 +67,6 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "createStatementSync", CreateStatementSync);
   Nan::SetPrototypeMethod(constructor_template, "query", Query);
   Nan::SetPrototypeMethod(constructor_template, "querySync", QuerySync);
-  Nan::SetPrototypeMethod(constructor_template, "callSync", CallSync);
   
   Nan::SetPrototypeMethod(constructor_template, "beginTransaction", BeginTransaction);
   Nan::SetPrototypeMethod(constructor_template, "beginTransactionSync", BeginTransactionSync);
@@ -756,8 +755,9 @@ NAN_METHOD(ODBCConnection::Query) {
         data->paramCount = 0;
       }
       
-      if (obj->Has(optionParamsKey) && obj->Get(optionParamsKey)->IsBoolean()) {
-        data->noResultObject = obj->Get(optionParamsKey)->ToBoolean()->Value();
+      Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
+      if (obj->Has(optionNoResultsKey) && obj->Get(optionNoResultsKey)->IsBoolean()) {
+        data->noResultObject = obj->Get(optionNoResultsKey)->ToBoolean()->Value();
       }
       else {
         data->noResultObject = false;
@@ -852,25 +852,41 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   Nan::HandleScope scope;
   
   query_work_data* data = (query_work_data *)(req->data);
+  Local<Array> sp_result = Nan::New<Array>();
+  int inoutParamCount = 0; // Non-zero tells its a SP with OUT param
 
   Nan::TryCatch try_catch;
 
   DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i\n", data->result, data->noResultObject);
 
+  // Retrieve values of INOUT and OUTPUT Parameters of Stored Procedure
+  if (SQL_SUCCEEDED(data->result)) {
+      for(int i = 0; i < data->paramCount; i++) {
+          if(data->params[i].paramtype % 2 == 0) {
+              sp_result->Set(Nan::New(inoutParamCount), ODBC::GetOutputParameter(data->params[i]));
+              inoutParamCount++;
+          }
+      }
+      DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : inoutParamCount=%i\n", inoutParamCount);
+  }
   if (data->result != SQL_ERROR && data->noResultObject) {
     //We have been requested to not create a result object
     //this means we should release the handle now and call back
     //with Nan::True()
     
     uv_mutex_lock(&ODBC::g_odbcMutex);
+    DEBUG_PRINTF("Going to free handle.\n");
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
     data->hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
+    DEBUG_PRINTF("Handle feed.\n");
     
     Local<Value> info[2];
     info[0] = Nan::Null();
-    info[1] = Nan::True();
+    if(inoutParamCount) info[1] = sp_result;
+    else info[1] = Nan::True();
     
+    DEBUG_PRINTF("Calling callback function...\n");
     data->cb->Call(2, info);
   }
   else {
@@ -895,6 +911,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     data->cb->Call(2, info);
   }
   
+  DEBUG_PRINTF("After callback function executed.\n");
   data->conn->Unref();
   
   if (try_catch.HasCaught()) {
@@ -940,6 +957,8 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   SQLRETURN ret;
   SQLHSTMT hSTMT;
   int paramCount = 0;
+  int inoutParamCount = 0; // Non-zero tells its a SP.
+  Local<Array> sp_result = Nan::New<Array>();
   bool noResultObject = false;
   
   //Check arguments for different variations of calling this function
@@ -1050,11 +1069,17 @@ NAN_METHOD(ODBCConnection::QuerySync) {
       sql->length());
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-
       ret = ODBC::BindParameters( hSTMT, params, paramCount ) ;
-
       if (SQL_SUCCEEDED(ret)) {
         ret = SQLExecute(hSTMT);
+        if (SQL_SUCCEEDED(ret)) {
+          for(int i = 0; i < paramCount; i++) { // For stored Procedure CALL
+            if(params[i].paramtype % 2 == 0) {
+              sp_result->Set(Nan::New(inoutParamCount), ODBC::GetOutputParameter(params[i]));
+              inoutParamCount++;
+            }
+          }
+        }
       }
     }
     FREE_PARAMS( params, paramCount ) ;
@@ -1085,7 +1110,10 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
     hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
-    info.GetReturnValue().Set(Nan::True());
+    if(inoutParamCount) // It is a CALL statement with INOUT or OUTPUT parameter.
+        info.GetReturnValue().Set(sp_result);
+    else
+        info.GetReturnValue().Set(Nan::True());
   }
   else {
     Local<Value> result[4];
@@ -1098,195 +1126,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     
     Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, result);
 
-    info.GetReturnValue().Set(js_result);
-  }
-}
-
-/*
- * CallSync
- */
-
-NAN_METHOD(ODBCConnection::CallSync) {
-  DEBUG_PRINTF("ODBCConnection::CallSync\n");
-  Nan::EscapableHandleScope scope;
-
-#ifdef UNICODE
-  String::Value* sql;
-#else
-  String::Utf8Value* sql;
-#endif
-
-  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  Local<Array> js_result = Nan::New<Array>();
-  
-  Parameter* params = new Parameter[0];
-  SQLRETURN ret;
-  SQLHSTMT hSTMT;
-  int paramCount = 0;
-  
-  char temp_db_version_string[11] = "\0";
-  char db_version_string[3] = "\0";
-  short version_length = -1;
-
-  int db_version; //numParams = -1, parameterStart = 0, parameterEnd = 0; 
-
-  //Check arguments for different variations of calling this function
-  if (info.Length() == 2) {
-    if ( !info[0]->IsString() ) {
-      return Nan::ThrowTypeError("ODBCConnection::CallSync(): Argument 0 must be an String.");
-    }
-    else if (!info[1]->IsArray()) {
-      return Nan::ThrowTypeError("ODBCConnection::CallSync(): Argument 1 must be an Array.");
-    }
-
-#ifdef UNICODE
-    sql = new String::Value(info[0]->ToString());
-#else
-    sql = new String::Utf8Value(info[0]->ToString());
-#endif
-
-    params = ODBC::GetParametersFromArray(
-      Local<Array>::Cast(info[1]),
-      &paramCount);
-
-  }
-  else if (info.Length() == 1 ) {
-    //handle either CallSync("sql") or CallSync({ settings })
-
-    if (info[0]->IsString()) {
-      //handle Query("sql")
-#ifdef UNICODE
-      sql = new String::Value(info[0]->ToString());
-#else
-      sql = new String::Utf8Value(info[0]->ToString());
-#endif
-    
-      paramCount = 0;
-    }
-    else if (info[0]->IsObject()) {
-      //NOTE: going forward this is the way we should expand options
-      //rather than adding more arguments to the function signature.
-      //specify options on an options object.
-      //handle Query({}, function cb () {});
-      
-      Local<Object> obj = info[0]->ToObject();
-      
-      Local<String> optionSqlKey = Nan::New<String>(OPTION_SQL);
-      if (obj->Has(optionSqlKey) && obj->Get(optionSqlKey)->IsString()) {
-#ifdef UNICODE
-        sql = new String::Value(obj->Get(optionSqlKey)->ToString());
-#else
-        sql = new String::Utf8Value(obj->Get(optionSqlKey)->ToString());
-#endif
-      }
-      else {
-#ifdef UNICODE
-        sql = new String::Value(Nan::New("").ToLocalChecked());
-#else
-        sql = new String::Utf8Value(Nan::New("").ToLocalChecked());
-#endif
-      }
-
-      Local<String> optionParamsKey = Nan::New(OPTION_PARAMS);
-      if (obj->Has(optionParamsKey) && obj->Get(optionParamsKey)->IsArray()) {
-        params = ODBC::GetParametersFromArray(
-          Local<Array>::Cast(obj->Get(optionParamsKey)),
-          &paramCount);
-      }
-      else {
-        paramCount = 0;
-      }
-    }
-    else {
-      return Nan::ThrowTypeError("ODBCConnection::CallSync(): Argument 0 must be a String or an Object.");
-    }
-  }
-  else {
-    return Nan::ThrowTypeError("ODBCConnection::CallSync(): Requires either 1 or 2 Arguments.");
-  }
-  //Done checking arguments
-
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-
-  //allocate a new statment handle
-  ret = SQLAllocHandle( SQL_HANDLE_STMT, 
-                  conn->m_hDBC, 
-                  &hSTMT );
-
-  DEBUG_PRINTF("ODBCConnection::CallSync - hSTMT=%i\n", hSTMT);
-  //check to see if should excute a direct or a parameter bound query
-  if (!SQL_SUCCEEDED(ret)) {
-    //We'll check again later
-  }
-  else if (!paramCount) {
-    // execute the query directly
-    ret = SQLExecDirect(
-      hSTMT,
-      (SQLTCHAR *) **sql, 
-      sql->length());
-  }
-  else {
-    // Get Target Database Info
-    ret = SQLGetInfo( conn->m_hDBC, SQL_DBMS_VER, temp_db_version_string, 11, &version_length);
-    if( ret == SQL_ERROR ) goto exit;
-    memcpy(db_version_string, temp_db_version_string, 2);
-    db_version = atoi(db_version_string);
-
-    // prepare statement, bind parameters and execute statement
-    ret = SQLPrepare(
-      hSTMT,
-      (SQLTCHAR *) **sql, 
-      sql->length());
-    
-    if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) 
-    {
-      ret = ODBC::BindParameters( hSTMT, params, paramCount ) ;
-
-      if (SQL_SUCCEEDED(ret)) 
-      {
-        ret = SQLExecute(hSTMT);
-        if (SQL_SUCCEEDED(ret)) 
-        {
-          // Retrieve result for INOUT and OUTPUT Params.
-          int count = 0;
-          for(int i = 0; i < paramCount; i++)
-          {
-            if(params[i].paramtype % 2 == 0)
-            {
-              js_result->Set(Nan::New(count), ODBC::GetOutputParameter(params[i]));
-              count++;
-            }
-          }
-        }
-      }
-    }
-   // FREE_PARAMS( params, paramCount ) ;
-  }
-  
-exit:
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-  delete sql;
-  
-  //check to see if there was an error during execution
-  if (ret == SQL_ERROR) {
-    //Free stmt handle and then throw error.
-    Local<Value> err = ODBC::GetSQLError(
-      SQL_HANDLE_STMT,
-      hSTMT,
-      (char *) "[node-ibm_db] Error in ODBCConnection::CallSync while executing query."
-    );
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
-    hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
-    Nan::ThrowError(err);
-    return;
-  }
-  else {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
-    hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
     info.GetReturnValue().Set(js_result);
   }
 }
