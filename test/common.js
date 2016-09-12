@@ -24,6 +24,10 @@ exports.connectionObject.UID     = process.env.IBM_DB_UID      || exports.connec
 exports.connectionObject.PWD     = process.env.IBM_DB_PWD      || exports.connectionObject.PWD;
 exports.connectionObject.PORT    = process.env.IBM_DB_PORT     || exports.connectionObject.PORT;
 exports.connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || exports.connectionObject.PROTOCOL;
+//checks if schema is defined
+if (process.env.IBM_DB_SCHEMA !== 'undefined') {
+exports.connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA || exports.connectionObject.CURRENTSCHEMA;
+}
 
 //checks if schema is defined
 if (process.env.IBM_DB_SCHEMA !== 'undefined') {
