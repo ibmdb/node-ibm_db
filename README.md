@@ -80,7 +80,14 @@ source setenv.sh
 db2cli bind $IBM_DB_HOME/bnd/@db2cli.lst -database <dbname>:<hostname>:<port> -user <dbuser> -passwd <passwd> -options "grant public action replace blocking no"
 ```
 
-If above command prints 0 errors at end, then you can proceed to run query. If getting non-zero error, share the output of above `db2cli bind` command along with query execution error via a new issue.
+If above command prints 0 error at end, then you can proceed to run query. If 
+it reports non-zero error, open a new issue on github and share the output 
+of above `db2cli bind` command along with query execution error.
+
+Alternatively, if you have any other DB2 client with CLP, you can bind packages using db2 bind command too. f.e. use below command against DB2 for z/OS server:
+```
+db2 bind .../sqllib/bnd/@ddcsmvs.lst action replace grant public sqlerror continue messages msg.txt
+```
 
 ## Need Help?
 --------------
