@@ -70,6 +70,18 @@ copy it under `.../ibm_db/installer/clidriver/license` folder to be effective.
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
 
+## For Missing Package/Binding issue
+------------------------------------
+
+If your application is able to connect to IBM Database Server but query execution is throwing SQL0805N error, run below commnads to fix the package related issues:
+```
+cd .../ibm_db/installer
+source setenv.sh
+db2cli bind $IBM_DB_HOME/bnd/@db2cli.lst -database <dbname>:<hostname>:<port> -user <dbuser> -passwd <passwd> -options "grant public action replace blocking no"
+```
+
+If above command prints 0 errors at end, then you can proceed to run query. If getting non-zero error, share the output of above `db2cli bind` command along with query execution error via a new issue.
+
 ## Need Help?
 --------------
 
