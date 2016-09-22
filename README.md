@@ -88,6 +88,9 @@ Alternatively, if you have any other DB2 client with CLP, you can bind packages 
 ```
 db2 bind .../sqllib/bnd/@ddcsmvs.lst action replace grant public sqlerror continue messages msg.txt
 ```
+Note: "db2cli bind" command print the logs on output prompt, so you need to redirect output to some file to capture it. 
+    To capture logs of "db2 bind" command, you need to use `messages` option as in above example.
+
 
 ## Need Help?
 --------------
