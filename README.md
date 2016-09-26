@@ -684,7 +684,17 @@ Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2.
  - [test-blob-file.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-file.js) - To insert an image file and large text file directly to database without reading it by application.
 
 ----------
+## CALL Statement
 
+* If stored procedure has any OUT or INOUT parameter, always call it with 
+parmeter markers only. i.e. pass the input values using bind params.
+
+* Pass the Bind Params as objects only.
+
+* [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using conn.querySync().
+
+* [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using conn.query().
+--------
 
 ## Build Options
 ------------------

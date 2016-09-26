@@ -3,10 +3,10 @@ var common = require("./common")
   , assert = require("assert");
 
 //test setting connectTimeout via the constructor works
-var db = new odbc.Database({ connectTimeout : 5 })
+var db = new odbc.Database({ connectTimeout : 10 })
 
 db.open(common.connectionString, function(err) {
-  assert.equal(db.conn.connectTimeout, 5);
+  assert.equal(db.conn.connectTimeout, 10);
   
   assert.equal(err, null);
   assert.equal(db.connected, true);

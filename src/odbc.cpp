@@ -842,54 +842,55 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
 
     if (value->IsArray()) 
     {
+      Local<Value> val;
       Local<Array> paramArray = Local<Array>::Cast(value);
       int arrlen = paramArray->Length();
-      for (int j = 0; j < arrlen; j++)
+      if(arrlen < 4)
       {
-          Local<Value> val = paramArray->Get(j);
-          switch(j)
-          {
-              case 0:
-                  if(val->IsInt32())
-                      params[i].paramtype = val->IntegerValue();
-                  break;
-              case 1:
-                  if(val->IsInt32())
-                      params[i].c_type = val->IntegerValue();
-                  else
-                      params[i].c_type = SQL_C_CHAR;
-                  break;
-              case 2:
-                  if(val->IsInt32())
-                      params[i].type = val->IntegerValue();
-                  else
-                      params[i].type = SQL_CHAR;
-                  break;
-              case 3:
-                  if (val->IsNull()) {
-                      GetNullParam(&params[i], i+1);
-                  }
-                  else if (val->IsInt32()) {
-                      GetInt32Param(val, &params[i], i+1);
-                  }
-                  else if (val->IsNumber()) {
-                      GetNumberParam(val, &params[i], i+1);
-                  }
-                  else if (val->IsBoolean()) {
-                      GetBoolParam(val, &params[i], i+1);
-                  }
-                  else
-                  {
-                      GetStringParam(val, &params[i], i+1);
-                  }
-                  break;
-              case 4:
-                  if(val->IsInt32())
-                      params[i].buffer_length = val->IntegerValue();
-                  break;
-              default:
-                  break;
-          }
+          DEBUG_PRINTF("ODBC::GetParametersFromArray - arrlen = %i\n", arrlen);
+          Nan::ThrowError("Wrong param format!");
+          return params;
+      }
+
+      val =  paramArray->Get(0); 
+      if(val->IsInt32())
+          params[i].paramtype = val->IntegerValue();
+
+      val =  paramArray->Get(1); 
+      if(val->IsInt32())
+          params[i].c_type = val->IntegerValue();
+      else
+          params[i].c_type = SQL_C_CHAR;
+
+      val =  paramArray->Get(2); 
+      if(val->IsInt32())
+          params[i].type = val->IntegerValue();
+      else
+          params[i].type = SQL_CHAR;
+
+      if(arrlen == 5)
+      {
+          val =  paramArray->Get(4); 
+          if(val->IsInt32())
+              params[i].buffer_length = val->IntegerValue();
+      }
+
+      val =  paramArray->Get(3); 
+      if (val->IsNull()) {
+          GetNullParam(&params[i], i+1);
+      }
+      else if (val->IsInt32()) {
+          GetInt32Param(val, &params[i], i+1);
+      }
+      else if (val->IsNumber()) {
+          GetNumberParam(val, &params[i], i+1);
+      }
+      else if (val->IsBoolean()) {
+          GetBoolParam(val, &params[i], i+1);
+      }
+      else
+      {
+          GetStringParam(val, &params[i], i+1);
       }
     }
     else if (value->IsString()) {
@@ -914,8 +915,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
 void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 {
     Local<String> string = value->ToString();
-    int length = param->buffer_length;
-    if(!length) length = string->Length();
+    int length = string->Length();
+    int bufflen = 0;
       
     param->length        = SQL_NTS;
     if(!param->c_type || (param->c_type == SQL_CHAR))
@@ -924,13 +925,17 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if(param->c_type != SQL_C_BINARY)
-        param->buffer_length = (length * sizeof(uint16_t)) + sizeof(uint16_t);
+        bufflen = (length * sizeof(uint16_t)) + sizeof(uint16_t);
     #else
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
     if(param->c_type != SQL_C_BINARY)
-        param->buffer_length = string->Utf8Length() + 1;
+        bufflen = string->Utf8Length() + 1;
     #endif
+    if(bufflen < param->buffer_length && (param->paramtype % 2 == 0))
+        bufflen = param->buffer_length;
+    param->buffer_length = bufflen;
+
     if(param->c_type == SQL_C_BINARY || param->paramtype == FILE_PARAM)
     {
         param->buffer_length = length;
