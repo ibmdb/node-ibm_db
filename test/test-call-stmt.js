@@ -3,17 +3,18 @@
 var common = require("./common")
   , ibmdb = require("../")
   , assert = require("assert")
-  , cn = common.connectionString;
+  , cn = common.connectionString
+  , schema = common.connectionObject.CURRENTSCHEMA;
 
-var query = "CaLL newton.proc1(?, ?, ?)";
-ibmdb.open(cn, function (err, conn) 
+var query = "CaLL " + schema + ".proc1(?, ?, ?)";
+ibmdb.open(cn, function (err, conn)
 {
     if(err) return console.log(err);
     try {
-          conn.querySync("drop procedure newton.proc1");
+          conn.querySync("drop procedure " + schema + ".proc1");
     } catch(e) {}
 
-    conn.querySync("create or replace procedure newton.proc1 " +
+    conn.querySync("create or replace procedure " + schema + ".proc1 " +
                    "(IN v1 INTEGER, OUT v2 INTEGER, INOUT v3 VARCHAR(20)) " +
                    "BEGIN set v2 = v1 + 1; set v3 = 'verygood'; END");
     var param1 = {ParamType:"INPUT", DataType:1, Data:3};
@@ -24,12 +25,11 @@ ibmdb.open(cn, function (err, conn)
     assert.deepEqual(result, [ 4, 'verygood' ]);
     console.log("Output Parameters V2 = ", result[0], ", V3 = ", result[1]);
 
-    conn.querySync("drop procedure newton.proc1");
-    conn.querySync("create or replace procedure newton.proc2 (IN v1 INTEGER) BEGIN END");
-    result = conn.querySync("call newton.proc2(?)", [param1]);
+    conn.querySync("drop procedure " + schema + ".proc1");
+    conn.querySync("create or replace procedure " + schema + ".proc2 (IN v1 INTEGER) BEGIN END");
+    result = conn.querySync("call " + schema + ".proc2(?)", [param1]);
     assert.equal(result, true);
-    conn.querySync("drop procedure newton.proc2");
+    conn.querySync("drop procedure " + schema + ".proc2");
     conn.closeSync();
     console.log('done');
 });
-
