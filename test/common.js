@@ -32,8 +32,9 @@ if (process.env.IBM_DB_SCHEMA !== 'undefined') {
 
 for(key in exports.connectionObject) 
 {
-    exports.connectionString = exports.connectionString + key + "=" +
-                               exports.connectionObject[key] + ";" ;
+    if(exports.connectionObject[key] != undefined)
+      exports.connectionString = exports.connectionString + key + "=" +
+                                 exports.connectionObject[key] + ";" ;
 }
 
 //if (process.argv.length === 3) {
