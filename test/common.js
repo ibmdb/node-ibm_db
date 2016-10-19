@@ -27,9 +27,10 @@ exports.connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || exports.conne
 
 //checks if schema is defined
 if (process.env.IBM_DB_SCHEMA !== 'undefined') {
-    exports.connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA || exports.connectionObject.CURRENTSCHEMA = "newton";
+    exports.connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA || exports.connectionObject.CURRENTSCHEMA;
+} else {
+  exports.connectionObject.CURRENTSCHEMA = "newton" || exports.connectionObject.CURRENTSCHEMA;
 }
-
 for(key in exports.connectionObject) 
 {
     if(exports.connectionObject[key] != undefined)
