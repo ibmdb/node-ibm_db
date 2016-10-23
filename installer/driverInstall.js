@@ -20,7 +20,7 @@ var installerfileURL;
 
 if (arch !== 'x64' && (platform === 'darwin' || platform === 'win32')) {
     console.log('32bit', (platform === 'darwin' ? 'Mac OS' : 'Windows'), 'not supported, exiting...');
-    return process.exit(1);
+    process.exit(1);
 }
 
 var fstream = require('fstream');
