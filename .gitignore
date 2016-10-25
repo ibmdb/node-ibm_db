@@ -4,5 +4,3 @@ node_modules
 deps
 defect
 .DS_Store
-build.zip
-installer/*
