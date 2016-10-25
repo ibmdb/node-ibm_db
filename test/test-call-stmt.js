@@ -6,6 +6,7 @@ var common = require("./common")
   , cn = common.connectionString
   , schema = common.connectionObject.CURRENTSCHEMA;
 
+if(schema == undefined) schema = "NEWTON";
 var query = "CaLL " + schema + ".proc1(?, ?, ?)";
 ibmdb.open(cn, function (err, conn)
 {
