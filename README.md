@@ -145,10 +145,10 @@ var Database = require("ibm_db").Database
 15. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
 16. [.debug(value)](#enableDebugLogs)
 
-*   [Connection Pooling APIs](#PoolAPIs)
-*   [bindingParameters](#bindParameters)
-*   [CALL Statement](#callStmt)
-*   [Build Options](#buildOptions)
+*   [**Connection Pooling APIs**](#PoolAPIs)
+*   [**bindingParameters**](#bindParameters)
+*   [**CALL Statement**](#callStmt)
+*   [**Build Options**](#buildOptions)
 
 
 ### <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
@@ -157,7 +157,8 @@ Open a connection to a database.
 
 * **connectionString** - The connection string for your database
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
-    loading of native ODBC library for each call of `.open`.
+    loading of native ODBC library for each call of `.open`. Also, can be used
+    to pass connectTimeout value.
 * **callback** - `callback (err, conn)`
 
 ```javascript
@@ -182,33 +183,39 @@ ibmdb.open(connStr, function (err, connection) {
 ```
 
 * **Secure Database Connection using SSL/TSL** - ibm_db supports secure connection to Database Server over SSL same as ODBC/CLI driver. If you have SSL Certificate from server or an CA signed certificate, just use it in connection string as below:
-```
+
+```javascript
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL;SSLServerCertificate=<cert.arm_file_path>;";
 ```
-You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in DB2 infocenter.
 
-### <a name="openSyncApi"></a> 2) .openSync(connectionString)
+You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+
+### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
 
 Synchronously open a connection to a database.
 
 * **connectionString** - The connection string for your database
+* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
+    loading of native ODBC library for each call of `.open`. Also, can be used
+    to pass connectTimeout value.
 
 ```javascript
 var ibmdb = require("ibm_db"),
 	cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 try {
-	var conn = ibmdb.openSync(connString);
-	conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
+      var option = { connectTimeout : 40 };// Connection Timeout after 40 seconds.
+      var conn = ibmdb.openSync(connString, option);
+      conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
 		if (err) {
 			console.log(err);
 		} else {
 		  console.log(rows);
 		}
 		conn.close();	
-	});
-} catch (e) {
-	console.log(e.message);
+      });
+    } catch (e) {
+      console.log(e.message);
 }
 ```
 
@@ -602,7 +609,7 @@ use Pool.open instead of [ibmdb.open](#openApi).
 2.  [.close(callback)](#closePoolApi)
 3.  [.init(N, connStr)](#initPoolApi)
 4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
-5.  [.setConnectTimeout(seconds)](setConnectTimeout)
+5.  [.setConnectTimeout(seconds)](#setConnectTimeout)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
@@ -662,7 +669,12 @@ Initialize `Pool` with N no of active connections using supplied connection stri
 * **N** - No of connections to be initialized.
 * **connStr** - The connection string for your database
 ```
-pool.init(5, connStr);
+var ret = pool.init(5, connStr);
+if(ret != true)
+{
+    console.log(ret);
+    return false;
+}
 
 pool.open(connStr, function(err, db) { ...
 ```
@@ -673,7 +685,8 @@ Number of maximum connection to database supported by current pool.
 
 * **N** - No of maximum connections in the pool.
 ```
-pool.setMaxPoolSize(8);
+pool.setMaxPoolSize(20);
+pool.open(connStr, function(err, db) { ...
 ```
 
 ### <a name="setConnectTimeout"></a> 5) .setConnectTimeout(seconds)
@@ -681,7 +694,10 @@ pool.setMaxPoolSize(8);
 No of seconds pool.open() will wait for a connection to be available if all connections of the pool is in use and maxPoolSize is reached. Post connectTimeout, pool.open() will return error message.
 ```
 pool.setConnectTimeout(50);
+pool.setMaxPoolSize(20);
+pool.open(connStr, function(err, db) { ...
 ```
+Check test file [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) to know usage of `.init, .setMaxPoolSize and .setConnectTimeout` APIs.
 
 ## <a name="bindParameters"></a>bindingParameters
 -------------------------
