@@ -48,7 +48,7 @@ var download_file_httpget = function(file_url) {
                 var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR,
                               'build\\Release\\odbc_bindings.node.0.12.7');
 				var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR,
-                              'build\\Release\\odbc_bindings.node.4.4.2');
+                              'build\\Release\\odbc_bindings.node.4.6.1');
                 fs.exists(ODBC_BINDINGS_V10, function() {
                   if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
                       fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
