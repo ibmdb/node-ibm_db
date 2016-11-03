@@ -132,18 +132,19 @@ var Database = require("ibm_db").Database
 2.  [.openSync(connectionString)](#openSyncApi)
 3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
 4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
-5.  [.close(callback)](#closeApi)
-6.  [.closeSync()](#closeSyncApi)
-7.  [.prepare(sql, callback)](#prepareApi)
-8.  [.prepareSync(sql)](#prepareSyncApi)
-9.  [.execute([bindingParameters], callback)](#executeApi)
-10. [.beginTransaction(callback)](#beginTransactionApi)
-11. [.beginTransactionSync()](#beginTransactionSyncApi)
-12. [.commitTransaction(callback)](#commitTransactionApi)
-13. [.commitTransactionSync()](#commitTransactionSyncApi)
-14. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-15. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-16. [.debug(value)](#enableDebugLogs)
+5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
+6.  [.close(callback)](#closeApi)
+7.  [.closeSync()](#closeSyncApi)
+8.  [.prepare(sql, callback)](#prepareApi)
+9.  [.prepareSync(sql)](#prepareSyncApi)
+10. [.execute([bindingParameters], callback)](#executeApi)
+11. [.beginTransaction(callback)](#beginTransactionApi)
+12. [.beginTransactionSync()](#beginTransactionSyncApi)
+13. [.commitTransaction(callback)](#commitTransactionApi)
+14. [.commitTransactionSync()](#commitTransactionSyncApi)
+15. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+16. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+17. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -216,7 +217,7 @@ try {
       });
     } catch (e) {
       console.log(e.message);
-}
+    }
 ```
 
 ### <a name="queryApi"></a> 3) .query(sqlQuery [, bindingParameters], callback)
@@ -264,8 +265,7 @@ Synchronously issue a SQL query to the database that is currently open.
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
 ibmdb.open(cn, function(err, conn){
 
@@ -273,10 +273,39 @@ ibmdb.open(cn, function(err, conn){
   var rows = conn.querySync("select * from customers fetch first 10 rows only");
 
   console.log(rows);
-})
+});
 ```
 
-### <a name="closeApi"></a> 5) .close(callback)
+### <a name="queryStreamApi"></a> 5) .queryStream(sqlQuery [, bindingParameters])
+
+Synchronously issue a SQL query to the database that is currently open and returns
+a Readable stream. Application can listen the events emmitted by returned stream
+and take action.
+
+* **sqlQuery** - The SQL query to be executed.
+* **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
+    any '?' characters in `sqlQuery`.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, conn)
+{
+    var stream = conn.queryStream("select 1 from sysibm.sysdummy1");
+
+    stream.once('data', function (result) {
+      console.log(result);
+    }).once('error', function (err) {
+      conn.closeSync();
+      throw err;
+    }).once('end', function () {
+      conn.close(function(){ console.log("done.") });
+    });
+});
+```
+
+### <a name="closeApi"></a> 6) .close(callback)
 
 Close the currently opened database.
 
@@ -284,8 +313,7 @@ Close the currently opened database.
 
 ```javascript
 var ibmdb = require("ibm_db")
-	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-	;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn, function (err, conn) {
 	if (err) {
@@ -300,14 +328,13 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-### <a name="closeSyncApi"></a> 6) .closeSync()
+### <a name="closeSyncApi"></a> 7) .closeSync()
 
 Synchronously close the currently opened database.
 
 ```javascript
 var ibmdb = require("ibm_db")()
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 //Blocks until the connection is open
 ibmdb.openSync(cn);
@@ -316,7 +343,7 @@ ibmdb.openSync(cn);
 ibmdb.closeSync();
 ```
 
-### <a name="prepareApi"></a> 7) .prepare(sql, callback)
+### <a name="prepareApi"></a> 8) .prepare(sql, callback)
 
 Prepare a statement for execution.
 
@@ -327,8 +354,7 @@ Returns a `Statement` object via the callback
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn,function(err,conn){
   conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
@@ -350,7 +376,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="prepareSyncApi"></a> 8) .prepareSync(sql)
+### <a name="prepareSyncApi"></a> 9) .prepareSync(sql)
 
 Synchronously prepare a statement for execution.
 
@@ -360,8 +386,7 @@ Returns a `Statement` object
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn,function(err,conn){
   var stmt = conn.prepareSync("insert into hits (col1, col2) VALUES (?, ?)");
@@ -376,7 +401,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="executeApi"></a> 9) .execute([bindingParameters], callback)
+### <a name="executeApi"></a> 10) .execute([bindingParameters], callback)
 
 Execute a prepared statement.
 
@@ -387,8 +412,7 @@ Returns a `Statement` object via the callback
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn,function(err,conn){
   conn.querySync("create table mytab (id int, photo BLOB(30K))");
@@ -414,17 +438,17 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="beginTransactionApi"></a> 10) .beginTransaction(callback)
+### <a name="beginTransactionApi"></a> 11) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 11) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 12) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 12) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 13) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -432,8 +456,7 @@ Commit a transaction
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn, function(err,conn) {
 
@@ -462,14 +485,13 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 13) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 14) .commitTransactionSync()
 
 Synchronously commit a transaction
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn, function(err,conn) {
 
@@ -492,7 +514,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 14) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 15) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -500,8 +522,7 @@ Rollback a transaction
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn, function(err,conn) {
 
@@ -530,14 +551,13 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 15) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 16) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-  ;
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn, function(err,conn) {
 
@@ -560,7 +580,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 16) .debug(value)
+### <a name="enableDebugLogs"></a> 17) .debug(value)
 
 Enable console logs.
 
@@ -568,9 +588,9 @@ Enable console logs.
 
 ```javascript
 var ibmdb = require("ibm_db")
-  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.debug(true);  // Enable console logs.
+ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
 [ibmdb.open](#openApi)(cn, function (err, connection) {
     if (err)
@@ -621,8 +641,7 @@ Get a `Database` instance which is already connected to `connectionString`
 ```javascript
 var Pool = require("ibm_db").Pool
 	, pool = new Pool()
-	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-	;
+    , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 pool.open(cn, function (err, db) {
 	if (err) {
@@ -645,8 +664,7 @@ Close all connections in the `Pool` instance
 ```javascript
 var Pool = require("ibm_db").Pool
 	, pool = new Pool()
-	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
-	;
+    , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 pool.open(cn, function (err, db) {
 	if (err) {
