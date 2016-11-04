@@ -36,7 +36,7 @@ if (platform === 'win32') {
         var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 'build\\Release\\odbc_bindings.node');
         var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR, 'build\\Release\\odbc_bindings.node.0.10.36');
         var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR, 'build\\Release\\odbc_bindings.node.0.12.7');
-        var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR, 'build\\Release\\odbc_bindings.node.4.4.2');
+        var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR, 'build\\Release\\odbc_bindings.node.4.6.1');
         if (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
             fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
             fs.unlinkSync(ODBC_BINDINGS_V12);
