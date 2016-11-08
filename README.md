@@ -867,8 +867,10 @@ var eio = require('eio');
 eio.setMinParallel(threadCount);
 ```
 
-## Contributors
+## Contribution
 -----------------
+
+[Contribution Guidelines for Contributing to the node-ibm_db](https://github.com/ibmdb/node-ibm_db/blob/master/cla_docs/Contributions.md)
 
 * Dan VerWeire (dverweire@gmail.com)
 * Lee Smith (notwink@gmail.com)
