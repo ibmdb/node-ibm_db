@@ -224,9 +224,11 @@ try {
 
 Issue an asynchronous SQL query to the database which is currently open.
 
-* **sqlQuery** - The SQL query to be executed.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are _OPTIONAL_.
+
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
-    any '?' characters in `sqlQuery`.
+    any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
+
 * **callback** - `callback (err, rows, moreResultSets)`
 
 ```javascript
@@ -259,7 +261,8 @@ ibmdb.open(cn, function (err, conn) {
 
 Synchronously issue a SQL query to the database that is currently open.
 
-* **sqlQuery** - The SQL query to be executed.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are optional.
+
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
 
@@ -282,7 +285,8 @@ Synchronously issue a SQL query to the database that is currently open and retur
 a Readable stream. Application can listen the events emmitted by returned stream
 and take action.
 
-* **sqlQuery** - The SQL query to be executed.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are optional.
+
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
 
