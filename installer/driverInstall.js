@@ -69,6 +69,7 @@ var download_file_httpget = function(file_url) {
                   }
                 });
             });
+            removeUsedPackages();
         } else {
             console.log('Windows 32 bit not supported. Please use an ' +
                         'x64 architecture.');
@@ -253,12 +254,12 @@ var download_file_httpget = function(file_url) {
         else 
         {
             var targz = require('targz');
-            var compress = targz.decompress({src: INSTALLER_FILE, dest:  DOWNLOAD_DIR}, function(err){
-                if(err) {
-                    console.log(err);
-                    process.exit(1);
-                }
-		else {
+            var compress = targz.decompress({src: INSTALLER_FILE, dest: DOWNLOAD_DIR}, function(err){
+              if(err) {
+                console.log(err);
+                process.exit(1);
+              }
+              else {
                 console.log('Download and extraction of DB2 ODBC ' +
                             'CLI Driver completed successfully ...');
                 console.log(license_agreement);
@@ -266,8 +267,8 @@ var download_file_httpget = function(file_url) {
                 process.env.IBM_DB_HOME = IBM_DB_HOME;
                 buildBinary(true);
                 removeWinBuildArchive();
-            	}
-	    });
+              }
+	        });
         }
     }
 
@@ -303,9 +304,27 @@ var download_file_httpget = function(file_url) {
                     }
                 });
             }
+            removeUsedPackages();
         });
     } //buildBinary
     
+    function removeUsedPackages()
+    {
+        var packages = ["nan", "fstream", "unzip", "targz"];
+        for( var index = 0; index < packages.length; index++ )
+        {
+          var command = "npm uninstall " + packages[index];
+          var childProcess = exec(command, function (error, stdout, stderr) {
+            console.log(stdout);
+            if (error !== null) {
+                console.log(error);
+                // Ignore error and continue to remove other packages.
+                // Installation of ibm_db should not fail due to such errors.
+            }
+          });
+        }
+    }
+
     function removeWinBuildArchive() 
     {
         var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
