@@ -18,12 +18,12 @@ ibmdb.open(cn, function (err, conn)
     conn.querySync("create or replace procedure " + schema + ".proc1 " +
                    "(IN v1 INTEGER, OUT v2 INTEGER, INOUT v3 VARCHAR(20)) " +
                    "BEGIN set v2 = v1 + 1; set v3 = 'verygood'; END");
-    var param1 = {ParamType:"INPUT", DataType:1, Data:3};
+    var param1 = {ParamType:"INPUT", DataType:1, Data:0};
     var param2 = {ParamType:"OUTPUT", DataType:1, Data:0};
     var param3 = {ParamType:"INOUT", DataType:1, Data:"abc", Length:30};
 
     result = conn.querySync(query, [param1, param2, param3]);
-    assert.deepEqual(result, [ 4, 'verygood' ]);
+    assert.deepEqual(result, [ 1, 'verygood' ]);
     console.log("Output Parameters V2 = ", result[0], ", V3 = ", result[1]);
 
     conn.querySync("drop procedure " + schema + ".proc1");
