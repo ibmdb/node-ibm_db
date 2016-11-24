@@ -48,8 +48,6 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_GETTER(ConnectedGetter);
     static NAN_GETTER(ConnectTimeoutGetter);
     static NAN_SETTER(ConnectTimeoutSetter);
-    static NAN_GETTER(LoginTimeoutGetter);
-    static NAN_SETTER(LoginTimeoutSetter);
 
     //async methods
     static NAN_METHOD(BeginTransaction);
@@ -108,7 +106,6 @@ class ODBCConnection : public Nan::ObjectWrap {
     bool connected;
     int statements;
     int connectTimeout;
-	SQLUINTEGER loginTimeout;
 };
 
 struct create_statement_work_data {

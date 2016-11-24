@@ -56,7 +56,6 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   //Nan::SetAccessor(instance_template, Nan::New("mode").ToLocalChecked(), ModeGetter, ModeSetter);
   Nan::SetAccessor(instance_template, Nan::New("connected").ToLocalChecked(), ConnectedGetter);
   Nan::SetAccessor(instance_template, Nan::New("connectTimeout").ToLocalChecked(), ConnectTimeoutGetter, ConnectTimeoutSetter);
-  Nan::SetAccessor(instance_template, Nan::New("loginTimeout").ToLocalChecked(), LoginTimeoutGetter, LoginTimeoutSetter);
   
   // Prototype Methods
   Nan::SetPrototypeMethod(constructor_template, "open", Open);
@@ -153,24 +152,6 @@ NAN_SETTER(ODBCConnection::ConnectTimeoutSetter) {
   }
 }
 
-NAN_GETTER(ODBCConnection::LoginTimeoutGetter) {
-  Nan::HandleScope scope;
-
-  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-
-  info.GetReturnValue().Set(Nan::New<Number>(obj->loginTimeout));
-}
-
-NAN_SETTER(ODBCConnection::LoginTimeoutSetter) {
-  Nan::HandleScope scope;
-
-  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
-  if (value->IsNumber()) {
-    obj->connectTimeout = value->Int32Value();
-  }
-}
-
 /*
  * Open
  * 
@@ -227,7 +208,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   ODBCConnection* self = data->conn->self();
 
-  DEBUG_PRINTF("ODBCConnection::UV_Open : connectTimeout=%i, loginTimeout = %i\n", *&(self->connectTimeout), *&(self->loginTimeout));
+  DEBUG_PRINTF("ODBCConnection::UV_Open : connectTimeout=%i \n", *&(self->connectTimeout));
   
   uv_mutex_lock(&ODBC::g_odbcMutex); 
   
@@ -339,7 +320,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   //get reference to the connection object
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
  
-  DEBUG_PRINTF("ODBCConnection::OpenSync : connectTimeout=%i, loginTimeout = %i\n", *&(conn->connectTimeout), *&(conn->loginTimeout));
+  DEBUG_PRINTF("ODBCConnection::OpenSync : connectTimeout=%i\n", *&(conn->connectTimeout));
 
   Local<Value> objError;
   SQLRETURN ret;
