@@ -3,18 +3,19 @@ var common = require("./common")
     , assert = require("assert")
     , cn = common.connectionString;
 
-ibmdb.open(cn, function(err, conn) {
+ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
   if(err) return console.log(err);
 
   try{
     conn.querySync("drop table mytab1");
     } catch (e) {}
   conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
-  conn.query('select 1 from sysibm.sysdummy1', [23], function (err, data) {
+  conn.query('select 1, 4, 5 from sysibm.sysdummy1;' +
+             'select 2,6 from sysibm.sysdummy1;'+
+             'select 3,7,8 from sysibm.sysdummy1', [23], function (err, data) {
     if (err) console.log(err);
     else {
       console.log( data);
-      assert(data, [ { '1': 1 } ]);
     }
   });
   conn.prepare("insert into mytab1 VALUES (?, ?)", function (err, stmt) {

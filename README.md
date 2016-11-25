@@ -207,7 +207,7 @@ var ibmdb = require("ibm_db"),
 try {
       var option = { connectTimeout : 40 };// Connection Timeout after 40 seconds.
       var conn = ibmdb.openSync(connString, option);
-      conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
+      conn.query("select * from customers fetch first 10 rows only", function (err, rows) {
 		if (err) {
 			console.log(err);
 		} else {
@@ -243,17 +243,15 @@ ibmdb.open(cn, function (err, conn) {
 
 	//we now have an open connection to the database
 	//so lets get some data
-	conn.query("select * from customers fetch first 10 rows only", function (err, rows, moreResultSets) {
-		if (err) {
-			console.log(err);
-		} else {
-		
-		  console.log(rows);
-		}
-
-		//if moreResultSets is truthy, then this callback function will be called
-		//again with the next set of rows.
-	});
+    conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;select 3 from sysibm.sysdummy1", function (err, rows, moreResultSets) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(rows);
+        }
+        //if moreResultSets is truthy, then this callback function will be called
+        //again with the next set of rows.
+    });
 });
 ```
 
@@ -325,7 +323,6 @@ ibmdb.open(cn, function (err, conn) {
 	}
 	
 	//we now have an open connection to the database
-	
 	conn.close(function (err) {
 		console.log("the database connection is now closed");
 	});
