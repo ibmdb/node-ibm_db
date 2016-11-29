@@ -138,13 +138,14 @@ var Database = require("ibm_db").Database
 8.  [.prepare(sql, callback)](#prepareApi)
 9.  [.prepareSync(sql)](#prepareSyncApi)
 10. [.execute([bindingParameters], callback)](#executeApi)
-11. [.beginTransaction(callback)](#beginTransactionApi)
-12. [.beginTransactionSync()](#beginTransactionSyncApi)
-13. [.commitTransaction(callback)](#commitTransactionApi)
-14. [.commitTransactionSync()](#commitTransactionSyncApi)
-15. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-16. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-17. [.debug(value)](#enableDebugLogs)
+11. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+12. [.beginTransaction(callback)](#beginTransactionApi)
+13. [.beginTransactionSync()](#beginTransactionSyncApi)
+14. [.commitTransaction(callback)](#commitTransactionApi)
+15. [.commitTransactionSync()](#commitTransactionSyncApi)
+16. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+17. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+18. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -439,17 +440,50 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="beginTransactionApi"></a> 11) .beginTransaction(callback)
+### <a name="executeNonQueryApi"></a> 11) .executeNonQuery([bindingParameters], callback)
+
+Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
+
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **callback** - `callback (err, affectedRowCount)`
+
+It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1 via the callback function.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn,function(err,conn){
+  conn.querySync("create table mytab (id int, text varchar(30))");
+  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+    if (err) {
+      console.log(err);
+      return conn.closeSync();
+    }
+
+    //Bind and Execute the statment asynchronously
+    stmt.executeNonQuery([ 42, 'hello world' ], function (err, ret) {
+      if( err ) console.log(err);  
+      else console.log("Affected rows = " + ret);
+
+      //Close the connection
+	  conn.close(function(err){});
+    });
+  });
+});
+```
+
+### <a name="beginTransactionApi"></a> 12) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 12) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 13) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 13) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 14) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -486,7 +520,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 14) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 15) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -515,7 +549,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 15) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 16) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -552,7 +586,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 16) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 17) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -581,7 +615,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 17) .debug(value)
+### <a name="enableDebugLogs"></a> 18) .debug(value)
 
 Enable console logs.
 

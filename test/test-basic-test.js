@@ -25,9 +25,11 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
       return conn.closeSync();
     }
     //Bind and Execute the statment asynchronously
-    stmt.execute([42, 'bimal'], function (err, result) {
+    stmt.executeNonQuery([42, 'bimal'], function (err, ret) {
       if( err ) console.log(err);  
-      else result.closeSync();
+      //else ret.closeSync(); // call closeSync() for execute().
+      else console.log("Inserted row count = " + ret);
+      assert.equal(ret, 1);
       
       conn.prepare("select * from mytab1", function (err, stmt) {
         if(err) {
