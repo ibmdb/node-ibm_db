@@ -264,7 +264,7 @@ var download_file_httpget = function(file_url) {
                             'CLI Driver completed successfully ...');
                 console.log(license_agreement);
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
-                process.env.IBM_DB_HOME = IBM_DB_HOME;
+                process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
                 removeWinBuildArchive();
               }
