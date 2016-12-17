@@ -44,8 +44,8 @@
 
         [ 'OS == "mac" and target_arch =="x64" ',
           { 'xcode_settings': {'GCC_ENABLE_CPP_EXCEPTIONS': 'YES' },
-            'libraries' : ['-L$(IBM_DB_HOME)/lib ', '-ldb2'],
-            'include_dirs': ['$(IBM_DB_HOME)/include'],
+            'libraries' : ['-L"$(IBM_DB_HOME)/lib "', '-ldb2'],
+            'include_dirs': ['"$(IBM_DB_HOME)/include"'],
             'cflags' : ['-g']
           }],
 

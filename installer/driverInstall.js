@@ -254,7 +254,7 @@ var download_file_httpget = function(file_url) {
         else 
         {
             var targz = require('targz');
-            var compress = targz.decompress({src: INSTALLER_FILE, dest: DOWNLOAD_DIR}, function(err){
+            var compress = targz.decompress({src: INSTALLER_FILE, dest: "DOWNLOAD_DIR"}, function(err){
               if(err) {
                 console.log(err);
                 process.exit(1);
@@ -264,7 +264,7 @@ var download_file_httpget = function(file_url) {
                             'CLI Driver completed successfully ...');
                 console.log(license_agreement);
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
-                process.env.IBM_DB_HOME = IBM_DB_HOME;
+                process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
                 removeWinBuildArchive();
               }
@@ -274,7 +274,7 @@ var download_file_httpget = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-        var buildString = "node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME";
+        var buildString = "node-gyp configure build --IBM_DB_HOME=\"$IBM_DB_HOME\"";
         if(isDownloaded) {
             buildString = buildString + " --IS_DOWNLOADED=true";
         } else {
