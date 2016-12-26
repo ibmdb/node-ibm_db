@@ -836,7 +836,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   
   query_work_data* data = (query_work_data *)(req->data);
   Local<Array> sp_result = Nan::New<Array>();
-  int inoutParamCount = 0; // Non-zero tells its a SP with OUT param
+  int outParamCount = 0; // Non-zero tells its a SP with OUT param
 
   Nan::TryCatch try_catch;
 
@@ -846,11 +846,11 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   if (SQL_SUCCEEDED(data->result)) {
       for(int i = 0; i < data->paramCount; i++) {
           if(data->params[i].paramtype % 2 == 0) {
-              sp_result->Set(Nan::New(inoutParamCount), ODBC::GetOutputParameter(data->params[i]));
-              inoutParamCount++;
+              sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(data->params[i]));
+              outParamCount++;
           }
       }
-      DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : inoutParamCount=%i\n", inoutParamCount);
+      DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : outParamCount=%i\n", outParamCount);
   }
   if (data->result != SQL_ERROR && data->noResultObject) {
     //We have been requested to not create a result object
@@ -862,12 +862,12 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
     data->hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
-    DEBUG_PRINTF("Handle feed.\n");
+    DEBUG_PRINTF("Handle freed.\n");
     
     Local<Value> info[2];
     info[0] = Nan::Null();
-    if(inoutParamCount) info[1] = sp_result;
-    else info[1] = Nan::True();
+    if(outParamCount) info[1] = sp_result;
+    else info[1] = Nan::Null();
     
     DEBUG_PRINTF("Calling callback function...\n");
     data->cb->Call(2, info);
@@ -890,8 +890,10 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
       info[0] = Nan::Null();
     }
     info[1] = js_result;
+    if(outParamCount) info[2] = sp_result; // Must a CALL stmt
+    else info[2] = Nan::Null();
     
-    data->cb->Call(2, info);
+    data->cb->Call(3, info);
   }
   
   DEBUG_PRINTF("After callback function executed.\n");
@@ -940,8 +942,9 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   SQLRETURN ret;
   SQLHSTMT hSTMT;
   int paramCount = 0;
-  int inoutParamCount = 0; // Non-zero tells its a SP.
+  int outParamCount = 0; // Non-zero tells its a SP.
   Local<Array> sp_result = Nan::New<Array>();
+  Local<Array> resultset = Nan::New<Array>();
   bool noResultObject = false;
   
   //Check arguments for different variations of calling this function
@@ -1014,6 +1017,10 @@ NAN_METHOD(ODBCConnection::QuerySync) {
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (obj->Has(optionNoResultsKey) && obj->Get(optionNoResultsKey)->IsBoolean()) {
         noResultObject = obj->Get(optionNoResultsKey)->ToBoolean()->Value();
+        DEBUG_PRINTF("ODBCConnection::QuerySync - under if noResultObject=%i\n", noResultObject);
+      }
+      else {
+        noResultObject = false;
       }
     }
     else {
@@ -1032,7 +1039,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
                   conn->m_hDBC, 
                   &hSTMT );
 
-  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%i\n", hSTMT);
+  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%i, noResultObject=%i\n", hSTMT, noResultObject);
   //check to see if should excute a direct or a parameter bound query
   if (!SQL_SUCCEEDED(ret)) {
     //We'll check again later
@@ -1058,8 +1065,8 @@ NAN_METHOD(ODBCConnection::QuerySync) {
         if (SQL_SUCCEEDED(ret)) {
           for(int i = 0; i < paramCount; i++) { // For stored Procedure CALL
             if(params[i].paramtype % 2 == 0) {
-              sp_result->Set(Nan::New(inoutParamCount), ODBC::GetOutputParameter(params[i]));
-              inoutParamCount++;
+              sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(params[i]));
+              outParamCount++;
             }
           }
         }
@@ -1093,10 +1100,15 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
     hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
-    if(inoutParamCount) // It is a CALL statement with INOUT or OUTPUT parameter.
-        info.GetReturnValue().Set(sp_result);
-    else
-        info.GetReturnValue().Set(Nan::True());
+
+    if( outParamCount ) // Its a CALL stmt with OUT params.
+    { // Return an array with outparams as second element.
+      resultset->Set(0, Nan::Null());
+      resultset->Set(1, sp_result);
+      info.GetReturnValue().Set(resultset);
+    } else {
+      info.GetReturnValue().Set(Nan::Null());
+    }
   }
   else {
     Local<Value> result[4];
@@ -1109,7 +1121,14 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     
     Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, result);
 
-    info.GetReturnValue().Set(js_result);
+    if( outParamCount ) // Its a CALL stmt with OUT params.
+    { // Return an array with outparams as second element.
+      resultset->Set(0, js_result);
+      resultset->Set(1, sp_result);
+      info.GetReturnValue().Set(resultset);
+    } else {
+      info.GetReturnValue().Set(js_result);
+    }
   }
 }
 

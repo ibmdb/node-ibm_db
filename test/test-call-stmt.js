@@ -29,7 +29,7 @@ ibmdb.open(cn, function (err, conn)
     conn.querySync("drop procedure " + schema + ".proc1");
     conn.querySync("create or replace procedure " + schema + ".proc2 (IN v1 INTEGER) BEGIN END");
     result = conn.querySync("call " + schema + ".proc2(?)", [param1]);
-    assert.equal(result, true);
+    assert.deepEqual(result, []);
     conn.querySync("drop procedure " + schema + ".proc2");
     conn.closeSync();
     console.log('done');

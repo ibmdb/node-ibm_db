@@ -31,7 +31,6 @@ ibmdb.open(cn, function (err, conn)
             console.log("return value = ", result[0], result[1]);
         }
         conn.querySync("drop procedure " + schema + ".proc1");
-        conn.closeSync();
         assert.deepEqual(result, [ 4, 'verygood' ]);
     });
     conn.querySync("create or replace procedure " + schema + ".proc2 (IN v1 INTEGER) BEGIN END");
@@ -40,7 +39,7 @@ ibmdb.open(cn, function (err, conn)
         if(err) console.log(err);
         conn.querySync("drop procedure " + schema + ".proc2");
         conn.closeSync();
-        assert.equal(result, true);
+        assert.equal(result.length, 0);
         console.log('done');
     });
 });

@@ -230,7 +230,7 @@ Issue an asynchronous SQL query to the database which is currently open.
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
 
-* **callback** - `callback (err, rows, moreResultSets)`
+* **callback** - `callback (err, rows)`
 
 ```javascript
 var ibmdb = require("ibm_db")
@@ -242,16 +242,17 @@ ibmdb.open(cn, function (err, conn) {
 		return console.log(err);
 	}
 
-	//we now have an open connection to the database
-	//so lets get some data
-    conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;select 3 from sysibm.sysdummy1", function (err, rows, moreResultSets) {
+	// we now have an open connection to the database, so lets get some data.
+	// Execute multiple query and get multiple result sets.
+    // In case of multiple resultset, query will return an array of result sets.
+    conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
+               "select 3 from sysibm.sysdummy1", function (err, rows) 
+    {
         if (err) {
             console.log(err);
         } else {
-            console.log(rows);
+            console.log(rows); // rows = [ [ { '1': 1 } ], [ { '1': 2 } ], [ { '1': 3 } ] ]
         }
-        //if moreResultSets is truthy, then this callback function will be called
-        //again with the next set of rows.
     });
 });
 ```
@@ -260,7 +261,7 @@ ibmdb.open(cn, function (err, conn) {
 
 Synchronously issue a SQL query to the database that is currently open.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are optional.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. If noResults is true for CALL statement, querySync returns only OutParams. "sql" field is mandatory in Object, others are optional.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -284,7 +285,7 @@ Synchronously issue a SQL query to the database that is currently open and retur
 a Readable stream. Application can listen the events emmitted by returned stream
 and take action.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are optional.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. "sql" field is mandatory in Object, others are optional.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -805,9 +806,13 @@ parmeter markers only. i.e. pass the input values using bind params.
 
 * Pass the Bind Params as objects only.
 
+* If SP has result set to return, it will be returned in the array after out params. f.e. if SP has 2 out params and it returns 2 result set too, the result returned by query() or querySync() would be in the form [outValue1, outValue2, resultSet1, resultSet2]. Each resultset would be an array of row objects. 
+
 * [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using conn.querySync().
 
 * [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using conn.query().
+
+* [test-sp-resultset.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset.js) - Example using Out Params and Result Set.
 
 ## <a name="buildOptions"></a>Build Options
 

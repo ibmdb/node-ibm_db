@@ -463,6 +463,7 @@ void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
   data->result = SQLFetch(data->objResult->m_hSTMT);
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll, return code = %d\n", data->result);
  }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
@@ -477,6 +478,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+    DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll, colcount = %d, columns = %d\n", self->colCount, self->columns);
   }
   
   //check to see if the result set has columns
@@ -680,8 +682,8 @@ NAN_METHOD(ODBCResult::CloseSync) {
   
   ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
  
-  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i\n", 
-               closeOption, result->m_canFreeHandle);
+  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i, hSTMT=%i\n", 
+               closeOption, result->m_canFreeHandle,result->m_hSTMT);
   
   if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
     result->Free();
