@@ -73,10 +73,11 @@ ODBCStatement::~ODBCStatement() {
 }
 
 void ODBCStatement::Free() {
-  DEBUG_PRINTF("ODBCStatement::Free\n");
+  DEBUG_PRINTF("ODBCStatement::Free paramCount = %i, m_hSTMT =%X\n", paramCount, m_hSTMT);
   //if we previously had parameters, then be sure to free them
   if (paramCount) {
       FREE_PARAMS( params, paramCount ) ;
+      DEBUG_PRINTF("ODBCStatement::Free - Params Freed.\n");
   }
   
   if (m_hSTMT) {
@@ -84,11 +85,14 @@ void ODBCStatement::Free() {
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
     uv_mutex_unlock(&ODBC::g_odbcMutex);
-    
-    if (bufferLength > 0) {
-      free(buffer);
-    }
   }
+    
+  if (bufferLength > 0) {
+      if(buffer) free(buffer);
+      buffer = NULL;
+      bufferLength = 0;
+  }
+  DEBUG_PRINTF("ODBCStatement::Free() Done.\n");
 }
 
 NAN_METHOD(ODBCStatement::New) {

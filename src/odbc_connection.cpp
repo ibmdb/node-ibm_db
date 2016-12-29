@@ -88,7 +88,7 @@ ODBCConnection::~ODBCConnection() {
 }
 
 void ODBCConnection::Free() {
-  DEBUG_PRINTF("ODBCConnection::Free\n");
+  DEBUG_PRINTF("ODBCConnection::Free m_hDBC = %i \n", m_hDBC);
   if (m_hDBC) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
@@ -255,6 +255,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
+    hStmt = (SQLHSTMT)NULL;
   }
 
   uv_mutex_unlock(&ODBC::g_odbcMutex);
@@ -385,6 +386,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
+    hStmt = (SQLHSTMT)NULL;
     
     conn->self()->connected = true;
     
@@ -451,7 +453,7 @@ void ODBCConnection::UV_Close(uv_work_t* req) {
   //on this connection
   
   conn->Free();
-  
+  conn->connected = false;
   data->result = 0;
 }
 

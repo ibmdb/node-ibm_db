@@ -67,7 +67,6 @@ void ODBCResult::Init(v8::Handle<Object> exports) {
 
 ODBCResult::~ODBCResult() {
   DEBUG_PRINTF("ODBCResult::~ODBCResult m_hSTMT=%x\n", m_hSTMT);
-    if(m_hSTMT)
   this->Free();
 }
 
@@ -85,6 +84,7 @@ void ODBCResult::Free() {
   if (bufferLength > 0) {
     bufferLength = 0;
     free(buffer);
+    buffer = NULL;
   }
   DEBUG_PRINTF("ODBCResult::Free() Done.\n");
 }
@@ -682,7 +682,7 @@ NAN_METHOD(ODBCResult::CloseSync) {
   
   ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
  
-  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i, hSTMT=%i\n", 
+  DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i, hSTMT=%X\n", 
                closeOption, result->m_canFreeHandle,result->m_hSTMT);
   
   if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
@@ -693,6 +693,7 @@ NAN_METHOD(ODBCResult::CloseSync) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
     SQLFreeStmt(result->m_hSTMT, SQL_CLOSE);
+    result->m_canFreeHandle = new bool(true);
   
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
@@ -700,6 +701,7 @@ NAN_METHOD(ODBCResult::CloseSync) {
     uv_mutex_lock(&ODBC::g_odbcMutex);
     
     SQLFreeStmt(result->m_hSTMT, closeOption);
+    result->m_canFreeHandle = new bool(true);
   
     uv_mutex_unlock(&ODBC::g_odbcMutex);
   }

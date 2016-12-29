@@ -46,18 +46,19 @@ using namespace node;
 #define FREE_PARAMS( params, count )                                 \
     Parameter prm;                                                   \
     for (int i = 0; i < count; i++) {                                \
-      if (prm = params[i], prm.buffer != NULL) {                     \
+      if (params, prm = params[i], prm.buffer != NULL) {             \
         switch (prm.c_type) {                                        \
           case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;   \
           case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;   \
           case SQL_C_BIT:     delete (bool    *)prm.buffer; break;   \
           case SQL_C_CHAR:                                           \
           case SQL_C_WCHAR:                                          \
-          default:            free(prm.buffer);             break;   \
+          default:     free(prm.buffer); prm.buffer = NULL; break;   \
         }                                                            \
       }                                                              \
     }                                                                \
-    free(params);                                                    \
+    if(params) free(params);                                         \
+    params = NULL;                                                   \
     count = 0;
 
 typedef struct {
