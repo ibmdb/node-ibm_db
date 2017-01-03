@@ -4,12 +4,12 @@
 
 var fs = require('fs');
 var url = require('url');
-var http = require('http');
+var http = require('https');
 var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
 
-var installerURL = 'http://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/';
+var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
@@ -31,7 +31,6 @@ var download_file_httpget = function(file_url) {
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
     
     if(platform == 'win32') {
-        
         if(arch == 'x64') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
             readStream = fs.createReadStream(BUILD_FILE);
@@ -220,7 +219,11 @@ var download_file_httpget = function(file_url) {
             }
             data.copy( buf, byteIndex );
             byteIndex += data.length;
+            process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
+            process.stdout.write("Downloaded " + (100.0 * byteIndex / fileLength).toFixed(2) + 
+                                 "% (" + byteIndex + " bytes)");
          }).on('end', function() {
+             console.log("\n");
              if( byteIndex != buf.length ) 
              {
                 console.log( "Error downloading IBM ODBC and CLI Driver from " +
@@ -254,7 +257,7 @@ var download_file_httpget = function(file_url) {
         else 
         {
             var targz = require('targz');
-            var compress = targz.decompress({src: INSTALLER_FILE, dest: "DOWNLOAD_DIR"}, function(err){
+            var compress = targz.decompress({src: INSTALLER_FILE, dest: DOWNLOAD_DIR}, function(err){
               if(err) {
                 console.log(err);
                 process.exit(1);
@@ -294,7 +297,7 @@ var download_file_httpget = function(file_url) {
             if(platform == 'darwin' && arch == 'x64') 
             {
                 // Run the install_name_tool
-                var nameToolCommand = "install_name_tool -change libdb2.dylib $IBM_DB_HOME/lib/libdb2.dylib ./build/Release/odbc_bindings.node"
+                var nameToolCommand = "install_name_tool -change libdb2.dylib $IBM_DB_HOME/lib/libdb2.dylib ./build/Release/odbc_bindings.node" ;
                 var nameToolCmdProcess = exec(nameToolCommand , 
                   function (error1, stdout1, stderr1) {
                     if (error1 !== null) {
@@ -341,7 +344,7 @@ var download_file_httpget = function(file_url) {
     {
         var options = {
              host: url.parse(installerfileURL).host,
-             port: 80,
+             port: 443,
              path: url.parse(installerfileURL).pathname
             };
         var proxyStr;
