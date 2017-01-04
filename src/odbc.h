@@ -45,21 +45,36 @@ using namespace node;
 // Free Bind Parameters 
 #define FREE_PARAMS( params, count )                                 \
     Parameter prm;                                                   \
-    for (int i = 0; i < count; i++) {                                \
-      if (params, prm = params[i], prm.buffer != NULL) {             \
-        switch (prm.c_type) {                                        \
-          case SQL_C_LONG:    delete (int64_t *)prm.buffer; break;   \
-          case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break;   \
-          case SQL_C_BIT:     delete (bool    *)prm.buffer; break;   \
-          case SQL_C_CHAR:                                           \
-          case SQL_C_WCHAR:                                          \
-          default:     free(prm.buffer); prm.buffer = NULL; break;   \
+    if(params != NULL ) {                                            \
+      for (int i = 0; i < count; i++) {                              \
+        if (prm = params[i], prm.buffer != NULL) {                   \
+          switch (prm.c_type) {                                      \
+            case SQL_C_LONG:    delete (int64_t *)prm.buffer; break; \
+            case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break; \
+            case SQL_C_BIT:     delete (bool    *)prm.buffer; break; \
+            case SQL_C_CHAR:                                         \
+            case SQL_C_WCHAR:                                        \
+            default:     free(prm.buffer); prm.buffer = NULL; break; \
+          }                                                          \
         }                                                            \
       }                                                              \
+      free(params);                                                  \
     }                                                                \
-    if(params) free(params);                                         \
     params = NULL;                                                   \
     count = 0;
+
+// two macros ensures that any macro used will be expanded 
+// before being stringified. #x gives string value of x.
+#define LINESTRING(x) #x
+#define LINENO(x) LINESTRING(x)
+// Check memory allocated successfully or not.
+#define MEMCHECK( buffer )                                           \
+  if (!buffer) {                                                     \
+    Nan::LowMemoryNotification();                                    \
+    Nan::ThrowError( "Could not allocate enough memory in ibm_db "   \
+                     "file " __FILE__ ":" LINENO(__LINE__) ".");     \
+    return;                                                          \
+  }
 
 typedef struct {
   unsigned char *name;
@@ -249,7 +264,7 @@ struct query_request {
   Local<External> VAR = Local<External>::Cast(info[I]);
 
 #define OPT_INT_ARG(I, VAR, DEFAULT)                                    \
-  int VAR;                                                              \
+  SQLUSMALLINT VAR;                                                     \
   if (info.Length() <= (I)) {                                           \
     VAR = (DEFAULT);                                                    \
   } else if (info[I]->IsInt32()) {                                      \

@@ -170,19 +170,23 @@ NAN_METHOD(ODBCConnection::Open) {
   
   //create a uv work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
  
   //allocate our worker data
   open_connection_work_data* data = (open_connection_work_data *) 
     calloc(1, sizeof(open_connection_work_data));
+  MEMCHECK( data ) ;
 
   data->connectionLength = connection->Length() + 1;
 
   //copy the connection string to the work data  
 #ifdef UNICODE
   data->connection = (uint16_t *) malloc(sizeof(uint16_t) * data->connectionLength);
+  MEMCHECK( data->connection ) ;
   connection->Write((uint16_t*) data->connection);
 #else
   data->connection = (char *) malloc(sizeof(char) * data->connectionLength);
+  MEMCHECK( data->connection ) ;
   connection->WriteUtf8((char*) data->connection);
 #endif
   
@@ -331,9 +335,11 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   
 #ifdef UNICODE
   uint16_t* connectionString = (uint16_t *) malloc(connectionLength * sizeof(uint16_t));
+  MEMCHECK( connectionString ) ;
   connection->Write(connectionString);
 #else
   char* connectionString = (char *) malloc(connectionLength);
+  MEMCHECK( connectionString ) ;
   connection->WriteUtf8(connectionString);
 #endif
   
@@ -424,9 +430,11 @@ NAN_METHOD(ODBCConnection::Close) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   close_connection_work_data* data = (close_connection_work_data *) 
     (calloc(1, sizeof(close_connection_work_data)));
+  MEMCHECK( data ) ;
 
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
@@ -571,10 +579,12 @@ NAN_METHOD(ODBCConnection::CreateStatement) {
     
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   //initialize our data
   create_statement_work_data* data = 
     (create_statement_work_data *) (calloc(1, sizeof(create_statement_work_data)));
+  MEMCHECK( data ) ;
 
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
@@ -673,8 +683,10 @@ NAN_METHOD(ODBCConnection::Query) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
+  MEMCHECK( data ) ;
 
   //Check arguments for different variations of calling this function
   if (info.Length() == 3) {
@@ -763,10 +775,12 @@ NAN_METHOD(ODBCConnection::Query) {
 #ifdef UNICODE
   data->sqlSize = (data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t);
   data->sql = (uint16_t *) malloc(data->sqlSize);
+  MEMCHECK( data->sql ) ;
   sql->Write((uint16_t *) data->sql);
 #else
   data->sqlSize = sql->Utf8Length() + 1;
   data->sql = (char *) malloc(data->sqlSize);
+  MEMCHECK( data->sql ) ;
   sql->WriteUtf8((char *) data->sql);
 #endif
 
@@ -1150,16 +1164,12 @@ NAN_METHOD(ODBCConnection::Tables) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   query_work_data* data = 
     (query_work_data *) calloc(1, sizeof(query_work_data));
+  MEMCHECK( data ) ;
   
-  if (!data) {
-    Nan::LowMemoryNotification();
-    Nan::ThrowError("Could not allocate enough memory");
-    return;
-  }
-
   data->sql = NULL;
   data->catalog = NULL;
   data->schema = NULL;
@@ -1171,9 +1181,11 @@ NAN_METHOD(ODBCConnection::Tables) {
   if (!catalog->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->catalog ) ;
     catalog->Write((uint16_t *) data->catalog);
 #else
     data->catalog = (char *) malloc(catalog->Length() + 1);
+    MEMCHECK( data->catalog ) ;
     catalog->WriteUtf8((char *) data->catalog);
 #endif
   }
@@ -1181,9 +1193,11 @@ NAN_METHOD(ODBCConnection::Tables) {
   if (!schema->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->schema ) ;
     schema->Write((uint16_t *) data->schema);
 #else
     data->schema = (char *) malloc(schema->Length() + 1);
+    MEMCHECK( data->schema ) ;
     schema->WriteUtf8((char *) data->schema);
 #endif
   }
@@ -1191,9 +1205,11 @@ NAN_METHOD(ODBCConnection::Tables) {
   if (!table->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->table ) ;
     table->Write((uint16_t *) data->table);
 #else
     data->table = (char *) malloc(table->Length() + 1);
+    MEMCHECK( data->table ) ;
     table->WriteUtf8((char *) data->table);
 #endif
   }
@@ -1201,9 +1217,11 @@ NAN_METHOD(ODBCConnection::Tables) {
   if (!type->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->type = (uint16_t *) malloc((type->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->type ) ;
     type->Write((uint16_t *) data->type);
 #else
     data->type = (char *) malloc(type->Length() + 1);
+    MEMCHECK( data->type ) ;
     type->WriteUtf8((char *) data->type);
 #endif
   }
@@ -1262,14 +1280,10 @@ NAN_METHOD(ODBCConnection::Columns) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   query_work_data* data = (query_work_data *) calloc(1, sizeof(query_work_data));
-  
-  if (!data) {
-    Nan::LowMemoryNotification();
-    Nan::ThrowError("Could not allocate enough memory");
-    return;
-  }
+  MEMCHECK( data ) ;
 
   data->sql = NULL;
   data->catalog = NULL;
@@ -1282,9 +1296,11 @@ NAN_METHOD(ODBCConnection::Columns) {
   if (!catalog->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->catalog = (uint16_t *) malloc((catalog->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->catalog ) ;
     catalog->Write((uint16_t *) data->catalog);
 #else
     data->catalog = (char *) malloc(catalog->Length() + 1);
+    MEMCHECK( data->catalog ) ;
     catalog->WriteUtf8((char *) data->catalog);
 #endif
   }
@@ -1292,9 +1308,11 @@ NAN_METHOD(ODBCConnection::Columns) {
   if (!schema->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->schema = (uint16_t *) malloc((schema->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->schema ) ;
     schema->Write((uint16_t *) data->schema);
 #else
     data->schema = (char *) malloc(schema->Length() + 1);
+    MEMCHECK( data->schema ) ;
     schema->WriteUtf8((char *) data->schema);
 #endif
   }
@@ -1302,9 +1320,11 @@ NAN_METHOD(ODBCConnection::Columns) {
   if (!table->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->table = (uint16_t *) malloc((table->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->table ) ;
     table->Write((uint16_t *) data->table);
 #else
     data->table = (char *) malloc(table->Length() + 1);
+    MEMCHECK( data->table ) ;
     table->WriteUtf8((char *) data->table);
 #endif
   }
@@ -1312,9 +1332,11 @@ NAN_METHOD(ODBCConnection::Columns) {
   if (!column->Equals(Nan::New("null").ToLocalChecked())) {
 #ifdef UNICODE
     data->column = (uint16_t *) malloc((column->Length() * sizeof(uint16_t)) + sizeof(uint16_t));
+    MEMCHECK( data->column ) ;
     column->Write((uint16_t *) data->column);
 #else
     data->column = (char *) malloc(column->Length() + 1);
+    MEMCHECK( data->column ) ;
     column->WriteUtf8((char *) data->column);
 #endif
   }
@@ -1399,15 +1421,12 @@ NAN_METHOD(ODBCConnection::BeginTransaction) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   query_work_data* data = 
     (query_work_data *) calloc(1, sizeof(query_work_data));
+  MEMCHECK( data ) ;
   
-  if (!data) {
-    Nan::LowMemoryNotification();
-    return Nan::ThrowError("Could not allocate enough memory");
-  }
-
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
@@ -1555,14 +1574,11 @@ NAN_METHOD(ODBCConnection::EndTransaction) {
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
   
   query_work_data* data = 
     (query_work_data *) calloc(1, sizeof(query_work_data));
-  
-  if (!data) {
-    Nan::LowMemoryNotification();
-    return Nan::ThrowError("Could not allocate enough memory");
-  }
+  MEMCHECK( data ) ;
   
   data->completionType = (rollback->Value()) 
     ? SQL_ROLLBACK
@@ -1681,7 +1697,7 @@ NAN_METHOD(ODBCConnection::SetIsolationLevel) {
     (SQLPOINTER) isolationLevel,
     SQL_NTS);
 
-  DEBUG_PRINTF("ODBCConnection::SetIsolationLevel isolationLevel=%d; ret=%d\n",
+  DEBUG_PRINTF("ODBCConnection::SetIsolationLevel isolationLevel=%i; ret=%d\n",
                isolationLevel, ret);
 
   //check how the transaction went

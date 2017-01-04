@@ -115,7 +115,7 @@ NAN_METHOD(ODBCStatement::New) {
   
   //initialze a buffer for this object
   stmt->buffer = (uint16_t *) malloc(stmt->bufferLength+2);
-  //TODO: make sure the malloc succeeded
+  MEMCHECK( stmt->buffer );
 
   //set the initial colCount to 0
   stmt->colCount = 0;
@@ -142,9 +142,11 @@ NAN_METHOD(ODBCStatement::Execute) {
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   execute_work_data* data = 
     (execute_work_data *) calloc(1, sizeof(execute_work_data));
+  MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
   
@@ -275,9 +277,11 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuery) {
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   execute_work_data* data = 
     (execute_work_data *) calloc(1, sizeof(execute_work_data));
+  MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
   
@@ -414,9 +418,11 @@ NAN_METHOD(ODBCStatement::ExecuteDirect) {
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   execute_direct_work_data* data = 
     (execute_direct_work_data *) calloc(1, sizeof(execute_direct_work_data));
+  MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
 
@@ -424,9 +430,11 @@ NAN_METHOD(ODBCStatement::ExecuteDirect) {
 
 #ifdef UNICODE
   data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  MEMCHECK( data->sql );
   sql->Write((uint16_t *) data->sql);
 #else
   data->sql = (char *) malloc(data->sqlLen +1);
+  MEMCHECK( data->sql );
   sql->WriteUtf8((char *) data->sql);
 #endif
 
@@ -580,10 +588,12 @@ NAN_METHOD(ODBCStatement::PrepareSync) {
 #ifdef UNICODE
   uint16_t *sql2;
   sql2 = (uint16_t *) malloc(sqlLen * sizeof(uint16_t));
+  MEMCHECK( sql2 );
   sql->Write(sql2);
 #else
   char *sql2;
   sql2 = (char *) malloc(sqlLen);
+  MEMCHECK( sql2 );
   sql->WriteUtf8(sql2);
 #endif
   
@@ -622,9 +632,11 @@ NAN_METHOD(ODBCStatement::Prepare) {
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   prepare_work_data* data = 
     (prepare_work_data *) calloc(1, sizeof(prepare_work_data));
+  MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
 
@@ -632,9 +644,11 @@ NAN_METHOD(ODBCStatement::Prepare) {
 
 #ifdef UNICODE
   data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
+  MEMCHECK( data->sql );
   sql->Write((uint16_t *) data->sql);
 #else
   data->sql = (char *) malloc(data->sqlLen +1);
+  MEMCHECK( data->sql );
   sql->WriteUtf8((char *) data->sql);
 #endif
   
@@ -787,9 +801,11 @@ NAN_METHOD(ODBCStatement::Bind) {
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   bind_work_data* data = 
     (bind_work_data *) calloc(1, sizeof(bind_work_data));
+  MEMCHECK( data );
 
   //if we previously had parameters, then be sure to free them
   //before allocating more

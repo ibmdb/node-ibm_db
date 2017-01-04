@@ -164,10 +164,12 @@ NAN_METHOD(ODBC::CreateConnection) {
   
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   //initialize our data
   create_connection_work_data* data = 
     (create_connection_work_data *) (calloc(1, sizeof(create_connection_work_data)));
+  MEMCHECK( data );
 
   data->cb = callback;
   data->dbo = dbo;
@@ -826,6 +828,11 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
   *paramCount = values->Length();
   
   Parameter* params = (Parameter *) malloc(*paramCount * sizeof(Parameter));
+  if( !params ) {
+      Nan::LowMemoryNotification();
+      Nan::ThrowError("Could not allocate enough memory for params in ODBC::GetParametersFromArray.");
+      return params;
+  }
   memset(params, '\0', *paramCount * sizeof(Parameter));
 
   for (int i = 0; i < *paramCount; i++) {
@@ -943,6 +950,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     }
     param->size          = param->buffer_length;
     param->buffer        = malloc(param->buffer_length);
+    MEMCHECK( param->buffer );
 
     if(param->paramtype == FILE_PARAM)
         string->WriteUtf8((char *) param->buffer);

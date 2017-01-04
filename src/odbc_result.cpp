@@ -121,7 +121,7 @@ NAN_METHOD(ODBCResult::New) {
   
   //initialze a buffer for this object
   objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength+2);
-  //TODO: make sure the malloc succeeded
+  MEMCHECK( objODBCResult->buffer );
 
   //set the initial colCount to 0
   objODBCResult->colCount = 0;
@@ -163,8 +163,10 @@ NAN_METHOD(ODBCResult::Fetch) {
   ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
+  MEMCHECK( data );
   
   Local<Function> cb;
    
@@ -413,8 +415,10 @@ NAN_METHOD(ODBCResult::FetchAll) {
   ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
   
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
+  MEMCHECK( data );
   
   Local<Function> cb;
   
