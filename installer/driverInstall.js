@@ -26,48 +26,54 @@ var download_file_httpget = function(file_url) {
     var installerfileURL;
     
     var fstream = require('fstream');
-    var unzip = require('unzip');
+    var unzipper = require('unzipper');
                 
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
     
     if(platform == 'win32') {
         if(arch == 'x64') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-            readStream = fs.createReadStream(BUILD_FILE);
-            writeStream = fstream.Writer(CURRENT_DIR);
 
+	    //Windows node binary names should update here. 
+	    var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+	    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
+	    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
+	    var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
+
+            /*
+	     * odbcBindingsNode will consist of the node binary-
+	     * file name according to the node version in the system.
+	     */
+	    var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V10 ||
+	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
+	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 || ODBC_BINDINGS ;
+
+            readStream = fs.createReadStream(BUILD_FILE);
+
+            /*
+	     * unzipper will parse the build.zip file content and
+	     * then it will check for the odbcBindingsNode
+	     * (node Binary), when it gets that binary file,
+	     * fstream.Writer will write the same node binary
+	     * but the name will be odbc_bindings.node, and the other
+	     * binary files and build.zip will be discarded.
+	     */
             readStream
-              .pipe(unzip.Parse())
-              .pipe(writeStream).on("unpipe", function () {
-                fs.unlinkSync(BUILD_FILE);
-                var ODBC_BINDINGS = path.resolve(CURRENT_DIR, 
-                              'build\\Release\\odbc_bindings.node');
-                var ODBC_BINDINGS_V10 = path.resolve(CURRENT_DIR,
-                              'build\\Release\\odbc_bindings.node.0.10.36');
-                var ODBC_BINDINGS_V12 = path.resolve(CURRENT_DIR,
-                              'build\\Release\\odbc_bindings.node.0.12.7');
-				var ODBC_BINDINGS_V4 = path.resolve(CURRENT_DIR,
-                              'build\\Release\\odbc_bindings.node.4.6.1');
-                fs.exists(ODBC_BINDINGS_V10, function() {
-                  if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
-                      fs.renameSync(ODBC_BINDINGS_V10, ODBC_BINDINGS);
-                      fs.unlinkSync(ODBC_BINDINGS_V12);
-                      fs.unlinkSync(ODBC_BINDINGS_V4);
-                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
-                      fs.renameSync(ODBC_BINDINGS_V12, ODBC_BINDINGS);
-                      fs.unlinkSync(ODBC_BINDINGS_V10);
-                      fs.unlinkSync(ODBC_BINDINGS_V4);
-                  } else if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) {
-                      fs.renameSync(ODBC_BINDINGS_V4, ODBC_BINDINGS);
-                      fs.unlinkSync(ODBC_BINDINGS_V10);
-                      fs.unlinkSync(ODBC_BINDINGS_V12);
-                  } else {
-                      fs.unlinkSync(ODBC_BINDINGS_V10);
-                      fs.unlinkSync(ODBC_BINDINGS_V12);
-                      fs.unlinkSync(ODBC_BINDINGS_V4);
-                  }
-                });
-            });
+              .pipe(unzipper.Parse())
+	      .on('entry', function (entry) {
+	        if(entry.path === odbcBindingsNode){
+		  entry.pipe(fstream.Writer(ODBC_BINDINGS));
+		}else {
+		  entry.autodrain();
+		}
+              })
+	      .on('error', function(e) {
+	        console.log('error',e);
+	      })
+	      .on('finish', function() {
+	        fs.unlinkSync(BUILD_FILE);
+	      });
+
             removeUsedPackages();
         } else {
             console.log('Windows 32 bit not supported. Please use an ' +
@@ -247,12 +253,25 @@ var download_file_httpget = function(file_url) {
         if(platform == 'win32') 
         {
             readStream = fs.createReadStream(INSTALLER_FILE);
-            writeStream = fstream.Writer(DOWNLOAD_DIR);
 
-            readStream.pipe(unzip.Parse()).pipe(writeStream);
-            console.log('Download and extraction of DB2 ODBC ' +
-                        'CLI Driver completed successfully ...');
-            console.log(license_agreement);
+            /* unzipper.Extract will extract the clidriver zipped-
+	     * file content to DOWNLOAD_DIR.
+	     */
+            var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
+
+            /* After successful closing of the event, 
+	     * license_agreement and Download and extraction
+	     * of DB2 ODBC CLI Driver acknowledgement will display.
+	     */
+	    extractCLIDriver.on('close', function(){
+	      console.log(license_agreement);
+	      console.log('Download and extraction of DB2 ODBC ' +
+	        'CLI Driver completed successfully... \n');
+	    });
+
+	    extractCLIDriver.on('err', function(){
+	      console.log(err);
+	    });
         } 
         else 
         {
@@ -313,7 +332,7 @@ var download_file_httpget = function(file_url) {
     
     function removeUsedPackages()
     {
-        var packages = ["nan", "fstream", "unzip", "targz"];
+        var packages = ["nan", "fstream", "unzipper", "targz"];
         for( var index = 0; index < packages.length; index++ )
         {
           var command = "npm uninstall " + packages[index];
