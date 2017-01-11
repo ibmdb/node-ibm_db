@@ -39,7 +39,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
         stmt.execute([], function(err, result) {
           if(err) console.log(err);
           else {
-            data = result.fetchAllSync();
+            data = result.fetchAllSync(); // Use fetchAllSync({fetchMode:3}) to get data as array.
             console.log("Fetched Data = " );
             console.log(data);
             result.closeSync();

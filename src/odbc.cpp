@@ -753,7 +753,7 @@ Handle<Value> ODBC::GetOutputParameter( Parameter prm )
             DEBUG_PRINTF("BLOB DATA SELECTED\n");
         }
     default :
-      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%f\n", 
+      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%s\n", 
                    prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
                    prm.length, prm.buffer);
       if((int)prm.length == SQL_NULL_DATA) {
@@ -1071,7 +1071,7 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
         prm = params[i];
 
         DEBUG_PRINTF(
-          "ODBCConnection::UV_Query - param[%i]: c_type=%i type=%i "
+          "ODBC::BindParameters - param[%i]: c_type=%i type=%i "
           "buffer_length=%i size=%i length=%i &length=%p\n", i, prm.c_type, prm.type,
           prm.buffer_length, prm.size, prm.length, &params[i].length);
 

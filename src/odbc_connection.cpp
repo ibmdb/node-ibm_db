@@ -960,7 +960,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   int paramCount = 0;
   int outParamCount = 0; // Non-zero tells its a SP.
   Local<Array> sp_result = Nan::New<Array>();
-  Local<Array> resultset = Nan::New<Array>();
   bool noResultObject = false;
   
   //Check arguments for different variations of calling this function
@@ -1119,6 +1118,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
 
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element.
+      Local<Array> resultset = Nan::New<Array>();
       resultset->Set(0, Nan::Null());
       resultset->Set(1, sp_result);
       info.GetReturnValue().Set(resultset);
@@ -1138,7 +1138,8 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, result);
 
     if( outParamCount ) // Its a CALL stmt with OUT params.
-    { // Return an array with outparams as second element.
+    { // Return an array with outparams as second element. [result, outparams]
+      Local<Array> resultset = Nan::New<Array>();
       resultset->Set(0, js_result);
       resultset->Set(1, sp_result);
       info.GetReturnValue().Set(resultset);

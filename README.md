@@ -138,14 +138,17 @@ var Database = require("ibm_db").Database
 8.  [.prepare(sql, callback)](#prepareApi)
 9.  [.prepareSync(sql)](#prepareSyncApi)
 10. [.execute([bindingParameters], callback)](#executeApi)
-11. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-12. [.beginTransaction(callback)](#beginTransactionApi)
-13. [.beginTransactionSync()](#beginTransactionSyncApi)
-14. [.commitTransaction(callback)](#commitTransactionApi)
-15. [.commitTransactionSync()](#commitTransactionSyncApi)
-16. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-17. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-18. [.debug(value)](#enableDebugLogs)
+11. [.executeSync([bindingParameters])](#executeSyncApi)
+12. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+13. [.bind(bindingParameters, callback)](#bindApi)
+14. [.bindSync(bindingParameters)](#bindSyncApi)
+15. [.beginTransaction(callback)](#beginTransactionApi)
+16. [.beginTransactionSync()](#beginTransactionSyncApi)
+17. [.commitTransaction(callback)](#commitTransactionApi)
+18. [.commitTransactionSync()](#commitTransactionSyncApi)
+19. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+20. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+21. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -392,11 +395,14 @@ var ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.open(cn,function(err,conn){
-  var stmt = conn.prepareSync("insert into hits (col1, col2) VALUES (?, ?)");
+  var stmt = conn.prepareSync("select * from employee where empid = ?");
 
   //Bind and Execute the statment asynchronously
-  stmt.execute(['something', 42], function (err, result) {
+  stmt.execute([142], function (err, result) {
+    data = result.fetchAllSync();
+    console.log(data);
     result.closeSync();
+    stmt.closeSync();
 
     //Close the connection
 	conn.close(function(err){});
@@ -409,7 +415,8 @@ ibmdb.open(cn,function(err,conn){
 Execute a prepared statement.
 
 * **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
-* **callback** - `callback (err, stmt)`
+* **callback** - `callback (err, result, outparams)`
+outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure.
 
 Returns a `Statement` object via the callback
 
@@ -435,13 +442,41 @@ ibmdb.open(cn,function(err,conn){
       else result.closeSync();
 
       //Close the connection
+      stmt.closeSync();
 	  conn.close(function(err){});
     });
   });
 });
 ```
 
-### <a name="executeNonQueryApi"></a> 11) .executeNonQuery([bindingParameters], callback)
+### <a name="executeSyncApi"></a> 11) .executeSync([bindingParameters])
+
+Execute a prepared statement synchronously.
+
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
+
+Returns a `Statement` object. If prepared statement is a stored procedure with INOUT or OUT parameter, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of such array is an `Statement` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn,function(err,conn){
+  var stmt = conn.prepareSync("select empname from emptable where empid = ?");
+
+  //Bind and Execute the statment asynchronously
+  var result = stmt.executeSync([142]);
+  var data = result.fetchAllSync({fetchMode:3}); // Fetch data in Array mode.
+  console.log(data);
+  result.closeSync();
+  stmt.closeSync();
+
+  //Close the connection
+  conn.close(function(err){});
+});
+```
+
+### <a name="executeNonQueryApi"></a> 12) .executeNonQuery([bindingParameters], callback)
 
 Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
 
@@ -474,17 +509,30 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="beginTransactionApi"></a> 12) .beginTransaction(callback)
+### <a name="bindApi"></a> 13) .bind(bindingParameters, callback)
+
+Binds the parameters for prepared statement.
+
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **callback** - `callback (err)`
+
+### <a name="bindSyncApi"></a> 14) .bindSync(bindingParameters)
+
+Binds the parameters for prepared statement synchronously. If `bindSync()` is used, then no need to pass `bindingParameters` to next `execute()` or `executeSync()` statement.
+
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+
+### <a name="beginTransactionApi"></a> 15) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 13) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 16) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 14) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 17) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -521,7 +569,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 15) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 18) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -550,7 +598,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 16) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 19) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -587,7 +635,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 17) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 20) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -616,7 +664,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 18) .debug(value)
+### <a name="enableDebugLogs"></a> 21) .debug(value)
 
 Enable console logs.
 
@@ -812,7 +860,9 @@ parmeter markers only. i.e. pass the input values using bind params.
 
 * [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using conn.query().
 
-* [test-sp-resultset.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset.js) - Example using Out Params and Result Set.
+* [test-sp-resultset.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset.js) - Example using Out Params and Result Set using query() and querySync() APIs.
+
+* [test-sp-resultset-execute.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset-execute.js) - Example using Out Params and Result Set using prepare() and execute() APIs.
 
 ## <a name="buildOptions"></a>Build Options
 

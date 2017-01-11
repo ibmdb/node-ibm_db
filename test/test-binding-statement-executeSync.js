@@ -53,13 +53,15 @@ db.createConnection(function (err, conn) {
       r = result.closeSync();
       assert.equal(r, true, "closeSync did not return true");
       
+      r = stmt.bindSync([7]);
+      assert.equal(r, true, "bindSync did not return true");
+
       result = stmt.executeSync();
       assert.equal(result.constructor.name, "ODBCResult");
       
       r = result.fetchAllSync();
-      assert.deepEqual(r, [ { COL1: 3 } ]);
-      
       console.log(r);
+      assert.deepEqual(r, [ { COL1: 8 } ]);
     }
     catch (e) {
       console.log(e);

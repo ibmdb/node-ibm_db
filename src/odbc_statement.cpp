@@ -122,6 +122,7 @@ NAN_METHOD(ODBCStatement::New) {
   
   //initialize the paramCount
   stmt->paramCount = 0;
+  stmt->params = 0;
   
   stmt->Wrap(info.Holder());
   
@@ -180,45 +181,61 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status) {
   DEBUG_PRINTF("ODBCStatement::UV_AfterExecute\n");
   
   execute_work_data* data = (execute_work_data *)(req->data);
-  
   Nan::HandleScope scope;
+  int outParamCount = 0; // Non-zero tells its a SP with OUT param
+  Local<Array> sp_result = Nan::New<Array>();
   
   //an easy reference to the statment object
-  ODBCStatement* self = data->stmt->self();
+  ODBCStatement* stmt = data->stmt->self();
 
+  if (SQL_SUCCEEDED( data->result )) {
+    for(int i = 0; i < stmt->paramCount; i++) { // For stored Procedure CALL
+      if(stmt->params[i].paramtype % 2 == 0) {
+        sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
+        outParamCount++;
+      }
+    }
+  }
+  if( stmt->paramCount ) {
+    FREE_PARAMS( stmt->params, stmt->paramCount ) ;
+  }
+  
   //First thing, let's check if the execution of the query returned any errors 
   if(data->result == SQL_ERROR) {
     ODBC::CallbackSQLError(
       SQL_HANDLE_STMT,
-      self->m_hSTMT,
+      stmt->m_hSTMT,
       data->cb);
   }
   else {
     Local<Value> info[4];
     bool* canFreeHandle = new bool(false);
     
-    info[0] = Nan::New<External>((void*) (intptr_t) self->m_hENV);
-    info[1] = Nan::New<External>((void*) (intptr_t) self->m_hDBC);
-    info[2] = Nan::New<External>((void*) (intptr_t) self->m_hSTMT);
+    info[0] = Nan::New<External>((void*) (intptr_t) stmt->m_hENV);
+    info[1] = Nan::New<External>((void*) (intptr_t) stmt->m_hDBC);
+    info[2] = Nan::New<External>((void*) (intptr_t) stmt->m_hSTMT);
     info[3] = Nan::New<External>((void*)canFreeHandle);
     
-    // TODO is this object being cleared anywhere? Memory leak?
-    Nan::Persistent<Object> js_result;
-    js_result.Reset(Nan::New(ODBCResult::constructor)->NewInstance(4, info));
+    Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, info);
 
     info[0] = Nan::Null();
-    info[1] = Nan::New(js_result);
+    info[1] = js_result;
+
+    if(outParamCount) {
+        info[2] = sp_result; // Must a CALL stmt
+    }
+    else info[2] = Nan::Null();
 
     Nan::TryCatch try_catch;
 
-    data->cb->Call(2, info);
+    data->cb->Call(3, info);
 
     if (try_catch.HasCaught()) {
       FatalException(try_catch);
     }
   }
 
-  self->Unref();
+  stmt->Unref();
   delete data->cb;
   
   free(data);
@@ -236,8 +253,22 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
   Nan::HandleScope scope;
 
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  int outParamCount = 0;
+  Local<Array> sp_result = Nan::New<Array>();
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
+
+  if (SQL_SUCCEEDED(ret)) {
+    for(int i = 0; i < stmt->paramCount; i++) { // For stored Procedure CALL
+      if(stmt->params[i].paramtype % 2 == 0) {
+        sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
+        outParamCount++;
+      }
+    }
+  }
+  if( stmt->paramCount ) {
+    FREE_PARAMS( stmt->params, stmt->paramCount ) ;
+  }
   
   if(ret == SQL_ERROR) {
     Nan::ThrowError(ODBC::GetSQLError(
@@ -259,7 +290,15 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
     
     Local<Object> js_result = Nan::New(ODBCResult::constructor)->NewInstance(4, result);
 
-    info.GetReturnValue().Set(js_result);
+    if( outParamCount ) // Its a CALL stmt with OUT params.
+    {   // Return an array with outparams as second element. [result, outparams]
+        Local<Array> resultset = Nan::New<Array>();
+        resultset->Set(0, js_result);
+        resultset->Set(1, sp_result);
+        info.GetReturnValue().Set(resultset);
+    }
+    else
+        info.GetReturnValue().Set(js_result);
   }
 }
 

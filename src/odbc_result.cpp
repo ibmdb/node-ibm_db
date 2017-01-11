@@ -190,6 +190,7 @@ NAN_METHOD(ODBCResult::Fetch) {
     return Nan::ThrowTypeError("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
   
+  DEBUG_PRINTF("ODBCResult::Fetch fetchMode = %i\n", data->fetchMode);
   data->cb = new Nan::Callback(cb);
   
   data->objResult = objODBCResult;
@@ -606,6 +607,8 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
   }
   
+  DEBUG_PRINTF("ODBCResult::FetchAllSync colCount = %i, fetchMode = %i\n", self->colCount, fetchMode);
+
   Local<Array> rows = Nan::New<Array>();
   
   //Only loop through the recordset if there are columns
