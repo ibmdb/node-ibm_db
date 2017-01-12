@@ -104,12 +104,12 @@ ODBC::~ODBC() {
 void ODBC::Free() {
   DEBUG_PRINTF("ODBC::Free\n");
   if (m_hEnv) {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    // uv_mutex_lock(&ODBC::g_odbcMutex);
     if (m_hEnv) {
       SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
       m_hEnv = (SQLHENV)NULL;      
     }
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    // uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
 }
 
@@ -122,12 +122,12 @@ NAN_METHOD(ODBC::New) {
 
   dbo->m_hEnv = (SQLHENV)NULL;
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  // uv_mutex_lock(&ODBC::g_odbcMutex);
   
   // Initialize the Environment handle
   int ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &dbo->m_hEnv);
   
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  // uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   if (!SQL_SUCCEEDED(ret)) {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
@@ -189,12 +189,12 @@ void ODBC::UV_CreateConnection(uv_work_t* req) {
   //get our work data
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  // uv_mutex_lock(&ODBC::g_odbcMutex);
 
   //allocate a new connection handle
   data->result = SQLAllocHandle(SQL_HANDLE_DBC, data->dbo->m_hEnv, &data->hDBC);
   
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  // uv_mutex_unlock(&ODBC::g_odbcMutex);
 }
 
 void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status) {
@@ -249,7 +249,7 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
    
   SQLHDBC hDBC;
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  // uv_mutex_lock(&ODBC::g_odbcMutex);
   
   //allocate a new connection handle
   SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DBC, dbo->m_hEnv, &hDBC);
@@ -258,7 +258,7 @@ NAN_METHOD(ODBC::CreateConnectionSync) {
     //TODO: do something!
   }
   
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  // uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   Local<Value> params[2];
   params[0] = Nan::New<External>((void*)(intptr_t)dbo->m_hEnv);
@@ -783,7 +783,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   
   Local<Object> tuple = Nan::New<Object>();
         
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  // uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
     tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
@@ -793,7 +793,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  // uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(tuple);
 }
@@ -809,12 +809,12 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   
   Local<Array> array = Nan::New<Array>();
         
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  // uv_mutex_lock(&ODBC::g_odbcMutex);
   for(int i = 0; i < *colCount; i++) {
     array->Set( Nan::New(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  // uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(array);
 }
