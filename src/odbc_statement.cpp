@@ -81,10 +81,10 @@ void ODBCStatement::Free() {
   }
   
   if (m_hSTMT) {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    // uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    // uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
     
   if (bufferLength > 0) {
@@ -376,9 +376,9 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
       rowCount = 0;
     }
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    // uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    // uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     Local<Value> info[2];
 
@@ -433,9 +433,9 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuerySync) {
       rowCount = 0;
     }
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    // uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    // uv_mutex_unlock(&ODBC::g_odbcMutex);
     
     info.GetReturnValue().Set(Nan::New<Number>(rowCount));
   }
@@ -953,11 +953,11 @@ NAN_METHOD(ODBCStatement::CloseSync) {
     stmt->Free();
   }
   else {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    // uv_mutex_lock(&ODBC::g_odbcMutex);
     
     SQLFreeStmt(stmt->m_hSTMT, closeOption);
   
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    // uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
 
   info.GetReturnValue().Set(Nan::True());
