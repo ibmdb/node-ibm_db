@@ -74,11 +74,11 @@ void ODBCResult::Free() {
   DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
   
   if (m_hSTMT && m_canFreeHandle) {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
+    //uv_mutex_lock(&ODBC::g_odbcMutex); Commented to fix issue #211
     if(m_hSTMT)
         SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    //uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
   if (bufferLength > 0) {

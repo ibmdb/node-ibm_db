@@ -783,7 +783,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
   
   Local<Object> tuple = Nan::New<Object>();
         
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  //uv_mutex_lock(&ODBC::g_odbcMutex); Commented to fix issue #211.
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
     tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
@@ -793,7 +793,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  //uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(tuple);
 }
@@ -809,12 +809,12 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   
   Local<Array> array = Nan::New<Array>();
         
-  uv_mutex_lock(&ODBC::g_odbcMutex);
+  //uv_mutex_lock(&ODBC::g_odbcMutex); Commented to fix issue #211.
   for(int i = 0; i < *colCount; i++) {
     array->Set( Nan::New(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
   }
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
+  //uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   return scope.Escape(array);
 }
