@@ -90,15 +90,9 @@ ODBCConnection::~ODBCConnection() {
 void ODBCConnection::Free() {
   DEBUG_PRINTF("ODBCConnection::Free m_hDBC = %i \n", m_hDBC);
   if (m_hDBC) {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
-    if (m_hDBC) {
-      SQLDisconnect(m_hDBC);
-      SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
-      m_hDBC = (SQLHDBC)NULL;
-    }
-    
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
+    SQLDisconnect(m_hDBC);
+    SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
+    m_hDBC = (SQLHDBC)NULL;
   }
 }
 
@@ -214,8 +208,6 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
 
   DEBUG_PRINTF("ODBCConnection::UV_Open : connectTimeout=%i \n", *&(self->connectTimeout));
   
-  uv_mutex_lock(&ODBC::g_odbcMutex); 
-  
   int timeOut = self->connectTimeout;
   
   if (timeOut > 0) {
@@ -262,8 +254,6 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
     hStmt = (SQLHSTMT)NULL;
   }
 
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-  
   data->result = ret;
 }
 
@@ -343,8 +333,6 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   connection->WriteUtf8(connectionString);
 #endif
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
   int timeOut = conn->connectTimeout;
 
   if (timeOut > 0) {
@@ -403,8 +391,6 @@ NAN_METHOD(ODBCConnection::OpenSync) {
       uv_ref(uv_default_loop());
     #endif*/
   }
-
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   free(connectionString);
   
@@ -545,14 +531,10 @@ NAN_METHOD(ODBCConnection::CreateStatementSync) {
    
   SQLHSTMT hSTMT;
 
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
   SQLAllocHandle(
     SQL_HANDLE_STMT, 
     conn->m_hDBC, 
     &hSTMT);
-  
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   Local<Value> params[3];
   params[0] = Nan::New<External>((void*)(intptr_t)conn->m_hENV);
@@ -614,15 +596,11 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req) {
     data->hSTMT
   );
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
   //allocate a new statment handle
   SQLAllocHandle( SQL_HANDLE_STMT, 
                   data->conn->m_hDBC, 
                   &data->hSTMT);
 
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
-  
   DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
@@ -808,8 +786,6 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
   
   SQLRETURN ret;
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-
   //allocate a new statment handle
   SQLAllocHandle( SQL_HANDLE_STMT, 
                   data->conn->m_hDBC, 
@@ -839,7 +815,6 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
       }
     }
   }
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
 
   // this will be checked later in UV_AfterQuery
   data->result = ret;
@@ -873,11 +848,9 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     //this means we should release the handle now and call back
     //with Nan::True()
     
-    uv_mutex_lock(&ODBC::g_odbcMutex);
     DEBUG_PRINTF("Going to free handle.\n");
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
     data->hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
     DEBUG_PRINTF("Handle freed.\n");
     
     Local<Value> info[2];
@@ -1047,8 +1020,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
   }
   //Done checking arguments
 
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-
   //allocate a new statment handle
   ret = SQLAllocHandle( SQL_HANDLE_STMT, 
                   conn->m_hDBC, 
@@ -1090,7 +1061,6 @@ NAN_METHOD(ODBCConnection::QuerySync) {
     FREE_PARAMS( params, paramCount ) ;
   }
   
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
   delete sql;
   
   //check to see if there was an error during execution
@@ -1101,20 +1071,16 @@ NAN_METHOD(ODBCConnection::QuerySync) {
       hSTMT,
       (char *) "[node-ibm_db] Error in ODBCConnection::QuerySync while executing query."
     );
-    uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
     hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
     Nan::ThrowError(err);
     return;
   }
   else if (noResultObject) {
     //if there is not result object requested then
     //we must destroy the STMT ourselves.
-    uv_mutex_lock(&ODBC::g_odbcMutex);
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
     hSTMT = (SQLHSTMT)NULL;
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
 
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element.
@@ -1244,11 +1210,7 @@ NAN_METHOD(ODBCConnection::Tables) {
 void ODBCConnection::UV_Tables(uv_work_t* req) {
   query_work_data* data = (query_work_data *)(req->data);
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
   SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
-  
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   SQLRETURN ret = SQLTables( 
     data->hSTMT, 
@@ -1359,11 +1321,7 @@ NAN_METHOD(ODBCConnection::Columns) {
 void ODBCConnection::UV_Columns(uv_work_t* req) {
   query_work_data* data = (query_work_data *)(req->data);
   
-  uv_mutex_lock(&ODBC::g_odbcMutex);
-  
   SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
-  
-  uv_mutex_unlock(&ODBC::g_odbcMutex);
   
   SQLRETURN ret = SQLColumns( 
     data->hSTMT, 

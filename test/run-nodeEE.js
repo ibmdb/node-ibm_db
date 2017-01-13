@@ -43,41 +43,43 @@ doNextConnectionString();
 
 
 function doTest(file, connectionString) {
-  var test = spawn("node", ['--expose_gc',file, connectionString.connectionString])
-    , timer = null
-    , timedOut = false;
-    ;
-  
-  process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : " + file.replace(/\.js$/, ""));
-  process.stdout.write(" ... ");
+  fs.open('logs/' + file + '.log', 'wx', function(err, fd) {
+    var test = spawn("node", ['--expose_gc',file, connectionString.connectionString], {stdio: ['pipe', fd, fd]})
+      , timer = null
+      , timedOut = false;
+      ;
+    
+    process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : " + file.replace(/\.js$/, ""));
+    process.stdout.write(" ... ");
 
-  testCount += 1;
-  
-  test.on("exit", function (code, signal) {
-    clearTimeout(timer);
+    testCount += 1;
     
-    if (code != 0) {
-      errorCount += 1;
+    test.on("exit", function (code, signal) {
+      clearTimeout(timer);
       
-      process.stdout.write("\033[01;31mfail \033[01;0m ");
-      
-      if (timedOut) {
-        process.stdout.write("(Timed Out)");
+      if (code != 0) {
+        errorCount += 1;
+        
+        process.stdout.write("\033[01;31mfail \033[01;0m ");
+        
+        if (timedOut) {
+          process.stdout.write("(Timed Out)");
+        }
       }
-    }
-    else {
-      process.stdout.write("\033[01;32msuccess \033[01;0m ");
-    }
+      else {
+        process.stdout.write("\033[01;32msuccess \033[01;0m ");
+      }
+      
+      process.stdout.write("\n");
+      
+      doNextTest(connectionString);
+    });
     
-    process.stdout.write("\n");
-    
-    doNextTest(connectionString);
+    var timer = setTimeout(function () {
+      timedOut = true;
+      test.kill();
+    },testTimeout);
   });
-  
-  var timer = setTimeout(function () {
-    timedOut = true;
-    test.kill();
-  },testTimeout);
 }
 
 function doNextTest(connectionString) {
