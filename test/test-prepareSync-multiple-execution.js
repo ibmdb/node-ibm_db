@@ -51,7 +51,7 @@ function recursive (stmt) {
     result.closeSync();
     count += 1;
     
-    console.log("Executing iteration %s out of %s.", count, iterations);
+    console.log("Executed iteration %s out of %s.", count, iterations);
     
     if (count < iterations) {
       setTimeout(function(){
@@ -61,13 +61,32 @@ function recursive (stmt) {
     else {
       console.log("Inserted Rows = ");
       console.log(conn.querySync("select * from " + common.tableName));
-      conn.rollbackTransactionSync();
-      var data = conn.querySync("select * from " + common.tableName);
-      console.log("After roolback, selected rows = ", data);
-      assert.deepEqual(data, []);
-      
-      common.dropTables(conn, function () {
-        return finish(0);
+      try {
+        var result = stmt.bindSync(['abc', 'hello world']);
+        assert.equal(result, true);
+      }
+      catch (e) {
+        console.log(e.message);
+        finish(5);
+      }
+  
+      stmt.execute(function (err, result) {
+        if (err) {   // Expecting Error here.
+          console.log(err.message);
+          conn.rollbackTransactionSync();
+          var data = conn.querySync("select * from " + common.tableName);
+          console.log("After roolback, selected rows = ", data);
+          assert.deepEqual(data, []);
+          common.dropTables(conn, function () { return finish(0); });
+        }
+        else
+        {
+          result.closeSync();
+          conn.commitTransactionSync();
+          var data = conn.querySync("select * from " + common.tableName);
+          console.log("After commit, selected rows = ", data);
+          common.dropTables(conn, function () { return finish(6); });
+        }
       });
     }
   });
