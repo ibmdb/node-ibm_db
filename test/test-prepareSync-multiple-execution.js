@@ -1,23 +1,23 @@
 var common = require("./common")
-  , odbc = require("../")
-  , db = new odbc.Database()
+  , ibmdb = require("../")
   , assert = require("assert")
   ;
 
 var count = 0;
 var iterations = 10;
 
-db.openSync(common.connectionString);
+var conn = ibmdb.openSync(common.connectionString);
   
-common.dropTables(db, function () {
-  common.createTables(db, function (err, data) {
+common.dropTables(conn, function () {
+  common.createTables(conn, function (err, data) {
     if (err) {
       console.log(err);
       
       return finish(2);
     }
     
-    var stmt = db.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
+    conn.beginTransactionSync();
+    var stmt = conn.prepareSync("insert into " + common.tableName + " (colint, coltext) VALUES (?, ?)");
     assert.equal(stmt.constructor.name, "ODBCStatement");
     
     recursive(stmt);
@@ -27,7 +27,7 @@ common.dropTables(db, function () {
 function finish(retValue) {
   console.log("finish exit value: %s", retValue);
   
-  db.closeSync();
+  conn.closeSync();
   process.exit(retValue || 0);
 }
 
@@ -51,17 +51,22 @@ function recursive (stmt) {
     result.closeSync();
     count += 1;
     
-    console.log("count %s, iterations %s", count, iterations);
+    console.log("Executing iteration %s out of %s.", count, iterations);
     
-    if (count <= iterations) {
+    if (count < iterations) {
       setTimeout(function(){
         recursive(stmt);
       },100);
     }
     else {
-      console.log(db.querySync("select * from " + common.tableName));
+      console.log("Inserted Rows = ");
+      console.log(conn.querySync("select * from " + common.tableName));
+      conn.rollbackTransactionSync();
+      var data = conn.querySync("select * from " + common.tableName);
+      console.log("After roolback, selected rows = ", data);
+      assert.deepEqual(data, []);
       
-      common.dropTables(db, function () {
+      common.dropTables(conn, function () {
         return finish(0);
       });
     }
