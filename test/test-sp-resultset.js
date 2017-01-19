@@ -1,19 +1,21 @@
 var common = require("./common")
   , ibmdb = require("../")
   , assert = require("assert")
-  ;
+  , schema = common.connectionObject.CURRENTSCHEMA;
 
-var proc1 = "create or replace procedure proc2 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from mytab1; declare cr2  cursor with return for select c2 from mytab1; open cr1; open cr2; set v2 = 'success'; end";
-var proc2 = "create or replace procedure proc2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
-var proc3 = "create or replace procedure proc2 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from mytab1; declare cr2  cursor with return for select c2 from mytab1; open cr1; open cr2; end";
-var query = "call proc2(?, ?)";
+if(schema == undefined) schema = "NEWTON";
+
+var proc1 = "create or replace procedure " + schema + ".proc2 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; set v2 = 'success'; end";
+var proc2 = "create or replace procedure " + schema + ".proc2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
+var proc3 = "create or replace procedure " + schema + ".proc2 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; end";
+var query = "call " + schema + ".proc2(?, ?)";
 var result;
 ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
     if(err) return console.log(err);
     try {
-      conn.querySync({"sql":"create table mytab1 (c1 int, c2 varchar(20))", "noResults":true});
+      conn.querySync({"sql":"create table " + schema + ".mytab1 (c1 int, c2 varchar(20))", "noResults":true});
     } catch (e) {};
-    conn.querySync("insert into mytab1 values (2, 'bimal'), (3, 'kumar')");
+    conn.querySync("insert into " + schema + ".mytab1 values (2, 'bimal'), (3, 'kumar')");
     param2 = {ParamType:"INOUT", DataType:1, Data:"abc", Length:50};
 
     // Create SP with INOUT param and 2 Result Set.
@@ -65,8 +67,8 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
                 }
 
                 // Do Cleanup.
-                conn.querySync("drop procedure proc2 ( INT, VARCHAR(30) )");
-                conn.querySync("drop table mytab1");
+                conn.querySync("drop procedure " + schema + ".proc2 ( INT, VARCHAR(30) )");
+                conn.querySync("drop table " + schema + ".mytab1");
                 // Close connection in last only.
                 conn.close(function (err) { console.log("done.");});
             });
