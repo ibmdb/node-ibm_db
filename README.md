@@ -15,6 +15,8 @@ Install a newer compiler or upgrade older one.
 
 - You need not to install any db2 ODBC client driver for connectivity. Just install ibm_db and it is ready for use.
 
+- Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.10.x is deprecated on Windows and will be discontinued from next release.
+
 ## Install
 ------------
 

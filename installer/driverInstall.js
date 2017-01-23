@@ -39,6 +39,7 @@ var download_file_httpget = function(file_url) {
 	    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
 	    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
 	    var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
+	    var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
 
             /*
 	     * odbcBindingsNode will consist of the node binary-
@@ -46,7 +47,8 @@ var download_file_httpget = function(file_url) {
 	     */
 	    var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V10 ||
 	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
-	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 || ODBC_BINDINGS ;
+	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 ||
+	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6 || ODBC_BINDINGS ;
 
             readStream = fs.createReadStream(BUILD_FILE);
 

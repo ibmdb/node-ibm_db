@@ -13,7 +13,7 @@ ibmdb.open(cn, function (err, conn)
     var query = "CaLL " + schema + ".proc1(?, ?, ?)";
     if(err) return console.log(err);
     try {
-          conn.querySync("drop procedure " + schema + ".proc1");
+          conn.querySync("drop procedure " + schema + ".proc1(INT, INT, VARCHAR(20))");
           console.log("proc1 dropped.\n");
     } catch(e) {}
     conn.querySync("create procedure " + schema + ".proc1 " +
@@ -30,14 +30,14 @@ ibmdb.open(cn, function (err, conn)
         else {
             console.log("return value = ", result[0], result[1]);
         }
-        conn.querySync("drop procedure " + schema + ".proc1");
+        conn.querySync("drop procedure " + schema + ".proc1(INT, INT, VARCHAR(20))");
         assert.deepEqual(result, [ 4, 'verygood' ]);
     });
     conn.querySync("create or replace procedure " + schema + ".proc2 (IN v1 INTEGER) BEGIN END");
     query = "call " + schema + ".proc2(?)";
     conn.query({"sql":query, "params" : [param1]}, function(err, result){
         if(err) console.log(err);
-        conn.querySync("drop procedure " + schema + ".proc2");
+        conn.querySync("drop procedure " + schema + ".proc2(INT)");
         conn.closeSync();
         assert.equal(result.length, 0);
         console.log('done');
