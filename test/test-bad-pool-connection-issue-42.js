@@ -10,7 +10,7 @@ console.log("---------------------------------------------------------------");
 console.log("After first iteration and before start of second iteration,");
 console.log("restart the server using 'db2stop force; db2start' command.");
 console.log("---------------------------------------------------------------");
-timer = setInterval(function() {
+var timer = setInterval(function() {
     var j = i;
     console.log('start'+j);
     if(i==3){
@@ -41,5 +41,5 @@ timer = setInterval(function() {
         });
     });
     i++;
-}, 30000);
+}, 3000);  // Change it to 30000 when running single test file for actual test.
 

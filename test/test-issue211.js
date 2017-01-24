@@ -6,6 +6,7 @@ var ibmdb = require("../")
 var stmt0 = {};
 var stmt1 = {};
 var stmt2 = {};
+var queryExecuted = 0;
 
 stmt1.sql = 'SELECT COUNT(C1) FROM FINAL TABLE(UPDATE T1 SET C2=?, C3=? WHERE C1=1)';
 stmt1.params = ['Joe', 'Tim'];
@@ -26,7 +27,7 @@ ibmdb.open(cn, function(err, conn1) {
   stmt0.sql = 'CREATE TABLE T1 (C1 INT PRIMARY KEY NOT NULL, C2 CHAR(50), C3 CHAR(50))';
   conn1.querySync(stmt0.sql);
 
-  stmt0.sql = 'INSERT INTO T1 VALUES (1, \'ABCDEF\', \'GHIJK\')'
+  stmt0.sql = "INSERT INTO T1 VALUES (1, 'ABCDEF', 'GHIJK')";
   conn1.querySync(stmt0.sql);
   
   ibmdb.open(cn, function(err, conn2) {
@@ -47,8 +48,8 @@ ibmdb.open(cn, function(err, conn1) {
                 } else {
                   conn1.commitTransaction();
                   console.log('<<< DATA >>>:', data);
-                  conn1.closeSync();
                 }
+                queryExecuted++;
               });
 
               conn2.query(stmt2, function(err, data) {
@@ -60,12 +61,19 @@ ibmdb.open(cn, function(err, conn1) {
                   conn2.commitTransaction();
                   console.log('<<< DATA >>>:', data);
                   assert.deepEqual(data, [ { '1': 1 } ]);
-                  conn2.querySync("drop table T1");
                   conn2.closeSync();
                 }
+                queryExecuted++;
               });
           });
       });
   });
+  var interval = setInterval(function(){
+                   if(queryExecuted === 2) {
+                     conn1.querySync("drop table T1");
+                     conn1.closeSync();
+                     clearInterval(interval);
+                   }
+                 }, 1000);
 });
 
