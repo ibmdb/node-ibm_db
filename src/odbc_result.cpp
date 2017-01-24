@@ -74,11 +74,8 @@ void ODBCResult::Free() {
   DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
   
   if (m_hSTMT && m_canFreeHandle) {
-    //uv_mutex_lock(&ODBC::g_odbcMutex); Commented to fix issue #211
-    if(m_hSTMT)
-        SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
+    SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
-    //uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
   if (bufferLength > 0) {
@@ -697,20 +694,12 @@ NAN_METHOD(ODBCResult::CloseSync) {
   }
   else if (closeOption == SQL_DESTROY && !result->m_canFreeHandle) {
     //We technically can't free the handle so, we'll SQL_CLOSE
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeStmt(result->m_hSTMT, SQL_CLOSE);
     result->m_canFreeHandle = new bool(true);
-  
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   else {
-    uv_mutex_lock(&ODBC::g_odbcMutex);
-    
     SQLFreeStmt(result->m_hSTMT, closeOption);
     result->m_canFreeHandle = new bool(true);
-  
-    uv_mutex_unlock(&ODBC::g_odbcMutex);
   }
   
   info.GetReturnValue().Set(Nan::True());

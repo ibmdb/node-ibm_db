@@ -8,13 +8,13 @@ try {
 }
 catch (e) {
   exports.connectionObject = {
-	DRIVER : "{DB2 ODBC Driver}",
-	DATABASE : "SAMPLE",
-	HOSTNAME : "localhost",
-	UID : "db2admin",
-	PWD : "db2admin",
-	PORT : "50000",
-	PROTOCOL : "TCPIP"
+    DRIVER : "{DB2 ODBC Driver}",
+    DATABASE : "SAMPLE",
+    HOSTNAME : "localhost",
+    UID : "db2admin",
+    PWD : "db2admin",
+    PORT : "50000",
+    PROTOCOL : "TCPIP"
   };
 }
 
