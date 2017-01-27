@@ -1,19 +1,28 @@
 var ibmdb = require("../")
     , common = require("./common")
+    , pool = new ibmdb.Pool()
     , app = require('express')()
     , cn = common.connectionString
-    , conn = ""
     , requestNo = 0
     , img1 = "data/pushpa.jpg"
     , img2 = "data/panda.jpg"
     ;
 
-ibmdb.open(cn, function(err, connection) {
+//ibmdb.debug(true);
+pool.init(5, cn);
+function getConnection() {
+    var conn;
+    pool.open(cn, function(err, connection) {
+        if(err) return console.log(err);
+        conn = connection;
+        });
+    return conn;
+}
+pool.open(cn, function(err, conn) {
     if(err) {
         console.log(err);
         exit(1);
     }
-    else conn = connection;
 
     try{
         conn.querySync("drop table imgtab");
@@ -28,13 +37,15 @@ ibmdb.open(cn, function(err, connection) {
             function(err, result){
               if(err) return console.log(err);
               console.log("image 1 inserted.");
-            });
-        stmt.execute([2, 'img2.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img2}], 
+            stmt.execute([2, 'img2.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img2}], 
             function(err, result){
               if(err) return console.log(err);
               else {result.closeSync();
               console.log("image 2 inserted.");}
+              conn.close(function(){console.log("done.");});
+              console.log("App is running on localhost:3000 ");
             });
+        });
     });
 });
 
@@ -49,7 +60,8 @@ app.get('/:id', function(req, res) {
   var no = ++requestNo;
   console.log("Received id = " + imgid + " for request no "+no);
   if(imgid != parseInt(imgid)) return console.log("id is not int.");
-  if(!conn) res.send("App is trying to establish connection with database server, please retry after some time.");
+  var conn = getConnection();
+  if(typeof(conn) !== 'object') { console.log("Invalid connection..");res.send(conn); res.end(); }
   else
   conn.query("SELECT id, filename, image FROM imgtab WHERE id=?", [imgid], function(err, rows) {
     if(err){
@@ -59,6 +71,7 @@ app.get('/:id', function(req, res) {
       res.send(new Buffer(rows[0].IMAGE, 'binary'));
       res.end();
       console.log("File "+ rows[0].FILENAME + " sent for request no = "+no+", id = "+ imgid);
+      conn.close(function(){console.log("Done for request ", no);});
     }
   });
 })
