@@ -22,10 +22,10 @@ db.createConnection(function (err, conn) {
     //force a timeout to occurr, but most testing is
     //done locally and it's hard to get a local server
     //to not accept a connection within one second...
-    
+    console.log(err);
     //console.log(err);
     conn.close(function () {
-      
+      console.log("Done");
     });
   });
 });

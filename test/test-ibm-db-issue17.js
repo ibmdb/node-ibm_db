@@ -20,7 +20,9 @@ ibmdb.open(common.connectionString, function(err, conn)
 
 		console.log('Connection to DB2 machine successful');
 		
-		conn.querySync("create table " + testTable + " (COLINT BIGINT)");
+        try {
+		    conn.querySync("create table " + testTable + " (COLINT BIGINT)");
+        } catch (e) {}
 		for(var i=0;i<testValues.length;i++) {
 			conn.querySync("insert into " + testTable + " values (" + testValues[i] + ")");
 		}
