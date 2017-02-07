@@ -103,7 +103,7 @@ NAN_METHOD(ODBCResult::New) {
   //create a new OBCResult object
   ODBCResult* objODBCResult = new ODBCResult(hENV, hDBC, hSTMT, *canFreeHandle);
   
-  DEBUG_PRINTF("ODBCResult::New m_hDBC=%X m_hDBC=%X m_hSTMT=%X canFreeHandle=%X\n",
+  DEBUG_PRINTF("ODBCResult::New m_hENV=%X m_hDBC=%X m_hSTMT=%X canFreeHandle=%X\n",
     objODBCResult->m_hENV,
     objODBCResult->m_hDBC,
     objODBCResult->m_hSTMT,
@@ -465,7 +465,7 @@ void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
   data->result = SQLFetch(data->objResult->m_hSTMT);
-  DEBUG_PRINTF("ODBCResult::UV_FetchAll, return code = %d\n", data->result);
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll, return code = %d for stmt %X\n", data->result, data->objResult->m_hSTMT);
  }
 
 void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
@@ -477,36 +477,39 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   ODBCResult* self = data->objResult->self();
   
   bool doMoreWork = true;
+  bool nodata = false;
   
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
-    DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll, colcount = %d, columns = %d\n", self->colCount, self->columns);
+    DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll, colcount = %d, columns = %d, stmt = %X\n", 
+            self->colCount, self->columns, data->objResult->m_hSTMT);
   }
-  
+
   //check to see if the result set has columns
   if (self->colCount == 0) {
     //this most likely means that the query was something like
     //'insert into ....'
     doMoreWork = false;
+    nodata = true;
+  }
+  //check to see if we are at the end of the recordset
+  else if (data->result == SQL_NO_DATA) {
+    doMoreWork = false;
+    nodata = true;
   }
   //check to see if there was an error
   else if (data->result == SQL_ERROR)  {
     data->errorCount++;
-    
     data->objError.Reset(ODBC::GetSQLError(
       SQL_HANDLE_STMT, 
       self->m_hSTMT,
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
     ));
-    
     doMoreWork = false;
+    nodata = true;
   }
-  //check to see if we are at the end of the recordset
-  else if (data->result == SQL_NO_DATA) {
-    doMoreWork = false;
-  }
-  else {
-    //TODO: !important: persistent forces us to set this to a local handle, but do we need to recopy it back to persistent handle?
+  
+  while (doMoreWork) {
     Local<Array> rows = Nan::New(data->rows);
     if (data->fetchMode == FETCH_ARRAY) {
       rows->Set(
@@ -531,47 +534,53 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
       );
     }
     data->count++;
+    data->result = SQLFetch(data->objResult->m_hSTMT);
+    if (data->result == SQL_NO_DATA) {
+      doMoreWork = false;
+    }
+    //check to see if there was an error
+    else if (data->result == SQL_ERROR)  {
+      data->errorCount++;
+      data->objError.Reset(ODBC::GetSQLError(
+        SQL_HANDLE_STMT, 
+        self->m_hSTMT,
+        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+      ));
+      doMoreWork = false;
+    }
   }
   
-  if (doMoreWork) {
-    //Go back to the thread pool and fetch more data!
-    uv_queue_work(
-      uv_default_loop(),
-      work_req, 
-      UV_FetchAll, 
-      (uv_after_work_cb)UV_AfterFetchAll);
+  if (self->colCount) {
+    ODBC::FreeColumns(self->columns, &self->colCount);
+  }
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll Done for stmt %X\n", data->objResult->m_hSTMT);
+    
+  Local<Value> info[3];
+    
+  if (data->errorCount > 0) {
+      info[0] = Nan::New(data->objError);
   }
   else {
-    ODBC::FreeColumns(self->columns, &self->colCount);
-    
-    Local<Value> info[2];
-    
-    if (data->errorCount > 0) {
-      info[0] = Nan::New(data->objError);
-    }
-    else {
       info[0] = Nan::Null();
-    }
-    
-    info[1] = Nan::New(data->rows);
-
-    Nan::TryCatch try_catch;
-
-    data->cb->Call(2, info);
-    delete data->cb;
-    data->rows.Reset();
-    data->objError.Reset();
-
-    if (try_catch.HasCaught()) {
-      FatalException(try_catch);
-    }
-
-    //TODO: Do we need to free self->rows somehow?
-    free(data);
-    free(work_req);
-
-    self->Unref(); 
   }
+    
+  info[1] = Nan::New(data->rows);
+  info[2] = Nan::New(nodata);
+  Nan::TryCatch try_catch;
+
+  data->cb->Call(3, info);
+  delete data->cb;
+  data->rows.Reset();
+  data->objError.Reset();
+
+  if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+  }
+
+  //TODO: Do we need to free self->rows somehow?
+  free(data);
+  free(work_req);
+  self->Unref(); 
 }
 
 /*
@@ -611,20 +620,20 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   //Only loop through the recordset if there are columns
   if (self->colCount > 0) {
     //loop through all records
-    while (true) {
+    while (true) 
+    {
       ret = SQLFetch(self->m_hSTMT);
       
       //check to see if there was an error
-      if (ret == SQL_ERROR)  {
+      if (ret == SQL_ERROR)  
+      {
         errorCount++;
-        
         objError = ODBC::GetSQLError(
           SQL_HANDLE_STMT, 
           self->m_hSTMT,
           (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
             " your query did not have a result set."
         );
-        
         break;
       }
       

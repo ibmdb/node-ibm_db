@@ -762,8 +762,8 @@ NAN_METHOD(ODBCConnection::Query) {
   sql->WriteUtf8((char *) data->sql);
 #endif
 
-  DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s\n",
-               data->sqlLen, data->sqlSize, (char*) data->sql);
+  DEBUG_PRINTF("ODBCConnection::Query : sqlLen=%i, sqlSize=%i, sql=%s, hDBC=%X\n",
+               data->sqlLen, data->sqlSize, (char*) data->sql, conn->m_hDBC);
   
   data->conn = conn;
   work_req->data = data;
@@ -777,14 +777,13 @@ NAN_METHOD(ODBCConnection::Query) {
   conn->Ref();
 
   info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCConnection::Query done for hDBC=%X\n", data->conn->m_hDBC);
 }
 
 void ODBCConnection::UV_Query(uv_work_t* req) {
-  DEBUG_PRINTF("ODBCConnection::UV_Query\n");
-  
   query_work_data* data = (query_work_data *)(req->data);
-  
   SQLRETURN ret;
+  DEBUG_PRINTF("ODBCConnection::UV_Query hDBC=%X\n", data->conn->m_hDBC);
   
   //allocate a new statment handle
   SQLAllocHandle( SQL_HANDLE_STMT, 
@@ -818,6 +817,7 @@ void ODBCConnection::UV_Query(uv_work_t* req) {
 
   // this will be checked later in UV_AfterQuery
   data->result = ret;
+  DEBUG_PRINTF("ODBCConnection::UV_Query done for hDBC=%X\n", data->conn->m_hDBC);
 }
 
 void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
@@ -831,7 +831,8 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
 
   Nan::TryCatch try_catch;
 
-  DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i\n", data->result, data->noResultObject);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i, stmt=%X\n", 
+          data->result, data->noResultObject, data->hSTMT);
 
   // Retrieve values of INOUT and OUTPUT Parameters of Stored Procedure
   if (SQL_SUCCEEDED(data->result)) {
@@ -1025,7 +1026,7 @@ NAN_METHOD(ODBCConnection::QuerySync) {
                   conn->m_hDBC, 
                   &hSTMT );
 
-  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%i, noResultObject=%i\n", hSTMT, noResultObject);
+  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%X, noResultObject=%i\n", hSTMT, noResultObject);
   //check to see if should excute a direct or a parameter bound query
   if (!SQL_SUCCEEDED(ret)) {
     //We'll check again later
