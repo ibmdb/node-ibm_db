@@ -18,8 +18,8 @@ var INSTALLER_FILE;
 installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
-//Function to download clidriver and install node-ibm_db using HTTP.get
-var download_file_httpget = function(file_url) {
+//Function to download clidriver and install node-ibm_db
+var install_node_ibm_db = function(file_url) {
     var readStream;
     var writeStream;
     var platform = os.platform();
@@ -306,6 +306,6 @@ var download_file_httpget = function(file_url) {
             cosole.log(err);
         });
     };
-}//download_file_httpget
+}//install_node_ibm_db
 
-download_file_httpget();
+install_node_ibm_db();
