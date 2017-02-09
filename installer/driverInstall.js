@@ -310,5 +310,5 @@ var download_file_httpget = function(file_url) {
     });
 
 }; //download_file_httpget
-
+}
 download_file_httpget();
