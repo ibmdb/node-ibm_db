@@ -1,5 +1,5 @@
 /**
- * New node file
+ * Node-ibm_db Installer file.
  */
 
 var fs = require('fs');
@@ -18,7 +18,7 @@ var INSTALLER_FILE;
 installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
-//Function to download file using HTTP.get
+//Function to download clidriver and install node-ibm_db using HTTP.get
 var download_file_httpget = function(file_url) {
     var readStream;
     var writeStream;
@@ -84,6 +84,14 @@ var download_file_httpget = function(file_url) {
         removeUsedPackages();
     }
 
+    /*
+     * IF: IBM_DB_HOME path is set,
+     * clidriver will not be download from remote location
+     * node-ibm_db will use local clidriver package stored in-
+     * IBM_DB_HOME path location.
+     * ELSE: platform specific compressed clidriver package will be download
+     * and then extract for further use.
+     */
     if(process.env.IBM_DB_HOME)
     {
         IBM_DB_HOME = process.env.IBM_DB_HOME;
@@ -176,45 +184,35 @@ var download_file_httpget = function(file_url) {
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
                 INSTALLER_FILE = installerfileURL;
-                copyAndExtractDriver(fs.readFileSync(INSTALLER_FILE));
+                return copyAndExtractDriver();
             }
             return getInstallerFile(installerfileURL);
         });
 
     }  // * END OF EXECUTION */
 
-    function copyAndExtractDriver(buf)
-    {
-        var file = fs.openSync( INSTALLER_FILE, 'w');
-        var len = fs.writeSync( file, buf, 0, buf.length, 0 );
-        if( len != buf.length )
-        {
-            console.log( "Error writing IBM ODBC and CLI Driver to a file" );
-            process.exit(1);
-        }
-        fs.closeSync( file );
-        if(platform == 'win32')
-        {
+    function copyAndExtractDriver() {
+        if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
 
             /* unzipper.Extract will extract the clidriver zipped-
-	     * file content to DOWNLOAD_DIR.
-	     */
+             * file content to DOWNLOAD_DIR.
+             */
             var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
 
             /* After successful closing of the event,
-	     * license_agreement and Download and extraction
-	     * of DB2 ODBC CLI Driver acknowledgement will display.
-	     */
-	    extractCLIDriver.on('close', function(){
-	      console.log(license_agreement);
-	      console.log('Download and extraction of DB2 ODBC ' +
-	        'CLI Driver completed successfully... \n');
-	    });
+             * license_agreement and Download and extraction
+             * of DB2 ODBC CLI Driver acknowledgement will display.
+             */
 
-	    extractCLIDriver.on('err', function(){
-	      console.log(err);
-	    });
+            extractCLIDriver.on('close', function() {
+                console.log(license_agreement);
+                console.log('Download and extraction of DB2 ODBC ' +
+                    'CLI Driver completed successfully... \n');
+            });
+            extractCLIDriver.on('err', function() {
+                console.log(err);
+            });
         }
         else
         {
@@ -237,8 +235,7 @@ var download_file_httpget = function(file_url) {
         }
     }
 
-    function buildBinary(isDownloaded)
-    {
+    function buildBinary(isDownloaded) {
         var buildString = "node-gyp configure build --IBM_DB_HOME=\"$IBM_DB_HOME\"";
         if(isDownloaded) {
             buildString = buildString + " --IS_DOWNLOADED=true";
@@ -273,8 +270,7 @@ var download_file_httpget = function(file_url) {
         });
     } //buildBinary
 
-    function removeUsedPackages()
-    {
+    function removeUsedPackages() {
         var packages = ["nan", "fstream", "unzipper", "targz"];
         for( var index = 0; index < packages.length; index++ )
         {
@@ -290,8 +286,7 @@ var download_file_httpget = function(file_url) {
         }
     }
 
-    function removeWinBuildArchive()
-    {
+    function removeWinBuildArchive() {
         var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
         fs.exists(WIN_BUILD_FILE, function(exists)
         {
@@ -302,13 +297,15 @@ var download_file_httpget = function(file_url) {
         });
     }
 
+    // Function to download clidriver file using request module.
     function getInstallerFile(installerfileURL) {
         var outStream = fs.createWriteStream(INSTALLER_FILE);
         request(installerfileURL).pipe(outStream);
-        outStream.once('close', copyAndExtractDriver).once('error', function (err) {
-            throw err;
-    });
+        outStream.once('close', copyAndExtractDriver)
+        .once('error', function (err) {
+            cosole.log(err);
+        });
+    };
+}//download_file_httpget
 
-}; //download_file_httpget
-}
 download_file_httpget();
