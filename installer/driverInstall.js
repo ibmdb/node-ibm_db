@@ -176,7 +176,7 @@ var download_file_httpget = function(file_url) {
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
                 INSTALLER_FILE = installerfileURL;
-                return copyAndExtractDriver();
+                copyAndExtractDriver(fs.readFileSync(INSTALLER_FILE));
             }
             return getInstallerFile(installerfileURL);
         });
