@@ -31,7 +31,8 @@
     "nan": "~2.3.5",
     "q": "^1.4.1",
     "targz": "^1.0.1",
-    "unzipper": "~0.7.2"
+    "unzipper": "~0.7.2",
+    "request": "^2.75.0"
   },
   "keywords": [
     "node",
