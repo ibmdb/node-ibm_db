@@ -19,7 +19,7 @@ pool.open(connectionString, function( err, conn) {
     conn.querySync("create table mtab2(c1 int, c2 varchar(20))");    
     conn.querySync("Insert into mtab1 values (1, 'bimal'),(2,'kumar'),(3, 'jha'), (4, 'kamal'), (5, 'ibm')");
     conn.querySync("Insert into mtab1 values (1, 'bimal'),(2,'kumar'),(3, 'jha'), (4, 'kamal'), (5, 'ibm')");
-    for(var i = 0; i < 10 ; i++) {
+    for(var i = 0; i < 8 ; i++) {
       conn.querySync("insert into mtab2 (select * from mtab1)");
       conn.querySync("insert into mtab1 (select * from mtab2)");
       }
@@ -29,6 +29,7 @@ pool.open(connectionString, function( err, conn) {
 });
 
 ibmdb.debug(true);
+var q1time, q2time;
 console.log(elapsedTime(), "Opening connection #1");
 pool.open(connectionString, function (err, connection) {
         console.log(elapsedTime(), "Connection 1 opened. Start execution of Query1");
@@ -36,13 +37,14 @@ pool.open(connectionString, function (err, connection) {
         connection.query("select * from mtab1", function(err, data) {
                 if(err) console.log(err);
                 totalTime = (new Date() - startTime1)/1000;
-                console.log(elapsedTime(), "Total execution time for Query1 = ", 
-                            parseInt(totalTime/60), "min", parseInt(totalTime%60), "sec."); 
+                q1time = parseInt(totalTime%60);
+                console.log(elapsedTime(), "Total execution time for Query1 = ", q1time, "sec."); 
                 dropTable++;
                 if(dropTable == 2) {
                   connection.querySync("drop table mtab1");
                   ibmdb.debug(false);
                   pool.close();
+                  assert.equal(q1time > 5, false);
                 }
         });
 });
@@ -52,13 +54,14 @@ pool.open(connectionString, function (err, connection) {
         connection.query("select c1, c2 from mtab1", function(err, data) {
                 if(err) console.log(err);
                 totalTime = (new Date() - startTime1)/1000;
-                console.log(elapsedTime(), "Total execution time for Query2 = ", 
-                            parseInt(totalTime/60), "min", parseInt(totalTime%60), "sec."); 
+                q2time = parseInt(totalTime%60);
+                console.log(elapsedTime(), "Total execution time for Query2 = ", q2time, "sec."); 
                 dropTable++;
                 if(dropTable == 2) {
                   connection.querySync("drop table mtab1");
                   ibmdb.debug(false);
                   pool.close();
+                  assert.equal(q2time > 5, false);
                 }
         });
 });

@@ -477,7 +477,6 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   ODBCResult* self = data->objResult->self();
   
   bool doMoreWork = true;
-  bool nodata = false;
   
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
@@ -490,12 +489,10 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     //this most likely means that the query was something like
     //'insert into ....'
     doMoreWork = false;
-    nodata = true;
   }
   //check to see if we are at the end of the recordset
   else if (data->result == SQL_NO_DATA) {
     doMoreWork = false;
-    nodata = true;
   }
   //check to see if there was an error
   else if (data->result == SQL_ERROR)  {
@@ -506,10 +503,9 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
       (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
     ));
     doMoreWork = false;
-    nodata = true;
   }
   
-  while (doMoreWork) {
+  else {
     Local<Array> rows = Nan::New(data->rows);
     if (data->fetchMode == FETCH_ARRAY) {
       rows->Set(
@@ -534,53 +530,45 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
       );
     }
     data->count++;
-    data->result = SQLFetch(data->objResult->m_hSTMT);
-    if (data->result == SQL_NO_DATA) {
-      doMoreWork = false;
-    }
-    //check to see if there was an error
-    else if (data->result == SQL_ERROR)  {
-      data->errorCount++;
-      data->objError.Reset(ODBC::GetSQLError(
-        SQL_HANDLE_STMT, 
-        self->m_hSTMT,
-        (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
-      ));
-      doMoreWork = false;
-    }
   }
-  
-  if (self->colCount) {
-    ODBC::FreeColumns(self->columns, &self->colCount);
-  }
-  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll Done for stmt %X\n", data->objResult->m_hSTMT);
-    
-  Local<Value> info[3];
-    
-  if (data->errorCount > 0) {
-      info[0] = Nan::New(data->objError);
+  if (doMoreWork) {
+    //Go back to the thread pool and fetch more data!
+    uv_queue_work( uv_default_loop(),
+                   work_req,
+                   UV_FetchAll,
+                   (uv_after_work_cb)UV_AfterFetchAll);
   }
   else {
-      info[0] = Nan::Null();
-  }
+    ODBC::FreeColumns(self->columns, &self->colCount);
+    DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll Done for stmt %X\n", data->objResult->m_hSTMT);
     
-  info[1] = Nan::New(data->rows);
-  info[2] = Nan::New(nodata);
-  Nan::TryCatch try_catch;
+    Local<Value> info[3];
+    
+    if (data->errorCount > 0) {
+      info[0] = Nan::New(data->objError);
+    }
+    else {
+      info[0] = Nan::Null();
+    }
+    
+    info[1] = Nan::New(data->rows);
+    info[2] = Nan::New(data->count);
+    Nan::TryCatch try_catch;
 
-  data->cb->Call(3, info);
-  delete data->cb;
-  data->rows.Reset();
-  data->objError.Reset();
+    data->cb->Call(3, info);
+    delete data->cb;
+    data->rows.Reset();
+    data->objError.Reset();
 
-  if (try_catch.HasCaught()) {
+    if (try_catch.HasCaught()) {
       FatalException(try_catch);
-  }
+    }
 
-  //TODO: Do we need to free self->rows somehow?
-  free(data);
-  free(work_req);
-  self->Unref(); 
+    //TODO: Do we need to free self->rows somehow?
+    free(data);
+    free(work_req);
+    self->Unref(); 
+  }
 }
 
 /*
