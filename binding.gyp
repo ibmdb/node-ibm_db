@@ -7,7 +7,6 @@
         'src/odbc_connection.cpp',
         'src/odbc_statement.cpp',
         'src/odbc_result.cpp',
-        'src/dynodbc.cpp'
       ],
       'include_dirs': [
         "<!(node -e \"require('nan')\")"

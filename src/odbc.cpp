@@ -27,10 +27,6 @@
 #include "odbc_result.h"
 #include "odbc_statement.h"
 
-#ifdef dynodbc
-#include "dynodbc.h"
-#endif
-
 #ifdef _WIN32
 #include "strptime.h"
 #endif
@@ -1268,24 +1264,7 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
   return scope.Escape(rows);
 }
 
-#ifdef dynodbc
-NAN_METHOD(ODBC::LoadODBCLibrary) {
-  Nan::HandleScope scope;
-  
-  REQ_STR_ARG(0, js_library);
-  
-  bool result = DynLoadODBC(*js_library);
-  
-  info.GetReturnValue().Set((result) ? True() : False());
-}
-#endif
-
 extern "C" void init(v8::Handle<Object> exports) {
-#ifdef dynodbc
-  exports->Set(Nan::New("loadODBCLibrary").ToLocalChecked(),
-        FunctionTemplate::New(ODBC::LoadODBCLibrary)->GetFunction());
-#endif
-  
   ODBC::Init(exports);
   ODBCResult::Init(exports);
   ODBCConnection::Init(exports);
