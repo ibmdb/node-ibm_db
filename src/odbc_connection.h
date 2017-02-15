@@ -20,6 +20,8 @@
 
 #include <nan.h>
 
+#define DEFAULT_CONNECTION_TIMEOUT 30
+
 class ODBCConnection : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_SQL;
@@ -58,10 +60,10 @@ class ODBCConnection : public Nan::ObjectWrap {
     static void UV_EndTransaction(uv_work_t* work_req);
     static void UV_AfterEndTransaction(uv_work_t* work_req, int status);
     
-    
     static NAN_METHOD(Open);
     static void UV_Open(uv_work_t* work_req);
     static void UV_AfterOpen(uv_work_t* work_req, int status);
+    static void SetConnectionTimeOut( SQLHDBC hDBC, SQLUINTEGER timeOut );
 
     static NAN_METHOD(Close);
     static void UV_Close(uv_work_t* work_req);
@@ -105,7 +107,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     SQLUSMALLINT canHaveMoreResults;
     bool connected;
     int statements;
-    int connectTimeout;
+    SQLUINTEGER connectTimeout;
 };
 
 struct create_statement_work_data {

@@ -115,7 +115,7 @@ NAN_METHOD(ODBCConnection::New) {
   conn->Wrap(info.Holder());
   
   //set default connectTimeout to 30 seconds
-  conn->connectTimeout = 30;
+  conn->connectTimeout = DEFAULT_CONNECTION_TIMEOUT ;
   
   info.GetReturnValue().Set(info.Holder());
 }
@@ -206,18 +206,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   ODBCConnection* self = data->conn->self();
 
-  DEBUG_PRINTF("ODBCConnection::UV_Open : connectTimeout=%i \n", *&(self->connectTimeout));
-  
-  int timeOut = self->connectTimeout;
-  
-  if (timeOut > 0) {
-    //NOTE: SQLSetConnectAttr requires the thread to be locked
-    SQLSetConnectAttr(
-      self->m_hDBC,           //ConnectionHandle
-      SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
-      sizeof(timeOut));       //StringLength
-  }
+  SetConnectionTimeOut(self->m_hDBC, self->connectTimeout);
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
@@ -302,6 +291,32 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   free(req);
 }
 
+void ODBCConnection::SetConnectionTimeOut( SQLHDBC hDBC, SQLUINTEGER timeOut )
+{
+    SQLRETURN rc = SQL_SUCCESS;
+    DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - timeOut = %i\n", timeOut);
+
+    if(timeOut < 0 || timeOut > 32767)
+    {
+        timeOut = DEFAULT_CONNECTION_TIMEOUT ;
+        DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - Invalid connection timeout value changed to default.");
+    }
+    if (timeOut > 0)
+    {
+      //NOTE: SQLSetConnectAttr requires the thread to be locked
+      rc = SQLSetConnectAttr( hDBC,           //ConnectionHandle
+                              SQL_ATTR_LOGIN_TIMEOUT, //Attribute
+                              (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
+                              sizeof(timeOut));       //StringLength
+    }
+    if(rc != SQL_SUCCESS)
+    {
+        // We should not disallow connection if rc is not success, though it would never happen.
+        // So, ignore any rc and just log here the value for debug build.
+        DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - rc = %i\n", rc);
+    }
+}
+
 /*
  * OpenSync
  */
@@ -315,8 +330,6 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   //get reference to the connection object
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
  
-  DEBUG_PRINTF("ODBCConnection::OpenSync : connectTimeout=%i\n", *&(conn->connectTimeout));
-
   Local<Value> objError;
   SQLRETURN ret;
   bool err = false;
@@ -333,16 +346,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   connection->WriteUtf8(connectionString);
 #endif
   
-  int timeOut = conn->connectTimeout;
-
-  if (timeOut > 0) {
-    //NOTE: SQLSetConnectAttr requires the thread to be locked
-    SQLSetConnectAttr(
-      conn->m_hDBC,           //ConnectionHandle
-      SQL_ATTR_LOGIN_TIMEOUT, //Attribute
-      (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
-      sizeof(timeOut));       //StringLength
-  }
+  SetConnectionTimeOut(conn->m_hDBC, conn->connectTimeout);
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
