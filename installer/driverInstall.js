@@ -223,12 +223,12 @@ var install_node_ibm_db = function(file_url) {
              * license_agreement and Download and extraction
              * of DB2 ODBC CLI Driver acknowledgement will display.
              */
-
             extractCLIDriver.on('close', function() {
                 console.log(license_agreement);
                 console.log('Downloading and extraction of DB2 ODBC ' +
                     'CLI Driver completed successfully... \n');
             });
+
             extractCLIDriver.on('err', function() {
                 console.log(err);
             });
