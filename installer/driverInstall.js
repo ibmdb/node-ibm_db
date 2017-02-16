@@ -24,16 +24,16 @@ var install_node_ibm_db = function(file_url) {
     var arch = os.arch();
     var endian = os.endianness();
     var installerfileURL;
-    
+
     var fstream = require('fstream');
     var unzipper = require('unzipper');
-                
+
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
-    
+
     if(platform == 'win32') {
         if(arch == 'x64') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-            
+
             //Windows node binary names should update here.
             var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
             var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
@@ -103,17 +103,17 @@ var install_node_ibm_db = function(file_url) {
            IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
         }
         console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
-        
+
         if (!fs.existsSync(IBM_DB_HOME)) {
             console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
-        
+
         if (!fs.existsSync(IBM_DB_INCLUDE)) {
             console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
-        
+
         if (!fs.existsSync(IBM_DB_LIB)) {
             console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
@@ -185,18 +185,18 @@ var install_node_ibm_db = function(file_url) {
             installerfileURL = installerURL + platform + arch + 
                                '_odbc_cli.tar.gz';
         }
-        
+
         if(!installerfileURL) {
             console.log('Unable to fetch driver download file. Exiting the ' +
                         'install process.');
             process.exit(1);
         }
-        
+
         var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
         var file_name = url.parse(installerfileURL).pathname.split('/').pop();
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
-        
+
         console.log('Downloading DB2 ODBC CLI Driver from ' +
                     installerfileURL+'...\n');
 
@@ -209,11 +209,11 @@ var install_node_ibm_db = function(file_url) {
         });
 
     }  // * END OF EXECUTION */
- 
+
     function copyAndExtractDriver() {
         if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
-            
+
             /* unzipper.Extract will extract the clidriver zipped-
              * file content to DOWNLOAD_DIR.
              */
@@ -289,7 +289,7 @@ var install_node_ibm_db = function(file_url) {
             removeUsedPackages();
         });
     } //buildBinary
-    
+
     function removeUsedPackages()
     {
         var packages = ["nan", "fstream", "unzipper", "targz"];
@@ -318,7 +318,7 @@ var install_node_ibm_db = function(file_url) {
             }
         });
     }
-    
+
     // Function to download clidriver file using request module.
     function getInstallerFile(installerfileURL) {
         // Variable to save downloading progress
@@ -326,7 +326,7 @@ var install_node_ibm_db = function(file_url) {
         var total_bytes = 0;
 
         var outStream = fs.createWriteStream(INSTALLER_FILE);
-        
+
         request
             .get(installerfileURL)
                 .on('error', function(err) {
