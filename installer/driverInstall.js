@@ -33,7 +33,7 @@ var install_node_ibm_db = function(file_url) {
     if(platform == 'win32') {
         if(arch == 'x64') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-
+            
             //Windows node binary names should update here.
             var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
             var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
@@ -199,7 +199,7 @@ var install_node_ibm_db = function(file_url) {
         
         console.log('Downloading DB2 ODBC CLI Driver from ' +
                     installerfileURL+'...\n');
-                    
+
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
                 INSTALLER_FILE = installerfileURL;
@@ -213,7 +213,7 @@ var install_node_ibm_db = function(file_url) {
     function copyAndExtractDriver() {
         if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
-
+            
             /* unzipper.Extract will extract the clidriver zipped-
              * file content to DOWNLOAD_DIR.
              */
@@ -250,7 +250,7 @@ var install_node_ibm_db = function(file_url) {
                 buildBinary(true);
                 removeWinBuildArchive();
               }
-	        });
+            });
         }
     }
 
