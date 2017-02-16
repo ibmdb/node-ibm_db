@@ -321,25 +321,30 @@ var install_node_ibm_db = function(file_url) {
     
     // Function to download clidriver file using request module.
     function getInstallerFile(installerfileURL) {
+        var req = request ({
+            method: 'GET',
+            uri: installerfileURL
+        });
+
         // Variable to save downloading progress
         var received_bytes = 0;
         var total_bytes = 0;
 
         var outStream = fs.createWriteStream(INSTALLER_FILE);
-        
-        request
-            .get(installerfileURL)
-                .on('error', function(err) {
-                    console.log(err);
-                })
-                .on('response', function(data) {
-                    total_bytes = parseInt(data.headers['content-length']);
-                })
-                .on('data', function(chunk) {
-                    received_bytes += chunk.length;
-                    showDownloadingProgress(received_bytes, total_bytes);
-                })
-                .pipe(outStream);
+        req.pipe(outStream);
+
+        req.on('error', function(err) {
+            console.log(err);
+        });
+
+        req.on('response', function(data) {
+            total_bytes = parseInt(data.headers['content-length']);
+        });
+
+        req.on('data', function(chunk) {
+            received_bytes += chunk.length;
+            showDownloadingProgress(received_bytes, total_bytes);
+        });
 
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
