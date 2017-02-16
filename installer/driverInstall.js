@@ -321,30 +321,25 @@ var install_node_ibm_db = function(file_url) {
     
     // Function to download clidriver file using request module.
     function getInstallerFile(installerfileURL) {
-        var req = request ({
-            method: 'GET',
-            uri: installerfileURL
-        });
-
         // Variable to save downloading progress
         var received_bytes = 0;
         var total_bytes = 0;
 
         var outStream = fs.createWriteStream(INSTALLER_FILE);
-        req.pipe(outStream);
-
-        req.on('error', function(err) {
-            console.log(err);
-        });
-
-        req.on('response', function(data) {
-            total_bytes = parseInt(data.headers['content-length']);
-        });
-
-        req.on('data', function(chunk) {
-            received_bytes += chunk.length;
-        });
-        showDownloadingProgress(received_bytes, total_bytes);
+        
+        request
+            .get(installerfileURL)
+                .on('error', function(err) {
+                    console.log(err);
+                })
+                .on('response', function(data) {
+                    total_bytes = parseInt(data.headers['content-length']);
+                })
+                .on('data', function(chunk) {
+                    received_bytes += chunk.length;
+                    showDownloadingProgress(received_bytes, total_bytes);
+                })
+                .pipe(outStream);
 
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
@@ -353,8 +348,9 @@ var install_node_ibm_db = function(file_url) {
     };
 
     function showDownloadingProgress(received, total) {
-        var percentage = (received * 100) / total;
-        console.log(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
+        var percentage = ((received * 100) / total).toFixed(2);
+        //process.stdout.write("Downloading " + (100.0 * downloaded / len).toFixed(2) + "% " + downloaded + " bytes" + isWin ? "\033[0G": "\r");
+        process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
     }
 
 }; //install_node_ibm_db
