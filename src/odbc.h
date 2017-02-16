@@ -24,11 +24,7 @@
 #include <wchar.h>
 
 #include <stdlib.h>
-#ifdef dynodbc
-#include "dynodbc.h"
-#else
 #include <sqlcli1.h>
-#endif
 
 using namespace v8;
 using namespace node;
@@ -115,9 +111,6 @@ class ODBC : public Nan::ObjectWrap {
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
     static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);
-#ifdef dynodbc
-    static Handle<Value> LoadODBCLibrary(const Arguments& info);
-#endif
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     static SQLRETURN  BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
     
