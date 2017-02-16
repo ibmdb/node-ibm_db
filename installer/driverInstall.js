@@ -192,13 +192,13 @@ var install_node_ibm_db = function(file_url) {
             process.exit(1);
         }
         
-        var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
+        var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
         var file_name = url.parse(installerfileURL).pathname.split('/').pop();
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
         
         console.log('Downloading DB2 ODBC CLI Driver from ' +
-                    installerfileURL+'...');
+                    installerfileURL+'...\n');
                     
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
@@ -226,7 +226,7 @@ var install_node_ibm_db = function(file_url) {
 
             extractCLIDriver.on('close', function() {
                 console.log(license_agreement);
-                console.log('Download and extraction of DB2 ODBC ' +
+                console.log('Downloading and extraction of DB2 ODBC ' +
                     'CLI Driver completed successfully... \n');
             });
             extractCLIDriver.on('err', function() {
@@ -242,9 +242,9 @@ var install_node_ibm_db = function(file_url) {
                 process.exit(1);
               }
               else {
-                console.log('Download and extraction of DB2 ODBC ' +
-                            'CLI Driver completed successfully ...');
                 console.log(license_agreement);
+                console.log('Downloading and extraction of DB2 ODBC ' +
+                            'CLI Driver completed successfully ...');
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
