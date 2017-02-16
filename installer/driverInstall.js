@@ -350,7 +350,6 @@ var install_node_ibm_db = function(file_url) {
     function showDownloadingProgress(received, total) {
         var percentage = ((received * 100) / total).toFixed(2);
         process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
-        //process.stdout.write("Downloading " + (100.0 * downloaded / len).toFixed(2) + "% " + downloaded + " bytes" + isWin ? "\033[0G": "\r");
         process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
     }
 
