@@ -343,8 +343,8 @@ var install_node_ibm_db = function(file_url) {
 
         req.on('data', function(chunk) {
             received_bytes += chunk.length;
-            showDownloadingProgress(received_bytes, total_bytes);
         });
+        showDownloadingProgress(received_bytes, total_bytes);
 
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
