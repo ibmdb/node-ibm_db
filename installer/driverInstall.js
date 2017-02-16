@@ -321,13 +321,36 @@ var install_node_ibm_db = function(file_url) {
     
     // Function to download clidriver file using request module.
     function getInstallerFile(installerfileURL) {
+        // Variable to save downloading progress
+        var received_bytes = 0;
+        var total_bytes = 0;
+
         var outStream = fs.createWriteStream(INSTALLER_FILE);
-        request(installerfileURL).pipe(outStream);
+        
+        request
+            .get(installerfileURL)
+                .on('error', function(err) {
+                    console.log(err);
+                })
+                .on('response', function(data) {
+                    total_bytes = parseInt(data.headers['content-length']);
+                })
+                .on('data', function(chunk) {
+                    received_bytes += chunk.length;
+                    showDownloadingProgress(received_bytes, total_bytes);
+                })
+                .pipe(outStream);
+
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
             cosole.log(err);
         });
     };
+
+    function showDownloadingProgress(received, total) {
+        var percentage = (received * 100) / total;
+        console.log(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
+    }
 
 }; //install_node_ibm_db
 
