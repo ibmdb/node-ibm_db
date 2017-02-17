@@ -13,7 +13,7 @@ Install a newer compiler or upgrade older one.
 
 - Python 2.7 is needed by node-gyp.
 
-- You need not to install any db2 ODBC client driver for connectivity. Just install ibm_db and it is ready for use.
+- You need not to install any db2 ODBC client driver for connectivity. `ibm_db` itself download and install odbc/cli driver from ibm website during installation. Just install `ibm_db` and it is ready for use.
 
 - Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.10.x is deprecated on Windows and will be discontinued from next release.
 
@@ -25,6 +25,8 @@ You may install the package using npm install command:
 ```
 npm install ibm_db
 ```
+
+You can avoid download of odbc/cli driver by setting environment variable `IBM_DB_HOME` to a pre-installed `db2 client or server` installation directory.  Also, you can force `ibm_db` to download odbc/cli driver from a different url by setting environment variable `IBM_DB_INSTALLER_URL`.
 
 For more installation details refer: [INSTALL](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
