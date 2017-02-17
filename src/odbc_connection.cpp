@@ -56,6 +56,7 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   //Nan::SetAccessor(instance_template, Nan::New("mode").ToLocalChecked(), ModeGetter, ModeSetter);
   Nan::SetAccessor(instance_template, Nan::New("connected").ToLocalChecked(), ConnectedGetter);
   Nan::SetAccessor(instance_template, Nan::New("connectTimeout").ToLocalChecked(), ConnectTimeoutGetter, ConnectTimeoutSetter);
+  Nan::SetAccessor(instance_template, Nan::New("systemNaming").ToLocalChecked(), SystemNamingGetter, SystemNamingSetter);
   
   // Prototype Methods
   Nan::SetPrototypeMethod(constructor_template, "open", Open);
@@ -117,6 +118,8 @@ NAN_METHOD(ODBCConnection::New) {
   //set default connectTimeout to 30 seconds
   conn->connectTimeout = DEFAULT_CONNECTION_TIMEOUT ;
   
+  conn->systemNaming = false;
+
   info.GetReturnValue().Set(info.Holder());
 }
 
@@ -144,6 +147,22 @@ NAN_SETTER(ODBCConnection::ConnectTimeoutSetter) {
   if (value->IsNumber()) {
     obj->connectTimeout = value->Uint32Value();
   }
+}
+
+NAN_GETTER(ODBCConnection::SystemNamingGetter) {
+  Nan::HandleScope scope;
+
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  info.GetReturnValue().Set(obj->systemNaming ? Nan::True() : Nan::False());
+}
+
+NAN_SETTER(ODBCConnection::SystemNamingSetter) {
+  Nan::HandleScope scope;
+
+  ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  obj->systemNaming = value->BooleanValue();
 }
 
 /*
@@ -206,7 +225,7 @@ void ODBCConnection::UV_Open(uv_work_t* req) {
   
   ODBCConnection* self = data->conn->self();
 
-  SetConnectionTimeOut(self->m_hDBC, self->connectTimeout);
+  SetConnectionAttributes(self);
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
@@ -291,29 +310,41 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status) {
   free(req);
 }
 
-void ODBCConnection::SetConnectionTimeOut( SQLHDBC hDBC, SQLUINTEGER timeOut )
+void ODBCConnection::SetConnectionAttributes( ODBCConnection* conn )
 {
     SQLRETURN rc = SQL_SUCCESS;
-    DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - timeOut = %i\n", timeOut);
+    SQLUINTEGER timeOut = conn->connectTimeout;
+    DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - timeOut = %i, systemNaming = %i\n",
+                 timeOut, conn->systemNaming);
 
     if(timeOut < 0 || timeOut > 32767)
     {
         timeOut = DEFAULT_CONNECTION_TIMEOUT ;
-        DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - Invalid connection timeout value changed to default.");
+        DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - Invalid connection timeout value changed to default.");
     }
-    if (timeOut > 0)
+    if( timeOut > 0 )
     {
-      //NOTE: SQLSetConnectAttr requires the thread to be locked
-      rc = SQLSetConnectAttr( hDBC,           //ConnectionHandle
+      rc = SQLSetConnectAttr( conn->m_hDBC,           //ConnectionHandle
                               SQL_ATTR_LOGIN_TIMEOUT, //Attribute
                               (SQLPOINTER)(intptr_t)timeOut,    //ValuePtr
-                              sizeof(timeOut));       //StringLength
+                              sizeof(timeOut) );       //StringLength
+        if(rc != SQL_SUCCESS)
+        {
+            // We should not disallow connection if rc is not success, though it would never happen.
+            // So, ignore any rc and just log here the value for debug build.
+            DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - rc for connectTimeout = %i\n", rc);
+        }
     }
-    if(rc != SQL_SUCCESS)
+    if( conn->systemNaming )
     {
-        // We should not disallow connection if rc is not success, though it would never happen.
-        // So, ignore any rc and just log here the value for debug build.
-        DEBUG_PRINTF("ODBCConnection::SetConnectionTimeOut - rc = %i\n", rc);
+        rc = SQLSetConnectAttr( conn->m_hDBC,
+                                SQL_ATTR_DBC_SYS_NAMING,
+                                (SQLPOINTER)SQL_TRUE,
+                                SQL_IS_INTEGER );
+        if(rc != SQL_SUCCESS)
+        {
+            DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - rc for systemNaming = %i\n", rc);
+        }
     }
 }
 
@@ -346,7 +377,7 @@ NAN_METHOD(ODBCConnection::OpenSync) {
   connection->WriteUtf8(connectionString);
 #endif
   
-  SetConnectionTimeOut(conn->m_hDBC, conn->connectTimeout);
+  SetConnectionAttributes(conn);
   
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
@@ -853,17 +884,14 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     //this means we should release the handle now and call back
     //with Nan::True()
     
-    DEBUG_PRINTF("Going to free handle.\n");
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
     data->hSTMT = (SQLHSTMT)NULL;
-    DEBUG_PRINTF("Handle freed.\n");
     
     Local<Value> info[2];
     info[0] = Nan::Null();
     if(outParamCount) info[1] = sp_result;
     else info[1] = Nan::Null();
     
-    DEBUG_PRINTF("Calling callback function...\n");
     data->cb->Call(2, info);
   }
   else {
@@ -890,7 +918,6 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
     data->cb->Call(3, info);
   }
   
-  DEBUG_PRINTF("After callback function executed.\n");
   data->conn->Unref();
   
   if (try_catch.HasCaught()) {

@@ -50,6 +50,8 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_GETTER(ConnectedGetter);
     static NAN_GETTER(ConnectTimeoutGetter);
     static NAN_SETTER(ConnectTimeoutSetter);
+    static NAN_GETTER(SystemNamingGetter);
+    static NAN_SETTER(SystemNamingSetter);
 
     //async methods
     static NAN_METHOD(BeginTransaction);
@@ -63,7 +65,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(Open);
     static void UV_Open(uv_work_t* work_req);
     static void UV_AfterOpen(uv_work_t* work_req, int status);
-    static void SetConnectionTimeOut( SQLHDBC hDBC, SQLUINTEGER timeOut );
+    static void SetConnectionAttributes( ODBCConnection* conn );
 
     static NAN_METHOD(Close);
     static void UV_Close(uv_work_t* work_req);
@@ -105,9 +107,10 @@ class ODBCConnection : public Nan::ObjectWrap {
     SQLHENV m_hENV;
     SQLHDBC m_hDBC;
     SQLUSMALLINT canHaveMoreResults;
+    bool systemNaming;  // For i5/OS SQL_ATTR_DBC_SYS_NAMING
     bool connected;
     int statements;
-    SQLUINTEGER connectTimeout;
+    SQLUINTEGER connectTimeout; // For SQL_ATTR_LOGIN_TIMEOUT
 };
 
 struct create_statement_work_data {
