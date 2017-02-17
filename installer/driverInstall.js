@@ -1,13 +1,13 @@
 /**
- * New node file
+ * Node-ibm_db Installer file.
  */
 
 var fs = require('fs');
 var url = require('url');
-var http = require('https');
 var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
+var request = require('request');
 
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
 var CURRENT_DIR = process.cwd();
@@ -16,65 +16,64 @@ var INSTALLER_FILE;
 installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
-//Function to download file using HTTP.get
-var download_file_httpget = function(file_url) {
+//Function to download clidriver and install node-ibm_db
+var install_node_ibm_db = function(file_url) {
     var readStream;
     var writeStream;
     var platform = os.platform();
     var arch = os.arch();
     var endian = os.endianness();
     var installerfileURL;
-    
+
     var fstream = require('fstream');
     var unzipper = require('unzipper');
-                
+
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
-    
+
     if(platform == 'win32') {
         if(arch == 'x64') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
 
-	    //Windows node binary names should update here. 
-	    var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
-	    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
-	    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
-	    var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
-	    var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
+            //Windows node binary names should update here.
+            var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+            var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
+            var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
+            var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
+            var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
 
             /*
-	     * odbcBindingsNode will consist of the node binary-
-	     * file name according to the node version in the system.
-	     */
-	    var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V10 ||
-	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
-	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 ||
-	    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6 || ODBC_BINDINGS ;
+             * odbcBindingsNode will consist of the node binary-
+             * file name according to the node version in the system.
+             */
+            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V10 ||
+            (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
+            (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 ||
+            (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6 || ODBC_BINDINGS ;
 
             readStream = fs.createReadStream(BUILD_FILE);
 
             /*
-	     * unzipper will parse the build.zip file content and
-	     * then it will check for the odbcBindingsNode
-	     * (node Binary), when it gets that binary file,
-	     * fstream.Writer will write the same node binary
-	     * but the name will be odbc_bindings.node, and the other
-	     * binary files and build.zip will be discarded.
-	     */
-            readStream
-              .pipe(unzipper.Parse())
-	      .on('entry', function (entry) {
-	        if(entry.path === odbcBindingsNode){
-		  entry.pipe(fstream.Writer(ODBC_BINDINGS));
-		}else {
-		  entry.autodrain();
-		}
-              })
-	      .on('error', function(e) {
-	        console.log('error',e);
-	      })
-	      .on('finish', function() {
-	        fs.unlinkSync(BUILD_FILE);
-	      });
+             * unzipper will parse the build.zip file content and
+             * then it will check for the odbcBindingsNode
+             * (node Binary), when it gets that binary file,
+             * fstream.Writer will write the same node binary
+             * but the name will be odbc_bindings.node, and the other
+             * binary files and build.zip will be discarded.
+             */
+            readStream.pipe(unzipper.Parse())
+            .on('entry', function (entry) {
+                if(entry.path === odbcBindingsNode){
+                    entry.pipe(fstream.Writer(ODBC_BINDINGS));
+                } else {
+                    entry.autodrain();
+                }
+            })
+            .on('error', function(e) {
+                console.log('error',e);
+            })
+            .on('finish', function() {
+                fs.unlinkSync(BUILD_FILE);
+            });
 
             removeUsedPackages();
         } else {
@@ -83,7 +82,15 @@ var download_file_httpget = function(file_url) {
             return;
         }
     }
-    
+
+    /*
+     * IF: IBM_DB_HOME path is set,
+     * clidriver will not be download from remote location
+     * node-ibm_db will use local clidriver package stored in-
+     * IBM_DB_HOME path location.
+     * ELSE: platform specific compressed clidriver package will be download
+     * and then extract for further use.
+     */
     if(process.env.IBM_DB_HOME) 
     {
         IBM_DB_HOME = process.env.IBM_DB_HOME;
@@ -96,17 +103,17 @@ var download_file_httpget = function(file_url) {
            IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
         }
         console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
-        
+
         if (!fs.existsSync(IBM_DB_HOME)) {
             console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
-        
+
         if (!fs.existsSync(IBM_DB_INCLUDE)) {
             console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
         }
-        
+
         if (!fs.existsSync(IBM_DB_LIB)) {
             console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.');
@@ -178,102 +185,53 @@ var download_file_httpget = function(file_url) {
             installerfileURL = installerURL + platform + arch + 
                                '_odbc_cli.tar.gz';
         }
-        
+
         if(!installerfileURL) {
             console.log('Unable to fetch driver download file. Exiting the ' +
                         'install process.');
             process.exit(1);
         }
-        
-        var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
+
+        var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
         var file_name = url.parse(installerfileURL).pathname.split('/').pop();
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
-        
+
         console.log('Downloading DB2 ODBC CLI Driver from ' +
-                    installerfileURL+'...');
+                    installerfileURL+'...\n');
 
         fs.stat(installerfileURL, function (err, stats) {
-            if (err) {
-                buildHttpOptions(installerfileURL);
+            if (!err && stats.isFile()) {
+                INSTALLER_FILE = installerfileURL;
+                return copyAndExtractDriver();
             }
-            else if(stats.isFile()) 
-                copyAndExtractDriver(fs.readFileSync(installerfileURL));
-            else
-                buildHttpOptions(installerfileURL);
+            return getInstallerFile(installerfileURL);
         });
 
     }  // * END OF EXECUTION */
-        
-    var downloadCLIDriver = function(res)
-    {
-        if( res.statusCode != 200 ) 
-        {
-            console.log( "Unable to download IBM ODBC and CLI Driver from " +
-                  installerfileURL );
-            process.exit(1);
-        }
-        //var file = fs.createWriteStream(INSTALLER_FILE);
-        var fileLength = parseInt( res.headers['content-length'] ); 
-        var buf = new Buffer( fileLength );
-        var byteIndex = 0;
-            
-        res.on('data', function(data) {
-            if( byteIndex + data.length > buf.length ) 
-            {
-                console.log( "Error downloading IBM ODBC and CLI Driver from " +
-                     installerfileURL );
-                process.exit(1);
-            }
-            data.copy( buf, byteIndex );
-            byteIndex += data.length;
-            process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
-            process.stdout.write("Downloaded " + (100.0 * byteIndex / fileLength).toFixed(2) + 
-                                 "% (" + byteIndex + " bytes)");
-         }).on('end', function() {
-             console.log("\n");
-             if( byteIndex != buf.length ) 
-             {
-                console.log( "Error downloading IBM ODBC and CLI Driver from " +
-                     installerfileURL );
-                process.exit(1);
-             }
-             copyAndExtractDriver(buf);
-         });
-    } // downloadCLIDriver
-    
-    function copyAndExtractDriver(buf)
-    {
-        var file = fs.openSync( INSTALLER_FILE, 'w');
-        var len = fs.writeSync( file, buf, 0, buf.length, 0 );
-        if( len != buf.length ) 
-        {
-            console.log( "Error writing IBM ODBC and CLI Driver to a file" );
-            process.exit(1);
-        }
-        fs.closeSync( file );
-        if(platform == 'win32') 
-        {
+
+    function copyAndExtractDriver() {
+        if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
 
             /* unzipper.Extract will extract the clidriver zipped-
-	     * file content to DOWNLOAD_DIR.
-	     */
+             * file content to DOWNLOAD_DIR.
+             */
             var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
 
-            /* After successful closing of the event, 
-	     * license_agreement and Download and extraction
-	     * of DB2 ODBC CLI Driver acknowledgement will display.
-	     */
-	    extractCLIDriver.on('close', function(){
-	      console.log(license_agreement);
-	      console.log('Download and extraction of DB2 ODBC ' +
-	        'CLI Driver completed successfully... \n');
-	    });
+            /* After successful closing of the event,
+             * license_agreement and Download and extraction
+             * of DB2 ODBC CLI Driver acknowledgement will display.
+             */
+            extractCLIDriver.on('close', function() {
+                console.log(license_agreement);
+                console.log('Downloading and extraction of DB2 ODBC ' +
+                    'CLI Driver completed successfully... \n');
+            });
 
-	    extractCLIDriver.on('err', function(){
-	      console.log(err);
-	    });
+            extractCLIDriver.on('err', function() {
+                console.log(err);
+            });
         } 
         else 
         {
@@ -284,15 +242,15 @@ var download_file_httpget = function(file_url) {
                 process.exit(1);
               }
               else {
-                console.log('Download and extraction of DB2 ODBC ' +
-                            'CLI Driver completed successfully ...');
                 console.log(license_agreement);
+                console.log('Downloading and extraction of DB2 ODBC ' +
+                            'CLI Driver completed successfully ...');
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
                 removeWinBuildArchive();
               }
-	        });
+            });
         }
     }
 
@@ -331,7 +289,7 @@ var download_file_httpget = function(file_url) {
             removeUsedPackages();
         });
     } //buildBinary
-    
+
     function removeUsedPackages()
     {
         var packages = ["nan", "fstream", "unzipper", "targz"];
@@ -360,82 +318,41 @@ var download_file_httpget = function(file_url) {
             }
         });
     }
-    
-    function buildHttpOptions(installerfileURL) 
-    {
-        var options = {
-             host: url.parse(installerfileURL).host,
-             port: 443,
-             path: url.parse(installerfileURL).pathname
-            };
-        var proxyStr;
-        
-        var child = exec('npm config get proxy', function(error, stdout, stderr)
-          {
-            if (error !== null) 
-            {
-                console.log('Error occurred while fetching proxy ' +
-                            'property from npm configuration -->\n' + error);
-                return http.get(options, downloadCLIDriver); 
-            }
-            
-            proxyStr = stdout.toString().split('\n')[0];
-            if(proxyStr === 'null') 
-            {
-                //console.log('Null Returned');
-                child = exec('npm config get https-proxy', 
-                  function(error, stdout, stderr) 
-                  {
-                    //console.log('stderr: ' + stderr);
-                    if (error !== null) 
-                    {
-                        console.log('Error occurred while fetching https-proxy'+
-                            ' property from npm configuration -->\n' + error);
-                        return http.get(options, downloadCLIDriver); 
-                    }
-                    
-                    proxyStr = stdout.toString().split('\n')[0];
-                    if(proxyStr !== 'null') 
-                    {
-                        var splitIndex = proxyStr.toString().lastIndexOf(':');
-                        if(splitIndex > 0) 
-                        {
-                            var proxyUrl = url.parse(proxyStr.toString());
-                            options = {
-                             host: proxyUrl.hostname,
-                             port: proxyUrl.port,
-                             path: url.parse(installerfileURL).href
-                            };
-                            if (proxyUrl.auth) 
-                            {
-                               options.headers = { 'Proxy-Authorization': 'Basic '
-                                   + new Buffer(proxyUrl.auth).toString('base64') };
-                            }
-                        }
-                    }
-                    return http.get(options, downloadCLIDriver); 
-                });
-            } else 
-            {
-                var splitIndex = proxyStr.toString().lastIndexOf(':');
-                if(splitIndex > 0) {
-                    var proxyUrl = url.parse(proxyStr.toString());
-                    options = {
-                     host: proxyUrl.hostname,
-                     port: proxyUrl.port,
-                     path: url.parse(installerfileURL).href
-                    };
-                    if (proxyUrl.auth) 
-                    {
-                       options.headers = { 'Proxy-Authorization': 'Basic '
-                           + new Buffer(proxyUrl.auth).toString('base64') };
-                    }
-                }
-                return http.get(options, downloadCLIDriver); 
-            }
+
+    // Function to download clidriver file using request module.
+    function getInstallerFile(installerfileURL) {
+        // Variable to save downloading progress
+        var received_bytes = 0;
+        var total_bytes = 0;
+
+        var outStream = fs.createWriteStream(INSTALLER_FILE);
+
+        request
+            .get(installerfileURL)
+                .on('error', function(err) {
+                    console.log(err);
+                })
+                .on('response', function(data) {
+                    total_bytes = parseInt(data.headers['content-length']);
+                })
+                .on('data', function(chunk) {
+                    received_bytes += chunk.length;
+                    showDownloadingProgress(received_bytes, total_bytes);
+                })
+                .pipe(outStream);
+
+        outStream.once('close', copyAndExtractDriver)
+        .once('error', function (err) {
+            cosole.log(err);
         });
-    } //buildHttpOptions
-}; //download_file_httpget
+    };
 
-download_file_httpget();
+    function showDownloadingProgress(received, total) {
+        var percentage = ((received * 100) / total).toFixed(2);
+        process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
+        process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
+    }
 
+}; //install_node_ibm_db
+
+install_node_ibm_db();
