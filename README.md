@@ -934,8 +934,8 @@ define in `binding.gyp`
 <snip>
 ```
 
-tips
-----
+## Tips
+-------
 
 ### Using node < v0.10 on Linux
 
@@ -960,6 +960,26 @@ npm install eio
 var eio = require('eio'); 
 eio.setMinParallel(threadCount);
 ```
+
+### Issues while connecting to Informix Server
+
+While using ibm_db against Informix server, you may get few issues if
+server is not configured properly. Also, ibm_db connects to only DRDA port.
+So, make sure drsoctcp of Informix is configured.
+
+#### SQL1042C Error
+If ibm_db is returning SQL1042C error while connecting to server, use
+"Authentication=SERVER" in connection string. It should avoid the error.
+Alternatively, you can set Authentication in db2cli.ini file or db2dsdriver.cfg file too.
+
+#### code-set conversion error
+If Informix server is not enabled for UNICODE clients or some code-set object
+file is missing on server; server returns this error to ibm_db:
+[IBM][CLI Driver][IDS/UNIX64] Error opening required code-set conversion object file.
+
+To avoid this error, remove UNICODE from binding.gyp file and rebuild the ibm_db.
+
+Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github.com/ibmdb/node-ibm_db/blob/master/installer/ifx.sh) script on non-windows system.
 
 ## Contribution
 -----------------
