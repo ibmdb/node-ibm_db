@@ -317,7 +317,7 @@ void ODBCConnection::SetConnectionAttributes( ODBCConnection* conn )
     DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - timeOut = %i, systemNaming = %i\n",
                  timeOut, conn->systemNaming);
 
-    if(timeOut < 0 || timeOut > 32767)
+    if( timeOut > 32767 )
     {
         timeOut = DEFAULT_CONNECTION_TIMEOUT ;
         DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - Invalid connection timeout value changed to default.");
@@ -1675,17 +1675,26 @@ NAN_METHOD(ODBCConnection::SetIsolationLevel) {
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
-  OPT_INT_ARG(0, isolationLevel, SQL_TXN_READ_COMMITTED)
-
   Local<Value> objError;
-  SQLRETURN ret;
+  SQLRETURN ret = SQL_SUCCESS;
   bool error = false;
+  SQLUINTEGER isolationLevel = SQL_TXN_READ_COMMITTED;
+  
+  if (info.Length() <= 0) { 
+      isolationLevel = SQL_TXN_READ_COMMITTED;
+  }
+  else if (info[0]->IsInt32()) {
+      isolationLevel = info[0]->Int32Value();
+  }
+  else {
+      return Nan::ThrowTypeError("Argument #0 must be an integer.");
+  }
 
   //set the connection manual commits
   ret = SQLSetConnectAttr(
     conn->m_hDBC,
     SQL_ATTR_TXN_ISOLATION,
-    (SQLPOINTER) isolationLevel,
+    (SQLPOINTER)(intptr_t)isolationLevel,
     SQL_NTS);
 
   DEBUG_PRINTF("ODBCConnection::SetIsolationLevel isolationLevel=%i; ret=%d\n",

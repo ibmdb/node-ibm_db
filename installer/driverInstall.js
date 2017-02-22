@@ -40,20 +40,19 @@ var install_node_ibm_db = function(file_url) {
             var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
             var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
 
-            //ERROR: NodeJs version < 0.12.x Support for node-ibm_db Windows has been discontinued.
-            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12){
+            // Windows add-on binary for node.js v0.10.x has been discontinued.
+            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) == 0.10){
                 console.log('\nERROR: Found unsupported node.js version ' + process.version +
-                '\nnode-ibm_db is not supported for node.js version < 0.12.0 on Widnows.\n' +
-                'Please use the latest version of node.js.\n');
-
+                '\nnode-ibm_db do not have precompiled add-on file odbc_bindings.node for\n' +
+                'node.js v0.10.x on Widnows. Please use the latest version of node.js.\n');
                 process.exit(1);
             }
 
-            //WARNING: NodeJs version 0.12.x Support for node-ibm_db Windows has been depreciated.
+            // Windows add-on binary for node.js v0.12.x has been deprecated.
             if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) == 0.12){
                 console.log('\nWARNING: Found node.js version ' + process.version +
-                '\nSupport for node-ibm_db on Windows for node.js version 0.12.x is deprecated and will be discontinued soon.\n' +
-                'Please use the latest version of node.js.\n');
+                '\nSupport for node-ibm_db on Windows for node.js version 0.12.x is deprecated\n' +
+                'and will be discontinued soon. Please use the latest version of node.js.\n');
             }
 
             /*
