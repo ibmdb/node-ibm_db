@@ -36,17 +36,31 @@ var install_node_ibm_db = function(file_url) {
 
             //Windows node binary names should update here.
             var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
-            var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.0.10.36';
             var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
             var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
             var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
+
+            //ERROR: NodeJs version < 0.12.x Support for node-ibm_db Windows has been discontinued.
+            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12){
+                console.log('\nERROR: Found unsupported node.js version ' + process.version +
+                '\nnode-ibm_db is not supported for node.js version < 0.12.0 on Widnows.\n' +
+                'Please use the latest version of node.js.\n');
+
+                process.exit(1);
+            }
+
+            //WARNING: NodeJs version 0.12.x Support for node-ibm_db Windows has been depreciated.
+            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) == 0.12){
+                console.log('\nWARNING: Found node.js version ' + process.version +
+                '\nSupport for node-ibm_db on Windows for node.js version 0.12.x is deprecated and will be discontinued soon.\n' +
+                'Please use the latest version of node.js.\n');
+            }
 
             /*
              * odbcBindingsNode will consist of the node binary-
              * file name according to the node version in the system.
              */
-            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V10 ||
-            (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
+            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12  ||
             (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4 ||
             (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6 || ODBC_BINDINGS ;
 
