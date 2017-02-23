@@ -13,6 +13,7 @@ var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
+var deleteInstallerFile = false;
 installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
@@ -240,6 +241,7 @@ var install_node_ibm_db = function(file_url) {
                 console.log(license_agreement);
                 console.log('Downloading and extraction of DB2 ODBC ' +
                     'CLI Driver completed successfully... \n');
+                if(deleteInstallerFile) removeInstallerFile();
             });
 
             extractCLIDriver.on('err', function() {
@@ -262,6 +264,7 @@ var install_node_ibm_db = function(file_url) {
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
                 removeWinBuildArchive();
+                if(deleteInstallerFile) removeInstallerFile();
               }
             });
         }
@@ -330,8 +333,11 @@ var install_node_ibm_db = function(file_url) {
                 fs.unlinkSync(WIN_BUILD_FILE);
             }
         });
+    }
         
-        // Delete downloaded odbc_cli.tar.gz file too.
+    function removeInstallerFile()
+    {
+        // Delete downloaded odbc_cli.tar.gz file.
         fs.exists(INSTALLER_FILE, function(exists) 
         {
             if (exists) 
@@ -363,6 +369,7 @@ var install_node_ibm_db = function(file_url) {
                 })
                 .pipe(outStream);
 
+        deleteInstallerFile = true;
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
             cosole.log(err);
