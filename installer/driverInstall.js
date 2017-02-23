@@ -305,7 +305,7 @@ var install_node_ibm_db = function(file_url) {
 
     function removeUsedPackages()
     {
-        var packages = ["nan", "fstream", "unzipper", "targz"];
+        var packages = ["nan", "fstream", "unzipper", "targz", "request"];
         for( var index = 0; index < packages.length; index++ )
         {
           var command = "npm uninstall " + packages[index];
@@ -328,6 +328,15 @@ var install_node_ibm_db = function(file_url) {
             if (exists) 
             {
                 fs.unlinkSync(WIN_BUILD_FILE);
+            }
+        });
+        
+        // Delete downloaded odbc_cli.tar.gz file too.
+        fs.exists(INSTALLER_FILE, function(exists) 
+        {
+            if (exists) 
+            {
+                fs.unlinkSync(INSTALLER_FILE);
             }
         });
     }
