@@ -15,7 +15,7 @@ Install a newer compiler or upgrade older one.
 
 - You need not to install any db2 ODBC client driver for connectivity. `ibm_db` itself download and install odbc/cli driver from ibm website during installation. Just install `ibm_db` and it is ready for use.
 
-- Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.10.x is deprecated on Windows and will be discontinued from next release.
+- Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.12.x is deprecated on Windows and will be discontinued from next release.
 
 ## Install
 ------------
@@ -167,7 +167,7 @@ Open a connection to a database.
 * **connectionString** - The connection string for your database
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
     loading of native ODBC library for each call of `.open`. Also, can be used
-    to pass connectTimeout value.
+    to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
 * **callback** - `callback (err, conn)`
 
 ```javascript
@@ -197,6 +197,10 @@ ibmdb.open(connStr, function (err, connection) {
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL;SSLServerCertificate=<cert.arm_file_path>;";
 ```
 
+To connect to dashDB in bluemix, just use below connection string:
+```
+connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL";
+```
 You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
 ### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
@@ -206,14 +210,14 @@ Synchronously open a connection to a database.
 * **connectionString** - The connection string for your database
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
     loading of native ODBC library for each call of `.open`. Also, can be used
-    to pass connectTimeout value.
+    to pass connectTimeout value and systemNaming value for i5/OS server.
 
 ```javascript
 var ibmdb = require("ibm_db"),
 	cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 try {
-      var option = { connectTimeout : 40 };// Connection Timeout after 40 seconds.
+      var option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
       var conn = ibmdb.openSync(connString, option);
       conn.query("select * from customers fetch first 10 rows only", function (err, rows) {
 		if (err) {
