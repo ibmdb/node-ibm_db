@@ -16,7 +16,10 @@ var query = "call " + schema + ".proc2(?, ?)";
 var result;
 //ibmdb.debug(true);
 ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
-    if(err) return console.log(err);
+    if(err) { 
+      console.log(err);
+      process.exit(-1);
+    }
     try {
       conn.querySync("drop table " + schema + ".mytab1");
     } catch (e) {};

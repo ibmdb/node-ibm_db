@@ -16,7 +16,7 @@ var getSchema = function () {
     if (err) {
       console.error("connection error: ", err.message);
       db.close(function(){});
-      return;
+      assert(err.message, null);
     }
  
     db.describe({database: 'SAMPLE', schema: 'AVINASH', table: common.tableName }, function (err, rows) {

@@ -18,7 +18,8 @@ stmt2.noResults = false;
 
 ibmdb.debug(true);
 ibmdb.open(cn, function(err, conn1) {
-  if (err) return console.log(err);
+  if (err) console.log(err);
+  assert.equal(err, null);
 
   stmt0.sql = 'DROP TABLE T1';
   stmt0.noResults = true;

@@ -3,14 +3,16 @@
 var ibmdb = require("../")
     , pool = new ibmdb.Pool()
     , assert = require("assert")
-    , cn = "database=sample;hostname=hotellnx89.torolab.ibm.com;port=21169;uid=newton;pwd=G0hybr1d"
+    , common = require("./common.js")
+    , cn = common.connectionString
     , starttime
     , endtime
     ;
 
 console.log("Trying to open a new connection at => " + getDateTime());
 pool.open(cn, function (err,conn) {
-  if (err) return console.log(err);
+  if (err) console.log(err);
+  assert.equal(err, null);
   console.log("Got new connection at => " + getDateTime());
   conn.query('select 1 from sysibm.sysdummy1', function (err, data) {
     if (err) console.log(err);
@@ -18,13 +20,13 @@ pool.open(cn, function (err,conn) {
 
     conn.close(function () {
       console.log("Connection surrenderred to pool at " + getDateTime());
-      console.log('Now wait for 2 min and then access connection.');
+      console.log('Now wait for 70 seconds and then access connection.');
     });
 
     //wait for 2 min then access connection.
     setTimeout(function () {
       starttime = getDateTime();
-      console.log("2 minutes elapesed, try to get connection from pool at ==> "+ starttime);
+      console.log("70 seconds elapesed, try to get connection from pool at ==> "+ starttime);
       pool.open(cn, function (err,conn) {
         if (err) return console.log(err);
         endtime = getDateTime();
@@ -39,7 +41,7 @@ pool.open(cn, function (err,conn) {
           });
         });
       });
-    }, 2 * 60 * 1000);  //setTimeout 2 minute.
+    }, 70 * 1000);  //setTimeout 2 minute.
   });
 });
 
@@ -65,6 +67,6 @@ function getDateTime() {
     var day  = date.getDate();
     day = (day < 10 ? "0" : "") + day;
 
-    return year + ":" + month + ":" + day + " " + hour + "." + min + "." + sec;
+    return year + "." + month + "." + day + " " + hour + ":" + min + ":" + sec;
 }
 

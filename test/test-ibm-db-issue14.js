@@ -1,6 +1,7 @@
 /* Test program to access DB2 sample database  */
 /*require the ibm_db module*/
 var common = require("./common")
+  , assert = require("assert")
   , ibmdb = require("../");
 
 var testTable = 'BIGINTTEST';
@@ -15,6 +16,7 @@ ibmdb.open(common.connectionString, function(err, conn)
 {
         if(err) {
           	console.error("error: ", err.message);
+            assert.equal(err.message, null);
         } else {
 
 		console.log('Connection to DB2 machine successful');

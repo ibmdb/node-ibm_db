@@ -1,5 +1,6 @@
 var common = require("./common")
 	, odbc = require("../")
+    , assert = require("assert")
 	, openCallback = 0
 	, closeCallback = 0
 	, openCount = 10
@@ -12,13 +13,8 @@ for (var x = 0; x < openCount; x++ ) {
 		connections.push(db);
 
 		db.open(common.connectionString, function(err) {
-			if (err) {
-				throw err;
-				process.exit(1);
-			}
-
+            assert.equal(err, null);
 			openCallback += 1;
-
 			maybeClose();
 		});
 	})();

@@ -1,12 +1,14 @@
 var common = require("./common")
 	, odbc = require("../")
+    , assert = require("assert")
 	, pool = new odbc.Pool()
 	, cn = common.connectionString
 
 
 pool.open(cn, function (err, conn) {
   if (err) {
-    return console.log(err);
+    console.log(err);
+    assert.equal(err, null);
   }
   try {
     conn.querySync("drop table mytab4");

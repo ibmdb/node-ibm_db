@@ -59,7 +59,7 @@ function doTest(file, connectionString) {
   test.on("exit", function (code, signal) {
     clearTimeout(timer);
 
-    if (code && code != 0) {
+    if (signal || (code && code != 0)) {
       errorCount += 1;
 
       process.stdout.write("\033[01;31mfail \033[01;0m ");
@@ -67,6 +67,7 @@ function doTest(file, connectionString) {
       if (timedOut) {
         process.stdout.write("(Timed Out)");
       }
+      if(signal) console.log("Caught Signal ", signal);
       process.stdout.write("\n \033[01;34mStdout: \033[01;0m \n");
       process.stdout.write(testOut);
       process.stdout.write("\n \033[01;31mStderr: \033[01;0m \n");

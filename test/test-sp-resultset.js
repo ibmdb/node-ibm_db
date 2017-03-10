@@ -11,7 +11,10 @@ var proc3 = "create or replace procedure " + schema + ".proc2 ( IN v1 int, IN v2
 var query = "call " + schema + ".proc2(?, ?)";
 var result;
 ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
-    if(err) return console.log(err);
+    if(err) {
+      console.log(err);
+      process.exit(-1);
+    }
     try {
       conn.querySync({"sql":"create table " + schema + ".mytab1 (c1 int, c2 varchar(20))", "noResults":true});
     } catch (e) {};

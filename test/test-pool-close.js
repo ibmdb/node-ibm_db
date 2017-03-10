@@ -1,6 +1,7 @@
 var common = require("./common")
 	, odbc = require("../")
 	, pool = new odbc.Pool()
+    , assert = require("assert")
 	, connectionString = common.connectionString
 	, connections = []
 	, connectCount = 10;
@@ -17,7 +18,7 @@ function openConnectionsUsingPool(connections)
         //console.error("Opened connection #", connectionIndex);
         if (err) {
           console.error("error: ", err.message);
-          return false;
+          assert.equal(err.message, null);
         }
 
         connections.push(connection);

@@ -17,8 +17,9 @@ ibmdb.open(cn, function (err,conn)
 {
   if (err) 
   {
-    return console.log(err);
+    console.log(err);
   }
+  assert.equal(err, null);
   try {
       conn.querySync("drop table mytab");
   } catch (e) {};

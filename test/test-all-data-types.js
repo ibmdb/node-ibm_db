@@ -4,7 +4,8 @@ var common = require("./common")
     , cn = common.connectionString;
 
     ibmdb.open(cn, function(err, conn) {
-      if(err) return console.log(err);
+      if(err) console.log(err);
+      assert.equal(err, null);
 
       try {
         conn.querySync("drop table mytab1");

@@ -14,7 +14,7 @@ function openConnectionsUsingPool(connections) {
       pool.open(connectionString, function (err, connection) {
         if (err) {
           console.error("error: ", err.message);
-          return false;
+          process.exit(-1);
         }
 
         connections.push(connection);

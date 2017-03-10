@@ -1,5 +1,6 @@
 /*require the ibm_db module*/
 var common = require("./common")
+  , assert = require("assert")
   , ibmdb = require("../");
 
 var connString = 'DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP';
@@ -16,6 +17,7 @@ ibmdb.open(common.connectionString, function(err, conn)
 {
         if(err) {
           	console.error("error: ", err.message);
+            assert.equal(err.message, null);
         } else {
 
 		console.log('Connection to DB2 machine successful');
