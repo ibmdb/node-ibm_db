@@ -12,7 +12,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
     } catch (e) {}
   conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
   conn.query('select 1, 4, 5 from sysibm.sysdummy1;' +
-             'select 2,6 from sysibm.sysdummy1;'+
+             'select * from mytab1 where c1 = 2;'+
              'select 3,7,8 from sysibm.sysdummy1', [23], function (err, data) {
     if (err) console.log(err);
     else {

@@ -539,7 +539,6 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
                    (uv_after_work_cb)UV_AfterFetchAll);
   }
   else {
-    ODBC::FreeColumns(self->columns, &self->colCount);
     DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll Done for stmt %X\n", data->objResult->m_hSTMT);
     
     Local<Value> info[3];
@@ -552,10 +551,11 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     }
     
     info[1] = Nan::New(data->rows);
-    info[2] = Nan::New(data->count);
+    info[2] = Nan::New(self->colCount);
     Nan::TryCatch try_catch;
 
     data->cb->Call(3, info);
+    ODBC::FreeColumns(self->columns, &self->colCount);
     delete data->cb;
     data->rows.Reset();
     data->objError.Reset();
