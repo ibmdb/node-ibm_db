@@ -187,7 +187,7 @@ NAN_METHOD(ODBCResult::Fetch) {
     return Nan::ThrowTypeError("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
   
-  DEBUG_PRINTF("ODBCResult::Fetch fetchMode = %i\n", data->fetchMode);
+  DEBUG_PRINTF("ODBCResult::Fetch fetchMode = %i, hSTMT = %X\n", data->fetchMode, objODBCResult->m_hSTMT);
   data->cb = new Nan::Callback(cb);
   
   data->objResult = objODBCResult;

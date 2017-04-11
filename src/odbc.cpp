@@ -788,8 +788,13 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
   Local<Array> array = Nan::New<Array>();
         
   for(int i = 0; i < *colCount; i++) {
+    Nan::TryCatch try_catch;
     array->Set( Nan::New(i),
                 GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+    if (try_catch.HasCaught()) {
+        FatalException(try_catch);
+        break;
+    }
   }
   
   return scope.Escape(array);
@@ -1134,7 +1139,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle) {
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message) {
   Nan::EscapableHandleScope scope;
   
-  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%i\n", handleType, handle);
+  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%X\n", handleType, handle);
   
   Local<Object> objError = Nan::New<Object>();
 
