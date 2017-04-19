@@ -218,7 +218,7 @@ var ibmdb = require("ibm_db"),
 
 try {
       var option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
-      var conn = ibmdb.openSync(connString, option);
+      var conn = ibmdb.openSync(cn, option);
       conn.query("select * from customers fetch first 10 rows only", function (err, rows) {
 		if (err) {
 			console.log(err);
