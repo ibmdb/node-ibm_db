@@ -214,7 +214,7 @@ Synchronously open a connection to a database.
 
 ```javascript
 var ibmdb = require("ibm_db"),
-	cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
+	connString = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 try {
       var option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
