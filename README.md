@@ -5,7 +5,6 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
 
 ## Prerequisite
-----------------
 
 - For higher versions of node (When building with Node 4 onwards) the compiler must support
 C++11. Note the default compiler on RHEL 6 does not have the required support.
@@ -18,7 +17,6 @@ Install a newer compiler or upgrade older one.
 - Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.12.x is deprecated on Windows and will be discontinued from next release.
 
 ## Install
-------------
 
 You may install the package using npm install command:
 
@@ -26,13 +24,32 @@ You may install the package using npm install command:
 npm install ibm_db
 ```
 
-You can avoid download of odbc/cli driver by setting environment variable `IBM_DB_HOME` to a pre-installed `db2 client or server` installation directory.  Also, you can force `ibm_db` to download odbc/cli driver from a different url by setting environment variable `IBM_DB_INSTALLER_URL`.
+### Important Environment Variables
 
-For more installation details refer: [INSTALL](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
+`IBM_DB_HOME :`
+```
+USE: Set this environment variable if you want to avoid downloading of odbc/clidriver from the IBM provided URL
+     or from the internet.
+
+How : Set `IBM_DB_HOME` environment variable to a pre-installed `db2 client or server installation directory`.
+```
+
+`IBM_DB_INSTALLER_URL :`
+```
+USE: Set this environment variable to by-pass the IBM provided URL for downloading odbc/clidriver.
+
+HOW: Set `IBM_DB_INSTALLER_URL` environment variable with alternate odbc/clidriver downloading URL link
+     or with locally downloaded "tar/zipped clidriver's" parent directory path.
+
+TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from
+     IBM hosted URL and can set the downloaded "tar/zipped clidriver's" parent directory path to
+     `IBM_DB_INSTALLER_URL` environment variable. No need to untar/unzip clidriver.
+```
+
+For more installation details refer:  [INSTALLAION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
 ## Quick Example
-------------------
 
 ```javascript
 var ibmdb = require('ibm_db');
@@ -52,13 +69,11 @@ ibmdb.open("DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<d
 ```
 
 ## Un-Install
-----------------
 
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
 
 
 ## For z/OS and iSeries Connectivity
--------------------------------------
 
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
 no license file is required. However, if you want to use node-ibm_db 
@@ -70,12 +85,10 @@ using client side license file. If you have client side license file, just
 copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
 ## For AIX install issue
--------------------------
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
 
 ## For Missing Package/Binding issue
-------------------------------------
 
 If your application is able to connect to IBM Database Server but query execution is throwing SQL0805N error, run below commnads to fix the package related issues:
 ```
@@ -97,7 +110,6 @@ Note: "db2cli bind" command print the logs on output prompt, so you need to redi
 
 
 ## Need Help?
---------------
 
 If you encountered any issue with ibm_db, first check for existing solution or
 work-around under `issues` or on google groups forum. Links are:   
@@ -108,7 +120,6 @@ https://groups.google.com/forum/#!forum/node-ibm_db
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
 ## Database APIs
------------------
 
 The simple api is based on instances of the `Database` class. You may get an 
 instance in one of the following ways:
@@ -704,7 +715,6 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 ```
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
---------------------------------------------------
 
 node-ibm_db reuses node-odbc pool. 
 The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
@@ -810,7 +820,6 @@ pool.open(connStr, function(err, db) { ...
 Check test file [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) to know usage of `.init, .setMaxPoolSize and .setConnectTimeout` APIs.
 
 ## <a name="bindParameters"></a>bindingParameters
--------------------------
 
 Bind arguments for each parameter marker(?) in SQL query.
 These parameters can be used with query(), querySync, bind(), execute() APIs.
@@ -939,7 +948,6 @@ define in `binding.gyp`
 ```
 
 ## Tips
--------
 
 ### Using node < v0.10 on Linux
 
@@ -986,7 +994,6 @@ To avoid this error, remove UNICODE from binding.gyp file and rebuild the ibm_db
 Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github.com/ibmdb/node-ibm_db/blob/master/installer/ifx.sh) script on non-windows system.
 
 ## Contribution
------------------
 
 [Contribution Guidelines for Contributing to the node-ibm_db](https://github.com/ibmdb/node-ibm_db/blob/master/cla_docs/Contributions.md)
 
@@ -1002,7 +1009,6 @@ Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github
 
 
 ## License
---------------
 
 Copyright (c) 2013 Dan VerWeire <dverweire@gmail.com>
 

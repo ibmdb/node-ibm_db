@@ -9,11 +9,19 @@ var path = require('path');
 var exec = require('child_process').exec;
 var request = require('request');
 
+//IBM provided URL for downloading clidriver.
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
 var deleteInstallerFile = false;
+
+/*
+ * "process.env.IBM_DB_INSTALLER_URL"
+ * USE: to by-pass the IBM provided URL for downloading clidriver.
+ * HOW: set environment variable with alternate downloading URL link.
+ *      or locally downloaded "tar/zipped clidriver's" parent directory path.
+ */
 installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
