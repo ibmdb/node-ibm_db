@@ -478,16 +478,38 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   
   bool doMoreWork = true;
   
+  /* Check : to see if there was an ERROR on SQLFetch() call.
+   * So before GetColums call we should store the error.
+   * Reason : GetColumns internally calls SQLGetDiagField method,
+   * and SQLGetDiagField() method retrieves only the diagnostic information of
+   * most recent CLI function call, any diagnostic information from a previous call 
+   * with the same handle will be lost. - issue253
+  */ 
+  if (data->result == SQL_ERROR) {
+    data->errorCount++;
+    data->objError.Reset(ODBC::GetSQLError(
+      SQL_HANDLE_STMT,
+      self->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
+    ));
+  }
+  
   if (self->colCount == 0) {
     self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
     DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll, colcount = %d, columns = %d, stmt = %X\n", 
             self->colCount, self->columns, data->objResult->m_hSTMT);
   }
 
-  //check to see if the result set has columns
+  /* Check : to see if the result set has columns.
+   * Queries like insert into... (which has no actual fetch data),
+   * will also return error after SQLFetch call, which is expected here
+   * (as we are calling SQLFetch for every SQL query) but not ture,
+   * hence we should ignore these error.  
+  */
+  bool noDataFetchQuery = false;
+
   if (self->colCount == 0) {
-    //this most likely means that the query was something like
-    //'insert into ....'
+    noDataFetchQuery = true;
     doMoreWork = false;
   }
   //check to see if we are at the end of the recordset
@@ -496,12 +518,6 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   }
   //check to see if there was an error
   else if (data->result == SQL_ERROR)  {
-    data->errorCount++;
-    data->objError.Reset(ODBC::GetSQLError(
-      SQL_HANDLE_STMT, 
-      self->m_hSTMT,
-      (char *) "[node-odbc] Error in ODBCResult::UV_AfterFetchAll"
-    ));
     doMoreWork = false;
   }
   
@@ -544,7 +560,13 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     Local<Value> info[3];
     
     if (data->errorCount > 0) {
-      info[0] = Nan::New(data->objError);
+      if(noDataFetchQuery) {
+        info[0] = Nan::Null();
+        noDataFetchQuery = false;
+      }
+      else {
+        info[0] = Nan::New(data->objError);
+      }
     }
     else {
       info[0] = Nan::Null();
