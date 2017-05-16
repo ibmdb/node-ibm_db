@@ -503,7 +503,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
   /* Check : to see if the result set has columns.
    * Queries like insert into... (which has no actual fetch data),
    * will also return error after SQLFetch call, which is expected here
-   * (as we are calling SQLFetch for every SQL query) but not ture,
+   * (as we are calling SQLFetch for every SQL query) but not true,
    * hence we should ignore these error.  
   */
   bool noDataFetchQuery = false;
