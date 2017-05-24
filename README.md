@@ -62,7 +62,7 @@ npm install ibm_db
 |              |  ppc32         |ppc32_odbc_cli.tar.gz    |  Yes         |
 |              |  others        |linuxia32_odbc_cli.tar.gz|  Yes         |
 |Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
-|              |  x32           |nt32_odbc_cli.zip        |  No          |
+|              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
 
 
 
