@@ -39,12 +39,9 @@ npm install ibm_db
 
 - USE: Set this environment variable to by-pass the IBM Hosted URL for downloading odbc/clidriver.
 
-- HOW: Set **IBM_DB_INSTALLER_URL** environment variable with alternate odbc/clidriver downloading URL link or with locally downloaded
-       "tar/zipped clidriver's parent directory path.
+- HOW: Set **IBM_DB_INSTALLER_URL** environment variable with alternate odbc/clidriver downloading URL link or with locally downloaded "tar/zipped clidriver's parent directory path.
 
-- TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and
-       can set the downloaded "tar/zipped clidriver's" parent directory path to **IBM_DB_INSTALLER_URL** environment variable.
-       No need to untar/unzip clidriver.
+- TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and can set the **IBM_DB_INSTALLER_URL** environment variable to the downloaded "tar/zipped clidriver's" parent directory path. No need to untar/unzip the clidriver and do not change the name of downloaded file.
 
 
 ### <a name="downloadCli"></a> Download clidriver ([based on your platform & architecture](#systemDetails)) from the below IBM Hosted URL:
@@ -54,8 +51,9 @@ npm install ibm_db
 
 |Platform      |Architecture    |Cli Driver               |Supported     |
 | :---:        |  :---:         |  :---:                  |  :---:       |
-|Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
-|              |  x32           |nt32_odbc_cli.zip        |  No          |
+|AIX           |  ppc           |aix32_odbc_cli.tar.gz    |  Yes         |
+|              |  others        |aix64_odbc_cli.tar.gz    |  Yes         |
+|Darwin        |  x64           |macos64_odbc_cli.tar.gz  |  Yes         |
 |Linux         |  x64           |linuxx64_odbc_cli.tar.gz |  Yes         |
 |              |  s390x         |s390x64_odbc_cli.tar.gz  |  Yes         |
 |              |  s390          |s390_odbc_cli.tar.gz     |  Yes         |
@@ -63,9 +61,9 @@ npm install ibm_db
 |              |  ppc64         |ppc64_odbc_cli.tar.gz    |  Yes         |
 |              |  ppc32         |ppc32_odbc_cli.tar.gz    |  Yes         |
 |              |  others        |linuxia32_odbc_cli.tar.gz|  Yes         |
-|Darwin        |  x64           |macos64_odbc_cli.tar.gz  |  Yes         |
-|AIX           |  ppc           |aix32_odbc_cli.tar.gz    |  Yes         |
-|              |  others        |aix64_odbc_cli.tar.gz    |  Yes         |
+|Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
+|              |  x32           |nt32_odbc_cli.zip        |  No          |
+
 
 
 ## Quick Example
