@@ -24,29 +24,48 @@ You may install the package using npm install command:
 npm install ibm_db
 ```
 
-### Important Environment Variables
+> For more installation details please refer:  [INSTALLAION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
+
+
+### Important Environment Variables and Download Essentials 
 
 `IBM_DB_HOME :`
-```
-USE: Set this environment variable if you want to avoid downloading of odbc/clidriver from the IBM provided URL
-     or from the internet.
 
-How : Set `IBM_DB_HOME` environment variable to a pre-installed `db2 client or server installation directory`.
-```
+- USE: Set this environment variable if you want to avoid downloading of clidriver from the [IBM Hosted URL](#downloadCli) or from the internet.
+
+- How: Set **IBM_DB_HOME** environment variable to a pre-installed **db2 client or server installation directory**.
 
 `IBM_DB_INSTALLER_URL :`
-```
-USE: Set this environment variable to by-pass the IBM provided URL for downloading odbc/clidriver.
 
-HOW: Set `IBM_DB_INSTALLER_URL` environment variable with alternate odbc/clidriver downloading URL link
-     or with locally downloaded "tar/zipped clidriver's" parent directory path.
+- USE: Set this environment variable to by-pass the IBM Hosted URL for downloading odbc/clidriver.
 
-TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from
-     IBM hosted URL and can set the downloaded "tar/zipped clidriver's" parent directory path to
-     `IBM_DB_INSTALLER_URL` environment variable. No need to untar/unzip clidriver.
-```
+- HOW: Set **IBM_DB_INSTALLER_URL** environment variable with alternate odbc/clidriver downloading URL link or with locally downloaded
+       "tar/zipped clidriver's parent directory path.
 
-For more installation details refer:  [INSTALLAION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
+- TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and
+       can set the downloaded "tar/zipped clidriver's" parent directory path to **IBM_DB_INSTALLER_URL** environment variable.
+       No need to untar/unzip clidriver.
+
+
+### <a name="downloadCli"></a> Download clidriver ([based on your platform & architecture](#systemDetails)) from the below IBM Hosted URL:
+> [DOWNLOAD CLI DRIVER](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/)
+
+#### <a name="systemDetails"></a> Cli Drivers for Specific Platform and Architecture
+
+|Platform      |Architecture    |Cli Driver               |Supported     |
+| :---:        |  :---:         |  :---:                  |  :---:       |
+|Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
+|              |  x32           |nt32_odbc_cli.zip        |  No          |
+|Linux         |  x64           |linuxx64_odbc_cli.tar.gz |  Yes         |
+|              |  s390x         |s390x64_odbc_cli.tar.gz  |  Yes         |
+|              |  s390          |s390_odbc_cli.tar.gz     |  Yes         |
+|              |  ppc64  (LE)   |ppc64le_odbc_cli.tar.gz  |  Yes         |
+|              |  ppc64         |ppc64_odbc_cli.tar.gz    |  Yes         |
+|              |  ppc32         |ppc32_odbc_cli.tar.gz    |  Yes         |
+|              |  others        |linuxia32_odbc_cli.tar.gz|  Yes         |
+|Darwin        |  x64           |macos64_odbc_cli.tar.gz  |  Yes         |
+|AIX           |  ppc           |aix32_odbc_cli.tar.gz    |  Yes         |
+|              |  others        |aix64_odbc_cli.tar.gz    |  Yes         |
 
 
 ## Quick Example
