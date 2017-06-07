@@ -94,10 +94,8 @@ var install_node_ibm_db = function(file_url) {
                 console.log('error',e);
             })
             .on('finish', function() {
-                fs.unlinkSync(BUILD_FILE);
+                //fs.unlinkSync(BUILD_FILE);
             });
-
-            removeUsedPackages();
         } else {
             console.log('Windows 32 bit not supported. Please use an ' +
                         'x64 architecture.');
@@ -310,26 +308,8 @@ var install_node_ibm_db = function(file_url) {
                     }
                 });
             }
-            removeUsedPackages();
         });
     } //buildBinary
-
-    function removeUsedPackages()
-    {
-        var packages = ["nan", "fstream", "unzipper", "targz", "request"];
-        for( var index = 0; index < packages.length; index++ )
-        {
-          var command = "npm uninstall " + packages[index];
-          var childProcess = exec(command, function (error, stdout, stderr) {
-            console.log(stdout);
-            if (error !== null) {
-                console.log(error);
-                // Ignore error and continue to remove other packages.
-                // Installation of ibm_db should not fail due to such errors.
-            }
-          });
-        }
-    }
 
     function removeWinBuildArchive() 
     {
