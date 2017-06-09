@@ -94,7 +94,7 @@ var install_node_ibm_db = function(file_url) {
                 console.log('error',e);
             })
             .on('finish', function() {
-                console.log('\nbuild\Release\odbc_bindings.node installed successfully.\n');
+                console.log('\nbuild\\Release\\odbc_bindings.node installed successfully.\n');
             });
         } else {
             console.log('Windows 32 bit not supported. Please use an ' +
