@@ -122,6 +122,7 @@ var install_node_ibm_db = function(file_url) {
         }
         else if (fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
             IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+            process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
             IS_ENVIRONMENT_VAR = false;
         }
 
