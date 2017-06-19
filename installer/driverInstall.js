@@ -91,29 +91,41 @@ var install_node_ibm_db = function(file_url) {
                 }
             })
             .on('error', function(e) {
-                console.log('error',e);
+                console.log('error\n',e);
             })
             .on('finish', function() {
                 console.log('\nbuild\\Release\\odbc_bindings.node installed successfully.\n');
             });
         } else {
             console.log('Windows 32 bit not supported. Please use an ' +
-                        'x64 architecture.');
+                        'x64 architecture.\n');
             return;
         }
     }
 
     /*
-     * IF: IBM_DB_HOME path is set,
+     * IF: IBM_DB_HOME path is set ->
+     * CASE 1: If "IBM_DB_HOME" environment variable path is set.
+     * CASE 2: If "npm rebuild" and clidriver exists at DOWNLOAD_DIR location.
      * clidriver will not be download from remote location
      * node-ibm_db will use local clidriver package stored in-
      * IBM_DB_HOME path location.
      * ELSE: platform specific compressed clidriver package will be download
      * and then extract for further use.
      */
-    if(process.env.IBM_DB_HOME) 
+    if(process.env.IBM_DB_HOME || fs.existsSync(DOWNLOAD_DIR + "/clidriver")) 
     {
-        IBM_DB_HOME = process.env.IBM_DB_HOME;
+        var IS_ENVIRONMENT_VAR;
+        if(process.env.IBM_DB_HOME){
+            IBM_DB_HOME = process.env.IBM_DB_HOME;
+            IS_ENVIRONMENT_VAR = true;
+        }
+        else if (fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
+            IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+            process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
+            IS_ENVIRONMENT_VAR = false;
+        }
+
         IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
         if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
            IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
@@ -122,21 +134,31 @@ var install_node_ibm_db = function(file_url) {
         } else {
            IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
         }
-        console.log('IBM_DB_HOME environment variable have already been set to '+IBM_DB_HOME);
+
+        if(IS_ENVIRONMENT_VAR){
+            console.log('IBM_DB_HOME environment variable have already been ' +
+            'set to -> ' + IBM_DB_HOME +
+            '\n\nDownloading of clidriver skipped - build is in progress...\n');
+        }else{
+            console.log('Rebuild Process: Found clidriver at -> '+ IBM_DB_HOME +
+            '\n\nDownloading of clidriver skipped - build is in progress...\n');
+        }
 
         if (!fs.existsSync(IBM_DB_HOME)) {
             console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.');
+                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
         }
 
-        if (!fs.existsSync(IBM_DB_INCLUDE)) {
-            console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.');
+        if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)){
+            if (!fs.existsSync(IBM_DB_INCLUDE)) {
+                console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
+                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
+            }
         }
-
+        
         if (!fs.existsSync(IBM_DB_LIB)) {
             console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.');
+                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
         }
         if( platform != 'win32') {
             if(!fs.existsSync(IBM_DB_HOME + "/lib"))
@@ -147,7 +169,7 @@ var install_node_ibm_db = function(file_url) {
                 removeWinBuildArchive();
                 buildBinary(false);
             } else {
-                console.log('Building binaries for node-ibm_db. This platform is not completely supported, you might encounter errors. In such cases please open an issue on our repository, https://github.com/ibmdb/node-ibm_db.');
+                console.log('Building binaries for node-ibm_db. This platform is not completely supported, you might encounter errors. In such cases please open an issue on our repository, https://github.com/ibmdb/node-ibm_db. \n');
                 buildBinary(false);
             }
         }
@@ -185,7 +207,7 @@ var install_node_ibm_db = function(file_url) {
                 installerfileURL = installerURL + 'macos64_odbc_cli.tar.gz';
             } else {
                 console.log('Mac OS 32 bit not supported. Please use an ' +
-                            'x64 architecture.');
+                            'x64 architecture.\n');
                 return;
             }
         } 
@@ -208,7 +230,7 @@ var install_node_ibm_db = function(file_url) {
 
         if(!installerfileURL) {
             console.log('Unable to fetch driver download file. Exiting the ' +
-                        'install process.');
+                        'install process.\n');
             process.exit(1);
         }
 
@@ -265,7 +287,7 @@ var install_node_ibm_db = function(file_url) {
               else {
                 console.log(license_agreement);
                 console.log('Downloading and extraction of DB2 ODBC ' +
-                            'CLI Driver completed successfully ...');
+                            'CLI Driver completed successfully ...\n');
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
