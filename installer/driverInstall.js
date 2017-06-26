@@ -52,9 +52,9 @@ var install_node_ibm_db = function(file_url) {
 
             // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
             if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0){
-                console.log('\nERROR: Found unsupported node.js version ' + process.version +
+                console.log('\nERROR: Found unsupported node.js version ' + process.version + ':' +
                 '\nnode-ibm_db do not have precompiled add-on file "odbc_bindings.node" for\n' +
-                'node.js ' + process.version + 'on Widnows. Please use the latest version of node.js.\n');
+                'node.js ' + process.version + ' on Widnows. Please use the latest version of node.js.\n');
                 process.exit(1);
             }
 
