@@ -1,3 +1,49 @@
+2017-07-10, Version 2.1.0
+=========================
+
+ * fix installer bug (bimalkjha)
+
+ * fix test case issue (bimalkjha)
+
+ * add test script for windows (unknown)
+
+ * error message console warning format correction (rhtpandeyIN)
+
+ * node v8.x support for windows platform with the latest code changes (rhtpandeyIN)
+
+ * clidriver permission issue fix. (#284) (Rohit Pandey)
+
+ * inserted missing escape sequence. (#279) (Rohit Pandey)
+
+ * unzipper finish console message change (Rohit Pandey)
+
+ * issue related to clidriver permission and bindings (rhtpandeyIN)
+
+ * README update for clidriver downloading information #255 (#266) (Rohit Pandey)
+
+ * Fix and Test case for issue #253 (#261) (Rohit Pandey)
+
+ * IBM_DB_INSTALLER_URL detailed information updated- issue #255 (rhtpandeyIN)
+
+ * For issue #256 (bimalkjha)
+
+ * Fix for issue #249 - Invalid cursor state (bimalkjha)
+
+ * Fix for issue #238 (bimalkjha)
+
+ * For issue #230 (bimalkjha)
+
+ * fix test case issues and error handling (bimalkjha)
+
+ * Fix for issue #231 (bimalkjha)
+
+ * remove downloaded clidriver zip file on windows (bimalkjha)
+
+ * fix for issue #229 (bimalkjha)
+
+ * doc updated (bimalkjha)
+
+
 2017-02-22, Version 2.0.0
 =========================
 
