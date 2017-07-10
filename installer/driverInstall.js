@@ -45,13 +45,14 @@ var install_node_ibm_db = function(file_url) {
 
             //Windows node binary names should update here.
             var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+            var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
             var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
             var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
             var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.4.0';
 
 
             // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
-            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0){
+            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12){
                 console.log('\nERROR: Found unsupported node.js version ' + process.version + ':' +
                 '\nnode-ibm_db do not have precompiled add-on file "odbc_bindings.node" for\n' +
                 'node.js ' + process.version + ' on Widnows. Please use the latest version of node.js.\n');
@@ -62,7 +63,8 @@ var install_node_ibm_db = function(file_url) {
              * odbcBindingsNode will consist of the node binary-
              * file name according to the node version in the system.
              */
-            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
+            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) && ODBC_BINDINGS_V12   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
 

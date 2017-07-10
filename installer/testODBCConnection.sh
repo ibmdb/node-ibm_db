@@ -20,9 +20,9 @@ fi
 rm -rf 1.trc 1.flw 1.fmt 1.cli
 if [ "$OS" == "Darwin" ]
 then
-  db2trc on -l 2m
+  db2trc on -t -l 2m
 else
-  db2trc on -f 1.trc
+  db2trc on -t -f 1.trc
 fi
 sleep 5
 
@@ -36,7 +36,8 @@ then
 db2trc dump 1.trc
 fi
 db2trc off
-db2trc flw 1.trc 1.flw
+db2trc flw -t 1.trc 1.flw
 db2trc fmt 1.trc 1.fmt
+db2trc fmt -c 1.trc 1.fmtc
 db2trc fmt -cli 1.trc 1.cli
 
