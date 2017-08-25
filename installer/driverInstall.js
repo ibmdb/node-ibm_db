@@ -378,7 +378,7 @@ var install_node_ibm_db = function(file_url) {
         deleteInstallerFile = true;
         outStream.once('close', copyAndExtractDriver)
         .once('error', function (err) {
-            cosole.log(err);
+            console.log(err);
         });
     };
 
