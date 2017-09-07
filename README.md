@@ -748,7 +748,6 @@ use Pool.open instead of [ibmdb.open](#openApi).
 2.  [.close(callback)](#closePoolApi)
 3.  [.init(N, connStr)](#initPoolApi)
 4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
-5.  [.setConnectTimeout(seconds)](#setConnectTimeout)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
@@ -825,16 +824,6 @@ Number of maximum connection to database supported by current pool.
 pool.setMaxPoolSize(20);
 pool.open(connStr, function(err, db) { ...
 ```
-
-### <a name="setConnectTimeout"></a> 5) .setConnectTimeout(seconds)
-
-No of seconds pool.open() will wait for a connection to be available if all connections of the pool is in use and maxPoolSize is reached. Post connectTimeout, pool.open() will return error message.
-```
-pool.setConnectTimeout(50);
-pool.setMaxPoolSize(20);
-pool.open(connStr, function(err, db) { ...
-```
-Check test file [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) to know usage of `.init, .setMaxPoolSize and .setConnectTimeout` APIs.
 
 ## <a name="bindParameters"></a>bindingParameters
 
