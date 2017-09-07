@@ -10,10 +10,13 @@ console.log("---------------------------------------------------------------");
 console.log("After first iteration and before start of second iteration,");
 console.log("restart the server using 'db2stop force; db2start' command.");
 console.log("---------------------------------------------------------------");
+//odbc.debug(true);
+pool.setMaxPoolSize(1);
 var timer = setInterval(function() {
     var j = i;
     console.log('start'+j);
     if(i==3){
+        pool.close();
         clearInterval(timer);
     }
     pool.open(connectionString, function (err, connection) {
