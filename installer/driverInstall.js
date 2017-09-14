@@ -128,7 +128,10 @@ var install_node_ibm_db = function(file_url) {
             buildBinary(false);
         }
         else {
-            console.log('Building binaries for node-ibm_db. This platform is not completely supported, you might encounter errors. In such cases please open an issue on our repository, https://github.com/ibmdb/node-ibm_db. \n');
+            console.log('Building binaries for node-ibm_db. This platform ' +
+            'is not completely supported, you might encounter errors. ' +
+            'In such cases please open an issue on our repository, ' +
+            'https://github.com/ibmdb/node-ibm_db. \n');
         }
     }
     else
@@ -273,7 +276,9 @@ var install_node_ibm_db = function(file_url) {
                 if (error !== null)
                 {
                     // "node-gyp" FAILED: RUN Pre-compiled Binary Installation process.
-                    console.log("\nnode-gyp build process failed! \nProceeding with Pre-compiled Binary Installation. \n");
+                    console.log(error);
+                    console.log('\nnode-gyp build process failed! \n' +
+                    'Proceeding with Pre-compiled Binary Installation. \n');
                     call_installPreCompiledWinBinary();
                     return;
                 }    
@@ -283,67 +288,62 @@ var install_node_ibm_db = function(file_url) {
                     // "node-gyp" PASSED: RUN "msbuild" command.
                     var msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64 ";
 
-                    if (fs.existsSync(CURRENT_DIR + "/build"))
+                    // getting the "binding.sln" (project solution) file path for "msbuild" command.
+                    if (fs.existsSync(CURRENT_DIR + "/build/binding.sln"))
                     {
-                        // getting the "binding.sln" (project solution) file path for "msbuild" command.
-                        if (fs.existsSync(CURRENT_DIR + "/build/binding.sln"))
-                        {
-                            var BINDINGS_SLN_FILE = path.resolve(CURRENT_DIR, 'build/binding.sln');
-                            msbuildString = msbuildString + BINDINGS_SLN_FILE;
-                        }
-                        else
-                        {
-                            //If binding.sln file is missing then msbuild will fail.
-                            console.log("\nbinding.sln file is not available! \nProceeding with Pre-compiled Binary Installation. \n");
-                            call_installPreCompiledWinBinary();
-                            return;
-                        }
-
-                        /*
-                         * EDITING: build/odbc_bindings.vcxproj file because,
-                         * We need to remove "kernel" dependencies from the <AdditionalDependecy> tag.
-                         * otherwise "msbuild" command will produce corrupt binaries.
-                         */
-                        if (fs.existsSync(CURRENT_DIR + "/build/odbc_bindings.vcxproj"))
-                        {
-                            var ODBC_BINDINGS_VCXPROJ_FILE = path.resolve(CURRENT_DIR, 'build/odbc_bindings.vcxproj');
-
-                            fs.readFile(ODBC_BINDINGS_VCXPROJ_FILE, 'utf8', function (err,data) {
-                                if (err)
-                                {
-                                    console.log("\nReading failure: can not read build/odbc_bindings.vcxproj! \nProceeding with Pre-compiled Binary Installation. \n");
-                                    call_installPreCompiledWinBinary();
-                                    return;
-                                }
-
-                                //Removing kernel dependencies from the file.
-                                var result = data.replace(/kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib/g, '');
-
-                                fs.writeFile(ODBC_BINDINGS_VCXPROJ_FILE, result, 'utf8', function (err) {
-                                    if (err)
-                                    {
-                                        console.log("\nWriting failure: can not write build/odbc_bindings.vcxproj! \nProceeding with Pre-compiled Binary Installation. \n");
-                                        call_installPreCompiledWinBinary();
-                                        return;
-                                    }
-                                    else console.log("\nKernel additional dependencies removed successfully!\n");
-                                });
-                            });
-                        }
-                        else
-                        {
-                            /*
-                             * IF: build/odbc_bindings.vcxproj file is missing,
-                             * THEN: "msbuild" will produce corrupt binary (NO FAILURE), so to stop this:
-                             * RUN: Pre-compiled Binary Installation process.
-                             */
-                            call_installPreCompiledWinBinary();
-                            return;
-                        }
+                        var BINDINGS_SLN_FILE = path.resolve(CURRENT_DIR, 'build/binding.sln');
+                        msbuildString = msbuildString + BINDINGS_SLN_FILE;
                     }
                     else
                     {
-                        // IF: Build directory is missing: RUN: Pre-compiled Binary Installation process.
+                        //If binding.sln file is missing then msbuild will fail.
+                        console.log('\nbinding.sln file is not available! \n' +
+                        'Proceeding with Pre-compiled Binary Installation. \n');
+                        call_installPreCompiledWinBinary();
+                        return;
+                    }
+
+                    /*
+                     * EDITING: build/odbc_bindings.vcxproj file because,
+                     * We need to remove "kernel" dependencies from the <AdditionalDependecy> tag.
+                     * Otherwise "msbuild" command will produce corrupt binaries.
+                     */
+                    if (fs.existsSync(CURRENT_DIR + "/build/odbc_bindings.vcxproj"))
+                    {
+                        var ODBC_BINDINGS_VCXPROJ_FILE = path.resolve(CURRENT_DIR, 'build/odbc_bindings.vcxproj');
+                        
+                        fs.readFile(ODBC_BINDINGS_VCXPROJ_FILE, 'utf8', function (err,data) {
+                            if (err)
+                            {
+                                console.log('\nReading failure: can not read ' +
+                                'build/odbc_bindings.vcxproj! \n' +
+                                'Proceeding with Pre-compiled Binary Installation.\n');
+                                call_installPreCompiledWinBinary();
+                                return;
+                            }
+
+                            //Removing kernel dependencies from the file.
+                            var result = data.replace(/kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib/g, '');
+                            
+                            fs.writeFile(ODBC_BINDINGS_VCXPROJ_FILE, result, 'utf8', function (err) {
+                                if (err)
+                                {
+                                    console.log('\nWriting failure: can not write ' + 'build/odbc_bindings.vcxproj! \n' +
+                                    'Proceeding with Pre-compiled Binary Installation. \n');
+                                    call_installPreCompiledWinBinary();
+                                    return;
+                                }
+                                else console.log("\nKernel additional dependencies removed successfully!\n");
+                            });
+                        });
+                    }
+                    else
+                    {
+                        /*
+                         * IF: build/odbc_bindings.vcxproj file is missing,
+                         * THEN: "msbuild" will produce corrupt binary (NO FAILURE), so to stop this:
+                         * RUN: Pre-compiled Binary Installation process.
+                         */
                         call_installPreCompiledWinBinary();
                         return;
                     }
@@ -360,7 +360,9 @@ var install_node_ibm_db = function(file_url) {
                         if (error !== null)
                         {
                             // "msbuild" FAILED: RUN Pre-compiled Binary Installation process.
-                            console.log("\nmsbuild build process failed! \nProceeding with Pre-compiled Binary Installation. \n");
+                            console.log(error);
+                            console.log('\nmsbuild build process failed! \n' +
+                            'Proceeding with Pre-compiled Binary Installation. \n');
                             call_installPreCompiledWinBinary();
                             return;
                         }
