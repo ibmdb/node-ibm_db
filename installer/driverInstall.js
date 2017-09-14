@@ -2,7 +2,7 @@
  * Node-ibm_db Installer file.
  */
 
-var fs = require('fs');
+var fs = require('fs-extra');
 var url = require('url');
 var os = require('os');
 var path = require('path');
@@ -11,6 +11,8 @@ var request = require('request');
 
 //IBM provided URL for downloading clidriver.
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
+var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
+
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
@@ -39,65 +41,21 @@ var install_node_ibm_db = function(file_url) {
 
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
 
-    if(platform == 'win32') {
-        if(arch == 'x64') {
-            var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-
-            //Windows node binary names should update here.
-            var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
-            var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
-            var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
-            var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
-            var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.4.0';
-
-
-            // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
-            if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12){
-                console.log('\nERROR: Found unsupported node.js version ' + process.version + ':' +
-                '\nnode-ibm_db do not have precompiled add-on file "odbc_bindings.node" for\n' +
-                'node.js ' + process.version + ' on Widnows. Please use the latest version of node.js.\n');
-                process.exit(1);
-            }
-
-            /*
-             * odbcBindingsNode will consist of the node binary-
-             * file name according to the node version in the system.
-             */
-            var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12   ||
-                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
-                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
-                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
-
-            readStream = fs.createReadStream(BUILD_FILE);
-
-            /*
-             * unzipper will parse the build.zip file content and
-             * then it will check for the odbcBindingsNode
-             * (node Binary), when it gets that binary file,
-             * fstream.Writer will write the same node binary
-             * but the name will be odbc_bindings.node, and the other
-             * binary files and build.zip will be discarded.
-             */
-            readStream.pipe(unzipper.Parse())
-            .on('entry', function (entry) {
-                if(entry.path === odbcBindingsNode){
-                    entry.pipe(fstream.Writer(ODBC_BINDINGS));
-                } else {
-                    entry.autodrain();
-                }
-            })
-            .on('error', function(e) {
-                console.log('error\n',e);
-            })
-            .on('finish', function() {
-                console.log('\nbuild\\Release\\odbc_bindings.node installed successfully.\n');
-            });
-        } else {
-            console.log('Windows 32 bit not supported. Please use an ' +
-                        'x64 architecture.\n');
-            return;
-        }
-    }
+    /*
+     * Installer steps: Generic for all platforms :
+     * 1: Check IBM_DB_HOME path first, if present then install accordingly.
+     * 2: If IBM_DB_HOME is not set, then download "clidriver" and then install.
+     * 
+     * Installer Steps: For windows only :
+     * Step 1 and Step 2 are same.
+     * There are two kinds of windows installation now:
+     * 1: Auto Installation (Compilation and building - required Visual Studio).
+     * 2: Pre-compiled Binary Installation.
+     * 
+     * If in any case "Auto Installation" fails, then the Installer will
+     * automatically pick up the "Pre-compiled Binary Installation"" process. 
+     * 
+     */
 
     /*
      * IF: IBM_DB_HOME path is set ->
@@ -151,7 +109,7 @@ var install_node_ibm_db = function(file_url) {
                         'set the IBM_DB_HOME environment variable\'s value correctly.\n');
             }
         }
-        
+
         if (!fs.existsSync(IBM_DB_LIB)) {
             console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
                         'set the IBM_DB_HOME environment variable\'s value correctly.\n');
@@ -164,19 +122,24 @@ var install_node_ibm_db = function(file_url) {
                (platform == 'darwin' && arch == 'x64')) {
                 removeWinBuildArchive();
                 buildBinary(false);
-            } else {
-                console.log('Building binaries for node-ibm_db. This platform is not completely supported, you might encounter errors. In such cases please open an issue on our repository, https://github.com/ibmdb/node-ibm_db. \n');
-                buildBinary(false);
             }
         }
-    } else {
-        if(platform == 'win32') 
-        {
+        else if(platform == 'win32' && arch == 'x64') {
+            buildBinary(false);
+        }
+        else {
+            console.log('Building binaries for node-ibm_db. This platform ' +
+            'is not completely supported, you might encounter errors. ' +
+            'In such cases please open an issue on our repository, ' +
+            'https://github.com/ibmdb/node-ibm_db. \n');
+        }
+    }
+    else
+    {
+        if(platform == 'win32') {
             if(arch == 'x64') {
                 installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
-            }/* else {
-                installerfileURL = installerURL + 'nt32_odbc_cli.zip';
-            }*/
+            }
         } 
         else if(platform == 'linux') 
         {
@@ -230,8 +193,6 @@ var install_node_ibm_db = function(file_url) {
             process.exit(1);
         }
 
-        var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
-
         var file_name = url.parse(installerfileURL).pathname.split('/').pop();
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
 
@@ -241,30 +202,29 @@ var install_node_ibm_db = function(file_url) {
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
                 INSTALLER_FILE = installerfileURL;
-                return copyAndExtractDriver();
+                return copyAndExtractCliDriver();
             }
-            return getInstallerFile(installerfileURL);
+            return downloadCliDriver(installerfileURL);
         });
 
     }  // * END OF EXECUTION */
 
-    function copyAndExtractDriver() {
+    function copyAndExtractCliDriver() {
         if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
 
-            /* unzipper.Extract will extract the clidriver zipped-
-             * file content to DOWNLOAD_DIR.
-             */
+            // Using the "unzipper" module to extract the zipped "clidriver",
+            // and on successful close, printing the license_agreement
             var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
 
-            /* After successful closing of the event,
-             * license_agreement and Download and extraction
-             * of DB2 ODBC CLI Driver acknowledgement will display.
-             */
             extractCLIDriver.on('close', function() {
                 console.log(license_agreement);
                 console.log('Downloading and extraction of DB2 ODBC ' +
                     'CLI Driver completed successfully... \n');
+
+                IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+                process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
+                buildBinary(true);
                 if(deleteInstallerFile) removeInstallerFile();
             });
 
@@ -296,37 +256,149 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-        var buildString = "node-gyp configure build --IBM_DB_HOME=\"$IBM_DB_HOME\"";
+        var buildString = "node-gyp configure build ";
+
         if(isDownloaded) {
             buildString = buildString + " --IS_DOWNLOADED=true";
         } else {
             buildString = buildString + " --IS_DOWNLOADED=false";
         }
-        if( platform == 'win32') 
-        {
-            buildString = buildString + " --IBM_DB_HOME_WIN=%IBM_DB_HOME%";
-        }
-        var childProcess = exec(buildString, function (error, stdout, stderr) {
-            console.log(stdout);
-            if (error !== null) {
-                console.log(error);
-                process.exit(1);
-            }
 
-            if(platform == 'darwin' && arch == 'x64') 
+        // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
+        if( platform == 'win32' && arch == 'x64')
+        {
+            var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
+
+            var childProcess = exec(buildString, function (error, stdout, stderr)
             {
-                // Run the install_name_tool
-                var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" ./build/Release/odbc_bindings.node" ;
-                var nameToolCmdProcess = exec(nameToolCommand , 
-                  function (error1, stdout1, stderr1) {
-                    if (error1 !== null) {
-                        console.log('Error setting up the lib path to ' +
-                            'odbc_bindings.node file.Error trace:\n'+error1);
-                        process.exit(1);
+                console.log(stdout);
+
+                if (error !== null)
+                {
+                    // "node-gyp" FAILED: RUN Pre-compiled Binary Installation process.
+                    console.log(error);
+                    console.log('\nnode-gyp build process failed! \n' +
+                    'Proceeding with Pre-compiled Binary Installation. \n');
+                    installPreCompiledWinBinary();
+                    return;
+                }    
+
+                else
+                {
+                    // "node-gyp" PASSED: RUN "msbuild" command.
+                    var msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64 ";
+
+                    // getting the "binding.sln" (project solution) file path for "msbuild" command.
+                    if (fs.existsSync(CURRENT_DIR + "/build/binding.sln"))
+                    {
+                        var BINDINGS_SLN_FILE = path.resolve(CURRENT_DIR, 'build/binding.sln');
+                        msbuildString = msbuildString + BINDINGS_SLN_FILE;
                     }
-                });
-            }
-        });
+                    else
+                    {
+                        //If binding.sln file is missing then msbuild will fail.
+                        console.log('\nbinding.sln file is not available! \n' +
+                        'Proceeding with Pre-compiled Binary Installation. \n');
+                        installPreCompiledWinBinary();
+                        return;
+                    }
+
+                    /*
+                     * EDITING: build/odbc_bindings.vcxproj file because,
+                     * We need to remove "kernel" dependencies from the <AdditionalDependecy> tag.
+                     * Otherwise "msbuild" command will produce corrupt binaries.
+                     */
+                    if (fs.existsSync(CURRENT_DIR + "/build/odbc_bindings.vcxproj"))
+                    {
+                        var ODBC_BINDINGS_VCXPROJ_FILE = path.resolve(CURRENT_DIR, 'build/odbc_bindings.vcxproj');
+                        
+                        fs.readFile(ODBC_BINDINGS_VCXPROJ_FILE, 'utf8', function (err,data) {
+                            if (err)
+                            {
+                                console.log('\nReading failure: can not read ' +
+                                'build/odbc_bindings.vcxproj! \n' +
+                                'Proceeding with Pre-compiled Binary Installation.\n');
+                                installPreCompiledWinBinary();
+                                return;
+                            }
+
+                            //Removing kernel dependencies from the file.
+                            var result = data.replace(/kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib/g, '');
+                            
+                            fs.writeFile(ODBC_BINDINGS_VCXPROJ_FILE, result, 'utf8', function (err) {
+                                if (err)
+                                {
+                                    console.log('\nWriting failure: can not write ' + 'build/odbc_bindings.vcxproj! \n' +
+                                    'Proceeding with Pre-compiled Binary Installation. \n');
+                                    installPreCompiledWinBinary();
+                                    return;
+                                }
+                                else console.log("\nKernel additional dependencies removed successfully!\n");
+                            });
+                        });
+                    }
+                    else
+                    {
+                        /*
+                         * IF: build/odbc_bindings.vcxproj file is missing,
+                         * THEN: "msbuild" will produce corrupt binary (NO FAILURE), so to stop this:
+                         * RUN: Pre-compiled Binary Installation process.
+                         */
+                        installPreCompiledWinBinary();
+                        return;
+                    }
+
+                    if (fs.existsSync(CURRENT_DIR + "/build/Release"))
+                    {
+                        var RELEASE_DIRECTORY = path.resolve(CURRENT_DIR, 'build/Release');
+                        fs.removeSync(RELEASE_DIRECTORY);
+                    }
+
+                    var childProcess = exec(msbuildString, function (error, stdout, stderr)
+                    {
+                        console.log(stdout);
+                        if (error !== null)
+                        {
+                            // "msbuild" FAILED: RUN Pre-compiled Binary Installation process.
+                            console.log(error);
+                            console.log('\nmsbuild build process failed! \n' +
+                            'Proceeding with Pre-compiled Binary Installation. \n');
+                            installPreCompiledWinBinary();
+                            return;
+                        }
+                        else
+                        {
+                            console.log("\nnode-ibm_db installed successfully!\n");
+                        }
+                    });
+                }
+            });
+        }
+
+        else
+        {
+            var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
+            var childProcess = exec(buildString, function (error, stdout, stderr) {
+                console.log(stdout);
+                if (error !== null) {
+                    console.log(error);
+                    process.exit(1);
+                }
+
+                if(platform == 'darwin' && arch == 'x64') {
+                    // Run the install_name_tool
+                    var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" ./build/Release/odbc_bindings.node" ;
+                    var nameToolCmdProcess = exec(nameToolCommand , 
+                    function (error1, stdout1, stderr1) {
+                        if (error1 !== null) {
+                            console.log('Error setting up the lib path to ' +
+                            'odbc_bindings.node file.Error trace:\n'+error1);
+                            process.exit(1);
+                        }
+                    });
+                }
+            });
+        }
     } //buildBinary
 
     function removeWinBuildArchive() 
@@ -340,7 +412,7 @@ var install_node_ibm_db = function(file_url) {
             }
         });
     }
-        
+
     function removeInstallerFile()
     {
         // Delete downloaded odbc_cli.tar.gz file.
@@ -353,8 +425,81 @@ var install_node_ibm_db = function(file_url) {
         });
     }
 
+    function installPreCompiledWinBinary()
+    {
+        if(platform == 'win32') {
+            if(arch == 'x64') {
+                var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
+
+                //Windows node binary names should update here.
+                var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+                var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
+                var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
+                var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
+                var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.4.0';
+
+                // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
+                if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
+                    console.log('\nERROR: Found unsupported node.js version ' + process.version + ':' +
+                        '\nnode-ibm_db do not have precompiled add-on file "odbc_bindings.node" for\n' +
+                        'node.js ' + process.version + ' on Widnows. Please use the latest version of node.js.\n');
+                    process.exit(1);
+                }
+
+                /*
+                 * odbcBindingsNode will consist of the node binary-
+                 * file name according to the node version in the system.
+                 */
+                var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
+
+                // Removing the "build" directory created by Auto Installation Process.
+                // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
+                if (fs.existsSync(CURRENT_DIR + "/build")) {
+                    var BUILD_DIRECTORY = path.resolve(CURRENT_DIR, 'build');
+                    fs.removeSync(BUILD_DIRECTORY);
+                }
+
+                readStream = fs.createReadStream(BUILD_FILE);
+
+                /*
+                 * unzipper will parse the build.zip file content and
+                 * then it will check for the odbcBindingsNode
+                 * (node Binary), when it gets that binary file,
+                 * fstream.Writer will write the same node binary
+                 * but the name will be odbc_bindings.node, and the other
+                 * binary files and build.zip will be discarded.
+                 */
+                readStream.pipe(unzipper.Parse())
+                    .on('entry', function (entry) {
+                        if(entry.path === odbcBindingsNode) {
+                            entry.pipe(fstream.Writer(ODBC_BINDINGS));
+                        } else {
+                            entry.autodrain();
+                        }
+                    })
+                    .on('error', function(e) {
+                        console.log('Installation Failed! \n',e);
+                        process.exit(1);
+                    })
+                    .on('finish', function() {
+                        console.log('\nnode-ibm_db installed successfully!\n');
+                    });
+
+                return 1;
+
+            } else {
+                console.log('Windows 32 bit not supported. Please use an ' +
+                        'x64 architecture.\n');
+                process.exit(1);
+            }
+        }
+    }
+
     // Function to download clidriver file using request module.
-    function getInstallerFile(installerfileURL) {
+    function downloadCliDriver(installerfileURL) {
         // Variable to save downloading progress
         var received_bytes = 0;
         var total_bytes = 0;
@@ -376,7 +521,7 @@ var install_node_ibm_db = function(file_url) {
                 .pipe(outStream);
 
         deleteInstallerFile = true;
-        outStream.once('close', copyAndExtractDriver)
+        outStream.once('close', copyAndExtractCliDriver)
         .once('error', function (err) {
             console.log(err);
         });
