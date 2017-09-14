@@ -279,7 +279,7 @@ var install_node_ibm_db = function(file_url) {
                     console.log(error);
                     console.log('\nnode-gyp build process failed! \n' +
                     'Proceeding with Pre-compiled Binary Installation. \n');
-                    call_installPreCompiledWinBinary();
+                    installPreCompiledWinBinary();
                     return;
                 }    
 
@@ -299,7 +299,7 @@ var install_node_ibm_db = function(file_url) {
                         //If binding.sln file is missing then msbuild will fail.
                         console.log('\nbinding.sln file is not available! \n' +
                         'Proceeding with Pre-compiled Binary Installation. \n');
-                        call_installPreCompiledWinBinary();
+                        installPreCompiledWinBinary();
                         return;
                     }
 
@@ -318,7 +318,7 @@ var install_node_ibm_db = function(file_url) {
                                 console.log('\nReading failure: can not read ' +
                                 'build/odbc_bindings.vcxproj! \n' +
                                 'Proceeding with Pre-compiled Binary Installation.\n');
-                                call_installPreCompiledWinBinary();
+                                installPreCompiledWinBinary();
                                 return;
                             }
 
@@ -330,7 +330,7 @@ var install_node_ibm_db = function(file_url) {
                                 {
                                     console.log('\nWriting failure: can not write ' + 'build/odbc_bindings.vcxproj! \n' +
                                     'Proceeding with Pre-compiled Binary Installation. \n');
-                                    call_installPreCompiledWinBinary();
+                                    installPreCompiledWinBinary();
                                     return;
                                 }
                                 else console.log("\nKernel additional dependencies removed successfully!\n");
@@ -344,7 +344,7 @@ var install_node_ibm_db = function(file_url) {
                          * THEN: "msbuild" will produce corrupt binary (NO FAILURE), so to stop this:
                          * RUN: Pre-compiled Binary Installation process.
                          */
-                        call_installPreCompiledWinBinary();
+                        installPreCompiledWinBinary();
                         return;
                     }
 
@@ -363,7 +363,7 @@ var install_node_ibm_db = function(file_url) {
                             console.log(error);
                             console.log('\nmsbuild build process failed! \n' +
                             'Proceeding with Pre-compiled Binary Installation. \n');
-                            call_installPreCompiledWinBinary();
+                            installPreCompiledWinBinary();
                             return;
                         }
                         else
@@ -425,18 +425,6 @@ var install_node_ibm_db = function(file_url) {
         });
     }
 
-    function call_installPreCompiledWinBinary()
-    {
-        var preCompiledBinary = installPreCompiledWinBinary();
-
-        if(preCompiledBinary) {
-            console.log("\nnode-ibm_db installed successfully!\n");
-        } else {
-            console.log("\nInstallation Failed!\n");
-            process.exit(1);
-        }
-    }
-
     function installPreCompiledWinBinary()
     {
         if(platform == 'win32') {
@@ -493,19 +481,19 @@ var install_node_ibm_db = function(file_url) {
                         }
                     })
                     .on('error', function(e) {
-                        console.log('error\n',e);
+                        console.log('Installation Failed! \n',e);
                         process.exit(1);
                     })
                     .on('finish', function() {
-                        console.log('\nbuild\\Release\\odbc_bindings.node installed successfully.\n');
+                        console.log('\nnode-ibm_db installed successfully!\n');
                     });
 
                 return 1;
 
             } else {
                 console.log('Windows 32 bit not supported. Please use an ' +
-                        'x64 architecture.\n'); 
-                return 0;
+                        'x64 architecture.\n');
+                process.exit(1);
             }
         }
     }
