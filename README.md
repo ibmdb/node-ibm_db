@@ -999,14 +999,7 @@ To avoid this error, remove UNICODE from binding.gyp file and rebuild the ibm_db
 
 Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github.com/ibmdb/node-ibm_db/blob/master/installer/ifx.sh) script on non-windows system.
 
-## Contributing to the ibm_db python project
-
-[Contribution Guidelines for Contributing to the node-ibm_db](https://github.com/ibmdb/node-ibm_db/blob/master/contributing/CONTRIBUTING.md)
-
-```
-The developer sign-off should include the reference to the DCO in remarks(example below):
-DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
-```
+## Contributor
 
 * Dan VerWeire (dverweire@gmail.com)
 * Lee Smith (notwink@gmail.com)
@@ -1018,6 +1011,14 @@ DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
 * paulhendrix
 * IBM
 
+## Contributing to the node-ibm_db
+
+[Contribution Guidelines](https://github.com/ibmdb/node-ibm_db/blob/master/contributing/CONTRIBUTING.md)
+
+```
+Contributor should add a reference to the DCO sign-off as comment in the pull request(example below):
+DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
+```
 
 ## License
 
