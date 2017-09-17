@@ -1,3 +1,27 @@
+2017-09-17, Version 2.2.0
+=========================
+
+ * update windows binary (bimalkjha)
+
+ * Windows: Latest pre-compiled binary support (rhtpandeyIN)
+
+ * Windows: Auto Installation support (Compile and build) (#310) (Rohit Pandey)
+
+ * update readme (bimalkjha)
+
+ * New contribution guidelines for node-ibm_db (rhtpandeyIN)
+
+ * test case changes (bimalkjha)
+
+ * Fix for issue #297 - After DB Connection Failure, Available and Used Pool gets blank but poolSize still has value as max pool size (bimalkjha)
+
+ * Fix for issue #307 (bimalkjha)
+
+ * fix for issue #305 (rhtpandeyIN)
+
+ * Fix for issue #293 (bimalkjha)
+
+
 2017-07-10, Version 2.1.0
 =========================
 
