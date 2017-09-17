@@ -2,11 +2,12 @@
  * Node-ibm_db Installer file.
  */
 
-var fs = require('fs-extra');
+var fs = require('fs');
 var url = require('url');
 var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
+var execSync = require('child_process').execSync;
 var request = require('request');
 
 //IBM provided URL for downloading clidriver.
@@ -351,7 +352,7 @@ var install_node_ibm_db = function(file_url) {
                     if (fs.existsSync(CURRENT_DIR + "/build/Release"))
                     {
                         var RELEASE_DIRECTORY = path.resolve(CURRENT_DIR, 'build/Release');
-                        fs.removeSync(RELEASE_DIRECTORY);
+                        execSync("rmdir /s /q " + RELEASE_DIRECTORY);
                     }
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
@@ -433,12 +434,13 @@ var install_node_ibm_db = function(file_url) {
 
                 //Windows node binary names should update here.
                 var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+                var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
                 var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
                 var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
                 var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.4.0';
 
-                // Windows add-on binary for node.js < 4.x (for ex: v0.10.x and v0.12.7) has been discontinued.
-                if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
+                // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
+                if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
                     console.log('\nERROR: Found unsupported node.js version ' + process.version + ':' +
                         '\nnode-ibm_db do not have precompiled add-on file "odbc_bindings.node" for\n' +
                         'node.js ' + process.version + ' on Widnows. Please use the latest version of node.js.\n');
@@ -449,15 +451,16 @@ var install_node_ibm_db = function(file_url) {
                  * odbcBindingsNode will consist of the node binary-
                  * file name according to the node version in the system.
                  */
-                var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
+                var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
                 if (fs.existsSync(CURRENT_DIR + "/build")) {
                     var BUILD_DIRECTORY = path.resolve(CURRENT_DIR, 'build');
-                    fs.removeSync(BUILD_DIRECTORY);
+                    execSync("rmdir /s /q " + BUILD_DIRECTORY);
                 }
 
                 readStream = fs.createReadStream(BUILD_FILE);
@@ -483,7 +486,10 @@ var install_node_ibm_db = function(file_url) {
                         process.exit(1);
                     })
                     .on('finish', function() {
-                        console.log('\nnode-ibm_db installed successfully!\n');
+                      console.log("\n" + 
+                      "===================================\n"+
+                      "node-ibm_db installed successfully!\n"+
+                      "===================================\n");
                     });
 
                 return 1;
