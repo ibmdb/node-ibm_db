@@ -1,4 +1,18 @@
-2017-09-17, Version 2.2.0
+2017-09-29, Version 2.2.1
+=========================
+
+ * enhance db2connect license info - issue #317 (bimalkjha)
+
+ * enhance test file to test issue #318 (bimalkjha)
+
+ * Fix for issue #313 (bimalkjha)
+
+ * correct dependency versions in pakcage.json - fix for issue #315 (bimalkjha)
+
+ * Fix for issue #288 - Stringify Pool Object in debug log. (bimalkjha)
+
+
+2017-09-18, Version 2.2.0
 =========================
 
  * update windows binary (bimalkjha)
