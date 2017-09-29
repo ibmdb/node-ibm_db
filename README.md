@@ -101,6 +101,8 @@ can be enabled either on server using db2connectactivate utility or on client
 using client side license file. If you have client side license file, just 
 copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
 
+To know more about license and purchasing cost, please contact [IBM Customer Support](http://www-05.ibm.com/support/operations/zz/en/selectcountrylang.html).
+
 ## For AIX install issue
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
