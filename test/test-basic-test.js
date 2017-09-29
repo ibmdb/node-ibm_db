@@ -28,7 +28,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
       return conn.closeSync();
     }
     //Bind and Execute the statment asynchronously
-    stmt.executeNonQuery([42, 'bimal'], function (err, ret) {
+    stmt.executeNonQuery([34245, 'bimal'], function (err, ret) {
       if( err ) console.log(err);  
       //else ret.closeSync(); // call closeSync() for execute().
       else console.log("Inserted row count = " + ret);
@@ -46,8 +46,12 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log("Fetched Data = " );
             console.log(data);
             result.closeSync();
+            assert.deepEqual(data, [ { C1: 34245, C2: 'bimal' } ]);
+            data = conn.querySync('select * from mytab1 where c1 = ?;', [34245]);
+            console.log("conn.querySync('select * from mytab1 where c1 = ?;', [34245])" );
+            console.log(data);
+            assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
             conn.querySync("drop table mytab1");
-            assert.deepEqual(data, [ { C1: 42, C2: 'bimal' } ]);
             conn.close(function () { console.log('done'); });
           }
         });
