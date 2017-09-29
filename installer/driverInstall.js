@@ -122,11 +122,11 @@ var install_node_ibm_db = function(file_url) {
             if((platform == 'linux') || (platform =='aix') || 
                (platform == 'darwin' && arch == 'x64')) {
                 removeWinBuildArchive();
-                buildBinary(false);
+                buildBinary(!IS_ENVIRONMENT_VAR);
             }
         }
         else if(platform == 'win32' && arch == 'x64') {
-            buildBinary(false);
+            buildBinary(!IS_ENVIRONMENT_VAR);
         }
         else {
             console.log('Building binaries for node-ibm_db. This platform ' +
