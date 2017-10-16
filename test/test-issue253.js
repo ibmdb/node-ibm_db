@@ -18,10 +18,13 @@ ibmdb.open(cn, function (err,conn) {
       conn.closeSync();
      
       if (err) {
-          if( /^win/.test(process.platform) )
-            assert.equal(err.message, "[IBM][CLI Driver][DB2/LINUXX8664] SQL0180N  The syntax of the string representation of a datetime value is incorrect.  SQLSTATE=22007\r\n");
-          else
-            assert.equal(err.message, "[IBM][CLI Driver][DB2/LINUXX8664] SQL0180N  The syntax of the string representation of a datetime value is incorrect.  SQLSTATE=22007\n");
+          if( /^win/.test(process.platform) ) {
+            var index = err.message.indexOf("SQL0180N");
+            assert.equal(err.message.substring(index), "SQL0180N  The syntax of the string representation of a datetime value is incorrect.  SQLSTATE=22007\r\n");
+          }
+          else {
+            assert.equal(err.message.substring(index), "SQL0180N  The syntax of the string representation of a datetime value is incorrect.  SQLSTATE=22007\n");
+          }
       }
   });
 });
