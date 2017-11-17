@@ -63,7 +63,10 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "openSync", OpenSync);
   Nan::SetPrototypeMethod(constructor_template, "close", Close);
   Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
+
   Nan::SetPrototypeMethod(constructor_template, "createDatabaseSync", CreateDatabaseSync);
+  Nan::SetPrototypeMethod(constructor_template, "dropDatabaseSync", DropDatabaseSync);
+  
   Nan::SetPrototypeMethod(constructor_template, "createStatement", CreateStatement);
   Nan::SetPrototypeMethod(constructor_template, "createStatementSync", CreateStatementSync);
   Nan::SetPrototypeMethod(constructor_template, "query", Query);
@@ -564,7 +567,7 @@ NAN_METHOD(ODBCConnection::CloseSync) {
  *
  * ===Parameters
  * 
- * connection
+ * connection handle
  *     A valid database connection with parameter ATTACH=true specified.
  *     ('DRIVER={IBM DB2 ODBC DRIVER};ATTACH=true;HOSTNAME=myhost;PORT=1234;PROTOCOL=TCPIP;UID=user;PWD=secret;)
  *     Note: Database is not specified. In this case we connect to the instance only.
@@ -660,6 +663,62 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
    else {
      return Nan::ThrowTypeError("ODBCConnection::CreateDatabaseSync(): Argument 0 must be a String.");
    }
+
+   if(ret == SQL_ERROR) {
+     err = true;
+     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+   }
+
+   if (err) {
+     return Nan::ThrowError(objError);
+   }
+   else {
+     info.GetReturnValue().Set(Nan::True());
+   }
+}
+
+/*  */
+/*
+ * DropDatabaseSync -- Drop a Database
+ *
+ * ===Description
+ * Drops a database with the specified name. Returns true if operation successful else false
+ * "SQLDropDb"
+ *
+ * ===Parameters
+ * 
+ * Connection handle.
+ *
+ * dbName
+ *     Name of the database that is to be created.
+ *
+ * ===Return Values
+ * 
+ * Returns TRUE on success or FALSE on failure. 
+ */
+
+NAN_METHOD(ODBCConnection::DropDatabaseSync) {
+   DEBUG_PRINTF("ODBCConnection::DropDatabaseSync\n");
+   Nan::HandleScope scope;
+
+   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+   SQLRETURN ret;
+   Local<Value> objError;
+   bool err = false;
+
+   int dbNameLength = 0;
+
+   REQ_STRO_ARG(0, dbName);
+   dbNameLength = dbName->Length() + 1;
+
+   char* databaseNameString = (char *) malloc(dbNameLength);
+   MEMCHECK( databaseNameString ) ;
+   dbName->WriteUtf8(databaseNameString);
+
+   ret = SQLDropDb( conn->m_hDBC,
+                    (SQLCHAR *) databaseNameString,
+                    dbNameLength );
 
    if(ret == SQL_ERROR) {
      err = true;
