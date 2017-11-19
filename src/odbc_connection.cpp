@@ -602,6 +602,7 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
    int dbNameLength = 0;
    int codeSetLength = 0;
    int modeLength = 0;
+   char* databaseNameString = NULL;
    char* codeSetString = NULL;
    char* modeString = NULL;
 
@@ -612,11 +613,11 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
      REQ_STRO_ARG(0, dbName);
      dbNameLength = dbName->Length() + 1;
 
-     char* databaseNameString = (char *) malloc(dbNameLength);
+     databaseNameString = (char *) malloc(dbNameLength);
      MEMCHECK( databaseNameString ) ;
      dbName->WriteUtf8(databaseNameString);
 
-     if( ! ( info[1]->IsNull() ) ) {
+     if( !( info[1]->IsNull() ) ) {
        REQ_STRO_ARG(1, codeSet);
        codeSetLength = codeSet->Length() + 1;
 
@@ -625,7 +626,7 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
        codeSet->WriteUtf8(codeSetString);     
      }
 
-     if( ! ( info[2]->IsNull() ) ) {
+     if( !( info[2]->IsNull() ) ) {
        REQ_STRO_ARG(2, mode);
        modeLength = mode->Length() + 1;
 
@@ -664,10 +665,30 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
      return Nan::ThrowTypeError("ODBCConnection::CreateDatabaseSync(): Argument 0 must be a String.");
    }
 
-   if(ret == SQL_ERROR) {
+   if(!SQL_SUCCEEDED(ret)) {
      err = true;
      objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
    }
+   else {
+     /* disconnect from the database */
+     ret = SQLDisconnect(conn->m_hDBC);
+
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+
+     //free the handle
+     ret = SQLFreeHandle( SQL_HANDLE_DBC, conn->m_hDBC);
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+   }
+
+   free(databaseNameString);
+   if ( !( info[1]->IsNull() ) ) free(codeSetString);
+   if ( !( info[1]->IsNull() ) ) free(modeString);
 
    if (err) {
      return Nan::ThrowError(objError);
@@ -1121,7 +1142,6 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   
   //scope.Close(Undefined());
 }
-
 
 /*
  * QuerySync
