@@ -741,10 +741,28 @@ NAN_METHOD(ODBCConnection::DropDatabaseSync) {
                     (SQLCHAR *) databaseNameString,
                     dbNameLength );
 
-   if(ret == SQL_ERROR) {
+   if(!SQL_SUCCEEDED(ret)) {
      err = true;
      objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
    }
+   else {
+     /* disconnect from the database */
+     ret = SQLDisconnect(conn->m_hDBC);
+
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+
+     //free the handle
+     ret = SQLFreeHandle( SQL_HANDLE_DBC, conn->m_hDBC);
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+   }
+
+   free(databaseNameString);
 
    if (err) {
      return Nan::ThrowError(objError);
