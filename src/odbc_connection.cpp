@@ -64,8 +64,8 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "close", Close);
   Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
 
-  Nan::SetPrototypeMethod(constructor_template, "createDatabaseSync", CreateDatabaseSync);
-  Nan::SetPrototypeMethod(constructor_template, "dropDatabaseSync", DropDatabaseSync);
+  Nan::SetPrototypeMethod(constructor_template, "createDbSync", CreateDbSync);
+  Nan::SetPrototypeMethod(constructor_template, "dropDbSync", DropDbSync);
   
   Nan::SetPrototypeMethod(constructor_template, "createStatement", CreateStatement);
   Nan::SetPrototypeMethod(constructor_template, "createStatementSync", CreateStatementSync);
@@ -559,7 +559,7 @@ NAN_METHOD(ODBCConnection::CloseSync) {
 
 /*  */
 /*
- * CreateDatabaseSync -- Creates a Database
+ * CreateDbSync -- Creates a Database
  *
  * ===Description
  * Creates a database with the specified name. Returns true if operation successful else false
@@ -589,8 +589,8 @@ NAN_METHOD(ODBCConnection::CloseSync) {
  * Returns TRUE on success or FALSE on failure. 
  */
 
-NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
-   DEBUG_PRINTF("ODBCConnection::CreateDatabaseSync\n");
+NAN_METHOD(ODBCConnection::CreateDbSync) {
+   DEBUG_PRINTF("ODBCConnection::CreateDbSync\n");
    Nan::HandleScope scope;
 
    ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
@@ -613,56 +613,57 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
      REQ_STRO_ARG(0, dbName);
      dbNameLength = dbName->Length() + 1;
 
-     databaseNameString = (char *) malloc(dbNameLength);
-     MEMCHECK( databaseNameString ) ;
-     dbName->WriteUtf8(databaseNameString);
+     #ifdef UNICODE
+       uint16_t* databaseNameString = (uint16_t *) malloc(dbNameLength * sizeof(uint16_t));
+       MEMCHECK( databaseNameString ) ;
+       dbName->Write(databaseNameString);
+     #else
+       databaseNameString = (char *) malloc(dbNameLength);
+       MEMCHECK( databaseNameString ) ;
+       dbName->WriteUtf8(databaseNameString);
+     #endif
 
      if( !( info[1]->IsNull() ) ) {
        REQ_STRO_ARG(1, codeSet);
        codeSetLength = codeSet->Length() + 1;
 
-       codeSetString = (char *) malloc(codeSetLength);
-       MEMCHECK( codeSetString ) ;
-       codeSet->WriteUtf8(codeSetString);     
+       #ifdef UNICODE
+         uint16_t* codeSetString = (uint16_t *) malloc(codeSetLength * sizeof(uint16_t));
+         MEMCHECK( codeSetString ) ;
+         codeSet->Write(codeSetString);
+       #else
+         codeSetString = (char *) malloc(codeSetLength);
+         MEMCHECK( codeSetString ) ;
+         codeSet->WriteUtf8(codeSetString);  
+       #endif
      }
 
      if( !( info[2]->IsNull() ) ) {
        REQ_STRO_ARG(2, mode);
        modeLength = mode->Length() + 1;
 
-       modeString = (char *) malloc(modeLength);
-       MEMCHECK( modeString ) ;
-       mode->WriteUtf8(modeString);
+       #ifdef UNICODE
+         uint16_t* modeString = (uint16_t *) malloc(modeLength * sizeof(uint16_t));
+         MEMCHECK( modeString ) ;
+         mode->Write(modeString);
+       #else
+         modeString = (char *) malloc(modeLength);
+         MEMCHECK( modeString ) ;
+         mode->WriteUtf8(modeString);
+       #endif
      }
 
-// #ifdef UNICODE
-//      uint16_t* databaseNameString = (uint16_t *) malloc(dbNameLength * sizeof(uint16_t));
-//      MEMCHECK( databaseNameString ) ;
-//      dbName->Write(databaseNameString);
-
-//      uint16_t* codeSetString = (uint16_t *) malloc(codeSetLength * sizeof(uint16_t));
-//      MEMCHECK( codeSetString ) ;
-//      codeSet->Write(codeSetString);
-
-//      uint16_t* modeString = (uint16_t *) malloc(modeLength * sizeof(uint16_t));
-//      MEMCHECK( modeString ) ;
-//      mode->Write(modeString);
-
-// #else
-//      //char code shifted above.
-// #endif
-     
      ret = SQLCreateDb( conn->m_hDBC,
-                        (SQLCHAR *) databaseNameString,
+                        (SQLTCHAR *) databaseNameString,
                         dbNameLength,
-                        (SQLCHAR *) codeSetString,
+                        (SQLTCHAR *) codeSetString,
                         codeSetLength,
-                        (SQLCHAR *) modeString,
+                        (SQLTCHAR *) modeString,
                         modeLength );
 
    }
    else {
-     return Nan::ThrowTypeError("ODBCConnection::CreateDatabaseSync(): Argument 0 must be a String.");
+     return Nan::ThrowTypeError("ODBCConnection::CreateDbSync(): Argument 0 must be a String.");
    }
 
    if(!SQL_SUCCEEDED(ret)) {
@@ -700,7 +701,7 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
 
 /*  */
 /*
- * DropDatabaseSync -- Drop a Database
+ * DropDbSync -- Drop a Database
  *
  * ===Description
  * Drops a database with the specified name. Returns true if operation successful else false
@@ -718,8 +719,8 @@ NAN_METHOD(ODBCConnection::CreateDatabaseSync) {
  * Returns TRUE on success or FALSE on failure. 
  */
 
-NAN_METHOD(ODBCConnection::DropDatabaseSync) {
-   DEBUG_PRINTF("ODBCConnection::DropDatabaseSync\n");
+NAN_METHOD(ODBCConnection::DropDbSync) {
+   DEBUG_PRINTF("ODBCConnection::DropDbSync\n");
    Nan::HandleScope scope;
 
    ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
@@ -733,12 +734,18 @@ NAN_METHOD(ODBCConnection::DropDatabaseSync) {
    REQ_STRO_ARG(0, dbName);
    dbNameLength = dbName->Length() + 1;
 
-   char* databaseNameString = (char *) malloc(dbNameLength);
-   MEMCHECK( databaseNameString ) ;
-   dbName->WriteUtf8(databaseNameString);
+   #ifdef UNICODE
+     uint16_t* databaseNameString = (uint16_t *) malloc(dbNameLength * sizeof(uint16_t));
+     MEMCHECK( databaseNameString ) ;
+     dbName->Write(databaseNameString);
+   #else
+     char* databaseNameString = (char *) malloc(dbNameLength);
+     MEMCHECK( databaseNameString ) ;
+     dbName->WriteUtf8(databaseNameString);
+   #endif
 
    ret = SQLDropDb( conn->m_hDBC,
-                    (SQLCHAR *) databaseNameString,
+                    (SQLTCHAR *) databaseNameString,
                     dbNameLength );
 
    if(!SQL_SUCCEEDED(ret)) {
