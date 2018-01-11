@@ -12,7 +12,6 @@
         "<!(node -e \"require('nan')\")"
       ],
       'defines' : [
-        'UNICODE',
       ],
       "variables": {
         # Set the linker location, no extra linking needed, just link backwards one directory
