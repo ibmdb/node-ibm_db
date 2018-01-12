@@ -1,5 +1,5 @@
 {
-  "name": "ibm_db",
+  "name": "ibm_db2",
   "description": "IBM DB2 and IBM Informix bindings for node",
   "version": "2.2.1",
   "main": "lib/odbc.js",
