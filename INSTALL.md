@@ -28,7 +28,8 @@ DEALINGS IN THE SOFTWARE.
 5. [Node-ibm_db Installation on Linux on Power System](#inslnx_p) 
 6. [Node-ibm_db Installation on MacOS](#insmac)
 7. [Node-ibm_db Installation on Windows](#inswin)
-8. [Node-ibm_db How to Manually Build on Windows](#inswinbld)
+8. [Node-ibm_db Installation on z/OS](#inszos)
+9. [Node-ibm_db How to Manually Build on Windows](#inswinbld)
 
 ## <a name="overview"></a> 1. Overview
 
@@ -240,15 +241,127 @@ node run-tests.js
 It's Done.
 
 
-## <a name="inswinbld"></a> 8. Node-ibm_db How to Manually Build on Windows.
+## <a name="inszos"></a> 8. Node-ibm_db How to Manually Build on z/OS
 
-### 8.1 Install Node.js for Windows
+### 8.1 Install Node.js for z/OS
+
+Download and install the IBM SDK for Node.js - z/OS from [Marketplace](https://www.ibm.com/ca-en/marketplace/sdk-nodejs-compiler-zos).  Trial version of IBM SDK for Node.js - z/OS is also available on [DevelopWorks](https://developer.ibm.com/node/sdk/ztp/).  Given that ibm_db includes native add-on code, ensure that you have the pre-requisite Python and Make tools installed as detailed in the SDK installation instructions.
+
+### 8.2 Configure ODBC driver on z/OS
+
+Please refer to the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) cookbook for how to configure your ODBC driver.   Specifically, you need to ensure you have:
+
+1. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
+
+2. Set the `IBM_DB_HOME` environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
+
+    ```sh
+    # Set HLQ to Db2 datasets.
+    export IBM_DB_HOME="DSN1210"
+    ```
+
+3. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB` environment variable with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
+
+    ```sh
+    # Assumes IBM_DB_HOME specifies the HLQ of the Db2 datasets.
+    export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME:SDSNL0D2
+    ```
+
+4. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+
+    ```
+    MULTICONTEXT=1
+    CURRENTAPPENSCH=ASCII
+    ```
+
+    Here is a sample of a complete initialization file:
+
+    ```
+    ; This is a comment line...
+    ; Example COMMON stanza
+    [COMMON]
+    MVSDEFAULTSSID=VC1A
+    CONNECTTYPE=1
+    MULTICONTEXT=1
+    CURRENTAPPENSCH=ASCII
+    ; Example SUBSYSTEM stanza for VC1A subsystem
+    [VC1A]
+    MVSATTACHTYPE=RRSAF
+    PLANNAME=DSNACLI
+    ; Example DATA SOURCE stanza for STLEC1 data source
+    [STLEC1]
+    AUTOCOMMIT=1
+    CURSORHOLD=1
+    ```
+
+    Reference Chapter 3 in the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) for more instructions.
+
+### 8.3 Install node-ibm_db
+
+The following are the steps to install [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) from GitHub or npm into a subdirectory `nodeapp` as an example.
+
+From Unix System Services (USS), create a subdirectory `nodeapp` to host your Node.js application:
+
+```sh
+mkdir nodeapp
+cd nodeapp
+```
+
+#### 8.3.1 Direct Installation
+
+Install ibm_db from npm, or from the GitHub repository (requires [Git on z/OS](http://www.rocketsoftware.com/product-categories/mainframe/git-for-zos)):
+
+```sh
+# Install via npm repository
+npm install ibm_db
+
+# --- OR -----
+
+# Install from GitHub repository
+npm install git+ssh://git@github.com/ibmdb/node-ibm_db.git
+```
+
+#### 8.3.2 Manual Installation by using git clone
+
+Using [Git on z/OS](http://www.rocketsoftware.com/product-categories/mainframe/git-for-zos), clone the GitHub respository.
+
+```sh
+git clone git://github.com/ibmdb/node-ibm_db
+cd node-ibm_db
+```
+
+Install the ibm_db module dependencies with:
+
+```sh
+npm install
+```
+
+### 8.4 Running Verification Tests
+
+To run the validation tests, update `node-ibm_db/test/config.testConnectionStrings.zos.json` with your database credentials (DSN, UID, PWD).
+
+Set the `IBM_DB_SERVER_TYPE` environment variable to `ZOS` if you are connecting to a z/OS Db2 database.
+
+```sh
+export IBM_DB_SERVER_TYPE="ZOS"
+```
+
+Execute the tests with:
+
+```sh
+cd node-ibm_db
+npm test
+```
+
+## <a name="inswinbld"></a> 9. Node-ibm_db How to Manually Build on Windows.
+
+### 9.1 Install Node.js for Windows
 
 Download the
 [Node.js Windows binary/installer](http://nodejs.org) or [Node.js Latest binaries](https://nodejs.org/dist/latest/) and
 install it.
 
-### 8.2 Make Build node-ibm_db
+### 9.2 Make Build node-ibm_db
 
 Following are the steps to make build of [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db).
 using directory `/nodeapp` for example.
