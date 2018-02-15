@@ -11,8 +11,10 @@
       'include_dirs': [
         "<!(node -e \"require('nan')\")"
       ],
-      'defines' : [
-        'UNICODE',
+      'conditions' : [
+        [ 'OS != "zos"',
+          { 'defines' : [ 'UNICODE'], }
+        ]
       ],
       "variables": {
         # Set the linker location, no extra linking needed, just link backwards one directory
@@ -40,7 +42,11 @@
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g'],
           }],
-
+        [ 'OS == "zos" ',
+          { 'libraries' : ['dsnao64c.x'],
+            'include_dirs': ['build/include'],
+            'cflags' : ['-g']
+          }],
         [ 'OS == "mac" and target_arch =="x64" ',
           { 'xcode_settings': {'GCC_ENABLE_CPP_EXCEPTIONS': 'YES' },
             'libraries' : ['-L$(IBM_DB_HOME)/lib ', '-ldb2'],
