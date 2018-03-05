@@ -429,7 +429,7 @@ var install_node_ibm_db = function(file_url) {
 
                 if(platform == 'darwin' && arch == 'x64') {
                     // Run the install_name_tool
-                    var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" ./build/Release/odbc_bindings.node" ;
+                    var nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib ./build/Release/odbc_bindings.node" ;
                     var nameToolCmdProcess = exec(nameToolCommand , 
                     function (error1, stdout1, stderr1) {
                         if (error1 !== null) {
