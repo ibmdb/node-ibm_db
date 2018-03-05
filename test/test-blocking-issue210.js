@@ -18,8 +18,23 @@ pool.open(connectionString, function( err, conn) {
           conn.querySync("drop table mtab2"); } catch(e) {};
     conn.querySync("create table mtab1(c1 varchar(30), c2 varchar(20))");
     conn.querySync("create table mtab2(c1 varchar(30), c2 varchar(20))");
-    conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
-    conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      // Db2 on z/OS does not support multi-row inserts
+      conn.querySync("Insert into mtab1 values ('1', 'bimal')");
+      conn.querySync("Insert into mtab1 values ('2', 'kumar')");
+      conn.querySync("Insert into mtab1 values ('3', 'jha')");
+      conn.querySync("Insert into mtab1 values ('4', 'kamal')");
+      conn.querySync("Insert into mtab1 values ('5', 'ibm')");
+
+      conn.querySync("Insert into mtab1 values ('1', 'bimal')");
+      conn.querySync("Insert into mtab1 values ('2', 'kumar')");
+      conn.querySync("Insert into mtab1 values ('3', 'jha')");
+      conn.querySync("Insert into mtab1 values ('4', 'kamal')");
+      conn.querySync("Insert into mtab1 values ('5', 'ibm')");
+    } else {
+      conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+      conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+    }
     for(var i = 0; i < 6 ; i++) {
       conn.querySync("insert into mtab2 (select * from mtab1)");
       conn.querySync("insert into mtab1 (select * from mtab2)");
@@ -69,8 +84,16 @@ pool.open(connectionString, function (err, connection) {
 
 // Test case for issue #230 - ? takes long time. Found a server issue.
 var testLongTime = function(conn) {
-    conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910'), "+
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      // Db2 on z/OS does not support multi-row inserts
+      conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910')");
+      conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910')");
+      conn.querySync("insert into mtab1 values ('330107196906080910', '')");
+    } else {
+      conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910'), "+
                    "('330107196906080910', '330107196906080910'), ('330107196906080910', '')");
+
+    }
     var query1 = "select c1, c2 from mtab1 where (c1 in (?, ?) or c2 in (?, ?) and (? is null or c2 = ?))";
     var query2 = "select c1, c2 from mtab1 where (c1 in ('330107196906080910', '330107196906080910') " +
                  "or c2 in ('330107196906080910', '330107196906080910') and ('' is null or c2 = ''))";

@@ -22,8 +22,8 @@ ibmdb.open(cn, function (err,conn)
     conn.querySync("create table mytab (empId int, photo BLOB(1M), trace CLOB(1M))");
     } catch (e) {};
   
-  var img1= 'data/phool.jpg'; //fs.readFileSync('phool.jpg','binary');
-  var text= 'data/trc.fmt'; //fs.readFileSync('trc.fmt','ascii');
+  var img1= __dirname + '/data/phool.jpg'; //fs.readFileSync('phool.jpg','binary');
+  var text= __dirname + '/data/trc.fmt'; //fs.readFileSync('trc.fmt','ascii');
 
   var len1  = fs.statSync(img1)["size"];
   var len2  = fs.statSync(text)["size"];

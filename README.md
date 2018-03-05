@@ -2,7 +2,7 @@
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
-**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on z and Linux on Power PC.
+**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
 ## Prerequisite
 
@@ -12,7 +12,9 @@ Install a newer compiler or upgrade older one.
 
 - Python 2.7 is needed by node-gyp.
 
-- You need not to install any db2 ODBC client driver for connectivity. `ibm_db` itself download and install odbc/cli driver from ibm website during installation. Just install `ibm_db` and it is ready for use.
+- On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
+
+- On z/OS, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-z/os).
 
 - Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.12.x is deprecated on Windows and will be discontinued from next release.
 
@@ -31,18 +33,25 @@ npm install ibm_db
 
 `IBM_DB_HOME :`
 
-- USE: Set this environment variable if you want to avoid downloading of clidriver from the [IBM Hosted URL](#downloadCli) or from the internet.
+- USE:
+	- On distributed platforms, set this environment variable if you want to avoid downloading of clidriver from the [IBM Hosted URL](#downloadCli) or from the internet.
+	- On z/OS, set this environment variable to the High Level Qualifier (HLQ) of your Db2 datasets. During `npm install`, the module will automatically reference ODBC driver header files under: `$IBM_DB_HOME.SDSNC.H` and the sidedeck definitions in `$IBM_DB_HOME.SDSNMACS(DSNAO64C)` to build the node binding.
 
-- How: Set **IBM_DB_HOME** environment variable to a pre-installed **db2 client or server installation directory**.
+- HOW:
+	- On distributed platforms, set **IBM_DB_HOME** environment variable to a pre-installed **db2 client or server installation directory**.
+	- On z/OS, set **IBM_DB_HOME** environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
+
 
 `IBM_DB_INSTALLER_URL :`
 
-- USE: Set this environment variable to by-pass the IBM Hosted URL for downloading odbc/clidriver.
+- USE:
+	- Set this environment variable to by-pass the IBM Hosted URL for downloading odbc/clidriver.
 
-- HOW: Set **IBM_DB_INSTALLER_URL** environment variable with alternate odbc/clidriver downloading URL link or with locally downloaded "tar/zipped clidriver's parent directory path.
+- HOW:
+	- Set **IBM_DB_INSTALLER_URL** environment variable with alternate odbc/clidriver downloading URL link or with locally downloaded "tar/zipped clidriver's parent directory path.
 
-- TIP: If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and can set the **IBM_DB_INSTALLER_URL** environment variable to the downloaded "tar/zipped clidriver's" parent directory path. No need to untar/unzip the clidriver and do not change the name of downloaded file.
-
+- TIP:
+	- If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and can set the **IBM_DB_INSTALLER_URL** environment variable to the downloaded "tar/zipped clidriver's" parent directory path. No need to untar/unzip the clidriver and do not change the name of downloaded file.
 
 ### <a name="downloadCli"></a> Download clidriver ([based on your platform & architecture](#systemDetails)) from the below IBM Hosted URL:
 > [DOWNLOAD CLI DRIVER](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/)
@@ -63,7 +72,50 @@ npm install ibm_db
 |              |  others        |linuxia32_odbc_cli.tar.gz|  Yes         |
 |Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
 |              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
+|z/OS          |  s390x         |ODBC support from IBM Db2 for z/OS 11.0 or 12.0 | Yes  |
 
+
+### Configure ODBC driver on z/OS
+
+Please refer to the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) cookbook for how to configure your ODBC driver.   Specifically, you need to ensure you have:
+
+1. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
+
+2. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB `environment variable in your `.profile` with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
+
+    ```sh
+    # Assumes IBM_DB_HOME specifies the HLQ of the Db2 datasets.
+    export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME:SDSNL0D2  
+    ```
+
+3. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+
+    ```
+    MULTICONTEXT=1
+    CURRENTAPPENSCH=ASCII
+    ```
+
+    Here is a sample of a complete initialization file:
+
+    ```
+    ; This is a comment line...
+    ; Example COMMON stanza
+    [COMMON]
+    MVSDEFAULTSSID=VC1A
+    CONNECTTYPE=1
+    MULTICONTEXT=1
+    CURRENTAPPENSCH=ASCII
+    ; Example SUBSYSTEM stanza for VC1A subsystem
+    [VC1A]
+    MVSATTACHTYPE=RRSAF
+    PLANNAME=DSNACLI
+    ; Example DATA SOURCE stanza for STLEC1 data source
+    [STLEC1]
+    AUTOCOMMIT=1
+    CURSORHOLD=1
+    ```
+
+    Reference Chapter 3 in the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) for more instructions.
 
 
 ## Quick Example
@@ -194,7 +246,14 @@ var Database = require("ibm_db").Database
 
 Open a connection to a database.
 
-* **connectionString** - The connection string for your database
+* **connectionString** - The connection string for your database.
+    * For distributed platforms, the connection string is typically defined as:
+    `DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd`
+    * For z/OS, the ODBC driver makes both local and remote connections using DSN, UID and PWD.
+    The connection string is typically defined as: `DSN=dbname;UID=username;PWD=passwd`.  To
+    connect to remote Db2 databases, the connectivity information will need to be set up in the
+    Communications Database (CDB).  Please refer to scenario 1 in the following
+    [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html).
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
@@ -907,9 +966,11 @@ flag `DEBUG` to the defines section of the `binding.gyp` file and then execute
 
 ### Unicode
 
-By default, UNICODE suppport is enabled. This should provide the most accurate
-way to get Unicode strings submitted to your database. For best results, you 
-may want to put your Unicode string into bound parameters. 
+By default on distributed platforms, UNICODE suppport is enabled. This should
+provide the most accurate way to get Unicode strings submitted to your database.
+For best results, you may want to put your Unicode string into bound parameters.
+
+On z/OS, UNICODE is disabled by default.
 
 However, if you experience issues or you think that submitting UTF8 strings will
 work better or faster, you can remove the `UNICODE` define in `binding.gyp`
