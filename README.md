@@ -26,7 +26,7 @@ You may install the package using npm install command:
 npm install ibm_db
 ```
 
-> For more installation details please refer:  [INSTALLAION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
+> For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
 ### Important Environment Variables and Download Essentials 
