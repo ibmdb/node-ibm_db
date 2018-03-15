@@ -431,7 +431,7 @@ var install_node_ibm_db = function(file_url) {
     function installPreCompiledWinBinary()
     {
         if(platform == 'win32') {
-            if(arch == 'x64') {
+            if(arch == 'x64' || arch == 'ia32') {
                 var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
 
                 //Windows node binary names should update here.
