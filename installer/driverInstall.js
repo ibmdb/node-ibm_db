@@ -140,6 +140,8 @@ var install_node_ibm_db = function(file_url) {
         if(platform == 'win32') {
             if(arch == 'x64') {
                 installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
+            } else if (arch == 'ia32') {
+                installerfileURL = installerURL + 'nt32_odbc_cli.zip';            
             }
         } 
         else if(platform == 'linux') 
