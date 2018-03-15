@@ -268,7 +268,7 @@ var install_node_ibm_db = function(file_url) {
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
-        if( platform == 'win32' && arch == 'x64')
+        if( platform == 'win32' && (arch == 'x64' || arch == 'ia32'))
         {
             var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
 
