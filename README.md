@@ -77,18 +77,49 @@ npm install ibm_db
 
 ### Configure ODBC driver on z/OS
 
-Please refer to the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) cookbook for how to configure your ODBC driver.   Specifically, you need to ensure you have:
+Please refer to the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) cookbook for how to configure your ODBC driver.   Specifically, you need to ensure you:
 
-1. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
+1. Bind the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
 
-2. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB `environment variable in your `.profile` with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
+2. Ensure users that should be authorized have authority to execute the DSNACLI plan.  Included are samples granting authority to public (all users), or specific groups via SQL GRANT statements, or alternately via RACF.  The security administrator can use these samples as a model and customize/translate to your installation security standards as appropriate.
+
+    **Examples using SQL GRANT statement**:
+
+    _Example 1:_ Grant the privilege to execute plan DSNACLI to RACF group, DBCLIGRP.
+
+        GRANT EXECUTE ON PLAN DSNACLI TO DBCLIGRP;
+
+    _Example 2:_ Grant the privilege to execute plan DSNACLI to all users at the current server.
+
+        GRANT EXECUTE ON PLAN DSNACLI TO PUBLIC;
+
+    **Examples using Access Control Authorization Exit for Db2 authorization**:
+
+    Define profile for plan DSNACLI execute privilege check
+
+        RDEFINE MDSNPN DB2A.DSNACLI.EXECUTE UACC(NONE) OWNER(DB2OWNER)
+
+    _Example 1:_ PERMIT the privilege to execute plan DSNACLI to RACF group, DBCLIGRP
+
+        PERMIT DB2A.DSNACLI.EXECUTE ID(DBCLIGRP) ACCESS(READ) CLASS(MDSNPN)
+
+    _Example 2:_ PERMIT the privilege to execute plan DSNACLI to all users at the current server
+
+        PERMIT DB2A.DSNACLI.EXECUTE ID(*) ACCESS(READ) CLASS(MDSNPN)
+
+    Issue SETROPTS command to refresh in-storage profile lists
+
+         SETR RACLIST(MDSNPN) REFRESH
+
+
+3. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB `environment variable in your `.profile` with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
 
     ```sh
     # Assumes IBM_DB_HOME specifies the HLQ of the Db2 datasets.
     export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME:SDSNL0D2  
     ```
 
-3. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+4. Configure an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
 
     ```
     MULTICONTEXT=1

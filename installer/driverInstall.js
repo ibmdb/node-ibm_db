@@ -219,8 +219,8 @@ var install_node_ibm_db = function(file_url) {
             // specify IBM_DB_HOME environment variable to the Db2 datasets
             // to allow the installer to access the necessary header files and
             // sidedeck definitions to build the node binding.
-            console.log('Please set environment variable IBM_DB_HOME to the HLQ' +
-                        'of your DB2 libraries.\n');
+            console.log('Please set the environment variable IBM_DB_HOME to the ' + 
+                        'High Level Qualifier (HLQ) of your Db2 libraries.\n');
             process.exit(1);
         }
         else
