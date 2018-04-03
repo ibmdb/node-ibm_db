@@ -1,3 +1,27 @@
+2018-04-03, Version 2.3.0
+=========================
+
+ * add logs (Bimal Jha)
+
+ * Add GRANT EXECUTE permissions step for z/OS ODBC (#378) (Joran Siu)
+
+ * Fix for issue #329, pull #330, #368 (Bimal Jha)
+
+ * Update tests for z/OS compatiability (Joran Siu)
+
+ * Add z/OS specific updates (Joran Siu)
+
+ * Add z/OS specific configuration and installation steps (Joran Siu)
+
+ * Update README + INSTALL with z/OS details (Joran Siu)
+
+ * Added Fix for issue #253 #331 (rhtpandeyIN)
+
+ * Fix for issue #324 - Calling conn.close twice causes pool.close not to complete (bimalkjha)
+
+ * fix for issue #323 (bimalkjha)
+
+
 2017-09-29, Version 2.2.1
 =========================
 
