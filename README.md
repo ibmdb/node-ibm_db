@@ -247,31 +247,31 @@ var Database = require("ibm_db").Database
 
 ## Database APIs
 
-> APIs for creating and droping Database using node.js application
-* [.createDbSync(dbName, connectionString, [options])] (#createDbSyncApi)
-* [.dropDBSync(dbName, connectionString)] (#dropDbSyncApi)
+**APIs for creating and droping Database using node.js application**
+*  [.createDbSync(dbName, connectionString, [options])](#createDbSyncApi)
+*  [.dropDBSync(dbName, connectionString)](#dropDbSyncApi)
 
-1  [.open(connectionString, [options,] callback)](#openApi)
-2  [.openSync(connectionString)](#openSyncApi)
-3  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
-4  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
-5  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
-6  [.close(callback)](#closeApi)
-7  [.closeSync()](#closeSyncApi)
-8  [.prepare(sql, callback)](#prepareApi)
-9  [.prepareSync(sql)](#prepareSyncApi)
-10 [.execute([bindingParameters], callback)](#executeApi)
-11 [.executeSync([bindingParameters])](#executeSyncApi)
-12 [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-13 [.bind(bindingParameters, callback)](#bindApi)
-14 [.bindSync(bindingParameters)](#bindSyncApi)
-15 [.beginTransaction(callback)](#beginTransactionApi)
-16 [.beginTransactionSync()](#beginTransactionSyncApi)
-17 [.commitTransaction(callback)](#commitTransactionApi)
-18 [.commitTransactionSync()](#commitTransactionSyncApi)
-19 [.rollbackTransaction(callback)](#rollbackTransactionApi)
-20 [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-21 [.debug(value)](#enableDebugLogs)
+1.  [.open(connectionString, [options,] callback)](#openApi)
+2.  [.openSync(connectionString)](#openSyncApi)
+3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
+4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
+5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
+6.  [.close(callback)](#closeApi)
+7.  [.closeSync()](#closeSyncApi)
+8.  [.prepare(sql, callback)](#prepareApi)
+9.  [.prepareSync(sql)](#prepareSyncApi)
+10. [.execute([bindingParameters], callback)](#executeApi)
+11. [.executeSync([bindingParameters])](#executeSyncApi)
+12. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+13. [.bind(bindingParameters, callback)](#bindApi)
+14. [.bindSync(bindingParameters)](#bindSyncApi)
+15. [.beginTransaction(callback)](#beginTransactionApi)
+16. [.beginTransactionSync()](#beginTransactionSyncApi)
+17. [.commitTransaction(callback)](#commitTransactionApi)
+18. [.commitTransactionSync()](#commitTransactionSyncApi)
+19. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+20. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+21. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -831,38 +831,57 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
 ## Create and Drop Database APIs
 
-### <a name="createDbSync"></a> 1) .createDbSync(dbName, connectionString, [options])
+### <a name="createDbSync"></a> .createDbSync(dbName, connectionString, [options])
 
-To create a database <dbName> through node.js application.
+To create a database (dbName) through node.js application.
 
 * **dbName** - The database name.
 * **connectionString** - The connection string for your database instance.
-* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
-    loading of native ODBC library for each call of `.open`. Also, can be used
-    to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
-* **callback** - `callback (err, conn)`
+* **options** - _OPTIONAL_ - Object type.
+    * codeSet - Database code set information.
+    * mode    - Database logging mode (applicable only to "IDS data servers").
 
 ```javascript
-var ibmdb = require("ibm_db")
-  , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
+var ibmdb = require("ibm_db");
+// Connection string without "DATABASE" keyword and value.
+var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(connStr, function (err, connection) {
-    if (err) 
-    {
-      console.log(err);
-      return;
-    }
-    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
-      if (err1) console.log(err1);
-      else console.log(rows);
-      connection.close(function(err2) { 
-        if(err2) console.log(err2);
-      });
-    });
-});
+var DB_NAME = "TESTDB";
 
+var createDB = ibmdb.createDbSync(DB_NAME, cn);
+
+if(createDB) {
+  console.log("Database created successfully.");
+  // Connection string with newly created "DATABASE" name.
+	var conStr = cn + ";" + "DATABASE=" + DB_NAME;
+
+	ibmdb.open(conStr, function(err, conn) {
+		if(err) console.log(err);
+		else console.log("Database connection opened.");
+	});
+}
 ```
 
+### <a name="dropDbSync"></a> .dropDbSync(dbName, connectionString)
+
+To drop a database (dbName) through node.js application.
+
+* **dbName** - The database name.
+* **connectionString** - The connection string for your database instance.
+
+```javascript
+var ibmdb = require("ibm_db");
+// Connection string without "DATABASE" keyword and value.
+var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+var DB_NAME = "TESTDB";
+
+var dropDB = ibmdb.dropDbSync(DB_NAME, cn);
+
+if(dropDB) {
+  console.log("Database dropped successfully.");
+}
+```
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
 
@@ -877,10 +896,10 @@ the next time you call `Pool.open()` for the same connection string.
 For applications using multiple connections simultaneously, it is recommended to
 use Pool.open instead of [ibmdb.open](#openApi).
 
-1  [.open(connectionString, callback)](#openPoolApi)
-2  [.close(callback)](#closePoolApi)
-3  [.init(N, connStr)](#initPoolApi)
-4  [.setMaxPoolSize(N)](#setMaxPoolSize)
+1.  [.open(connectionString, callback)](#openPoolApi)
+2.  [.close(callback)](#closePoolApi)
+3.  [.init(N, connStr)](#initPoolApi)
+4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
