@@ -138,10 +138,10 @@ https://groups.google.com/forum/#!forum/node-ibm_db
    
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-## Database APIs
+## How to get a node-ibm_db instance?
 
-The simple api is based on instances of the `Database` class. You may get an 
-instance in one of the following ways:
+The simple api is based on the instances of `Database` class. You may get an 
+instance by one of the following ways:
 
 ```javascript
 require("ibm_db").open(connectionString, function (err, conn){
@@ -162,27 +162,33 @@ var Database = require("ibm_db").Database
   , ibmdb = new Database();
 ```
 
-1.  [.open(connectionString, [options,] callback)](#openApi)
-2.  [.openSync(connectionString)](#openSyncApi)
-3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
-4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
-5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
-6.  [.close(callback)](#closeApi)
-7.  [.closeSync()](#closeSyncApi)
-8.  [.prepare(sql, callback)](#prepareApi)
-9.  [.prepareSync(sql)](#prepareSyncApi)
-10. [.execute([bindingParameters], callback)](#executeApi)
-11. [.executeSync([bindingParameters])](#executeSyncApi)
-12. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-13. [.bind(bindingParameters, callback)](#bindApi)
-14. [.bindSync(bindingParameters)](#bindSyncApi)
-15. [.beginTransaction(callback)](#beginTransactionApi)
-16. [.beginTransactionSync()](#beginTransactionSyncApi)
-17. [.commitTransaction(callback)](#commitTransactionApi)
-18. [.commitTransactionSync()](#commitTransactionSyncApi)
-19. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-20. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-21. [.debug(value)](#enableDebugLogs)
+## Database APIs
+
+> APIs for creating and droping Database using node.js application
+* [.createDbSync(dbName, connectionString, [options])] (#createDbSyncApi)
+* [.dropDBSync(dbName, connectionString)] (#dropDbSyncApi)
+
+1  [.open(connectionString, [options,] callback)](#openApi)
+2  [.openSync(connectionString)](#openSyncApi)
+3  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
+4  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
+5  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
+6  [.close(callback)](#closeApi)
+7  [.closeSync()](#closeSyncApi)
+8  [.prepare(sql, callback)](#prepareApi)
+9  [.prepareSync(sql)](#prepareSyncApi)
+10 [.execute([bindingParameters], callback)](#executeApi)
+11 [.executeSync([bindingParameters])](#executeSyncApi)
+12 [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+13 [.bind(bindingParameters, callback)](#bindApi)
+14 [.bindSync(bindingParameters)](#bindSyncApi)
+15 [.beginTransaction(callback)](#beginTransactionApi)
+16 [.beginTransactionSync()](#beginTransactionSyncApi)
+17 [.commitTransaction(callback)](#commitTransactionApi)
+18 [.commitTransactionSync()](#commitTransactionSyncApi)
+19 [.rollbackTransaction(callback)](#rollbackTransactionApi)
+20 [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+21 [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -733,6 +739,41 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 });
 ```
 
+## Create and Drop Database APIs
+
+### <a name="createDbSync"></a> 1) .createDbSync(dbName, connectionString, [options])
+
+To create a database <dbName> through node.js application.
+
+* **dbName** - The database name.
+* **connectionString** - The connection string for your database instance.
+* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
+    loading of native ODBC library for each call of `.open`. Also, can be used
+    to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
+* **callback** - `callback (err, conn)`
+
+```javascript
+var ibmdb = require("ibm_db")
+  , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
+
+ibmdb.open(connStr, function (err, connection) {
+    if (err) 
+    {
+      console.log(err);
+      return;
+    }
+    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+      if (err1) console.log(err1);
+      else console.log(rows);
+      connection.close(function(err2) { 
+        if(err2) console.log(err2);
+      });
+    });
+});
+
+```
+
+
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
 
 node-ibm_db reuses node-odbc pool. 
@@ -746,10 +787,10 @@ the next time you call `Pool.open()` for the same connection string.
 For applications using multiple connections simultaneously, it is recommended to
 use Pool.open instead of [ibmdb.open](#openApi).
 
-1.  [.open(connectionString, callback)](#openPoolApi)
-2.  [.close(callback)](#closePoolApi)
-3.  [.init(N, connStr)](#initPoolApi)
-4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
+1  [.open(connectionString, callback)](#openPoolApi)
+2  [.close(callback)](#closePoolApi)
+3  [.init(N, connStr)](#initPoolApi)
+4  [.setMaxPoolSize(N)](#setMaxPoolSize)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 

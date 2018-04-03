@@ -1,0 +1,16 @@
+
+; Comment lines start with a semi-colon.
+
+[tstcli1x]
+uid=userid
+pwd=password
+autocommit=0
+TableType="'TABLE','VIEW','SYSTEM TABLE'"
+
+[tstcli2x]
+; Assuming dbalias2 is a database in DB2 for MVS.
+SchemaList="'OWNER1','OWNER2',CURRENT SQLID"
+
+[MyVeryLongDBALIASName]
+dbalias=dbalias3
+SysSchema=MYSCHEMA
