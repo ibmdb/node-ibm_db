@@ -251,6 +251,7 @@ var Database = require("ibm_db").Database
 *  [.createDbSync(dbName, connectionString, [options])](#createDbSyncApi)
 *  [.dropDBSync(dbName, connectionString)](#dropDbSyncApi)
 
+**Database APIs**
 1.  [.open(connectionString, [options,] callback)](#openApi)
 2.  [.openSync(connectionString)](#openSyncApi)
 3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
@@ -831,7 +832,7 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
 ## Create and Drop Database APIs
 
-### <a name="createDbSync"></a> .createDbSync(dbName, connectionString, [options])
+### <a name="createDbSyncApi"></a> .createDbSync(dbName, connectionString, [options])
 
 To create a database (dbName) through node.js application.
 
@@ -862,7 +863,7 @@ if(createDB) {
 }
 ```
 
-### <a name="dropDbSync"></a> .dropDbSync(dbName, connectionString)
+### <a name="dropDbSyncApi"></a> .dropDbSync(dbName, connectionString)
 
 To drop a database (dbName) through node.js application.
 
