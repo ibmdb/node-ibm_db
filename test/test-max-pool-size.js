@@ -19,8 +19,23 @@ pool.open(connectionString, function( err, conn) {
           conn.querySync("drop table mtab2"); } catch(e) {};
     conn.querySync("create table mtab1(c1 varchar(30), c2 varchar(20))");
     conn.querySync("create table mtab2(c1 varchar(30), c2 varchar(20))");
-    conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
-    conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      // Db2 on z/OS does not support multi-row inserts
+      conn.querySync("Insert into mtab1 values ('1', 'bimal')");
+      conn.querySync("Insert into mtab1 values ('2', 'kumar')");
+      conn.querySync("Insert into mtab1 values ('3', 'jha')");
+      conn.querySync("Insert into mtab1 values ('4', 'kamal')");
+      conn.querySync("Insert into mtab1 values ('5', 'ibm')");
+
+      conn.querySync("Insert into mtab1 values ('1', 'bimal')");
+      conn.querySync("Insert into mtab1 values ('2', 'kumar')");
+      conn.querySync("Insert into mtab1 values ('3', 'jha')");
+      conn.querySync("Insert into mtab1 values ('4', 'kamal')");
+      conn.querySync("Insert into mtab1 values ('5', 'ibm')");
+    } else {
+      conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+      conn.querySync("Insert into mtab1 values ('1', 'bimal'),('2','kumar'),('3', 'jha'), ('4', 'kamal'), ('5', 'ibm')");
+    }
     for(var i = 0; i < 3 ; i++) {  // 4 is 340 rows and 6 is 2330 rows
       conn.querySync("insert into mtab2 (select * from mtab1)");
       conn.querySync("insert into mtab1 (select * from mtab2)");

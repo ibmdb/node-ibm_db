@@ -339,6 +339,10 @@ void ODBCConnection::SetConnectionAttributes( ODBCConnection* conn )
             DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - rc for connectTimeout = %i\n", rc);
         }
     }
+
+// Workaround(zOS): Currently ODBC driver for z/OS doesn't support SQL_ATTR_DBC_SYS_NAMING
+// used for connection to DB2 for i.  Temporarily disabling this for now.
+#if !defined(__MVS__)
     if( conn->systemNaming )
     {
         rc = SQLSetConnectAttr( conn->m_hDBC,
@@ -350,6 +354,7 @@ void ODBCConnection::SetConnectionAttributes( ODBCConnection* conn )
             DEBUG_PRINTF("ODBCConnection::SetConnectionAttributes - rc for systemNaming = %i\n", rc);
         }
     }
+#endif
 }
 
 /*
@@ -1471,7 +1476,14 @@ void ODBCConnection::UV_Tables(uv_work_t* req) {
   
   SQLRETURN ret = SQLTables( 
     data->hSTMT, 
+#ifdef __MVS__
+   // ODBC on z/OS does not support three-part naming on catalog APIs.
+   // For catalog APIs, the catalog qualifier (szTableQualifier) and
+   // its length (cbTableQualifier) must be set to NULL and 0, respectively.
+   NULL, 0,
+#else
     (SQLTCHAR *) data->catalog,   SQL_NTS, 
+#endif
     (SQLTCHAR *) data->schema,   SQL_NTS, 
     (SQLTCHAR *) data->table,   SQL_NTS, 
     (SQLTCHAR *) data->type,   SQL_NTS
@@ -1582,7 +1594,14 @@ void ODBCConnection::UV_Columns(uv_work_t* req) {
   
   SQLRETURN ret = SQLColumns( 
     data->hSTMT, 
+#ifdef __MVS__
+   // ODBC on z/OS does not support three-part naming on catalog APIs.
+   // For catalog APIs, the catalog qualifier (szTableQualifier) and
+   // its length (cbTableQualifier) must be set to NULL and 0, respectively.
+   NULL, 0,
+#else
     (SQLTCHAR *) data->catalog,   SQL_NTS, 
+#endif
     (SQLTCHAR *) data->schema,   SQL_NTS, 
     (SQLTCHAR *) data->table,   SQL_NTS, 
     (SQLTCHAR *) data->column,   SQL_NTS

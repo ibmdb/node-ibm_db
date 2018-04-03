@@ -14,6 +14,9 @@
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+#ifdef __MVS__
+  #define _AE_BIMODAL
+#endif
 
 #include <string.h>
 #include <v8.h>
@@ -433,7 +436,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
                          &odbcTime, sizeof(odbcTime), &len);
         #else
-          #ifdef _AIX
+          #if defined(_AIX) || defined (__MVS__)
           struct tm timeInfo = {0,0,0,0,0,0,0,0,0};
           #else
           struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
@@ -603,9 +606,17 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         //inconsisant state.
         if(ret == SQL_INVALID_HANDLE)
         {
+#ifdef __MVS__
+        // Workaround(zOS): The ascii conversion tool has issues with %i in the following
+        // fprintf string.  Forcing it to __fprintf_a and setting _AE_BIMODAL
+          __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
+                  ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
+                  hStmt & 0x0000ffff, (int) column.type, column.index);
+#else
           fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
                   ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
                   hStmt & 0x0000ffff, (int) column.type, column.index);
+#endif
           assert(ret != SQL_INVALID_HANDLE);
         }
         Nan::ThrowError(ODBC::GetSQLError( SQL_HANDLE_STMT, hStmt, errmsg));
@@ -809,7 +820,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount) {
   *paramCount = values->Length();
   
   Parameter* params = (Parameter *) malloc(*paramCount * sizeof(Parameter));
-  if( !params ) {
+  if(*paramCount != 0 && !params ) {
       Nan::LowMemoryNotification();
       Nan::ThrowError("Could not allocate enough memory for params in ODBC::GetParametersFromArray.");
       return params;
@@ -1147,27 +1158,17 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
   SQLINTEGER native;
   
   SQLSMALLINT len;
-  SQLINTEGER numfields;
   SQLRETURN ret;
   char errorSQLState[14];
   char errorMessage[SQL_MAX_MESSAGE_LENGTH];
-
-  ret = SQLGetDiagField(
-    handleType,
-    handle,
-    0,
-    SQL_DIAG_NUMBER,
-    &numfields,
-    SQL_IS_INTEGER,
-    &len);
 
   // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
   DEBUG_PRINTF("ODBC::GetSQLError : called SQLGetDiagField; ret=%i\n", ret);
   Local<Array> errors = Nan::New<Array>();
   objError->Set(Nan::New("errors").ToLocalChecked(), errors);
   
-  for (i = 0; i < numfields; i++){
-    DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i, numfields=%i\n", i, numfields);
+  do {
+    DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i\n", i);
     
     ret = SQLGetDiagRec(
       handleType, 
@@ -1197,7 +1198,8 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
     } else {
       break;
     }
-  }
+    i++;
+  } while (ret != SQL_NO_DATA);
   
   return scope.Escape(objError);
 }

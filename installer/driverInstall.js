@@ -81,58 +81,89 @@ var install_node_ibm_db = function(file_url) {
             IS_ENVIRONMENT_VAR = false;
         }
 
-        IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
-        if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
-           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
-        } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
-           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+        if (platform == 'os390') {
+          // On z/OS, we need to extract the include header files from
+          // SDSNC.H, and the sidedeck definition from SDSNMACS(DSNAO64C)
+          var buildDir = CURRENT_DIR + '/build';
+          if (!fs.existsSync(buildDir)) {
+             fs.mkdirSync(buildDir, 0744);
+          }
+          var includeDir = buildDir + '/include';
+          if (!fs.existsSync(includeDir)) {
+             fs.mkdirSync(includeDir, 0744);
+          }
+          // Copy the header files from SDSNC.H
+          execSync("cp \"//'" + IBM_DB_HOME + ".SDSNC.H'\" " + includeDir);
+
+          // Add .h suffix to header files.
+          var headers = fs.readdirSync(includeDir);
+          for (var i in headers) {
+            var pattern = /\.h$/i;
+            var headerFile = includeDir + "/" + headers[i];
+            if (!headerFile.match(pattern)) {
+               fs.renameSync(headerFile, headerFile + ".h");
+            }
+          }
+
+          // Copy the sidedeck definition to USS
+          // Need to use TSO OPUT command to retain the FB80.
+          execSync("tso \"oput '" + IBM_DB_HOME + ".SDSNMACS(DSNAO64C)' '" + buildDir + "/dsnao64c.x'\" | cat");
+          // Build the binary
+          buildBinary(!IS_ENVIRONMENT_VAR);
         } else {
-           IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
-        }
+                IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
+                if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
+                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
+                } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
+                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+                } else {
+                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+                }
 
-        if(IS_ENVIRONMENT_VAR){
-            console.log('IBM_DB_HOME environment variable have already been ' +
-            'set to -> ' + IBM_DB_HOME +
-            '\n\nDownloading of clidriver skipped - build is in progress...\n');
-        }else{
-            console.log('Rebuild Process: Found clidriver at -> '+ IBM_DB_HOME +
-            '\n\nDownloading of clidriver skipped - build is in progress...\n');
-        }
+                if(IS_ENVIRONMENT_VAR){
+                        console.log('IBM_DB_HOME environment variable have already been ' +
+                                        'set to -> ' + IBM_DB_HOME +
+                                        '\n\nDownloading of clidriver skipped - build is in progress...\n');
+                }else{
+                        console.log('Rebuild Process: Found clidriver at -> '+ IBM_DB_HOME +
+                                        '\n\nDownloading of clidriver skipped - build is in progress...\n');
+                }
 
-        if (!fs.existsSync(IBM_DB_HOME)) {
-            console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-        }
+                if (!fs.existsSync(IBM_DB_HOME)) {
+                        console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
+                                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
+                }
 
-        if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)){
-            if (!fs.existsSync(IBM_DB_INCLUDE)) {
-                console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-            }
-        }
+                if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)){
+                        if (!fs.existsSync(IBM_DB_INCLUDE)) {
+                                console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
+                                                'set the IBM_DB_HOME environment variable\'s value correctly.\n');
+                        }
+                }
 
-        if (!fs.existsSync(IBM_DB_LIB)) {
-            console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
-                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-        }
-        if( platform != 'win32') {
-            if(!fs.existsSync(IBM_DB_HOME + "/lib"))
-                fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
+                if (!fs.existsSync(IBM_DB_LIB)) {
+                        console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
+                                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
+                }
+                if( platform != 'win32') {
+                        if(!fs.existsSync(IBM_DB_HOME + "/lib"))
+                                fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
 
-            if((platform == 'linux') || (platform =='aix') || 
-               (platform == 'darwin' && arch == 'x64')) {
-                removeWinBuildArchive();
-                buildBinary(!IS_ENVIRONMENT_VAR);
-            }
-        }
-        else if(platform == 'win32' && arch == 'x64') {
-            buildBinary(!IS_ENVIRONMENT_VAR);
-        }
-        else {
-            console.log('Building binaries for node-ibm_db. This platform ' +
-            'is not completely supported, you might encounter errors. ' +
-            'In such cases please open an issue on our repository, ' +
-            'https://github.com/ibmdb/node-ibm_db. \n');
+                        if((platform == 'linux') || (platform =='aix') ||
+                                        (platform == 'darwin' && arch == 'x64')) {
+                                removeWinBuildArchive();
+                                buildBinary(!IS_ENVIRONMENT_VAR);
+                        }
+                }
+                else if(platform == 'win32' && arch == 'x64') {
+                        buildBinary(!IS_ENVIRONMENT_VAR);
+                }
+                else {
+                        console.log('Building binaries for node-ibm_db. This platform ' +
+                                        'is not completely supported, you might encounter errors. ' +
+                                        'In such cases please open an issue on our repository, ' +
+                                        'https://github.com/ibmdb/node-ibm_db. \n');
+                }
         }
     }
     else
@@ -141,7 +172,7 @@ var install_node_ibm_db = function(file_url) {
             if(arch == 'x64') {
                 installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
             }
-        } 
+        }
         else if(platform == 'linux') 
         {
             if(arch == 'x64') {
@@ -182,7 +213,17 @@ var install_node_ibm_db = function(file_url) {
                 installerfileURL = installerURL + 'aix64_odbc_cli.tar.gz';
             }
         }
-        else 
+        else if(platform == 'os390')
+        {
+            // zOS ODBC driver is part of Db2 installation.  Users need to
+            // specify IBM_DB_HOME environment variable to the Db2 datasets
+            // to allow the installer to access the necessary header files and
+            // sidedeck definitions to build the node binding.
+            console.log('Please set the environment variable IBM_DB_HOME to the ' + 
+                        'High Level Qualifier (HLQ) of your Db2 libraries.\n');
+            process.exit(1);
+        }
+        else
         {
             installerfileURL = installerURL + platform + arch + 
                                '_odbc_cli.tar.gz';
@@ -389,6 +430,10 @@ var install_node_ibm_db = function(file_url) {
                 if(platform == 'darwin' && arch == 'x64') {
                     // Run the install_name_tool
                     var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" ./build/Release/odbc_bindings.node" ;
+		    if( isDownloaded ) // For issue #329
+		    {
+		      nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib ./build/Release/odbc_bindings.node";
+		    }
                     var nameToolCmdProcess = exec(nameToolCommand , 
                     function (error1, stdout1, stderr1) {
                         if (error1 !== null) {

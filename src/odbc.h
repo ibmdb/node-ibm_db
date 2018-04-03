@@ -38,6 +38,11 @@ using namespace node;
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
 
+// Workaround(zOS): Db2 supplied headers do not define SQL_SUCCEEDED
+#ifndef SQL_SUCCEEDED
+#define SQL_SUCCEEDED(rc) (((rc)&(~1))==0)
+#endif
+
 // Free Bind Parameters 
 #define FREE_PARAMS( params, count )                                 \
     Parameter prm;                                                   \
