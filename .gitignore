@@ -4,3 +4,4 @@ node_modules
 deps
 defect
 .DS_Store
+installer/clidriver

@@ -221,10 +221,10 @@ https://groups.google.com/forum/#!forum/node-ibm_db
    
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-## Database APIs
+## How to get ibm_db instance?
 
-The simple api is based on instances of the `Database` class. You may get an 
-instance in one of the following ways:
+The simple api is based on the instances of `Database` class. You may get an 
+instance by one of the following ways:
 
 ```javascript
 require("ibm_db").open(connectionString, function (err, conn){
@@ -245,6 +245,13 @@ var Database = require("ibm_db").Database
   , ibmdb = new Database();
 ```
 
+## Database APIs
+
+**APIs for creating and droping Database using node.js application**
+*  [.createDbSync(dbName, connectionString, [options])](#createDbSyncApi)
+*  [.dropDBSync(dbName, connectionString)](#dropDbSyncApi)
+
+**Database APIs**
 1.  [.open(connectionString, [options,] callback)](#openApi)
 2.  [.openSync(connectionString)](#openSyncApi)
 3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
@@ -821,6 +828,60 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
         });
     });
 });
+```
+
+## Create and Drop Database APIs
+
+### <a name="createDbSyncApi"></a> .createDbSync(dbName, connectionString, [options])
+
+To create a database (dbName) through node.js application.
+
+* **dbName** - The database name.
+* **connectionString** - The connection string for your database instance.
+* **options** - _OPTIONAL_ - Object type.
+    * codeSet - Database code set information.
+    * mode    - Database logging mode (applicable only to "IDS data servers").
+
+```javascript
+var ibmdb = require("ibm_db");
+// Connection string without "DATABASE" keyword and value.
+var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+var DB_NAME = "TESTDB";
+
+var createDB = ibmdb.createDbSync(DB_NAME, cn);
+
+if(createDB) {
+  console.log("Database created successfully.");
+  // Connection string with newly created "DATABASE" name.
+	var conStr = cn + ";" + "DATABASE=" + DB_NAME;
+
+	ibmdb.open(conStr, function(err, conn) {
+		if(err) console.log(err);
+		else console.log("Database connection opened.");
+	});
+}
+```
+
+### <a name="dropDbSyncApi"></a> .dropDbSync(dbName, connectionString)
+
+To drop a database (dbName) through node.js application.
+
+* **dbName** - The database name.
+* **connectionString** - The connection string for your database instance.
+
+```javascript
+var ibmdb = require("ibm_db");
+// Connection string without "DATABASE" keyword and value.
+var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+var DB_NAME = "TESTDB";
+
+var dropDB = ibmdb.dropDbSync(DB_NAME, cn);
+
+if(dropDB) {
+  console.log("Database dropped successfully.");
+}
 ```
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs

@@ -63,6 +63,10 @@ void ODBCConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "openSync", OpenSync);
   Nan::SetPrototypeMethod(constructor_template, "close", Close);
   Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
+
+  Nan::SetPrototypeMethod(constructor_template, "createDbSync", CreateDbSync);
+  Nan::SetPrototypeMethod(constructor_template, "dropDbSync", DropDbSync);
+  
   Nan::SetPrototypeMethod(constructor_template, "createStatement", CreateStatement);
   Nan::SetPrototypeMethod(constructor_template, "createStatementSync", CreateStatementSync);
   Nan::SetPrototypeMethod(constructor_template, "query", Query);
@@ -558,6 +562,227 @@ NAN_METHOD(ODBCConnection::CloseSync) {
   info.GetReturnValue().Set(Nan::True());
 }
 
+/*  */
+/*
+ * CreateDbSync -- Creates a Database
+ *
+ * ===Description
+ * Creates a database with the specified name. Returns true if operation successful else false
+ * "SQLCreateDb"
+ *
+ * ===Parameters
+ * 
+ * connection handle
+ *     A valid database connection with parameter ATTACH=true specified.
+ *     ('DRIVER={IBM DB2 ODBC DRIVER};ATTACH=true;HOSTNAME=myhost;PORT=1234;PROTOCOL=TCPIP;UID=user;PWD=secret;)
+ *
+ * dbName
+ *     Name of the database that is to be created.
+ *
+ * codeSet
+ *      Database code set information.
+ *      Note: If the value of the codeSet argument is not specified, 
+ *      the database is created in the Unicode code page for DB2 data servers and in the UTF-8 code page for IDS data servers.
+ *
+ * mode
+ *      Database logging mode.
+ *      Note: This value is applicable only to "IDS data servers".
+ *
+ * ===Return Values
+ * 
+ * Returns TRUE on success or FALSE on failure. 
+ */
+
+NAN_METHOD(ODBCConnection::CreateDbSync) {
+   DEBUG_PRINTF("ODBCConnection::CreateDbSync\n");
+   Nan::HandleScope scope;
+
+   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+   SQLRETURN ret;
+   Local<Value> objError;
+   bool err = false;
+
+   int dbNameLength = 0;
+   int codeSetLength = 0;
+   int modeLength = 0;
+   char* databaseNameString = NULL;
+   char* codeSetString = NULL;
+   char* modeString = NULL;
+
+   //Check arguments and NULL arguments.
+   // dbName is required, codeSet and mode are optional and can be NULL.
+   if (info.Length() == 3) {
+
+     REQ_STRO_ARG(0, dbName);
+     dbNameLength = dbName->Length() + 1;
+
+     #ifdef UNICODE
+       uint16_t* databaseNameString = (uint16_t *) malloc(dbNameLength * sizeof(uint16_t));
+       MEMCHECK( databaseNameString ) ;
+       dbName->Write(databaseNameString);
+     #else
+       databaseNameString = (char *) malloc(dbNameLength);
+       MEMCHECK( databaseNameString ) ;
+       dbName->WriteUtf8(databaseNameString);
+     #endif
+
+     if( !( info[1]->IsNull() ) ) {
+       REQ_STRO_ARG(1, codeSet);
+       codeSetLength = codeSet->Length() + 1;
+
+       #ifdef UNICODE
+         uint16_t* codeSetString = (uint16_t *) malloc(codeSetLength * sizeof(uint16_t));
+         MEMCHECK( codeSetString ) ;
+         codeSet->Write(codeSetString);
+       #else
+         codeSetString = (char *) malloc(codeSetLength);
+         MEMCHECK( codeSetString ) ;
+         codeSet->WriteUtf8(codeSetString);  
+       #endif
+     }
+
+     if( !( info[2]->IsNull() ) ) {
+       REQ_STRO_ARG(2, mode);
+       modeLength = mode->Length() + 1;
+
+       #ifdef UNICODE
+         uint16_t* modeString = (uint16_t *) malloc(modeLength * sizeof(uint16_t));
+         MEMCHECK( modeString ) ;
+         mode->Write(modeString);
+       #else
+         modeString = (char *) malloc(modeLength);
+         MEMCHECK( modeString ) ;
+         mode->WriteUtf8(modeString);
+       #endif
+     }
+
+     ret = SQLCreateDb( conn->m_hDBC,
+                        (SQLTCHAR *) databaseNameString,
+                        dbNameLength,
+                        (SQLTCHAR *) codeSetString,
+                        codeSetLength,
+                        (SQLTCHAR *) modeString,
+                        modeLength );
+
+   }
+   else {
+     return Nan::ThrowTypeError("ODBCConnection::CreateDbSync(): Argument 0 must be a String.");
+   }
+
+   if(!SQL_SUCCEEDED(ret)) {
+     err = true;
+     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+   }
+   else {
+     /* disconnect from the database */
+     ret = SQLDisconnect(conn->m_hDBC);
+
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+
+     //free the handle
+     ret = SQLFreeHandle( SQL_HANDLE_DBC, conn->m_hDBC);
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+   }
+
+   free(databaseNameString);
+   if ( !( info[1]->IsNull() ) ) free(codeSetString);
+   if ( !( info[1]->IsNull() ) ) free(modeString);
+
+   if (err) {
+     return Nan::ThrowError(objError);
+   }
+   else {
+     info.GetReturnValue().Set(Nan::True());
+   }
+}
+
+/*  */
+/*
+ * DropDbSync -- Drop a Database
+ *
+ * ===Description
+ * Drops a database with the specified name. Returns true if operation successful else false
+ * "SQLDropDb"
+ *
+ * ===Parameters
+ * 
+ * Connection handle.
+ *
+ * dbName
+ *     Name of the database that is to be dropped.
+ *
+ * ===Return Values
+ * 
+ * Returns TRUE on success or FALSE on failure. 
+ */
+
+NAN_METHOD(ODBCConnection::DropDbSync) {
+   DEBUG_PRINTF("ODBCConnection::DropDbSync\n");
+   Nan::HandleScope scope;
+
+   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+   SQLRETURN ret;
+   Local<Value> objError;
+   bool err = false;
+
+   int dbNameLength = 0;
+
+   REQ_STRO_ARG(0, dbName);
+   dbNameLength = dbName->Length() + 1;
+
+   #ifdef UNICODE
+     uint16_t* databaseNameString = (uint16_t *) malloc(dbNameLength * sizeof(uint16_t));
+     MEMCHECK( databaseNameString ) ;
+     dbName->Write(databaseNameString);
+   #else
+     char* databaseNameString = (char *) malloc(dbNameLength);
+     MEMCHECK( databaseNameString ) ;
+     dbName->WriteUtf8(databaseNameString);
+   #endif
+
+   ret = SQLDropDb( conn->m_hDBC,
+                    (SQLTCHAR *) databaseNameString,
+                    dbNameLength );
+
+   if(!SQL_SUCCEEDED(ret)) {
+     err = true;
+     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+   }
+   else {
+     /* disconnect from the database */
+     ret = SQLDisconnect(conn->m_hDBC);
+
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+
+     //free the handle
+     ret = SQLFreeHandle( SQL_HANDLE_DBC, conn->m_hDBC);
+     if(!SQL_SUCCEEDED(ret)) {
+       err = true;
+       objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
+     }
+   }
+
+   free(databaseNameString);
+
+   if (err) {
+     return Nan::ThrowError(objError);
+   }
+   else {
+     info.GetReturnValue().Set(Nan::True());
+   }
+}
+
 /*
  * CreateStatementSync
  * 
@@ -946,7 +1171,6 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status) {
   
   //scope.Close(Undefined());
 }
-
 
 /*
  * QuerySync

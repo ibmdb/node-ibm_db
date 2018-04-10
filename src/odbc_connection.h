@@ -22,6 +22,11 @@
 
 #define DEFAULT_CONNECTION_TIMEOUT 30
 
+#ifdef UNICODE
+#define SQLCreateDb SQLCreateDbW
+#define SQLDropDb   SQLDropDbW
+#endif
+
 class ODBCConnection : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_SQL;
@@ -87,6 +92,8 @@ class ODBCConnection : public Nan::ObjectWrap {
     
     //sync methods
     static NAN_METHOD(CloseSync);
+    static NAN_METHOD(CreateDbSync);
+    static NAN_METHOD(DropDbSync);
     static NAN_METHOD(CreateStatementSync);
     static NAN_METHOD(OpenSync);
     static NAN_METHOD(QuerySync);
