@@ -4,3 +4,7 @@ node_modules
 deps
 defect
 .DS_Store
+installer\clidriver
+installer/clidriver
+test\config.testConnectionStrings.json
+test/config.testConnectionStrings.json
