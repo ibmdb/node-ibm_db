@@ -575,7 +575,6 @@ NAN_METHOD(ODBCConnection::CloseSync) {
  * connection handle
  *     A valid database connection with parameter ATTACH=true specified.
  *     ('DRIVER={IBM DB2 ODBC DRIVER};ATTACH=true;HOSTNAME=myhost;PORT=1234;PROTOCOL=TCPIP;UID=user;PWD=secret;)
- *     Note: Database is not specified. In this case we connect to the instance only.
  *
  * dbName
  *     Name of the database that is to be created.
@@ -717,7 +716,7 @@ NAN_METHOD(ODBCConnection::CreateDbSync) {
  * Connection handle.
  *
  * dbName
- *     Name of the database that is to be created.
+ *     Name of the database that is to be dropped.
  *
  * ===Return Values
  * 

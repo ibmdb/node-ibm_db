@@ -221,7 +221,7 @@ https://groups.google.com/forum/#!forum/node-ibm_db
    
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-## How to get a node-ibm_db instance?
+## How to get ibm_db instance?
 
 The simple api is based on the instances of `Database` class. You may get an 
 instance by one of the following ways:
