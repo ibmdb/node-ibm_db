@@ -941,6 +941,10 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
         param->length        = length; 
     }
     param->size          = param->buffer_length;
+    if(param->c_type == SQL_C_BINARY)
+    {
+        param->buffer_length++ ;
+    }
     param->buffer        = malloc(param->buffer_length);
     MEMCHECK( param->buffer );
 
