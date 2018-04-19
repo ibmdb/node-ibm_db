@@ -1,5 +1,15 @@
-2018-04-03, Version 2.3.0
+2018-04-19, Version 2.3.1
 =========================
+
+ * Updated test case for issue #357 (#380) (Rohit Pandey)
+
+ * adding latest code binaries till node 8.X (Rohit Pandey)
+
+ * Set theme jekyll-theme-cayman (Bimal Kumar Jha)
+
+ * Fix for issue #377 and #342 (Bimal Jha)
+
+ * CreateDatabaseSync() and dropDatabaseSync() api support. (#341) (Rohit Pandey)
 
  * add logs (Bimal Jha)
 
