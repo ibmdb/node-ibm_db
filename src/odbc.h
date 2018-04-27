@@ -80,7 +80,11 @@ using namespace node;
 typedef struct {
   unsigned char *name;
   unsigned char *type_name;
-  unsigned int len;
+  unsigned int name_len;
+  SQLSMALLINT max_display_len;
+  SQLSMALLINT scale;
+  SQLSMALLINT precision;
+  SQLSMALLINT field_len;
   SQLLEN type;
   SQLUSMALLINT index;
 } Column;
@@ -260,6 +264,11 @@ struct query_request {
   if (info.Length() <= (I) || !info[I]->IsExternal())                   \
     return Nan::ThrowTypeError("Argument " #I " invalid");                \
   Local<External> VAR = Local<External>::Cast(info[I]);
+
+#define REQ_INT_ARG(I, VAR)                                             \
+  if (info.Length() <= (I) || !info[I]->IsInt32())                      \
+    return Nan::ThrowTypeError("Argument " #I " invalid");              \
+  SQLUSMALLINT VAR = (info[I]->Int32Value());
 
 #define OPT_INT_ARG(I, VAR, DEFAULT)                                    \
   SQLUSMALLINT VAR;                                                     \

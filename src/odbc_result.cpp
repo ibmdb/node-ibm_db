@@ -54,6 +54,7 @@ void ODBCResult::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(constructor_template, "fetchSync", FetchSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
+  Nan::SetPrototypeMethod(constructor_template, "getColumnMetadata", GetColumnMetadata);
 
   // Properties
   OPTION_FETCH_MODE.Reset(Nan::New("fetchMode").ToLocalChecked());
@@ -762,4 +763,33 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync) {
   }
     
   info.GetReturnValue().Set(cols);
+}
+
+/*
+ * GetColumnMetadata
+ */
+NAN_METHOD(ODBCResult::GetColumnMetadata) {
+  Nan::HandleScope scope;
+
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  if (self->colCount == 0) {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+
+  Local<Array> columns = Nan::New<Array>();
+
+  for (int i = 0; i < self->colCount; i ++) {
+    Local<Object> col = Nan::New<Object>();
+    col->Set(Nan::New("index").ToLocalChecked(), Nan::New(self->columns[i].index));
+    col->Set(Nan::New("SQL_DESC_CONCISE_TYPE").ToLocalChecked(), Nan::New((const char *) self->columns[i].name).ToLocalChecked());
+    col->Set(Nan::New("SQL_DESC_TYPE_NAME").ToLocalChecked(), Nan::New((const char *) self->columns[i].type_name).ToLocalChecked());
+    col->Set(Nan::New("SQL_DESC_DISPLAY_SIZE").ToLocalChecked(), Nan::New(self->columns[i].max_display_len));
+    col->Set(Nan::New("SQL_DESC_PRECISION").ToLocalChecked(), Nan::New(self->columns[i].precision));
+    col->Set(Nan::New("SQL_DESC_SCALE").ToLocalChecked(), Nan::New(self->columns[i].scale));
+
+    columns->Set(Nan::New(i), col);
+  }
+
+  info.GetReturnValue().Set(columns);
 }

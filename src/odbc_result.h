@@ -57,6 +57,7 @@ class ODBCResult : public Nan::ObjectWrap {
     static NAN_METHOD(FetchSync);
     static NAN_METHOD(FetchAllSync);
     static NAN_METHOD(GetColumnNamesSync);
+    static NAN_METHOD(GetColumnMetadata);
     
     //property getter/setters
     static NAN_GETTER(FetchModeGetter);

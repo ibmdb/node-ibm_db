@@ -279,7 +279,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
     columns[i].index = i + 1;
     colname[0] = '\0';
     buflen = 0;
-    
+
     //get the column name
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
@@ -292,9 +292,9 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
                            (SQLSMALLINT) MAX_FIELD_SIZE,
                            &buflen,
                            NULL);
-    
+
     //store the len attribute
-    columns[i].len = buflen;
+    columns[i].name_len = buflen;
     if(buflen> 0)
     {
         columns[i].name = new unsigned char[buflen+2];
@@ -303,7 +303,43 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
         columns[i].name[buflen+1] = '\0';
     }
     DEBUG_PRINTF("ODBC::GetColumns index = %i, buflen=%i\n", columns[i].index, buflen);
-    
+
+    //get max column length
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_DISPLAY_SIZE,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].max_display_len);
+
+    //get column precision
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_PRECISION,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].precision);
+
+    //get column scale
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_SCALE,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].scale);
+
+    //get column scale
+    ret = SQLColAttribute( hStmt,
+                           columns[i].index,
+                           SQL_DESC_LENGTH,
+                           NULL,
+                           0,
+                           NULL,
+                           &columns[i].field_len);
+
     //get the column type and store it directly in column[i].type
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
@@ -312,7 +348,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
                            0,
                            NULL,
                            &columns[i].type);
-						   
+
 	columns[i].type_name = new unsigned char[(MAX_FIELD_SIZE)];
     
     //set the first byte of type_name to \0 instead of memsetting the entire buffer
