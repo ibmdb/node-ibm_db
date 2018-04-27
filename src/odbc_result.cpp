@@ -787,6 +787,7 @@ NAN_METHOD(ODBCResult::GetColumnMetadata) {
     col->Set(Nan::New("SQL_DESC_DISPLAY_SIZE").ToLocalChecked(), Nan::New(self->columns[i].max_display_len));
     col->Set(Nan::New("SQL_DESC_PRECISION").ToLocalChecked(), Nan::New(self->columns[i].precision));
     col->Set(Nan::New("SQL_DESC_SCALE").ToLocalChecked(), Nan::New(self->columns[i].scale));
+    col->Set(Nan::New("SQL_DESC_LENGTH").ToLocalChecked(), Nan::New(self->columns[i].field_len));
 
     columns->Set(Nan::New(i), col);
   }

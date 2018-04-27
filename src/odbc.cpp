@@ -331,7 +331,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount) {
                            NULL,
                            &columns[i].scale);
 
-    //get column scale
+    //get column length
     ret = SQLColAttribute( hStmt,
                            columns[i].index,
                            SQL_DESC_LENGTH,
