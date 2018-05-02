@@ -43,12 +43,16 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
           if(err) console.log(err);
           else {
             data = result.fetchAllSync(); // Use fetchAllSync({fetchMode:3}) to get data as array.
+            console.log("Column Names = ", result.getColumnNamesSync());
+            console.log("Column Meta Data = ", result.getColumnMetadata());
             console.log("Fetched Data = " );
             console.log(data);
             result.closeSync();
             assert.deepEqual(data, [ { C1: 34245, C2: 'bimal' } ]);
-            data = conn.querySync('select * from mytab1 where c1 = ?;', [34245]);
-            console.log("conn.querySync('select * from mytab1 where c1 = ?;', [34245])" );
+            var valueArray = [];
+            valueArray.push(34245);
+            data = conn.querySync('select * from mytab1 where c1 = ?;', valueArray);
+            console.log("conn.querySync('select * from mytab1 where c1 = ?;', valueArray)" );
             console.log(data);
             assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
             conn.querySync("drop table mytab1");
