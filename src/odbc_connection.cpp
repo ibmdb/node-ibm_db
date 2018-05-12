@@ -862,7 +862,7 @@ NAN_METHOD(ODBCConnection::CreateStatementSync)
   params[2] = Nan::New<External>((void*)(intptr_t)hSTMT);
   
   Local<Object> js_result(Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, params).ToLocalChecked());
-  
+
   DEBUG_PRINTF("ODBCConnection::CreateStatementSync - Exit\n");
   info.GetReturnValue().Set(js_result);
 }
@@ -951,7 +951,7 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status)
   info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
   
   Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, info).ToLocalChecked();
-  
+
   info[0] = Nan::Null();
   info[1] = js_result;
 
@@ -1192,7 +1192,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     Local<Value> info[3];
     Local<Value> js_info[4];
     bool* canFreeHandle = new bool(true);
-    
+
     js_info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
     js_info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
     js_info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
@@ -1434,7 +1434,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
     result[3] = Nan::New<External>((void*)canFreeHandle);
     
     Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, result).ToLocalChecked();
-   
+
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element. [result, outparams]
       Local<Array> resultset = Nan::New<Array>();
