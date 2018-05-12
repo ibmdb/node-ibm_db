@@ -214,7 +214,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status)
     info[0] = Nan::New<External>((void*)(intptr_t)data->dbo->m_hEnv);
     info[1] = Nan::New<External>((void*)(intptr_t)data->hDBC);
     
-    Local<Object> js_result = Nan::New<Function>(ODBCConnection::constructor)->NewInstance(2, info);
+    Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCConnection::constructor), 2, info).ToLocalChecked();
 
     info[0] = Nan::Null();
     info[1] = js_result;
@@ -259,7 +259,7 @@ NAN_METHOD(ODBC::CreateConnectionSync)
   params[0] = Nan::New<External>((void*)(intptr_t)dbo->m_hEnv);
   params[1] = Nan::New<External>((void*)(intptr_t)hDBC);
 
-  Local<Object> js_result = Nan::New<Function>(ODBCConnection::constructor)->NewInstance(2, params);
+  Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCConnection::constructor), 2, params).ToLocalChecked();
 
   DEBUG_PRINTF("ODBC::CreateConnectionSync - Exit: hDBC = %X\n", hDBC);
   info.GetReturnValue().Set(js_result);
@@ -1250,12 +1250,12 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
       
       objError->Set(Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
 #ifdef UNICODE
-      objError->SetPrototype(Exception::Error(Nan::New((uint16_t *) errorMessage).ToLocalChecked()));
+      Nan::SetPrototype(objError, Exception::Error(Nan::New((uint16_t *) errorMessage).ToLocalChecked()));
       objError->Set(Nan::New("message").ToLocalChecked(), Nan::New((uint16_t *) errorMessage).ToLocalChecked());
       objError->Set(Nan::New("state").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState).ToLocalChecked());
       objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState));
 #else
-      objError->SetPrototype(Exception::Error(Nan::New(errorMessage).ToLocalChecked()));
+      Nan::SetPrototype(objError, Exception::Error(Nan::New(errorMessage).ToLocalChecked()));
       objError->Set(Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
       objError->Set(Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
       objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New(native));
