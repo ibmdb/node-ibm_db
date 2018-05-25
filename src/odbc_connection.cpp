@@ -570,6 +570,8 @@ NAN_METHOD(ODBCConnection::CloseSync) {
  * Creates a database with the specified name. Returns true if operation successful else false
  * "SQLCreateDb"
  *
+ * This function is not supported for Db2 for z/OS servers.
+ *
  * ===Parameters
  * 
  * connection handle
@@ -597,6 +599,17 @@ NAN_METHOD(ODBCConnection::CreateDbSync) {
    DEBUG_PRINTF("ODBCConnection::CreateDbSync\n");
    Nan::HandleScope scope;
 
+#ifdef __MVS__
+   // createDbSync API is not supported on z/OS:
+   // Databases are implemented/used in Db2 for z/OS differently than
+   // and Db2 for LUW.  A database in z/OS is simply a logical collection
+   // of table/index spaces that you create using the "CREATE DATABASE"
+   // SQL statement, while a database in LUW is conceptually equivalent
+   // to a subsystem in z/OS.  Connecting to a Db2 on z/OS subsystem
+   // entails a "database" is created already.  As such, this API is
+   // not applicable for Db2 on z/OS servers.
+   info.GetReturnValue().Set(Nan::False());
+#else
    ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
    SQLRETURN ret;
@@ -701,6 +714,7 @@ NAN_METHOD(ODBCConnection::CreateDbSync) {
    else {
      info.GetReturnValue().Set(Nan::True());
    }
+#endif // __MVS__
 }
 
 /*  */
@@ -710,6 +724,8 @@ NAN_METHOD(ODBCConnection::CreateDbSync) {
  * ===Description
  * Drops a database with the specified name. Returns true if operation successful else false
  * "SQLDropDb"
+ *
+ * This function is not supported for Db2 for z/OS servers.
  *
  * ===Parameters
  * 
@@ -727,6 +743,17 @@ NAN_METHOD(ODBCConnection::DropDbSync) {
    DEBUG_PRINTF("ODBCConnection::DropDbSync\n");
    Nan::HandleScope scope;
 
+#ifdef __MVS__
+   // createDbSync API is not supported on z/OS:
+   // Databases are implemented/used in Db2 for z/OS differently than
+   // and Db2 for LUW.  A database in z/OS is simply a logical collection
+   // of table/index spaces that you create using the "CREATE DATABASE"
+   // SQL statement, while a database in LUW is conceptually equivalent
+   // to a subsystem in z/OS.  Connecting to a Db2 on z/OS subsystem
+   // entails a "database" is created already.  As such, this API is
+   // not applicable for Db2 on z/OS servers.
+   info.GetReturnValue().Set(Nan::False());
+#else
    ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
    SQLRETURN ret;
@@ -781,6 +808,7 @@ NAN_METHOD(ODBCConnection::DropDbSync) {
    else {
      info.GetReturnValue().Set(Nan::True());
    }
+#endif
 }
 
 /*

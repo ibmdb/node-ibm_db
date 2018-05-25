@@ -834,7 +834,7 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
 ### <a name="createDbSyncApi"></a> .createDbSync(dbName, connectionString, [options])
 
-To create a database (dbName) through node.js application.
+To create a database (dbName) through Node.js application.
 
 * **dbName** - The database name.
 * **connectionString** - The connection string for your database instance.
@@ -863,6 +863,9 @@ if(createDB) {
 }
 ```
 
+Note: This API is not supported for Db2 on z/OS servers.  Given that connection
+to Db2 on z/OS is to a specific subsystem, this API is not applicable.
+
 ### <a name="dropDbSyncApi"></a> .dropDbSync(dbName, connectionString)
 
 To drop a database (dbName) through node.js application.
@@ -883,6 +886,9 @@ if(dropDB) {
   console.log("Database dropped successfully.");
 }
 ```
+
+Note: This API is not supported for Db2 on z/OS servers.  Given that connection
+to Db2 on z/OS is to a specific subsystem, this API is not applicable.
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
 
