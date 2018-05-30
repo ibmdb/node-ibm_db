@@ -305,7 +305,7 @@ NAN_METHOD(ODBCStatement::ExecuteSync) {
  */
 
 NAN_METHOD(ODBCStatement::ExecuteNonQuery) {
-  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery - Entry\n");
   
   Nan::HandleScope scope;
 
@@ -334,10 +334,11 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuery) {
   stmt->Ref();
   
   info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery - Exit\n");
 }
 
 void ODBCStatement::UV_ExecuteNonQuery(uv_work_t* req) {
-  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  DEBUG_PRINTF("ODBCStatement::UV_ExecuteNonQuery - Entry\n");
   
   execute_work_data* data = (execute_work_data *)(req->data);
 
@@ -346,10 +347,11 @@ void ODBCStatement::UV_ExecuteNonQuery(uv_work_t* req) {
   ret = SQLExecute(data->stmt->m_hSTMT); 
 
   data->result = ret;
+  DEBUG_PRINTF("ODBCStatement::UV_ExecuteNonQuery - Exit\n");
 }
 
 void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
-  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuery\n");
+  DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery - Entry\n");
   
   execute_work_data* data = (execute_work_data *)(req->data);
   
@@ -395,6 +397,7 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status) {
   
   free(data);
   free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery - Exit\n");
 }
 
 /*
@@ -459,13 +462,13 @@ NAN_METHOD(ODBCStatement::ExecuteDirect) {
 
   data->cb = new Nan::Callback(cb);
 
-  data->sqlLen = sql->Length();
-
 #ifdef UNICODE
+  data->sqlLen = sql->Length();
   data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
   MEMCHECK( data->sql );
   sql->Write((uint16_t *) data->sql);
 #else
+  data->sqlLen = sql->Utf8Length();
   data->sql = (char *) malloc(data->sqlLen +1);
   MEMCHECK( data->sql );
   sql->WriteUtf8((char *) data->sql);
@@ -616,18 +619,20 @@ NAN_METHOD(ODBCStatement::PrepareSync) {
 
   SQLRETURN ret;
 
-  int sqlLen = sql->Length() + 1;
-
 #ifdef UNICODE
   uint16_t *sql2;
-  sql2 = (uint16_t *) malloc(sqlLen * sizeof(uint16_t));
+  int sqlLen = sql->Length();
+  sql2 = (uint16_t *) malloc((sqlLen + 1) * sizeof(uint16_t));
   MEMCHECK( sql2 );
   sql->Write(sql2);
+  DEBUG_PRINTF("ODBCStatement::PrepareSync:  sqlLen=%i, SQL=%s, hSTMT=%X\n", sqlLen, (uint16_t*) sql2, stmt->m_hSTMT);
 #else
   char *sql2;
-  sql2 = (char *) malloc(sqlLen);
+  int sqlLen = sql->Utf8Length();
+  sql2 = (char *) malloc(sqlLen + 1);
   MEMCHECK( sql2 );
   sql->WriteUtf8(sql2);
+  DEBUG_PRINTF("ODBCStatement::PrepareSync:  sqlLen=%i, sql=%s, hSTMT=%X\n", sqlLen, (char*) sql2, stmt->m_hSTMT);
 #endif
   
   ret = SQLPrepare(
@@ -673,13 +678,13 @@ NAN_METHOD(ODBCStatement::Prepare) {
 
   data->cb = new Nan::Callback(cb);
 
-  data->sqlLen = sql->Length();
-
 #ifdef UNICODE
+  data->sqlLen = sql->Length();
   data->sql = (uint16_t *) malloc((data->sqlLen * sizeof(uint16_t)) + sizeof(uint16_t));
   MEMCHECK( data->sql );
   sql->Write((uint16_t *) data->sql);
 #else
+  data->sqlLen = sql->Utf8Length();
   data->sql = (char *) malloc(data->sqlLen +1);
   MEMCHECK( data->sql );
   sql->WriteUtf8((char *) data->sql);
