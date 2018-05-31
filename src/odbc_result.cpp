@@ -32,7 +32,8 @@ using namespace node;
 Nan::Persistent<Function> ODBCResult::constructor;
 Nan::Persistent<String> ODBCResult::OPTION_FETCH_MODE;
 
-void ODBCResult::Init(v8::Handle<Object> exports) {
+void ODBCResult::Init(v8::Handle<Object> exports)
+{
   DEBUG_PRINTF("ODBCResult::Init\n");
   Nan::HandleScope scope;
 
@@ -66,12 +67,14 @@ void ODBCResult::Init(v8::Handle<Object> exports) {
                constructor_template->GetFunction());
 }
 
-ODBCResult::~ODBCResult() {
+ODBCResult::~ODBCResult()
+{
   DEBUG_PRINTF("ODBCResult::~ODBCResult m_hSTMT=%x\n", m_hSTMT);
   this->Free();
 }
 
-void ODBCResult::Free() {
+void ODBCResult::Free()
+{
   DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
   
   if (m_hSTMT && m_canFreeHandle) {
@@ -87,7 +90,8 @@ void ODBCResult::Free() {
   DEBUG_PRINTF("ODBCResult::Free() Done.\n");
 }
 
-NAN_METHOD(ODBCResult::New) {
+NAN_METHOD(ODBCResult::New)
+{
   DEBUG_PRINTF("ODBCResult::New\n");
   Nan::HandleScope scope;
   
@@ -132,7 +136,8 @@ NAN_METHOD(ODBCResult::New) {
   info.GetReturnValue().Set(info.Holder());
 }
 
-NAN_GETTER(ODBCResult::FetchModeGetter) {
+NAN_GETTER(ODBCResult::FetchModeGetter)
+{
   Nan::HandleScope scope;
 
   ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -140,7 +145,8 @@ NAN_GETTER(ODBCResult::FetchModeGetter) {
   info.GetReturnValue().Set(Nan::New(obj->m_fetchMode));
 }
 
-NAN_SETTER(ODBCResult::FetchModeSetter) {
+NAN_SETTER(ODBCResult::FetchModeSetter)
+{
   Nan::HandleScope scope;
 
   ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -154,7 +160,8 @@ NAN_SETTER(ODBCResult::FetchModeSetter) {
  * Fetch
  */
 
-NAN_METHOD(ODBCResult::Fetch) {
+NAN_METHOD(ODBCResult::Fetch)
+{
   DEBUG_PRINTF("ODBCResult::Fetch\n");
   Nan::HandleScope scope;
   
@@ -205,7 +212,8 @@ NAN_METHOD(ODBCResult::Fetch) {
   info.GetReturnValue().Set(Nan::Undefined());
 }
 
-void ODBCResult::UV_Fetch(uv_work_t* work_req) {
+void ODBCResult::UV_Fetch(uv_work_t* work_req)
+{
   DEBUG_PRINTF("ODBCResult::UV_Fetch\n");
   
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
@@ -213,7 +221,8 @@ void ODBCResult::UV_Fetch(uv_work_t* work_req) {
   data->result = SQLFetch(data->objResult->m_hSTMT);
 }
 
-void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
+void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status)
+{
   DEBUG_PRINTF("ODBCResult::UV_AfterFetch\n");
   Nan::HandleScope scope;
   
@@ -319,8 +328,9 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status) {
  * FetchSync
  */
 
-NAN_METHOD(ODBCResult::FetchSync) {
-  DEBUG_PRINTF("ODBCResult::FetchSync\n");
+NAN_METHOD(ODBCResult::FetchSync)
+{
+  DEBUG_PRINTF("ODBCResult::FetchSync - Entry\n");
   Nan::HandleScope scope;
   
   ODBCResult* objResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -401,14 +411,16 @@ NAN_METHOD(ODBCResult::FetchSync) {
       info.GetReturnValue().Set(Nan::Null());
     }
   }
+  DEBUG_PRINTF("ODBCResult::FetchSync - Exit\n");
 }
 
 /*
  * FetchAll
  */
 
-NAN_METHOD(ODBCResult::FetchAll) {
-  DEBUG_PRINTF("ODBCResult::FetchAll\n");
+NAN_METHOD(ODBCResult::FetchAll)
+{
+  DEBUG_PRINTF("ODBCResult::FetchAll - Entry\n");
   Nan::HandleScope scope;
   
   ODBCResult* objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -458,19 +470,22 @@ NAN_METHOD(ODBCResult::FetchAll) {
   data->objResult->Ref();
 
   info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCResult::FetchAll - Exit\n");
 }
 
-void ODBCResult::UV_FetchAll(uv_work_t* work_req) {
-  DEBUG_PRINTF("ODBCResult::UV_FetchAll\n");
+void ODBCResult::UV_FetchAll(uv_work_t* work_req)
+{
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll - Entry\n");
   
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
   
   data->result = SQLFetch(data->objResult->m_hSTMT);
-  DEBUG_PRINTF("ODBCResult::UV_FetchAll, return code = %d for stmt %X\n", data->result, data->objResult->m_hSTMT);
+  DEBUG_PRINTF("ODBCResult::UV_FetchAll - Exit, return code = %d for stmt %X\n", data->result, data->objResult->m_hSTMT);
  }
 
-void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
-  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll\n");
+void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status)
+{
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll - Entry\n");
   Nan::HandleScope scope;
   
   fetch_work_data* data = (fetch_work_data *)(work_req->data);
@@ -592,14 +607,16 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status) {
     free(work_req);
     self->Unref(); 
   }
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchAll - Exit\n");
 }
 
 /*
  * FetchAllSync
  */
 
-NAN_METHOD(ODBCResult::FetchAllSync) {
-  DEBUG_PRINTF("ODBCResult::FetchAllSync\n");
+NAN_METHOD(ODBCResult::FetchAllSync)
+{
+  DEBUG_PRINTF("ODBCResult::FetchAllSync - Entry\n");
   Nan::HandleScope scope;
   
   ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -690,7 +707,7 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
   }
   
   info.GetReturnValue().Set(rows);
-  DEBUG_PRINTF("ODBCResult::FetchAllSync() Done.\n");
+  DEBUG_PRINTF("ODBCResult::FetchAllSync() -Exit\n");
 }
 
 /*
@@ -698,8 +715,9 @@ NAN_METHOD(ODBCResult::FetchAllSync) {
  * 
  */
 
-NAN_METHOD(ODBCResult::CloseSync) {
-  DEBUG_PRINTF("ODBCResult::CloseSync\n");
+NAN_METHOD(ODBCResult::CloseSync)
+{
+  DEBUG_PRINTF("ODBCResult::CloseSync - Entry\n");
   Nan::HandleScope scope;
   
   OPT_INT_ARG(0, closeOption, SQL_DESTROY);
@@ -723,10 +741,11 @@ NAN_METHOD(ODBCResult::CloseSync) {
   }
   
   info.GetReturnValue().Set(Nan::True());
-  DEBUG_PRINTF("ODBCResult::CloseSync() Done.\n");
+  DEBUG_PRINTF("ODBCResult::CloseSync - Exit\n");
 }
 
-NAN_METHOD(ODBCResult::MoreResultsSync) {
+NAN_METHOD(ODBCResult::MoreResultsSync)
+{
   DEBUG_PRINTF("ODBCResult::MoreResultsSync\n");
   Nan::HandleScope scope;
   
@@ -745,8 +764,9 @@ NAN_METHOD(ODBCResult::MoreResultsSync) {
  * GetColumnNamesSync
  */
 
-NAN_METHOD(ODBCResult::GetColumnNamesSync) {
-  DEBUG_PRINTF("ODBCResult::GetColumnNamesSync\n");
+NAN_METHOD(ODBCResult::GetColumnNamesSync)
+{
+  DEBUG_PRINTF("ODBCResult::GetColumnNamesSync - Entry\n");
   Nan::HandleScope scope;
   
   ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -763,12 +783,15 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync) {
   }
     
   info.GetReturnValue().Set(cols);
+  DEBUG_PRINTF("ODBCResult::GetColumnNamesSync - Exit\n");
 }
 
 /*
  * GetColumnMetadata
  */
-NAN_METHOD(ODBCResult::GetColumnMetadata) {
+NAN_METHOD(ODBCResult::GetColumnMetadata)
+{
+  DEBUG_PRINTF("ODBCResult::GetColumnMetaDataSync - Entry\n");
   Nan::HandleScope scope;
 
   ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -793,4 +816,5 @@ NAN_METHOD(ODBCResult::GetColumnMetadata) {
   }
 
   info.GetReturnValue().Set(columns);
+  DEBUG_PRINTF("ODBCResult::GetColumnMetaDataSync - Exit\n");
 }
