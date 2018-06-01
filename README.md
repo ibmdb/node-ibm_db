@@ -992,7 +992,7 @@ bindingParameters is an array of Values like: [val1, val2, ...]
 Each value in itself can be an array or Object holing multiple bind options.
 If parameters are not an integer or string, it is recomended to pass an Object with different bind options. The object can have following keys:
 
-`{"ParamType":"INPUT", CType:"BINARY", SQLType:"BLOB",DataType: "BLOB", Data:imgfile}`
+`{"ParamType":"INOUT", CType:"BINARY", SQLType:"BLOB",DataType: "BLOB", Data:imgfile, Length:50}`
 
 Either SQLType or DataType must be used. If SQLType is used, DataType will be ignored.
 
@@ -1007,6 +1007,7 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 * **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR
 * **DataType**: Same as SQLType. Use either SQLType or DataType. Added for simple name. Default Value is CHAR.
 * **Data**: Its value is actuall data for the parameter. For binary data, it should represent the full buffer containing binary data. For ParamType:"FILE", it must have the filename on disc that contains data. It is mandatory key in the data Object.
+* **Length**: It denotes the buffer length in byte to store the OUT Pamameter value when ParamType is INOUT or OUTPUT in a Stored Procedure call..
 
 * Few example of bidningParameters that we can use in node.js program:
 ```
