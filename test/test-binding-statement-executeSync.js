@@ -69,6 +69,7 @@ db.createConnection(function (err, conn) {
       exitCode = 1;
     }
     
+    stmt.closeSync();
     conn.closeSync();
     
     if (exitCode) {

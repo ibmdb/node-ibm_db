@@ -257,22 +257,24 @@ var Database = require("ibm_db").Database
 3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
 4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
 5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
-6.  [.close(callback)](#closeApi)
-7.  [.closeSync()](#closeSyncApi)
-8.  [.prepare(sql, callback)](#prepareApi)
-9.  [.prepareSync(sql)](#prepareSyncApi)
-10. [.execute([bindingParameters], callback)](#executeApi)
-11. [.executeSync([bindingParameters])](#executeSyncApi)
-12. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-13. [.bind(bindingParameters, callback)](#bindApi)
-14. [.bindSync(bindingParameters)](#bindSyncApi)
-15. [.beginTransaction(callback)](#beginTransactionApi)
-16. [.beginTransactionSync()](#beginTransactionSyncApi)
-17. [.commitTransaction(callback)](#commitTransactionApi)
-18. [.commitTransactionSync()](#commitTransactionSyncApi)
-19. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-20. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-21. [.debug(value)](#enableDebugLogs)
+6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#queryResultApi)
+7.  [.queryResultSync(sqlQuery [, bindingParameters])](#queryResultSyncApi)
+8.  [.close(callback)](#closeApi)
+9.  [.closeSync()](#closeSyncApi)
+10. [.prepare(sql, callback)](#prepareApi)
+11. [.prepareSync(sql)](#prepareSyncApi)
+12. [.execute([bindingParameters], callback)](#executeApi)
+13. [.executeSync([bindingParameters])](#executeSyncApi)
+14. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+15. [.bind(bindingParameters, callback)](#bindApi)
+16. [.bindSync(bindingParameters)](#bindSyncApi)
+17. [.beginTransaction(callback)](#beginTransactionApi)
+18. [.beginTransactionSync()](#beginTransactionSyncApi)
+19. [.commitTransaction(callback)](#commitTransactionApi)
+20. [.commitTransactionSync()](#commitTransactionSyncApi)
+21. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+22. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+23. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -363,7 +365,8 @@ try {
 
 Issue an asynchronous SQL query to the database which is currently open.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. noResults must be true for CALL statements. "sql" field is mandatory in Object, others are _OPTIONAL_.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values.
+If true - query() will not return any result. "sql" field is mandatory in Object, others are _OPTIONAL_.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
@@ -399,7 +402,8 @@ ibmdb.open(cn, function (err, conn) {
 
 Synchronously issue a SQL query to the database that is currently open.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. If noResults is true for CALL statement, querySync returns only OutParams. "sql" field is mandatory in Object, others are optional.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values.
+If true - query() will not return any result. If noResults is true for CALL statement, querySync returns only OutParams. "sql" field is mandatory in Object, others are optional.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -447,7 +451,70 @@ ibmdb.open(cn, function(err, conn)
 });
 ```
 
-### <a name="closeApi"></a> 6) .close(callback)
+### <a name="queryResultApi"></a> 6) .queryResult(sqlQuery, [, bindingParameters], callback)
+
+Issue an asynchronous SQL query to the database which is currently open and return (err, result, outparams) to callback function. `result` is ODBCResult object.Uisng `result`, call `result.fetchAllSync()` to retrieve all rows; call `result.getColumnMetadata()` to get meta data info or call `result.fetchSync()` to retrieve each row one by one and process. Exeucte `result.closeSync()` once done withthe `result` object.
+`query` returns all the rows on call, but `queryResult` returns the result object and rows need to be fetched by the caller.
+
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}.
+noResults accepts only true or false values. If true - queryResult() will not return any result object and value of result will be null.
+"sql" field is mandatory in Object, others are _OPTIONAL_.
+
+* **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
+    any ? characters (called parameter marker) in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
+
+* **callback** - `callback (err, result, outparams)`.
+outparams is returned only for CALL statement with OUT parameters. Any resultset expected from SP should get retrieved using result.fetch apis.
+
+```javascript
+var ibmdb = require("ibm_db")
+	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
+	;
+ibmdb.open(cn, function (err,conn) {
+    if (err) return console.log(err);
+    var query = 'select creator, name from sysibm.systables where 1 = ?';
+    conn.queryResult(query, [1], function (err, result) {
+        if(err) { console.log(err); }
+        else {
+          console.log("data = ", result.fetchAllSync());
+          console.log("metadata = ", result.getColumnMetadata());
+          result.closeSync(); // Must call in application.
+          conn.closeSync();
+          console.log("Executed ", ++loop, " times.");
+        }
+    });
+});
+```
+**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may caluse invalid handle error in application or no data.
+
+### <a name="queryResultSyncApi"></a> 7) .queryResultSync(sqlQuery [, bindingParameters])
+
+Synchronously issue a SQL query to the database that is currently open and return a result object to the callback function on success. In case of CALL statement with OUT parameters, it returns an array of [result, outparams]. `result` is an ODBCResult object that can be used to fetch rows.
+`querySync`API returns all the rows on call, but `queryResultSync` API returns the `result` object and rows need to be fetched by the caller.
+
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
+
+* **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
+    any '?' characters in `sqlQuery`.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn){
+  if (err) return console.log(err);
+  var query = 'select creator, name from sysibm.systables';
+  var result = conn.queryResultSync(query);
+  console.log("data = ", result.fetchAllSync());
+  console.log("metadata = ", result.getColumnMetadata());
+  result.closeSync(); // Must call to free to avoid application error.
+  conn.closeSync();
+});
+```
+**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may caluse invalid handle error in application or no data.
+In case of CALL statement with OUT params, check result[0] is an object or not.
+
+### <a name="closeApi"></a> 8) .close(callback)
 
 Close the currently opened database.
 
@@ -469,7 +536,7 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-### <a name="closeSyncApi"></a> 7) .closeSync()
+### <a name="closeSyncApi"></a> 9) .closeSync()
 
 Synchronously close the currently opened database.
 
@@ -484,7 +551,7 @@ ibmdb.openSync(cn);
 ibmdb.closeSync();
 ```
 
-### <a name="prepareApi"></a> 8) .prepare(sql, callback)
+### <a name="prepareApi"></a> 10) .prepare(sql, callback)
 
 Prepare a statement for execution.
 
@@ -517,7 +584,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="prepareSyncApi"></a> 9) .prepareSync(sql)
+### <a name="prepareSyncApi"></a> 11) .prepareSync(sql)
 
 Synchronously prepare a statement for execution.
 
@@ -545,7 +612,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="executeApi"></a> 10) .execute([bindingParameters], callback)
+### <a name="executeApi"></a> 12) .execute([bindingParameters], callback)
 
 Execute a prepared statement.
 
@@ -584,7 +651,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="executeSyncApi"></a> 11) .executeSync([bindingParameters])
+### <a name="executeSyncApi"></a> 13) .executeSync([bindingParameters])
 
 Execute a prepared statement synchronously.
 
@@ -611,7 +678,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="executeNonQueryApi"></a> 12) .executeNonQuery([bindingParameters], callback)
+### <a name="executeNonQueryApi"></a> 14) .executeNonQuery([bindingParameters], callback)
 
 Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
 
@@ -644,7 +711,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="bindApi"></a> 13) .bind(bindingParameters, callback)
+### <a name="bindApi"></a> 15) .bind(bindingParameters, callback)
 
 Binds the parameters for prepared statement.
 
@@ -657,17 +724,17 @@ Binds the parameters for prepared statement synchronously. If `bindSync()` is us
 
 * **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 
-### <a name="beginTransactionApi"></a> 15) .beginTransaction(callback)
+### <a name="beginTransactionApi"></a> 17) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 16) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 18) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 17) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 19) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -704,7 +771,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 18) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 20) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -733,7 +800,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 19) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 21) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -770,7 +837,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 20) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 22) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -799,7 +866,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 21) .debug(value)
+### <a name="enableDebugLogs"></a> 23) .debug(value)
 
 Enable console logs.
 

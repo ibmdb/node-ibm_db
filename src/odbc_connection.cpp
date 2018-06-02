@@ -1190,23 +1190,27 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     data->cb->Call(2, info);
   }
   else {
-    Local<Value> info[4];
+    Local<Value> info[3];
+    Local<Value> js_info[4];
     bool* canFreeHandle = new bool(true);
     
-    info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
-    info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
-    info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
-    info[3] = Nan::New<External>((void*)canFreeHandle);
+    js_info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
+    js_info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
+    js_info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
+    js_info[3] = Nan::New<External>((void*)canFreeHandle);
     
-    Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, info);
-
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result == SQL_ERROR) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
+      info[1] = Nan::Null();
+      SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
+      data->hSTMT = (SQLHSTMT)NULL;
     } else {
       info[0] = Nan::Null();
+      Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, js_info);
+      info[1] = js_result;
     }
-    info[1] = js_result;
+
     if(outParamCount) info[2] = sp_result; // Must a CALL stmt
     else info[2] = Nan::Null();
     
