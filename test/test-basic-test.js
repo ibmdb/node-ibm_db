@@ -47,7 +47,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
           else {
             data = result.fetchAllSync(); // Use fetchAllSync({fetchMode:3}) to get data as array.
             console.log("Column Names = ", result.getColumnNamesSync());
-            console.log("Column Meta Data = ", result.getColumnMetadata());
+            console.log("Column Meta Data = ", result.getColumnMetadataSync());
             console.log("Fetched Data = " );
             console.log(data);
             result.closeSync();

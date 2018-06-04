@@ -55,7 +55,7 @@ void ODBCResult::Init(v8::Handle<Object> exports)
   Nan::SetPrototypeMethod(constructor_template, "fetchSync", FetchSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
-  Nan::SetPrototypeMethod(constructor_template, "getColumnMetadata", GetColumnMetadata);
+  Nan::SetPrototypeMethod(constructor_template, "getColumnMetadataSync", GetColumnMetadataSync);
 
   // Properties
   OPTION_FETCH_MODE.Reset(Nan::New("fetchMode").ToLocalChecked());
@@ -787,11 +787,11 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync)
 }
 
 /*
- * GetColumnMetadata
+ * GetColumnMetadataSync
  */
-NAN_METHOD(ODBCResult::GetColumnMetadata)
+NAN_METHOD(ODBCResult::GetColumnMetadataSync)
 {
-  DEBUG_PRINTF("ODBCResult::GetColumnMetaDataSync - Entry\n");
+  DEBUG_PRINTF("ODBCResult::GetColumnMetadataSync - Entry\n");
   Nan::HandleScope scope;
 
   ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
@@ -816,5 +816,5 @@ NAN_METHOD(ODBCResult::GetColumnMetadata)
   }
 
   info.GetReturnValue().Set(columns);
-  DEBUG_PRINTF("ODBCResult::GetColumnMetaDataSync - Exit\n");
+  DEBUG_PRINTF("ODBCResult::GetColumnMetadataSync - Exit\n");
 }

@@ -274,7 +274,8 @@ var Database = require("ibm_db").Database
 20. [.commitTransactionSync()](#commitTransactionSyncApi)
 21. [.rollbackTransaction(callback)](#rollbackTransactionApi)
 22. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-23. [.debug(value)](#enableDebugLogs)
+25. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
+26. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -379,12 +380,12 @@ var ibmdb = require("ibm_db")
 	;
 
 ibmdb.open(cn, function (err, conn) {
-	if (err) {
-		return console.log(err);
-	}
+    if (err) {
+      return console.log(err);
+    }
 
-	// we now have an open connection to the database, so lets get some data.
-	// Execute multiple query and get multiple result sets.
+    // we now have an open connection to the database, so lets get some data.
+    // Execute multiple query and get multiple result sets.
     // In case of multiple resultset, query will return an array of result sets.
     conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
                "select 3 from sysibm.sysdummy1", function (err, rows) 
@@ -453,7 +454,7 @@ ibmdb.open(cn, function(err, conn)
 
 ### <a name="queryResultApi"></a> 6) .queryResult(sqlQuery, [, bindingParameters], callback)
 
-Issue an asynchronous SQL query to the database which is currently open and return (err, result, outparams) to callback function. `result` is ODBCResult object.Uisng `result`, call `result.fetchAllSync()` to retrieve all rows; call `result.getColumnMetadata()` to get meta data info or call `result.fetchSync()` to retrieve each row one by one and process. Exeucte `result.closeSync()` once done withthe `result` object.
+Issue an asynchronous SQL query to the database which is currently open and return (err, result, outparams) to callback function. `result` is ODBCResult object. Uisng `result`, call `result.fetchAllSync()` to retrieve all rows; call `result.getColumnMetadataSync()` to get meta data info or call `result.fetchSync()` to retrieve each row one by one and process. Execute `result.closeSync()` once done with the `result` object.
 `query` returns all the rows on call, but `queryResult` returns the result object and rows need to be fetched by the caller.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}.
@@ -477,7 +478,7 @@ ibmdb.open(cn, function (err,conn) {
         if(err) { console.log(err); }
         else {
           console.log("data = ", result.fetchAllSync());
-          console.log("metadata = ", result.getColumnMetadata());
+          console.log("metadata = ", result.getColumnMetadataSync());
           result.closeSync(); // Must call in application.
           conn.closeSync();
           console.log("Executed ", ++loop, " times.");
@@ -485,12 +486,13 @@ ibmdb.open(cn, function (err,conn) {
     });
 });
 ```
-**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may caluse invalid handle error in application or no data.
+**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may cause invalid handle error in application or no data.
 
 ### <a name="queryResultSyncApi"></a> 7) .queryResultSync(sqlQuery [, bindingParameters])
 
 Synchronously issue a SQL query to the database that is currently open and return a result object to the callback function on success. In case of CALL statement with OUT parameters, it returns an array of [result, outparams]. `result` is an ODBCResult object that can be used to fetch rows.
-`querySync`API returns all the rows on call, but `queryResultSync` API returns the `result` object and rows need to be fetched by the caller.
+
+`querySync`API returns all the rows on call, but `queryResultSync` API returns the `ODBCResult` object using which application should call fetch APIs to get data.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
 
@@ -506,12 +508,13 @@ ibmdb.open(cn, function(err, conn){
   var query = 'select creator, name from sysibm.systables';
   var result = conn.queryResultSync(query);
   console.log("data = ", result.fetchAllSync());
-  console.log("metadata = ", result.getColumnMetadata());
+  console.log("metadata = ", result.getColumnMetadataSync());
   result.closeSync(); // Must call to free to avoid application error.
   conn.closeSync();
 });
 ```
-**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may caluse invalid handle error in application or no data.
+**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may cause invalid handle error in application or no data.
+
 In case of CALL statement with OUT params, check result[0] is an object or not.
 
 ### <a name="closeApi"></a> 8) .close(callback)
@@ -866,7 +869,24 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 23) .debug(value)
+### <a name="getColumnMetadataSyncApi"></a> 25) .getColumnMetadataSync()
+
+Synchronously retrieve the metadata about columns returned by the resulset. It
+ operates on ODBCResult object.
+```javascript
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
+    stmt.execute(function(err, result) {
+      console.log("Column Names = ", result.getColumnNamesSync());
+      console.log("Column Meta Data = ", result.getColumnMetadataSync());
+      console.log("Fetched Data = ", result.fetchAllSync() );
+      result.closeSync();
+      conn.closeSync();
+    });
+  });
+```
+
+### <a name="enableDebugLogs"></a> 26) .debug(value)
 
 Enable console logs.
 
