@@ -1,3 +1,37 @@
+2018-06-04, Version 2.4.0
+=========================
+
+ * adding latest binaries, support for node 9.X on windows (Rohit Pandey)
+
+ * Fix for issue #405, #404, #389 (Rohit Pandey)
+
+ * Document setIsolationLevel #154 (Bimal Jha)
+
+ * Rename getColumnMetadata to getColumnMetadataSync (Bimal Jha)
+
+ * Add queryResult APIs. #246 (Bimal Jha)
+
+ * Doc change for issue #386 (Bimal Jha)
+
+ * Add debug logs (Bimal Jha)
+
+ * Fix for international characters. #388, #399, #401, #402 (Bimal Jha)
+
+ * Restrict createDbSync/dropDbSync on z/OS (#403) (Joran Siu)
+
+ * Update test file for issue #388 (Bimal Jha)
+
+ * update test file with getColumnMetadata (Bimal Jha)
+
+ * adding latest binaries for windows (Rohit Pandey)
+
+ * Correct formatting issue (Bimal Jha)
+
+ * Fix for issue #389 (Bimal Jha)
+
+ * Accessor for column metadata (#391) (Michael Colavita)
+
+
 2018-04-19, Version 2.3.1
 =========================
 
