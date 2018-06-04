@@ -31,21 +31,23 @@ ibmdb.open(connStr,(err,conn)=>{
       stmt = conn2.createStatementSync();
       stmt.executeDirectSync(sql);   // Insert Row5
       stmt.prepareSync(sql);
-      stmt.executeNonQuerySync(); // Insert Row6
+      console.log("Inserted row = ",stmt.executeNonQuerySync()); // Insert Row6
       stmt.closeSync();
       conn2.createStatement(function(err, stmt){
         if(err){ console.log(err); return; }
         stmt.executeDirect(sql, function(err, result){ // Insert Row7
           if(err){ console.log(err); return; }
           stmt.prepare(sql, function(err, result) { //dont use err, stmt here
-            stmt.executeNonQuery(function(err, result){ // Insert Row8
+            stmt.executeNonQuery(function(err, rowCount){ // Insert Row8
               if(err){ console.log(err); return; }
+              console.log("Inserted rowcount = ", rowCount);
               stmt.closeSync();
-              console.log("Inserted rows = ");
-              console.log(conn.querySync("select * from testtab"));
+              var data = conn.querySync("select * from testtab");
+              console.log("Inserted rows = ", data);
               conn2.querySync("drop table testtab");
               conn2.closeSync();
               conn.closeSync();
+              assert(data.length, 8);
             });
           });
         });

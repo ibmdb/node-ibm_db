@@ -274,6 +274,8 @@ var Database = require("ibm_db").Database
 20. [.commitTransactionSync()](#commitTransactionSyncApi)
 21. [.rollbackTransaction(callback)](#rollbackTransactionApi)
 22. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+23. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
+24. [.getColumnNamesSync()](#getColumnNamesSyncApi)
 25. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
 26. [.debug(value)](#enableDebugLogs)
 
@@ -867,6 +869,35 @@ ibmdb.open(cn, function(err,conn) {
     conn.closeSync();
   });
 });
+```
+
+### <a name="setIsolationLevelApi"></a> 23) .setIsolationLevel(isolationLevel)
+
+Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction. 
+
+* **isolationLevel:** An integer representing the isolation level to be set. Its value must be only - 1|2|4|8|32. For details check this [doc](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0008832.html).
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err,conn) {
+  conn.setIsolationLevel(2);  // SQL_TXN_READ_COMMITTED
+  conn.setIsolationLevel(4); // SQL_TXN_REPEATABLE_READ
+  conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+});
+```
+
+### <a name="getColumnNamesSyncApi"></a> 24) .getColumnNamesSync()
+
+Synchronously retrieve the name of columns returned by the resulset. It
+ operates on ODBCResult object.
+```javascript
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
+    stmt.execute(function(err, result) {
+      console.log("Column Names = ", result.getColumnNamesSync());
+      result.closeSync(); conn.closeSync(); }); });
 ```
 
 ### <a name="getColumnMetadataSyncApi"></a> 25) .getColumnMetadataSync()
