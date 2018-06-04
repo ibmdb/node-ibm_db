@@ -481,8 +481,9 @@ var install_node_ibm_db = function(file_url) {
                 var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
                 var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.0.12.7';
                 var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.6.1';
-                var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.9.1';
+                var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.14.0';
                 var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.4.0';
+                var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.1.2';
 
                 // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                 if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 0.12) {
@@ -499,7 +500,8 @@ var install_node_ibm_db = function(file_url) {
                 var odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) && ODBC_BINDINGS_V12   ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
-                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   || ODBC_BINDINGS ;
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   || ODBC_BINDINGS ;
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
