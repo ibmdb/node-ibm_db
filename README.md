@@ -10,11 +10,16 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 C++11. Note the default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
-- Python 2.7 is needed by node-gyp.
+- Python 2.7 is needed by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
 - On z/OS, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-z/os).
+
+- On z/OS only certain versions of node-gyp are supported. This was tested with:<br>
+node-gyp 3.4.0<br>
+npm 3.10.10<br>
+ibm_db: 2.3.0
 
 - Recommended versions of node.js is V4.x, V6.x and V7.x. Support for node.js V0.12.x is deprecated on Windows and will be discontinued from next release.
 
@@ -192,7 +197,7 @@ If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `uli
 
 ## For Missing Package/Binding issue
 
-If your application is able to connect to IBM Database Server but query execution is throwing SQL0805N error, run below commnads to fix the package related issues:
+If your application is able to connect to IBM Database Server but query execution is throwing SQL0805N error, run below commands to fix the package related issues:
 ```
 cd .../ibm_db/installer
 source setenv.sh
@@ -209,6 +214,12 @@ db2 bind .../sqllib/bnd/@ddcsmvs.lst action replace grant public sqlerror contin
 ```
 Note: "db2cli bind" command print the logs on output prompt, so you need to redirect output to some file to capture it. 
     To capture logs of "db2 bind" command, you need to use `messages` option as in above example.
+Note: "db2cli bind" does not work with DB2 z/OS if the CLI packages (SYSSH*) were bound the DB2 subsystem is configured with APPLCOMPAT and SQLLEVEL set to V12R1M502 or higher. Tested with APPLCOMPAT=V12R1M500
+
+## Troubleshooting on z/OS
+Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2 ODBC initialization file_:
+APPLTRACE=1
+APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
 
 
 ## Need Help?
