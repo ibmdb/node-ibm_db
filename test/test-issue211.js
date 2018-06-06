@@ -44,10 +44,10 @@ ibmdb.open(cn, function(err, conn1) {
               conn1.query(stmt1, function(err, data) {
                 console.log('Query 1 executed');
                 if (err) {
-                  conn1.rollbackTransaction();
+                  conn1.rollbackTransactionSync();
                   console.log(err);
                 } else {
-                  conn1.commitTransaction();
+                  conn1.commitTransactionSync();
                   console.log('<<< DATA >>>:', data);
                 }
                 queryExecuted++;
@@ -56,14 +56,14 @@ ibmdb.open(cn, function(err, conn1) {
               conn2.query(stmt2, function(err, data) {
                 console.log('Query 2 executed');
                 if (err) {
-                  conn2.rollbackTransaction();
+                  conn2.rollbackTransactionSync();
                   console.log(err);
                 } else {
-                  conn2.commitTransaction();
+                  conn2.commitTransactionSync();
                   console.log('<<< DATA >>>:', data);
                   assert.deepEqual(data, [ { '1': 1 } ]);
-                  conn2.closeSync();
                 }
+                conn2.closeSync();
                 queryExecuted++;
               });
           });
