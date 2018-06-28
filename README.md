@@ -1,4 +1,4 @@
-# node-ibm_db
+# node-ibm_db2
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
@@ -28,7 +28,7 @@ ibm_db: 2.3.0
 You may install the package using npm install command:
 
 ```
-npm install ibm_db
+npm install ibm_db2
 ```
 
 > For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
