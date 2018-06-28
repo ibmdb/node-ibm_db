@@ -171,6 +171,8 @@ var install_node_ibm_db = function(file_url) {
         if(platform == 'win32') {
             if(arch == 'x64') {
                 installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
+            } else if (arch == 'ia32') {
+                installerfileURL = installerURL + 'nt32_odbc_cli.zip';            
             }
         }
         else if(platform == 'linux') 
@@ -307,7 +309,7 @@ var install_node_ibm_db = function(file_url) {
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
-        if( platform == 'win32' && arch == 'x64')
+        if( platform == 'win32' && (arch == 'x64' || arch == 'ia32'))
         {
             var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
 
@@ -474,7 +476,7 @@ var install_node_ibm_db = function(file_url) {
     function installPreCompiledWinBinary()
     {
         if(platform == 'win32') {
-            if(arch == 'x64') {
+            if(arch == 'x64' || arch == 'ia32') {
                 var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
 
                 //Windows node binary names should update here.
