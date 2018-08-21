@@ -66,12 +66,12 @@ ibmdb.open(cn, function (err, conn)
       } catch (e) { }
       conn.querySync("create procedure " + schema + ".PROC2 (IN v1 INTEGER) disable debug mode BEGIN END");
     } else {
-      conn.querySync("create or replace procedure " + schema + ".proc2 (IN v1 INTEGER) BEGIN END");
+      conn.querySync("create or replace procedure " + schema + ".PROC2 (IN v1 INTEGER) BEGIN END");
     }
-    query = "call " + schema + ".proc2(?)";
+    query = "call " + schema + ".PROC2(?)";
     conn.query({"sql":query, "params" : [param1]}, function(err, result){
         if(err) console.log(err);
-        conn.querySync("drop procedure " + schema + ".proc2(INT)");
+        conn.querySync("drop procedure " + schema + ".PROC2(INT)");
         conn.closeSync();
         assert.equal(result.length, 0);
         console.log('done');
