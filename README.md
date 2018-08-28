@@ -1056,7 +1056,7 @@ pool.open(cn, function (err, db) {
 
 	//db is now an open database connection and can be used like normal
 	//if we run some queries with db.query(...) and then call db.close();
-	//a connection to `cn` will be re-opened silently behind the scense
+	//a connection to `cn` will be re-opened silently behind the scene
 	//and will be ready the next time we do `pool.open(cn)`
 });
 ```
