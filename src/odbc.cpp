@@ -663,12 +663,12 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         // Workaround(zOS): The ascii conversion tool has issues with %i in the following
         // fprintf string.  Forcing it to __fprintf_a and setting _AE_BIMODAL
           __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
-                  ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
-                  hStmt & 0x0000ffff, (int) column.type, column.index);
+                  ", columnType = %i, index = %i\n", ret, (long)(hStmt) >> 16 & 0x0000ffff, 
+                  (long)(hStmt) & 0x0000ffff, (int) column.type, column.index);
 #else
           fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
-                  ", columnType = %i, index = %i\n", ret, hStmt >> 16 & 0x0000ffff, 
-                  hStmt & 0x0000ffff, (int) column.type, column.index);
+                  ", columnType = %i, index = %i\n", ret, (long)(hStmt) >> 16 & 0x0000ffff, 
+                  (long)(hStmt) & 0x0000ffff, (int) column.type, column.index);
 #endif
           assert(ret != SQL_INVALID_HANDLE);
         }

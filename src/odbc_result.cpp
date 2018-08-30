@@ -100,9 +100,9 @@ NAN_METHOD(ODBCResult::New)
   REQ_EXT_ARG(2, js_hstmt);
   REQ_EXT_ARG(3, js_canFreeHandle);
   
-  SQLHENV hENV = static_cast<SQLHENV>((intptr_t)js_henv->Value());
-  SQLHDBC hDBC = static_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
-  SQLHSTMT hSTMT = static_cast<SQLHSTMT>((intptr_t)js_hstmt->Value());
+  SQLHENV hENV = reinterpret_cast<SQLHENV>((intptr_t)js_henv->Value());
+  SQLHDBC hDBC = reinterpret_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
+  SQLHSTMT hSTMT = reinterpret_cast<SQLHSTMT>((intptr_t)js_hstmt->Value());
   bool* canFreeHandle = static_cast<bool *>(js_canFreeHandle->Value());
   
   //create a new OBCResult object
