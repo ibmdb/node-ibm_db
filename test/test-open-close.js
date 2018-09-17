@@ -5,10 +5,10 @@ var common = require("./common")
 
 assert.equal(db.connected, false);
 
-db.query("select * from " + common.tableName, function (err, rs, moreResultSets) {
-  assert.deepEqual(err, { message: 'Connection not open.' });
+db.query("select * from " + common.tableName, function (err, rs, sqlca) {
+  assert.deepEqual(err.message, 'Connection not open.');
   assert.deepEqual(rs, []);
-  assert.equal(moreResultSets, false);
+  assert.equal(sqlca.sqlcode, -30081);
   assert.equal(db.connected, false);
 });
 
@@ -19,10 +19,10 @@ db.open(common.connectionString, function(err) {
   db.close(function () {
     assert.equal(db.connected, false);
     
-    db.query("select * from " + common.tableName, function (err, rs, moreResultSets) {
-      assert.deepEqual(err, { message: 'Connection not open.' });
+    db.query("select * from " + common.tableName, function (err, rs, sqlca) {
+      assert.deepEqual(err.message, 'Connection not open.');
       assert.deepEqual(rs, []);
-      assert.equal(moreResultSets, false);
+      assert.equal(sqlca.sqlcode, -30081);
       assert.equal(db.connected, false);
     });
   });

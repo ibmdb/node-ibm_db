@@ -13,6 +13,7 @@ ibmdb.open(cn, function (err,conn) {
         }
         else {
            console.log("data = ", data.fetchAllSync());
+           console.log("sqlerror = ", data.getSQLErrorSync());
            console.log("metadata = ", data.getColumnMetadataSync());
            data.closeSync();
            conn.close(function(){});
@@ -26,6 +27,7 @@ ibmdb.open(cn, function (err,conn) {
     var result = conn.queryResultSync(query);
     console.log("result = ", result);
     console.log("data = ", result.fetchAllSync());
+    console.log("sqlerror = ", result.getSQLErrorSync());
     console.log("metadata = ", result.getColumnMetadataSync());
     result.closeSync();
     conn.closeSync();

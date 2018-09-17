@@ -1227,7 +1227,6 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
   char errorMessage[SQL_MAX_MESSAGE_LENGTH];
 
   // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
-  DEBUG_PRINTF("ODBC::GetSQLError : called SQLGetDiagField; ret=%i\n", ret);
   Local<Array> errors = Nan::New<Array>();
   objError->Set(Nan::New("errors").ToLocalChecked(), errors);
   
@@ -1244,7 +1243,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
       sizeof(errorMessage),
       &len);
     
-    DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i\n", i);
+    DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i, ret=%i\n", i,ret);
 
     if (SQL_SUCCEEDED(ret)) {
       DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);

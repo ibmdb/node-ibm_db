@@ -56,6 +56,7 @@ void ODBCResult::Init(v8::Handle<Object> exports)
   Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnMetadataSync", GetColumnMetadataSync);
+  Nan::SetPrototypeMethod(constructor_template, "getSQLErrorSync", GetSQLErrorSync);
 
   // Properties
   OPTION_FETCH_MODE.Reset(Nan::New("fetchMode").ToLocalChecked());
@@ -817,4 +818,21 @@ NAN_METHOD(ODBCResult::GetColumnMetadataSync)
 
   info.GetReturnValue().Set(columns);
   DEBUG_PRINTF("ODBCResult::GetColumnMetadataSync - Exit\n");
+}
+
+/*
+ * GetSQLErrorSync
+ */
+NAN_METHOD(ODBCResult::GetSQLErrorSync)
+{
+  DEBUG_PRINTF("ODBCResult::GetSQLErrorSync - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCResult* self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+  Local<Value> objError = Nan::New<Object>();
+
+  objError = ODBC::GetSQLError(SQL_HANDLE_STMT, self->m_hSTMT, (char *) "");
+
+  info.GetReturnValue().Set(objError);
+  DEBUG_PRINTF("ODBCResult::GetSQLErrorSync - Exit\n");
 }

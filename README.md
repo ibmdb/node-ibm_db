@@ -288,7 +288,8 @@ var Database = require("ibm_db").Database
 23. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
 24. [.getColumnNamesSync()](#getColumnNamesSyncApi)
 25. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
-26. [.debug(value)](#enableDebugLogs)
+26. [.getSQLErrorSync()](#getSQLErrorSyncApi)
+27. [.debug(value)](#enableDebugLogs)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -385,7 +386,7 @@ If true - query() will not return any result. "sql" field is mandatory in Object
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
 
-* **callback** - `callback (err, rows)`
+* **callback** - `callback (err, rows, sqlca)`
 
 ```javascript
 var ibmdb = require("ibm_db")
@@ -401,7 +402,7 @@ ibmdb.open(cn, function (err, conn) {
     // Execute multiple query and get multiple result sets.
     // In case of multiple resultset, query will return an array of result sets.
     conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
-               "select 3 from sysibm.sysdummy1", function (err, rows) 
+               "select 3 from sysibm.sysdummy1", function (err, rows, sqlca)
     {
         if (err) {
             console.log(err);
@@ -928,7 +929,22 @@ Synchronously retrieve the metadata about columns returned by the resulset. It
   });
 ```
 
-### <a name="enableDebugLogs"></a> 26) .debug(value)
+### <a name="getSQLErrorSyncApi"></a> 26) .getSQLErrorSync()
+
+Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API. It operates on ODBCResult object.
+```javascript
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
+    stmt.execute(function(err, result) {
+      console.log("Fetched Data = ", result.fetchAllSync() );
+      console.log("SQLError = ", result.getSQLErrorSync());
+      result.closeSync();
+      conn.closeSync();
+    });
+  });
+```
+
+### <a name="enableDebugLogs"></a> 27) .debug(value)
 
 Enable console logs.
 
