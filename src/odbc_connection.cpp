@@ -116,8 +116,8 @@ NAN_METHOD(ODBCConnection::New)
   REQ_EXT_ARG(0, js_henv);
   REQ_EXT_ARG(1, js_hdbc);
   
-  SQLHENV hENV = static_cast<SQLHENV>((intptr_t)js_henv->Value());
-  SQLHDBC hDBC = static_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
+  SQLHENV hENV = (SQLHENV)((intptr_t)js_henv->Value());
+  SQLHDBC hDBC = (SQLHDBC)((intptr_t)js_hdbc->Value());
   
   ODBCConnection* conn = new ODBCConnection(hENV, hDBC);
   
