@@ -107,9 +107,9 @@ NAN_METHOD(ODBCStatement::New)
   REQ_EXT_ARG(1, js_hdbc);
   REQ_EXT_ARG(2, js_hstmt);
   
-  SQLHENV hENV = reinterpret_cast<SQLHENV>((intptr_t)js_henv->Value());
-  SQLHDBC hDBC = reinterpret_cast<SQLHDBC>((intptr_t)js_hdbc->Value());
-  SQLHSTMT hSTMT = reinterpret_cast<SQLHSTMT>((intptr_t)js_hstmt->Value());
+  SQLHENV hENV = (SQLHENV)((intptr_t)js_henv->Value());
+  SQLHDBC hDBC = (SQLHDBC)((intptr_t)js_hdbc->Value());
+  SQLHSTMT hSTMT = (SQLHSTMT)((intptr_t)js_hstmt->Value());
   
   //create a new OBCResult object
   ODBCStatement* stmt = new ODBCStatement(hENV, hDBC, hSTMT);
