@@ -1,3 +1,39 @@
+2018-09-26, Version 2.4.1
+=========================
+
+ * Update dependent package versions (Bimal Jha)
+
+ * doc update and add test file (Bimal Jha)
+
+ * Add API Documentation and document fetchAll #409 (Bimal Jha)
+
+ * adding latest binaries for windows support (Rohit Pandey)
+
+ * Fix security vulnerability of manitest files. (Bimal Jha)
+
+ * V11.1clidriver support (#456) (Bimal Kumar Jha)
+
+ * fix typo (Bimal Jha)
+
+ * Add support for result.getSQLErrorSync() API (Bimal Jha)
+
+ * Bug fixes and #440 (Bimal Jha)
+
+ * Update basic + async call tests for z/OS compatibility (#441) (Joran Siu)
+
+ * Update query() API to return sqlcode and state in third parameter of callback function (Bimal Jha)
+
+ * update test file for issue #415 (Bimal Jha)
+
+ * update unzipper version #417 (Bimal Jha)
+
+ * fix for issue #415 (Bimal Jha)
+
+ * DB2 z/OS installation difficulties noted (#408) (Robert Penny)
+
+ * Fix for issue #375 (Bimal Jha)
+
+
 2018-06-04, Version 2.4.0
 =========================
 
