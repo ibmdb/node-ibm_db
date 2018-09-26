@@ -91,9 +91,9 @@ To connect to dashDB in bluemix, just use below connection string:
 ```
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL";
 ```
-You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
-*Note:* The SSL Certificate file must have `.arm` extention. Certificate file with `.crt` or any other extention would not work with `SSLServerCertificate` keyword. You need to create keystoredb using GSKit and add certificate of other extention to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+**Note:** The SSL Certificate file must have `.arm` extention. Certificate file with `.crt` or any other extention would not work with `SSLServerCertificate` keyword. You need to create keystoredb using GSKit and add certificate of other extention to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
 ### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
 
@@ -624,6 +624,7 @@ ibmdb.open(cn,function(err,conn){
   conn.closeSync();
 });
 ```
+For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
 
 ### <a name="beginTransactionApi"></a> 21) .beginTransaction(callback)
 
@@ -1052,7 +1053,7 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 [38, {ParamType:"INPUT", DataType: "CLOB", "Data": var1}] - here var1 contains full CLOB data to be inserted.
 [38, {ParamType:"FILE", DataType: "CLOB", "Data": filename}] - here filename is the name of file which has large character data.
 ```
-The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_10.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
+The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
 
 Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:   
 

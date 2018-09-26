@@ -4,6 +4,10 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
+## API Documentation
+
+> For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
+
 ## Prerequisite
 
 - For higher versions of node (When building with Node 4 onwards) the compiler must support
@@ -183,11 +187,11 @@ To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
 no license file is required. However, if you want to use node-ibm_db 
 against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect 
-license if server is not db2connectactivated to accept unlimited number of 
-client connection. You can buy db2connect license from IBM. The connectivity 
-can be enabled either on server using db2connectactivate utility or on client 
-using client side license file. If you have client side license file, just 
-copy it under `.../ibm_db/installer/clidriver/license` folder to be effective. 
+license of version 11.1 if server is not db2connectactivated to accept
+unlimited number of client connection. You can buy db2connect license from IBM.
+The connectivity can be enabled either on server using db2connectactivate
+utility or on client using client side license file. If you have client side
+license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective.
 
 To know more about license and purchasing cost, please contact [IBM Customer Support](http://www-05.ibm.com/support/operations/zz/en/selectcountrylang.html).
 
@@ -255,10 +259,6 @@ or by creating an instance with the constructor function:
 var Database = require("ibm_db").Database
   , ibmdb = new Database();
 ```
-
-## Database APIs
-
-> For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
 
 ## Build Options
 
