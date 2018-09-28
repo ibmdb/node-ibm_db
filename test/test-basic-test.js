@@ -11,7 +11,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
 
   try{
     conn.querySync("drop table mytab1");
-    } catch (e) {}
+  } catch (e) {}
   conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
   conn.querySync("insert into mytab1 values ( 4, 'für')");
   conn.query('select 1, 4, 5 from sysibm.sysdummy1;', function (err, data) {
@@ -32,9 +32,6 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             }
           });
         }
-      });
-    }
-  });
   var d=conn.querySync("select * from mytab1 where (UCASE(C2) LIKE '%FUR%' OR UCASE(C2) LIKE '%FüR%') FOR READ ONLY WITH UR OPTIMIZE FOR 50 ROWS");
   console.log("Selected data with special character  = ", d);
   conn.prepare("insert into mytab1 VALUES (?, ?)", function (err, stmt) {
@@ -77,6 +74,9 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
         });
       });  
     });
+  });
+      });
+    }
   });
 });
 
