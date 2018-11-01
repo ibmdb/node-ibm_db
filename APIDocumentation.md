@@ -3,45 +3,45 @@
 ## Database APIs
 
 **APIs for creating and droping Database using node.js application**
-*  [.createDbSync(dbName, connectionString, [options])](#createDbSyncApi)
-*  [.dropDBSync(dbName, connectionString)](#dropDbSyncApi)
+*  [.createDbSync(dbName, connectionString, [options])](#user-content-createDbSyncApi)
+*  [.dropDBSync(dbName, connectionString)](#user-content-dropDbSyncApi)
 
 **Database APIs**
-1.  [.open(connectionString, [options,] callback)](#openApi)
-2.  [.openSync(connectionString)](#openSyncApi)
-3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
-4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
-5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
-6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#queryResultApi)
-7.  [.queryResultSync(sqlQuery [, bindingParameters])](#queryResultSyncApi)
-8.  [.close(callback)](#closeApi)
-9.  [.closeSync()](#closeSyncApi)
-10. [.prepare(sql, callback)](#prepareApi)
-11. [.prepareSync(sql)](#prepareSyncApi)
-12. [.bind(bindingParameters, callback)](#bindApi)
-13. [.bindSync(bindingParameters)](#bindSyncApi)
-14. [.execute([bindingParameters], callback)](#executeApi)
-15. [.executeSync([bindingParameters])](#executeSyncApi)
-16. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-17. [.fetch(option, callback)](#fetchApi)
-18. [.fetchSync(option)](#fetchSyncApi)
-19. [.fetchAll(option, callback)](#fetchAllApi)
-20. [.fetchAllSync(option)](#fetchAllSyncApi)
-21. [.beginTransaction(callback)](#beginTransactionApi)
-22. [.beginTransactionSync()](#beginTransactionSyncApi)
-23. [.commitTransaction(callback)](#commitTransactionApi)
-24. [.commitTransactionSync()](#commitTransactionSyncApi)
-25. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-26. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-27. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
-28. [.getColumnNamesSync()](#getColumnNamesSyncApi)
-29. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
-30. [.getSQLErrorSync()](#getSQLErrorSyncApi)
-31. [.debug(value)](#enableDebugLogs)
+1.  [.open(connectionString, [options,] callback)](#user-content-openApi)
+2.  [.openSync(connectionString)](#user-content-openSyncApi)
+3.  [.query(sqlQuery [, bindingParameters], callback)](#user-content-queryApi)
+4.  [.querySync(sqlQuery [, bindingParameters])](#user-content-querySyncApi)
+5.  [.queryStream(sqlQuery [, bindingParameters])](#user-content-queryStreamApi)
+6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#user-content-queryResultApi)
+7.  [.queryResultSync(sqlQuery [, bindingParameters])](#user-content-queryResultSyncApi)
+8.  [.close(callback)](#user-content-closeApi)
+9.  [.closeSync()](#user-content-closeSyncApi)
+10. [.prepare(sql, callback)](#user-content-prepareApi)
+11. [.prepareSync(sql)](#user-content-prepareSyncApi)
+12. [.bind(bindingParameters, callback)](#user-content-bindApi)
+13. [.bindSync(bindingParameters)](#user-content-bindSyncApi)
+14. [.execute([bindingParameters], callback)](#user-content-executeApi)
+15. [.executeSync([bindingParameters])](#user-content-executeSyncApi)
+16. [.executeNonQuery([bindingParameters], callback)](#user-content-executeNonQueryApi)
+17. [.fetch(option, callback)](#user-content-fetchApi)
+18. [.fetchSync(option)](#user-content-fetchSyncApi)
+19. [.fetchAll(option, callback)](#user-content-fetchAllApi)
+20. [.fetchAllSync(option)](#user-content-fetchAllSyncApi)
+21. [.beginTransaction(callback)](#user-content-beginTransactionApi)
+22. [.beginTransactionSync()](#user-content-beginTransactionSyncApi)
+23. [.commitTransaction(callback)](#user-content-commitTransactionApi)
+24. [.commitTransactionSync()](#user-content-commitTransactionSyncApi)
+25. [.rollbackTransaction(callback)](#user-content-rollbackTransactionApi)
+26. [.rollbackTransactionSync()](#user-content-rollbackTransactionSyncApi)
+27. [.setIsolationLevel(isolationLevel)](#user-content-setIsolationLevelApi)
+28. [.getColumnNamesSync()](#user-content-getColumnNamesSyncApi)
+29. [.getColumnMetadataSync()](#user-content-getColumnMetadataSyncApi)
+30. [.getSQLErrorSync()](#user-content-getSQLErrorSyncApi)
+31. [.debug(value)](#user-content-enableDebugLogs)
 
-*   [**Connection Pooling APIs**](#PoolAPIs)
-*   [**bindingParameters**](#bindParameters)
-*   [**CALL Statement**](#callStmt)
+*   [**Connection Pooling APIs**](#user-content-PoolAPIs)
+*   [**bindingParameters**](#user-content-bindParameters)
+*   [**CALL Statement**](#user-content-callStmt)
 
 
 ### <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
@@ -56,7 +56,7 @@ Open a connection to a database.
     connect to remote Db2 databases, the connectivity information will need to be set up in the
     Communications Database (CDB).  Please refer to scenario 1 in the following
     [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html).
-* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
+* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
 * **callback** - `callback (err, conn)`
@@ -66,7 +66,7 @@ var ibmdb = require("ibm_db")
   , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
 
 ibmdb.open(connStr, function (err, connection) {
-    if (err) 
+    if (err)
     {
       console.log(err);
       return;
@@ -74,7 +74,7 @@ ibmdb.open(connStr, function (err, connection) {
     connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
-      connection.close(function(err2) { 
+      connection.close(function(err2) {
         if(err2) console.log(err2);
       });
     });
@@ -100,7 +100,7 @@ You can also create a KeyStore DB using GSKit command line tool and use it in co
 Synchronously open a connection to a database.
 
 * **connectionString** - The connection string for your database
-* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple 
+* **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming value for i5/OS server.
 
@@ -117,7 +117,7 @@ try {
 		} else {
 		  console.log(rows);
 		}
-		conn.close();	
+		conn.close();
       });
     } catch (e) {
       console.log(e.message);
@@ -293,7 +293,7 @@ ibmdb.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
-	
+
 	//we now have an open connection to the database
 	conn.close(function (err) {
 		console.log("the database connection is now closed");
@@ -339,7 +339,7 @@ ibmdb.open(cn,function(err,conn){
 
     //Bind and Execute the statment asynchronously
     stmt.execute(['something', 42], function (err, result) {
-      if( err ) console.log(err);  
+      if( err ) console.log(err);
       else result.closeSync();
 
       //Close the connection
@@ -381,20 +381,20 @@ ibmdb.open(cn,function(err,conn){
 
 Binds the parameters for prepared statement.
 
-* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
 * **callback** - `callback (err)`
 
 ### <a name="bindSyncApi"></a> 13) .bindSync(bindingParameters)
 
 Binds the parameters for prepared statement synchronously. If `bindSync()` is used, then no need to pass `bindingParameters` to next `execute()` or `executeSync()` statement.
 
-* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
 
 ### <a name="executeApi"></a> 14) .execute([bindingParameters], callback)
 
 Execute a prepared statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
 * **callback** - `callback (err, result, outparams)`
 outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure.
 
@@ -418,7 +418,7 @@ ibmdb.open(cn,function(err,conn){
 
     //Bind and Execute the statment asynchronously
     stmt.execute([ 42, img ], function (err, result) {
-      if( err ) console.log(err);  
+      if( err ) console.log(err);
       else result.closeSync();
 
       //Close the connection
@@ -433,7 +433,7 @@ ibmdb.open(cn,function(err,conn){
 
 Execute a prepared statement synchronously.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
 
 Returns a `Statement` object. If prepared statement is a stored procedure with INOUT or OUT parameter, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of such array is an `Statement` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
 
@@ -460,7 +460,7 @@ ibmdb.open(cn,function(err,conn){
 
 Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
 * **callback** - `callback (err, affectedRowCount)`
 
 It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1 via the callback function.
@@ -479,7 +479,7 @@ ibmdb.open(cn,function(err,conn){
 
     //Bind and Execute the statment asynchronously
     stmt.executeNonQuery([ 42, 'hello world' ], function (err, ret) {
-      if( err ) console.log(err);  
+      if( err ) console.log(err);
       else console.log("Affected rows = " + ret);
 
       //Close the connection
@@ -770,7 +770,7 @@ ibmdb.open(cn, function(err,conn) {
 
 ### <a name="setIsolationLevelApi"></a> 27) .setIsolationLevel(isolationLevel)
 
-Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction. 
+Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction.
 
 * **isolationLevel:** An integer representing the isolation level to be set. Its value must be only - 1|2|4|8|32. For details check this [doc](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0008832.html).
 
@@ -841,7 +841,7 @@ var ibmdb = require("ibm_db")
 
 ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
-[ibmdb.open](#openApi)(cn, function (err, connection) {
+[ibmdb.open](#user-content-openApi)(cn, function (err, connection) {
     if (err)
     {
         console.log(err);
@@ -922,21 +922,21 @@ to Db2 on z/OS is to a specific subsystem, this API is not applicable.
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
 
-node-ibm_db reuses node-odbc pool. 
+node-ibm_db reuses node-odbc pool.
 The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
 database connections ready and waiting for you when you call the `open` method.
 
-If you use a `Pool` instance, any connection that you close will get added to 
-the list of available connections immediately. Such connection will be used 
+If you use a `Pool` instance, any connection that you close will get added to
+the list of available connections immediately. Such connection will be used
 the next time you call `Pool.open()` for the same connection string.
 
 For applications using multiple connections simultaneously, it is recommended to
-use Pool.open instead of [ibmdb.open](#openApi).
+use Pool.open instead of [ibmdb.open](#user-content-openApi).
 
-1.  [.open(connectionString, callback)](#openPoolApi)
-2.  [.close(callback)](#closePoolApi)
-3.  [.init(N, connStr)](#initPoolApi)
-4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
+1.  [.open(connectionString, callback)](#user-content-openPoolApi)
+2.  [.close(callback)](#user-content-closePoolApi)
+3.  [.init(N, connStr)](#user-content-initPoolApi)
+4.  [.setMaxPoolSize(N)](#user-content-setMaxPoolSize)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
@@ -980,7 +980,7 @@ pool.open(cn, function (err, db) {
 
 	//db is now an open database connection and can be used like normal
 	//but all we will do now is close the whole pool
-	
+
 	pool.close(function () {
 		console.log("all connections in the pool are closed");
 	});
@@ -1030,7 +1030,7 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
  - INPUT - Bind the parameter using SQL_PARAM_INPUT(defined in ibm_db/installer/clidriver/include/sqlext.h file). It is used as input value and it is the default value, if you don't use this key in object.
  - OUTPUT - Bind the parameter using SQL_PARAM_OUTPUT. It is basically used for Stored Procedure call which has output parameters.
  - INOUT - Bind the parameter using SQL_PARAM_INPUT_OUTPUT. It is also used for Stored Procedure call.
- - FILE  - It tells the Data is a filename that contains actual data to load. If you want to load an image to database, use this input type along with DataType as BLOB for binary file.  
+ - FILE  - It tells the Data is a filename that contains actual data to load. If you want to load an image to database, use this input type along with DataType as BLOB for binary file.
    f.e. `{ParamType: "FILE", DataType: "BLOB", Data: "mypic.jpg"}`
 
 * **CType**: C Data type of the parameter to be bound. Default value is CHAR.
@@ -1055,19 +1055,19 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 ```
 The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
 
-Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:   
+Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:
 
  - [test-blob-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-insert.js) - To insert a BLOB and CLOB data using memory buffer. Application need to read the file contents and then use as bind parameter.
  - [test-blob-file.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-file.js) - To insert an image file and large text file directly to database without reading it by application.
 
 ## <a name="callStmt"></a>CALL Statement
 
-* If stored procedure has any OUT or INOUT parameter, always call it with 
+* If stored procedure has any OUT or INOUT parameter, always call it with
 parmeter markers only. i.e. pass the input values using bind params.
 
 * Pass the Bind Params as objects only.
 
-* If SP has result set to return, it will be returned in the array after out params. f.e. if SP has 2 out params and it returns 2 result set too, the result returned by query() or querySync() would be in the form [outValue1, outValue2, resultSet1, resultSet2]. Each resultset would be an array of row objects. 
+* If SP has result set to return, it will be returned in the array after out params. f.e. if SP has 2 out params and it returns 2 result set too, the result returned by query() or querySync() would be in the form [outValue1, outValue2, resultSet1, resultSet2]. Each resultset would be an array of row objects.
 
 * [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using conn.querySync().
 
