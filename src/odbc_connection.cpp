@@ -861,8 +861,8 @@ NAN_METHOD(ODBCConnection::CreateStatementSync)
   params[1] = Nan::New<External>((void*)(intptr_t)conn->m_hDBC);
   params[2] = Nan::New<External>((void*)(intptr_t)hSTMT);
   
-  Local<Object> js_result(Nan::New<Function>(ODBCStatement::constructor)->NewInstance(3, params));
-  
+  Local<Object> js_result(Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, params).ToLocalChecked());
+
   DEBUG_PRINTF("ODBCConnection::CreateStatementSync - Exit\n");
   info.GetReturnValue().Set(js_result);
 }
@@ -950,11 +950,10 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status)
   info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
   info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
   
-  Local<Object> js_result = Nan::New<Function>(ODBCStatement::constructor)->NewInstance(3, info);
+  Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, info).ToLocalChecked();
 
   info[0] = Nan::Null();
   info[1] = js_result;
-
 
   Nan::TryCatch try_catch;
 
@@ -1193,12 +1192,12 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     Local<Value> info[3];
     Local<Value> js_info[4];
     bool* canFreeHandle = new bool(true);
-    
+
     js_info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
     js_info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
     js_info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
     js_info[3] = Nan::New<External>((void*)canFreeHandle);
-    
+
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result == SQL_ERROR) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
@@ -1207,7 +1206,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
       data->hSTMT = (SQLHSTMT)NULL;
     } else {
       info[0] = Nan::Null();
-      Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, js_info);
+      Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, js_info).ToLocalChecked();
       info[1] = js_result;
     }
 
@@ -1434,7 +1433,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
     result[2] = Nan::New<External>((void*) (intptr_t) hSTMT);
     result[3] = Nan::New<External>((void*)canFreeHandle);
     
-    Local<Object> js_result = Nan::New<Function>(ODBCResult::constructor)->NewInstance(4, result);
+    Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, result).ToLocalChecked();
 
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element. [result, outparams]
