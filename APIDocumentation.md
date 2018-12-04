@@ -3,45 +3,45 @@
 ## Database APIs
 
 **APIs for creating and droping Database using node.js application**
-*  [.createDbSync(dbName, connectionString, [options])](#user-content-createDbSyncApi)
-*  [.dropDBSync(dbName, connectionString)](#user-content-dropDbSyncApi)
+*  [.createDbSync(dbName, connectionString, [options])](#createDbSyncApi)
+*  [.dropDBSync(dbName, connectionString)](#dropDbSyncApi)
 
 **Database APIs**
-1.  [.open(connectionString, [options,] callback)](#user-content-openApi)
-2.  [.openSync(connectionString)](#user-content-openSyncApi)
-3.  [.query(sqlQuery [, bindingParameters], callback)](#user-content-queryApi)
-4.  [.querySync(sqlQuery [, bindingParameters])](#user-content-querySyncApi)
-5.  [.queryStream(sqlQuery [, bindingParameters])](#user-content-queryStreamApi)
-6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#user-content-queryResultApi)
-7.  [.queryResultSync(sqlQuery [, bindingParameters])](#user-content-queryResultSyncApi)
-8.  [.close(callback)](#user-content-closeApi)
-9.  [.closeSync()](#user-content-closeSyncApi)
-10. [.prepare(sql, callback)](#user-content-prepareApi)
-11. [.prepareSync(sql)](#user-content-prepareSyncApi)
-12. [.bind(bindingParameters, callback)](#user-content-bindApi)
-13. [.bindSync(bindingParameters)](#user-content-bindSyncApi)
-14. [.execute([bindingParameters], callback)](#user-content-executeApi)
-15. [.executeSync([bindingParameters])](#user-content-executeSyncApi)
-16. [.executeNonQuery([bindingParameters], callback)](#user-content-executeNonQueryApi)
-17. [.fetch(option, callback)](#user-content-fetchApi)
-18. [.fetchSync(option)](#user-content-fetchSyncApi)
-19. [.fetchAll(option, callback)](#user-content-fetchAllApi)
-20. [.fetchAllSync(option)](#user-content-fetchAllSyncApi)
-21. [.beginTransaction(callback)](#user-content-beginTransactionApi)
-22. [.beginTransactionSync()](#user-content-beginTransactionSyncApi)
-23. [.commitTransaction(callback)](#user-content-commitTransactionApi)
-24. [.commitTransactionSync()](#user-content-commitTransactionSyncApi)
-25. [.rollbackTransaction(callback)](#user-content-rollbackTransactionApi)
-26. [.rollbackTransactionSync()](#user-content-rollbackTransactionSyncApi)
-27. [.setIsolationLevel(isolationLevel)](#user-content-setIsolationLevelApi)
-28. [.getColumnNamesSync()](#user-content-getColumnNamesSyncApi)
-29. [.getColumnMetadataSync()](#user-content-getColumnMetadataSyncApi)
-30. [.getSQLErrorSync()](#user-content-getSQLErrorSyncApi)
-31. [.debug(value)](#user-content-enableDebugLogs)
+1.  [.open(connectionString, [options,] callback)](#openApi)
+2.  [.openSync(connectionString)](#openSyncApi)
+3.  [.query(sqlQuery [, bindingParameters], callback)](#queryApi)
+4.  [.querySync(sqlQuery [, bindingParameters])](#querySyncApi) 
+5.  [.queryStream(sqlQuery [, bindingParameters])](#queryStreamApi) 
+6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#queryResultApi)
+7.  [.queryResultSync(sqlQuery [, bindingParameters])](#queryResultSyncApi)
+8.  [.close(callback)](#closeApi)
+9.  [.closeSync()](#closeSyncApi)
+10. [.prepare(sql, callback)](#prepareApi)
+11. [.prepareSync(sql)](#prepareSyncApi)
+12. [.bind(bindingParameters, callback)](#bindApi)
+13. [.bindSync(bindingParameters)](#bindSyncApi)
+14. [.execute([bindingParameters], callback)](#executeApi)
+15. [.executeSync([bindingParameters])](#executeSyncApi)
+16. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
+17. [.fetch(option, callback)](#fetchApi)
+18. [.fetchSync(option)](#fetchSyncApi)
+19. [.fetchAll(option, callback)](#fetchAllApi)
+20. [.fetchAllSync(option)](#fetchAllSyncApi)
+21. [.beginTransaction(callback)](#beginTransactionApi)
+22. [.beginTransactionSync()](#beginTransactionSyncApi)
+23. [.commitTransaction(callback)](#commitTransactionApi)
+24. [.commitTransactionSync()](#commitTransactionSyncApi)
+25. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+26. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+27. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
+28. [.getColumnNamesSync()](#getColumnNamesSyncApi)
+29. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
+30. [.getSQLErrorSync()](#getSQLErrorSyncApi)
+31. [.debug(value)](#enableDebugLogs)
 
-*   [**Connection Pooling APIs**](#user-content-PoolAPIs)
-*   [**bindingParameters**](#user-content-bindParameters)
-*   [**CALL Statement**](#user-content-callStmt)
+*   [**Connection Pooling APIs**](#PoolAPIs)
+*   [**bindingParameters**](#bindParameters)
+*   [**CALL Statement**](#callStmt)
 
 
 ### <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
@@ -381,20 +381,20 @@ ibmdb.open(cn,function(err,conn){
 
 Binds the parameters for prepared statement.
 
-* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err)`
 
 ### <a name="bindSyncApi"></a> 13) .bindSync(bindingParameters)
 
 Binds the parameters for prepared statement synchronously. If `bindSync()` is used, then no need to pass `bindingParameters` to next `execute()` or `executeSync()` statement.
 
-* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
+* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 
 ### <a name="executeApi"></a> 14) .execute([bindingParameters], callback)
 
 Execute a prepared statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err, result, outparams)`
 outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure.
 
@@ -433,7 +433,7 @@ ibmdb.open(cn,function(err,conn){
 
 Execute a prepared statement synchronously.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
 
 Returns a `Statement` object. If prepared statement is a stored procedure with INOUT or OUT parameter, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of such array is an `Statement` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
 
@@ -460,7 +460,7 @@ ibmdb.open(cn,function(err,conn){
 
 Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#user-content-bindParameters) doc for detail.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err, affectedRowCount)`
 
 It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1 via the callback function.
@@ -841,7 +841,7 @@ var ibmdb = require("ibm_db")
 
 ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 
-[ibmdb.open](#user-content-openApi)(cn, function (err, connection) {
+[ibmdb.open](#openApi)(cn, function (err, connection) {
     if (err)
     {
         console.log(err);
@@ -931,12 +931,12 @@ the list of available connections immediately. Such connection will be used
 the next time you call `Pool.open()` for the same connection string.
 
 For applications using multiple connections simultaneously, it is recommended to
-use Pool.open instead of [ibmdb.open](#user-content-openApi).
+use Pool.open instead of [ibmdb.open](#openApi).
 
-1.  [.open(connectionString, callback)](#user-content-openPoolApi)
-2.  [.close(callback)](#user-content-closePoolApi)
-3.  [.init(N, connStr)](#user-content-initPoolApi)
-4.  [.setMaxPoolSize(N)](#user-content-setMaxPoolSize)
+1.  [.open(connectionString, callback)](#openPoolApi)
+2.  [.close(callback)](#closePoolApi)
+3.  [.init(N, connStr)](#initPoolApi)
+4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
