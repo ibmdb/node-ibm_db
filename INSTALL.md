@@ -264,7 +264,7 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
 
     ```sh
     # Assumes IBM_DB_HOME specifies the HLQ of the Db2 datasets.
-    export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME:SDSNL0D2
+    export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME.SDSNLOD2
     ```
 
 4. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
