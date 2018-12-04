@@ -489,7 +489,9 @@ var install_node_ibm_db = function(file_url) {
                 // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                 if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
                     console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
-                        '\nnode-ibm_db does not provide support for ' + 'node.js ' + process.version + ' on Windows platform. Please use the node.js version >= 4.X\n');
+                        '\nnode-ibm_db does not provide precompiled add-on binary for ' + 'node.js version ' + process.version + ' on Windows platform.\n' +
+                        'Visual Studio is required to compile node-ibm_db with node.js versions < 4.X\n' +
+                        'Otherwise please use the node.js version >= 4.X\n');
                     process.exit(1);
                 }
 
