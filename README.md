@@ -25,9 +25,7 @@ node-gyp 3.4.0<br>
 npm 3.10.10<br>
 ibm_db: 2.3.0
 
-- Recommended versions of node.js are >= V4.X.
-
-- For Windows platform (node-ibm_db 2.5.0 onwards) - We have discontinued providing pre-compiled add-on binaries for node.js versions < 4.X. For node.js versions < 4.X, Visual Studio will be required to compile node-ibm_db.
+- Recommended version of node.js is >= V4.X. For node.js version < 4.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows. 
 
 ## Install
 
