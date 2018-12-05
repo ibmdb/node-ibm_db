@@ -1,3 +1,23 @@
+2018-12-05, Version 2.5.0
+=========================
+
+ * Update README.md (Bimal Kumar Jha)
+
+ * Adding windows binary support for Node V9.X, V10.X, V11.X (#492) (Rohit Pandey)
+
+ * Fix STEPLIB typos for SDSNLOD2 library (#488) (Joran Siu)
+
+ * Revert "Fix ApiDocumentation.md to use Github Markdown anchors" (#491) (Bimal Kumar Jha)
+
+ * Remove extraneous comma in zos test config (#479) (Joran Siu)
+
+ * Node.js Version 9.X and 10.X support. (#398) (Rohit Pandey)
+
+ * Change links to add user-content- prefix, trim whitespace (#477) (Michael Varrieur)
+
+ * fix test case (Bimal Jha)
+
+
 2018-09-26, Version 2.4.1
 =========================
 
