@@ -298,7 +298,7 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-		console.log('\nProceeding with building of ibm_db for Electron\n');
+		console.log('\nProceeding with building of IBM_DB to work with Electron framework\n');
         var buildString = "node-gyp configure build ";
 
         if(isDownloaded) {
@@ -424,6 +424,7 @@ var install_node_ibm_db = function(file_url) {
         else
         {
             var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
+			console.log(buildString);
             var childProcess = exec(buildString, function (error, stdout, stderr) {
                 console.log(stdout);
                 if (error !== null) {
