@@ -300,16 +300,17 @@ var install_node_ibm_db = function(file_url) {
     {
         var buildString = "node-gyp configure build ";
 
-        if(isDownloaded) {
+/*         if(isDownloaded) {
             buildString = buildString + " --IS_DOWNLOADED=true";
         } else {
             buildString = buildString + " --IS_DOWNLOADED=false";
-        }
+        } */
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
         {
-            var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
+			console.log('\nProceeding with building of ibm_db for Electron\n');
+            var buildString = buildString + "--target=3.1.2 --arch=x64 --dist-url=https://atom.io/download/electron --msvs_version=2015 --IBM_DB_HOME=\$IBM_DB_HOME  --IS_DOWNLOADED=true";
 
             var childProcess = exec(buildString, function (error, stdout, stderr)
             {
