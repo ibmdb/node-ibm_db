@@ -306,7 +306,7 @@ var install_node_ibm_db = function(file_url) {
             buildString = buildString + " --IS_DOWNLOADED=false";
         }
 		
-		buildString = buildString + " --target=3.1.2 --arch=x64 --dist-url=https://atom.io/download/electron --msvs_version=2015 ";
+		buildString = buildString + " --target=3.1.2 --arch=x64 --dist-url=https://atom.io/download/electron ";
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
