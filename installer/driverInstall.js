@@ -332,7 +332,7 @@ var install_node_ibm_db = function(file_url) {
 			console.log('Unable to detect VS Code version');
 		}
 		
-		console.log(`Will use Electron version ${electronVer} for build...`
+		console.log(`Will use Electron version ${electronVer} for build...`)
 		
         var buildString = "node-gyp configure build ";
 
