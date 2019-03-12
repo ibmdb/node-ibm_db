@@ -298,7 +298,42 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-		console.log('\nProceeding with building of IBM_DB to work with Electron framework\n');
+		console.log('\nProceeding with building of IBM_DB to work with Electron framework...\n');
+		let vscodeVer, electronVer = "2.0.12";
+
+		try{
+			let codeOut = execSync('code --version').toString();
+
+			vscodeVer = parseFloat(codeOut.split('\n')[0]);
+
+			if(vscodeVer >= 1.31)
+			{
+				electronVer = "3.1.2"
+			}
+			else if(vscodeVer == 1.30){
+				electronVer = "3.0.0"
+			}
+			else if(vscodeVer == 1.29){
+				electronVer = "2.0.12"
+			}		
+			else if(vscodeVer == 1.28){
+				electronVer = "2.0.9"
+			}
+			else if(vscodeVer == 1.26 || vscodeVer == 1.27){
+				electronVer = "2.0.5"
+			}
+			else{
+				//nothing
+			}
+			
+			console.log(`Detected VS Code version ${vscodeVer}`);
+		}
+		catch(e){
+			console.log('Unable to detect VS Code version');
+		}
+		
+		console.log(`Will use Electron version ${electronVer} for build...`
+		
         var buildString = "node-gyp configure build ";
 
         if(isDownloaded) {
