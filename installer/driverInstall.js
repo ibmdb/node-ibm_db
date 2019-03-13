@@ -298,8 +298,8 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-		console.log('\nProceeding with building of IBM_DB to work with Electron framework...');
-		let vscodeVer, electronVer = "2.0.12";
+		console.log('\nProceeding to build IBM_DB for Electron framework...');
+		let vscodeVer, electronVer = "3.0.0";
 
 		try{
 			let codeOut = execSync('code --version').toString();
@@ -342,8 +342,7 @@ var install_node_ibm_db = function(file_url) {
             buildString = buildString + " --IS_DOWNLOADED=false";
         }
 		
-		buildString = buildString + ` --target=${electronVer} --arch=x64 --dist-url=https://atom.io/download/electron `;
-		console.log(buildString);
+		buildString = buildString + ` --target=${electronVer} --arch=x64 --dist-url=https://atom.io/download/electron `;		
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
