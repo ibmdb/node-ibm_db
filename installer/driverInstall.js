@@ -308,7 +308,7 @@ var install_node_ibm_db = function(file_url) {
 
 			if(vscodeVer >= 1.31)
 			{
-				electronVer = "3.0.0"
+				electronVer = "3.1.2"
 			}
 			else if(vscodeVer == 1.30){
 				electronVer = "3.0.0"
