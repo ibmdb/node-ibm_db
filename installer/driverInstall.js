@@ -298,7 +298,7 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded) 
     {
-		console.log(process.ENV);
+		console.log(process.env);
 		console.log('\nProceeding to build IBM_DB for Electron framework...');
 		let vscodeVer, electronVer = "3.0.0";
 
