@@ -307,7 +307,7 @@ var install_node_ibm_db = function(file_url) {
         }
 		
 		//Build triggered from the VSCode extension
-		if(process.env.npm_config_vscode){			
+		if(process.env.npm_config_vscode){
 			console.log('\nVSCode flag enabled, proceeding to build IBM_DB for Electron framework...');
 			let vscodeVer, electronVer = "3.0.0";
 
@@ -317,16 +317,16 @@ var install_node_ibm_db = function(file_url) {
 
 				if(vscodeVer >= 1.31)
 				{
-					electronVer = "3.1.2"
+					electronVer = "3.1.2";
 				}
 				else if(vscodeVer == 1.30){
-					electronVer = "3.0.0"
+					electronVer = "3.0.0";
 				}
 				else if(vscodeVer == 1.29){
-					electronVer = "2.0.12"
-				}		
+					electronVer = "2.0.12";
+				}
 				else if(vscodeVer == 1.28){
-					electronVer = "2.0.9"
+					electronVer = "2.0.9";
 				}
 				else if(vscodeVer == 1.26 || vscodeVer == 1.27){
 					electronVer = "2.0.5"
@@ -335,14 +335,14 @@ var install_node_ibm_db = function(file_url) {
 					//nothing
 				}
 				
-				console.log(`Detected VS Code version ${vscodeVer}`);				
+				console.log(`Detected VS Code version ${vscodeVer}`);
 			}
 			catch(e){
 				console.log('Unable to detect VS Code version');
 			}
 			console.log(`Using Electron version ${electronVer}`);
-			buildString = buildString + ` --target=${electronVer} --arch=x64 --dist-url=https://atom.io/download/electron `;		
-		}		
+			buildString = buildString + ` --target=${electronVer} --arch=x64 --dist-url=https://atom.io/download/electron `;
+		}
 				
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
