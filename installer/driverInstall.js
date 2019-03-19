@@ -304,12 +304,12 @@ var install_node_ibm_db = function(file_url) {
             buildString = buildString + " --IS_DOWNLOADED=true";
         } else {
             buildString = buildString + " --IS_DOWNLOADED=false";
-        }		
-		
+        }
+
 		//Build triggered from the VSCode extension
         if(process.env.npm_config_vscode){
             console.log('\nVSCode flag enabled, proceeding to build IBM_DB for Electron framework...');
-			let vscodeVer, electronVer = "3.0.0";
+            let vscodeVer, electronVer = "3.0.0";
 
             try{
                 let codeOut = execSync('code --version').toString();
@@ -332,7 +332,7 @@ var install_node_ibm_db = function(file_url) {
                     electronVer = "2.0.5"
                 }
                 else{
-					console.log('You are probably running an old version of VS Code. Kindly update to latest version');
+                    console.log('You are probably running an old version of VS Code. Kindly update to latest version');
                 }
 				
                 console.log(`Detected VS Code version ${vscodeVer}`);
@@ -343,11 +343,11 @@ var install_node_ibm_db = function(file_url) {
             console.log(`Using Electron version ${electronVer}`);
             buildString = buildString + ` --target=${electronVer} --arch=x64 --dist-url=https://atom.io/download/electron `;
         }
-				
+
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
-        {			
-            var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME ";
+        {
+            var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
 
             var childProcess = exec(buildString, function (error, stdout, stderr)
             {
@@ -457,7 +457,7 @@ var install_node_ibm_db = function(file_url) {
 
         else
         {
-            var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";			
+            var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
             var childProcess = exec(buildString, function (error, stdout, stderr) {
                 console.log(stdout);
                 if (error !== null) {
