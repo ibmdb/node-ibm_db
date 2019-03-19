@@ -306,7 +306,7 @@ var install_node_ibm_db = function(file_url) {
             buildString = buildString + " --IS_DOWNLOADED=false";
         }
 
-		//Build triggered from the VSCode extension
+        //Build triggered from the VSCode extension
         if(process.env.npm_config_vscode){
             console.log('\nVSCode flag enabled, proceeding to build IBM_DB for Electron framework...');
             let vscodeVer, electronVer = "3.0.0";
@@ -333,8 +333,7 @@ var install_node_ibm_db = function(file_url) {
                 }
                 else{
                     console.log('You are probably running an old version of VS Code. Kindly update to latest version');
-                }
-				
+                }				
                 console.log(`Detected VS Code version ${vscodeVer}`);
             }
             catch(e){
