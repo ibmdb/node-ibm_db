@@ -307,8 +307,8 @@ var install_node_ibm_db = function(file_url) {
         }
 
         //Build triggered from the VSCode extension
-        if(process.env.npm_config_vscode){
-            console.log('\nVSCode flag enabled, proceeding to build IBM_DB for Electron framework...');
+        if((process.env.npm_config_vscode)||(__dirname.indexOf('vscode-db2connect')!=-1)){			
+            console.log('\nProceeding to build IBM_DB for Electron framework...');
             let vscodeVer = 0, electronVer = "3.0.0";
 
             try{
