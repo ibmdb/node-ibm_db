@@ -1337,6 +1337,13 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
   return scope.Escape(rows);
 }
 
+extern "C" NODE_MODULE_EXPORT void NODE_MODULE_INITIALIZER(Local<Object> exports, Local<Value> module, Local<Context> context) {
+	ODBC::Init(exports);
+	ODBCResult::Init(exports);
+	ODBCConnection::Init(exports);
+	ODBCStatement::Init(exports);
+}
+
 extern "C" void init(v8::Handle<Object> exports)
 {
   ODBC::Init(exports);
