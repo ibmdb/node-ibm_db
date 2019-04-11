@@ -26,19 +26,17 @@ ibmdb.open(cn, function (err, conn) {
         conn.querySync("create procedure " + schema + ".PROC1 " +
             "(IN v1 INTEGER, OUT v2 INTEGER, INOUT v3 XML) " +
             "disable debug mode " +
-            "BEGIN set v2 = v1 + 1; set v3 = XMLPARSE(DOCUMENT'<name> pri </name>'); END");
+            "BEGIN set v2 = v1 + 1; set v3 = XMLPARSE(DOCUMENT'<name> xml </name>'); END");
     } else {
         conn.querySync("create or replace procedure " + schema + ".PROC1 " +
             "(IN v1 INTEGER, OUT v2 INTEGER, INOUT v3 XML) " +
-            "BEGIN set v2 = v1 + 1; set v3 = XMLPARSE(DOCUMENT'<name> pri </name>'); END");
+            "BEGIN set v2 = v1 + 1; set v3 = XMLPARSE(DOCUMENT'<name> xml </name>'); END");
     }
     var param1 = { ParamType: "INPUT", DataType: 1, Data: 0 };
     var param2 = { ParamType: "OUTPUT", DataType: 1, Data: 0 };
-    var param3 = { ParamType: "INOUT", DataType: "XML", Data: "<name> pri </name>", Length: 200  };
+    var param3 = { ParamType: "INOUT", DataType: "XML", Data: "<name> xml </name>", Length: 200  };
 
     result = conn.querySync(query, [param1, param2, param3]);
-    console.log("result = ", result);
-    //assert.deepEqual(result, [1, '<name> pri </name>']);
     console.log("Output Parameters V2 = ", result[0], ", V3 = ", result[1]);
 
     if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
