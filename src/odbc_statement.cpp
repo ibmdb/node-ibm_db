@@ -71,7 +71,7 @@ void ODBCStatement::Init(v8::Handle<Object> exports)
 
 ODBCStatement::~ODBCStatement()
 {
-  DEBUG_PRINTF("ODBCStatement::~ODBCStatement\n");
+  DEBUG_PRINTF("ODBCStatement::~ODBCStatement m_hSTMT =%X\n", m_hSTMT);
   this->Free();
 }
 
@@ -87,6 +87,7 @@ void ODBCStatement::Free()
   
   if (m_hSTMT) {
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    DEBUG_PRINTF("ODBCStatement::Free SQLFreeHandle called for m_hSTMT =%X\n", m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
   }
     
@@ -395,6 +396,7 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
     }
     
     SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
+    DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery SQLFreeStmt called for m_hSTMT = %X\n", self->m_hSTMT);
     
     Local<Value> info[2];
 
@@ -742,7 +744,7 @@ void ODBCStatement::UV_Prepare(uv_work_t* req)
   
   prepare_work_data* data = (prepare_work_data *)(req->data);
 
-  DEBUG_PRINTF("ODBCStatement::UV_Prepare m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCStatement::UV_Prepare m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     data->stmt->m_hENV,
     data->stmt->m_hDBC,
     data->stmt->m_hSTMT
@@ -765,7 +767,7 @@ void ODBCStatement::UV_AfterPrepare(uv_work_t* req, int status)
   
   prepare_work_data* data = (prepare_work_data *)(req->data);
   
-  DEBUG_PRINTF("ODBCStatement::UV_AfterPrepare m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPrepare m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     data->stmt->m_hENV,
     data->stmt->m_hDBC,
     data->stmt->m_hSTMT
@@ -819,7 +821,7 @@ NAN_METHOD(ODBCStatement::BindSync)
   }
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
-  DEBUG_PRINTF("ODBCStatement::BindSync m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCStatement::BindSync m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     stmt->m_hENV,
     stmt->m_hDBC,
     stmt->m_hSTMT
@@ -890,7 +892,7 @@ NAN_METHOD(ODBCStatement::Bind)
   
   data->stmt = stmt;
   
-  DEBUG_PRINTF("ODBCStatement::Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCStatement::Bind m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     data->stmt->m_hENV,
     data->stmt->m_hDBC,
     data->stmt->m_hSTMT
@@ -922,7 +924,7 @@ void ODBCStatement::UV_Bind(uv_work_t* req)
   
   bind_work_data* data = (bind_work_data *)(req->data);
 
-  DEBUG_PRINTF("ODBCStatement::UV_Bind m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCStatement::UV_Bind m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     data->stmt->m_hENV,
     data->stmt->m_hDBC,
     data->stmt->m_hSTMT

@@ -914,7 +914,7 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req)
   //get our work data
   create_statement_work_data* data = (create_statement_work_data *)(req->data);
 
-  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hDBC=%X m_hDBC=%X m_hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement m_hENV=%X m_hDBC=%X m_hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
     data->hSTMT
@@ -925,7 +925,7 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req)
                   data->conn->m_hDBC, 
                   &data->hSTMT);
 
-  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement - Exit: hDBC=%X hDBC=%X hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCConnection::UV_CreateStatement - Exit: hENV=%X hDBC=%X hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
     data->hSTMT
@@ -939,7 +939,7 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status)
 
   create_statement_work_data* data = (create_statement_work_data *)(req->data);
 
-  DEBUG_PRINTF("ODBCConnection::UV_AfterCreateStatement m_hDBC=%X m_hDBC=%X hSTMT=%X\n",
+  DEBUG_PRINTF("ODBCConnection::UV_AfterCreateStatement m_hENV=%X m_hDBC=%X hSTMT=%X\n",
     data->conn->m_hENV,
     data->conn->m_hDBC,
     data->hSTMT

@@ -70,17 +70,17 @@ void ODBCResult::Init(v8::Handle<Object> exports)
 
 ODBCResult::~ODBCResult()
 {
-  DEBUG_PRINTF("ODBCResult::~ODBCResult m_hSTMT=%x\n", m_hSTMT);
+  DEBUG_PRINTF("ODBCResult::~ODBCResult m_hSTMT=%X m_canFreeHandle=%d\n", m_hSTMT, m_canFreeHandle);
   this->Free();
 }
 
 void ODBCResult::Free()
 {
-  DEBUG_PRINTF("ODBCResult::Free m_hSTMT=%X m_canFreeHandle=%X\n", m_hSTMT, m_canFreeHandle);
-  
   if (m_hSTMT && m_canFreeHandle) {
     SQLFreeHandle( SQL_HANDLE_STMT, m_hSTMT);
+    DEBUG_PRINTF("ODBCResult::Free SQLFreeHandle called for m_hSTMT=%X\n", m_hSTMT);
     m_hSTMT = (SQLHSTMT)NULL;
+    m_canFreeHandle = 0;
   }
   
   if (bufferLength > 0) {
@@ -88,7 +88,6 @@ void ODBCResult::Free()
     free(buffer);
     buffer = NULL;
   }
-  DEBUG_PRINTF("ODBCResult::Free() Done.\n");
 }
 
 NAN_METHOD(ODBCResult::New)

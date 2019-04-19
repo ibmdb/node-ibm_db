@@ -458,6 +458,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
     case SQL_FLOAT :
     case SQL_REAL :
+    case SQL_DECFLOAT :
     case SQL_DOUBLE : 
       {
         double value;
@@ -1101,16 +1102,24 @@ void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
 void ODBC::GetBoolParam(Local<Value> value, Parameter * param, int num)
 {
     bool *boolean    = new bool(value->BooleanValue());
-    param->c_type = SQL_C_BIT;
-    if(!param->type || (param->type == SQL_CHAR)) 
-        param->type   = SQL_BIT;
-    param->buffer = boolean;
-    param->length = 0;
-      
+    int64_t  *number = new int64_t(0);
+    if(*boolean == true) {
+      delete number;
+      number = new int64_t(1);
+    }
+    delete boolean;
+    // Db2 stores boolean data in the form of 0 or 1 only.
+    // So overwrite the intered true or fase with 1 or 0 as bigint
+    param->c_type = SQL_C_SBIGINT;
+    if(!param->type || (param->type == 1))
+        param->type = SQL_BIGINT;
+    param->buffer = number;
+    param->length = sizeof(number);
+
     DEBUG_PRINTF("ODBC::GetBoolParam: param%u : paramtype=%u, c_type=%i, "
-                 "type=%i, size=%i, decimals=%i, buffer_length=%i, length=%i\n",
+                 "type=%i, size=%i, decimals=%i, buffer=%lld, buffer_length=%i, length=%i\n",
                  num, param->paramtype, param->c_type, param->type, param->size,
-                 param->decimals, param->buffer_length, param->length);
+                 param->decimals, *number, param->buffer_length, param->length);
 }
 
 SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
