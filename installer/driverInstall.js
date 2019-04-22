@@ -18,6 +18,7 @@ var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
 var deleteInstallerFile = false;
+var platform = os.platform();
 
 /*
  * "process.env.IBM_DB_INSTALLER_URL"
@@ -32,7 +33,6 @@ installerURL = installerURL + "/";
 var install_node_ibm_db = function(file_url) {
     var readStream;
     var writeStream;
-    var platform = os.platform();
     var arch = os.arch();
     var endian = os.endianness();
     var installerfileURL;
@@ -306,6 +306,9 @@ var install_node_ibm_db = function(file_url) {
             buildString = buildString + " --IS_DOWNLOADED=false";
         }
 
+        // Clean existing build directory
+        removeDir('build');
+
         //Build triggered from the VSCode extension
         if((process.env.npm_config_vscode)||(__dirname.indexOf('vscode-db2connect')!=-1)){			
             console.log('\nProceeding to build IBM_DB for Electron framework...');
@@ -430,11 +433,7 @@ var install_node_ibm_db = function(file_url) {
                         return;
                     }
 
-                    if (fs.existsSync(CURRENT_DIR + "/build/Release"))
-                    {
-                        var RELEASE_DIRECTORY = path.resolve(CURRENT_DIR, 'build/Release');
-                        execSync( "rmdir /s /q " + '"' + RELEASE_DIRECTORY + '"' );
-                    }
+                    removeDir('build/Release');
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
                     {
@@ -548,10 +547,7 @@ var install_node_ibm_db = function(file_url) {
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
-                if (fs.existsSync(CURRENT_DIR + "/build")) {
-                    var BUILD_DIRECTORY = path.resolve(CURRENT_DIR, 'build');
-                    execSync( "rmdir /s /q " + '"' + BUILD_DIRECTORY + '"' );
-                }
+                removeDir('build');
 
                 readStream = fs.createReadStream(BUILD_FILE);
 
@@ -625,6 +621,17 @@ var install_node_ibm_db = function(file_url) {
         var percentage = ((received * 100) / total).toFixed(2);
         process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
         process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
+    }
+
+    function removeDir(dir) {
+        let fullPath = path.resolve(CURRENT_DIR, dir);
+        if (fs.existsSync(fullPath)) {
+          if(platform == 'win32') {
+            execSync( "rmdir /s /q " + '"' + fullPath + '"' );
+          } else {
+            execSync( "rm -rf " + '"' + fullPath + '"' );
+          }
+        }
     }
 
 }; //install_node_ibm_db

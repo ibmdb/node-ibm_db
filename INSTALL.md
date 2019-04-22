@@ -81,10 +81,15 @@ or
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
 
-4. Update config.testConnectionStrings.json with your credentials and run test.
+4. Install other packages mentioned in package.json as devDependencies
 ```
-cd ibm_db/test/
-vi config.testConnectionStrings.json
+npm install async bluebird moment
+```
+
+5. Update config.testConnectionStrings.json with your credentials and run test.
+```
+cd node_modules/ibm_db/test/
+vi config.testConnectionStrings.json => Update connection string in this file.
 node run-tests.js
 ```
 
@@ -108,9 +113,8 @@ export IBM_DB_HOME=/home/mysystem/clidriver
 5. Install node-gyp and other dependencies (refer package.json)
 
 npm install -g node-gyp
-npm install moment
-npm install nan@2.2.0
-npm install bindings@1.0.0
+npm install moment async bluebird
+npm install nan bindings fstream q request targz unzipper
 etc...
 ```
 
@@ -130,7 +134,7 @@ node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false --ver
 8. Update config.testConnectionStrings.json with your credentials and run test.
 
 cd node-ibm_db/test/
-vi config.testConnectionStrings.json
+vi config.testConnectionStrings.json  => Update database connection info.
 node run-tests.js
 ```
 
@@ -230,11 +234,15 @@ or
 npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 ```
 
+4. Install other packages mentioned in package.json as devDependencies
 ```
-4. Update config.testConnectionStrings.json with your credentials and run test.
+npm install async bluebird moment
+```
 
-cd ibm_db/test/
-vi config.testConnectionStrings.json
+5. Update config.testConnectionStrings.json with your credentials and run test.
+```
+cd node_modules/ibm_db/test/
+vi config.testConnectionStrings.json => Update connection string in this file.
 node run-tests.js
 ```
 
