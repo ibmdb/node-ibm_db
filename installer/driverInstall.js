@@ -312,10 +312,10 @@ var install_node_ibm_db = function(file_url) {
         //Build triggered from the VSCode extension
         if((process.env.npm_config_vscode)||(__dirname.indexOf('vscode-db2connect')!=-1)){			
             console.log('\nProceeding to build IBM_DB for Electron framework...');
-            let vscodeVer = 0, electronVer = "3.0.0";
+            var vscodeVer = 0, electronVer = "3.0.0";
 
             try{
-                let codeOut = execSync('code --version').toString();
+                var codeOut = execSync('code --version').toString();
                 vscodeVer = parseFloat(codeOut.split('\n')[0]);
 
                 if(vscodeVer >= 1.31)
@@ -519,11 +519,11 @@ var install_node_ibm_db = function(file_url) {
                 //Windows node binary names should update here.
                 var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
                 var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.9.1';
-                var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.15.0';
+                var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
                 var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
-                var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.14.0';
+                var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.0';
                 var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.14.1';
+                var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.15.3';
 
                 // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                 if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
@@ -624,7 +624,7 @@ var install_node_ibm_db = function(file_url) {
     }
 
     function removeDir(dir) {
-        let fullPath = path.resolve(CURRENT_DIR, dir);
+        var fullPath = path.resolve(CURRENT_DIR, dir);
         if (fs.existsSync(fullPath)) {
           if(platform == 'win32') {
             execSync( "rmdir /s /q " + '"' + fullPath + '"' );
