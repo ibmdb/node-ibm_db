@@ -1,3 +1,27 @@
+2019-04-25, Version 2.5.1
+=========================
+
+ * fix test case issue (Bimal Jha)
+
+ * renaming the vscode extension directory as per new extension name (#529) (Vyshakh)
+
+ * update windows binary in build.zip file. (Priyanka Manoharan)
+
+ * clean build directory before rebuild during installation (Bimal Jha)
+
+ * DBC-4156:Add support for SQLRowCount() API on result object returned by stmt.execute (Bimal Jha)
+
+ * Add support for BOOLEAN data type (Bimal Jha)
+
+ * test case for XML datatype (Priyanka Manoharan)
+
+ * Fix for issue #517 (Priyanka Manoharan)
+
+ * Vscode extension detection during install (#518) (Vyshakh)
+
+ * Enable electron build for use with VS Code (#515) (Vyshakh)
+
+
 2018-12-05, Version 2.5.0
 =========================
 
