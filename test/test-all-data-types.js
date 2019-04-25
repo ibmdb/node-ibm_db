@@ -40,7 +40,7 @@ ibmdb.open(cn, function(err, conn) {
       assert.deepEqual(data, expectedData);
 
       conn.querySync("delete from mytab1");
-      let blobParam = {DataType: "BLOB", Data: new Buffer('abc')};
+      var blobParam = {DataType: "BLOB", Data: new Buffer('abc')};
       err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, 456736789, 1234, 67.98, 5689, 56.2390, 34567890,
           45.234, 'bimal', 'kumar', '\x50', 'jha123456', '2015-09-10',
           '10:16:33', '2015-09-10 10:16:33.770139', blobParam, true]);
