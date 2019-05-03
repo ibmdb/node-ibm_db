@@ -307,7 +307,9 @@ var install_node_ibm_db = function(file_url) {
         }
 
         // Clean existing build directory
-        removeDir('build');
+        if (platform != 'os390') {
+          removeDir('build');
+        }
 
         //Build triggered from the VSCode extension
         if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
