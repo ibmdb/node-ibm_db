@@ -571,7 +571,7 @@ Handle<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
     case SQL_DBCLOB:
         if((int) column.type == SQL_DBCLOB)
         {
-            ctype = SQL_C_DBCHAR;
+            ctype = SQL_C_CHAR;
             terCharLen = 2;
             DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
         }
