@@ -32,14 +32,13 @@ if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect
         vscodeVer = parseFloat(codeOut.split('\n')[0]);
 
         if(!isNaN(vscodeVer)){
-            console.log(`Detected VS Code version ${vscodeVer}, will use Electron version ${electron_version}`);
-
             if(vscodeVer >= 1.30){
                 electron_version = "3.0.0";
             }
             else{
                 electron_version = "2.0.12";
             }
+            console.log(`Detected VS Code version ${vscodeVer}, will use Electron version ${electron_version}`);
         }
 		else{
             console.log(`Unable to detect VSCode version, will use Electron version ${electron_version}`);
