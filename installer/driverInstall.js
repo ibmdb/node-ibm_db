@@ -517,7 +517,12 @@ var install_node_ibm_db = function(file_url) {
                 var odbcBindingsNode;
                 var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
 
-                if(!vscode_build){
+                if(vscode_build)
+                {
+                    odbcBindingsNode = 'build\/Release\/odbc_bindings_e' + electron_version + '.node';
+                }
+                else
+                {
                     //Windows node binary names should update here.
                     var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.9.1';
                     var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
@@ -545,9 +550,6 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9  ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||  ODBC_BINDINGS ;
-                }
-                else{
-                    odbcBindingsNode = 'build\/Release\/odbc_bindings_e' + electron_version + '.node';
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
