@@ -225,6 +225,12 @@ Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2
 APPLTRACE=1
 APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
 
+## Usage within VS Code
+If you are using ibm_db to develop extension for VS Code, then ibm_db has to be rebuilt with Electron libraries. This can be achieved by running:
+```
+npm install ibm_db -vscode
+```
+ibm_db would automatically be rebuilt with Electron if your installation directory path contains 'db2connect' as a sub-string. This has the same effect as running with '-vscode' flag.
 
 ## Need Help?
 
