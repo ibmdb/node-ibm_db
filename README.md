@@ -230,6 +230,7 @@ If you are using ibm_db to develop extension for VS Code, then ibm_db has to be 
 ```
 npm install ibm_db -vscode
 ```
+ibm_db would automatically be rebuilt with Electron if your installation directory path contains 'db2connect' as a sub-string. This has the same effect as running with '-vscode' flag.
 
 ## Need Help?
 
