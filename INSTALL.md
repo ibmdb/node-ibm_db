@@ -253,33 +253,45 @@ It's Done.
 
 ### 8.1 Install Node.js for z/OS
 
-Download and install the IBM SDK for Node.js - z/OS from [Marketplace](https://www.ibm.com/ca-en/marketplace/sdk-nodejs-compiler-zos).  Trial version of IBM SDK for Node.js - z/OS is also available on [DevelopWorks](https://developer.ibm.com/node/sdk/ztp/).  Given that ibm_db includes native add-on code, ensure that you have the pre-requisite Python and Make tools installed as detailed in the SDK installation instructions.
+Download and install the IBM SDK for Node.js - z/OS from [Marketplace](https://www.ibm.com/ca-en/marketplace/sdk-nodejs-compiler-zos/purchase).  Given that ibm_db includes native add-on code, ensure that you have the pre-requisite Python and Make tools installed as detailed in the SDK installation instructions.
 
 ### 8.2 Configure ODBC driver on z/OS
 
 Please refer to the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) cookbook for how to configure your ODBC driver.   Specifically, you need to ensure you have:
 
-1. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
+1. Apply Db2 on z/OS PTF [UI60551](https://www-01.ibm.com/support/docview.wss?uid=swg1PH05953) to pick up new ODBC functionality to support Node.js applications.
 
-2. Set the `IBM_DB_HOME` environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
+2. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
+
+3. Set the `IBM_DB_HOME` environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
 
     ```sh
     # Set HLQ to Db2 datasets.
     export IBM_DB_HOME="DSN1210"
     ```
 
-3. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB` environment variable with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
+4. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB` environment variable with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
 
     ```sh
     # Assumes IBM_DB_HOME specifies the HLQ of the Db2 datasets.
     export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME.SDSNLOD2
     ```
 
-4. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+5. Configured an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+
+
+    In COMMON section:
 
     ```
-    MULTICONTEXT=1
+    MULTICONTEXT=2
     CURRENTAPPENSCH=ASCII
+    FLOAT=IEEE
+    ```
+
+    In SUBSYSTEM section:
+
+    ```
+    MVSATTACHTYPE=RRSAF
     ```
 
     Here is a sample of a complete initialization file:
@@ -290,8 +302,9 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
     [COMMON]
     MVSDEFAULTSSID=VC1A
     CONNECTTYPE=1
-    MULTICONTEXT=1
+    MULTICONTEXT=2
     CURRENTAPPENSCH=ASCII
+    FLOAT=IEEE
     ; Example SUBSYSTEM stanza for VC1A subsystem
     [VC1A]
     MVSATTACHTYPE=RRSAF
