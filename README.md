@@ -48,7 +48,7 @@ npm install ibm_db
 
 - HOW:
 	- On distributed platforms, set **IBM_DB_HOME** environment variable to a pre-installed **db2 client or server installation directory**.
-	- On z/OS, set **IBM_DB_HOME** environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
+	- On z/OS, set **IBM_DB_HOME** environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSNC10.SDSNC.H` and `DSNC10.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSNC10` with the following statement (can be saved in `~/.profile`):
 
 
 `IBM_DB_INSTALLER_URL :`

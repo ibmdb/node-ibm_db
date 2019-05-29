@@ -263,11 +263,11 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
 
 2. Binded the ODBC packages.  A sample JCL is provided in the `SDSNSAMP` dataset in member `DSNTIJCL`.  Customize the JCL with specifics to your system.
 
-3. Set the `IBM_DB_HOME` environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSN1210.SDSNC.H` and `DSN1210.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSN1210` with the following statement (can be saved in `~/.profile`):
+3. Set the `IBM_DB_HOME` environment variable to the High Level Qualifier (HLQ) of your Db2 datasets.  For example, if your Db2 datasets are located as `DSNC10.SDSNC.H` and `DSNC10.SDSNMACS`, you need to set `IBM_DB_HOME` environment variable to `DSNC10` with the following statement (can be saved in `~/.profile`):
 
     ```sh
     # Set HLQ to Db2 datasets.
-    export IBM_DB_HOME="DSN1210"
+    export IBM_DB_HOME="DSNC10"
     ```
 
 4. Update the `STEPLIB` environment variable to include the Db2 SDSNEXIT, SDSNLOAD and SDSNLOD2 data sets. You can set the `STEPLIB` environment variable with the following statement, after defining `IBM_DB_HOME` to the high level qualifier of your Db2 datasets as instructed above:
