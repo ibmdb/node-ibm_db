@@ -1216,7 +1216,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle)
   return scope.Escape(GetSQLError(
     handleType,
     handle,
-    (char *) "[node-odbc] SQL_ERROR"));
+    (char *) "[node-ibm_db] SQL_ERROR"));
 }
 
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message)
@@ -1236,8 +1236,8 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
   char errorMessage[SQL_MAX_MESSAGE_LENGTH];
 
   // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
-  Local<Array> errors = Nan::New<Array>();
-  objError->Set(Nan::New("errors").ToLocalChecked(), errors);
+  //Local<Array> errors = Nan::New<Array>();
+  //objError->Set(Nan::New("errors").ToLocalChecked(), errors);
   
   do {
     DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i\n", i);
@@ -1254,7 +1254,15 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
     
     DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i, ret=%i\n", i,ret);
 
+    if (ret == -2 && i == 0)
+    {
+      strcpy(errorMessage, "CLI0600E Invalid connection handle or connection is closed. SQLSTATE=S1000");
+      strcpy(errorSQLState, "S1000");
+      native = -1;
+      ret = 0;
+    }
     if (SQL_SUCCEEDED(ret)) {
+     if (i == 0) {
       DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);
       
       objError->Set(Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
@@ -1269,6 +1277,8 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
       objError->Set(Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
       objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New(native));
 #endif
+     }
+     if (native == -1) { break; }
     } else {
       break;
     }

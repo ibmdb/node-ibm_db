@@ -1173,7 +1173,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
       }
       DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : outParamCount=%i\n", outParamCount);
   }
-  if (data->result != SQL_ERROR && data->noResultObject) {
+  if ((data->result >= SQL_SUCCESS) && (data->noResultObject)) {
     //We have been requested to not create a result object
     //this means we should release the handle now and call back
     //with Nan::True()
@@ -1199,7 +1199,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     js_info[3] = Nan::New<External>((void*)canFreeHandle);
 
     // Check now to see if there was an error (as there may be further result sets)
-    if (data->result == SQL_ERROR) {
+    if (data->result < SQL_SUCCESS) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
       info[1] = Nan::Null();
       SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
