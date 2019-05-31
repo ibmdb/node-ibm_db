@@ -1,5 +1,19 @@
-2019-04-25, Version 2.5.1
+2019-05-31, Version 2.5.2
 =========================
+
+ * update test file (Bimal Jha)
+
+ * Fix for issue #497, remote stale connection from pool (Bimal Jha)
+
+ * Update fstream to 1.0.12 to fix vulnerability (#539) (Vinícius Silva)
+
+ * Update z/OS documentation (#540) (Joran Siu)
+
+ * Add bindings for Electron f/w (#536) (Vyshakh)
+
+ * Add support for DBCLOB data types. Issue #431 (Priyanka Manoharan)
+
+ * Do not delete build direcotry for z/OS. #530 (Bimal Jha)
 
  * fix test case issue (Bimal Jha)
 
