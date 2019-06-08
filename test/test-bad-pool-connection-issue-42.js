@@ -46,4 +46,3 @@ var timer = setInterval(function() {
     i++;
 }, 3000);  // Change it to 30000 when running single test file for actual test.
 
-pool.init(4, connectionString);
