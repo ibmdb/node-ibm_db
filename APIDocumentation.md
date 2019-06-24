@@ -872,8 +872,8 @@ Synchronously issue multiple SQL query from the file to the database that is cur
 Delimiter splits mutliple query in the sqlFile.
 
 
-* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries data will be copied to outputfile splitted by the delimiter.
-If the outputfile already exists it will be overwritten. If the outputfile is not mentioned the result will be returned splitted by the delimiter
+* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries data will be copied to outputfile splitted by the delimiter. 
+If the outputfile already exists it will be overwritten. If the outputfile is not mentioned the result will be returned splitted by the delimiter.
 
 
 ```javascript
