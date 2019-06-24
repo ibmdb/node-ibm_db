@@ -861,19 +861,19 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 32) .executeFileSync(sqlFile,[delimiter],[outputfile])
+### <a name="executeFileSyncApi"></a> 32) .executeFileSync(sqlFile,[delimiter],[outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
-* **sqlFile** - sqlFile input should be Full Path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }
-If true - query() will not return any result."sql" field is mandatory in Object.
+* **sqlFile** - sqlFile input should be Full Path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }. 
+"sql" field is mandatory in Object.
 
-* **delimiter** - (_OPTIONAL_ only incase of default delimiter `;`) - If the sqlFile contains other delimiters it is mandatory to mention delimiter.
+* **delimiter** - (_OPTIONAL_ only incase of default delimiter `;`) - If the sqlFile contains other delimiters it is mandatory to mention delimiter. 
 Delimiter splits mutliple query in the sqlFile.
 
 
-* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries will be copied to outputfile splitted by the delimiter.
-If the outputfile already exists it will be overwritten.If the outputfile is not mentioned the result will be returned splitted by the delimiter
+* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries data will be copied to outputfile splitted by the delimiter.
+If the outputfile already exists it will be overwritten. If the outputfile is not mentioned the result will be returned splitted by the delimiter
 
 
 ```javascript
