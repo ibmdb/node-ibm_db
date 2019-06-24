@@ -1,0 +1,1 @@
+create table sample(no integer,name varchar(10))@insert into sample values(1,'pri')@insert into sample values(2,'anbu')@select * from sample@drop table sample@create table sample1(no integer)@insert into sample1 values(1)@insert into sample1 values(2)@select * from sample1@drop table sample1
