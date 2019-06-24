@@ -38,6 +38,7 @@
 29. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
 30. [.getSQLErrorSync()](#getSQLErrorSyncApi)
 31. [.debug(value)](#enableDebugLogs)
+32. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -859,6 +860,33 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
     });
 });
 ```
+
+### <a name="executeFileSyncApi"></a> 32) .executeFileSync(sqlFile,[delimiter],[outputfile])
+
+Synchronously issue multiple SQL query from the file to the database that is currently open.
+
+* **sqlFile** - sqlFile input should be Full Path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }
+If true - query() will not return any result."sql" field is mandatory in Object.
+
+* **delimiter** - (_OPTIONAL_ only incase of default delimiter `;`) - If the sqlFile contains other delimiters it is mandatory to mention delimiter.
+Delimiter splits mutliple query in the sqlFile.
+
+
+* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries will be copied to outputfile splitted by the delimiter.
+If the outputfile already exists it will be overwritten.If the outputfile is not mentioned the result will be returned splitted by the delimiter
+
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn){
+    conn.executeFileSync('sample2.txt', '%','out.txt');
+    var rows = conn.executeFileSync('sample2.txt', '%');
+    console.log(rows)
+});
+```
+
 
 ## Create and Drop Database APIs
 
