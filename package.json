@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "bindings": "^1.3.0",
+    "fs-extra": "^8.0.1",
     "fstream": "^1.0.12",
     "nan": "^2.11.0",
     "q": "^1.5.1",
