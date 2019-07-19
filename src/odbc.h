@@ -108,14 +108,14 @@ class ODBC : public Nan::ObjectWrap {
     static uv_mutex_t g_odbcMutex;
     static uv_async_t g_async;
     
-    static void Init(v8::Handle<Object> exports);
+    static NAN_MODULE_INIT(Init);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
     static void FreeColumns(Column* columns, short* colCount);
-    static Handle<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
-    static Handle<Value> GetOutputParameter(Parameter prm);
+    static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
+    static Local<Value> GetOutputParameter(Parameter prm);
     static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
     static Local<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
-    static Handle<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
+    static Local<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
     static Local<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
