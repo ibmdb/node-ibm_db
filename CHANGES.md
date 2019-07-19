@@ -1,5 +1,21 @@
-2019-05-31, Version 2.5.2
+2019-07-19, Version 2.5.3
 =========================
+
+ * update windows binary in build.zip file (Priyanka Manoharan)
+
+ * Fix for issue #512 (Priyanka Manoharan)
+
+ * support for fs-extra package (#554) (PriyankaManoharan04)
+
+ * fix security alert for lodash (Bimal Jha)
+
+ * Fix for the issue #541 (#549) (PriyankaManoharan04)
+
+ * support for executeFileSync Api (#547) (PriyankaManoharan04)
+
+ * Fix undefined availablePool issue (Bimal Jha)
+
+ * Fix error when pool is not initialized: DBC-4375 (Bimal Jha)
 
  * update test file (Bimal Jha)
 
