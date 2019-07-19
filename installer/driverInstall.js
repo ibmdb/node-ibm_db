@@ -529,7 +529,7 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
                     var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.15.3';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.16.0';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
