@@ -32,7 +32,7 @@ if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect
         vscodeVer = parseFloat(codeOut.split('\n')[0]);
 
         if(!isNaN(vscodeVer)){
-			if(vscodeVer >= 1.36){
+	    if(vscodeVer >= 1.36){
                 electron_version = "4.2.5";
             }
             else if(vscodeVer >= 1.30 && vscodeVer < 1.36){
