@@ -216,7 +216,7 @@ struct query_request {
 #define REQ_STR_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsString())                     \
     return Nan::ThrowTypeError("Argument " #I " must be a string");       \
-  String::Utf8Value VAR(info[I]->ToString());
+  Nan::Utf8String VAR(info[I]);
 
 //Require String Argument; Save String as Wide String (UCS2)
 #define REQ_WSTR_ARG(I, VAR)                                             \
@@ -228,7 +228,7 @@ struct query_request {
 #define REQ_STRO_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsString())                     \
     return Nan::ThrowTypeError("Argument " #I " must be a string");       \
-  Local<String> VAR(info[I]->ToString());
+  Nan::Utf8String VAR(info[I]);
 
 //Require String or Null Argument; Save String as Utf8
 #define REQ_STR_OR_NULL_ARG(I, VAR)                                             \
@@ -247,8 +247,8 @@ struct query_request {
   if ( info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull()) ) {   \
     Nan::ThrowTypeError("Argument " #I " must be a string or null");                \
     return;                                                         \
-  }                                                                               \
-  Local<String> VAR(info[I]->ToString());
+  }                                                                 \
+  Nan::Utf8String VAR(info[I]);
 
 #define REQ_FUN_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsFunction())                   \
@@ -258,7 +258,7 @@ struct query_request {
 #define REQ_BOOL_ARG(I, VAR)                                            \
   if (info.Length() <= (I) || !info[I]->IsBoolean())                    \
     return Nan::ThrowTypeError("Argument " #I " must be a boolean");      \
-  Local<Boolean> VAR = (info[I]->ToBoolean());
+  Local<Boolean> VAR = Nan::To<v8::Boolean>(info[I]).ToLocalChecked();
   
 #define REQ_EXT_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsExternal())                   \
@@ -268,18 +268,32 @@ struct query_request {
 #define REQ_INT_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsInt32())                      \
     return Nan::ThrowTypeError("Argument " #I " invalid");              \
-  SQLUSMALLINT VAR = (info[I]->Int32Value());
+  SQLUSMALLINT VAR = (Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value());
 
 #define OPT_INT_ARG(I, VAR, DEFAULT)                                    \
   SQLUSMALLINT VAR;                                                     \
   if (info.Length() <= (I)) {                                           \
     VAR = (DEFAULT);                                                    \
   } else if (info[I]->IsInt32()) {                                      \
-    VAR = info[I]->Int32Value();                                        \
+    VAR = Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value();        \
   } else {                                                              \
-    return Nan::ThrowTypeError("Argument " #I " must be an integer");     \
+    return Nan::ThrowTypeError("Argument " #I " must be an integer");   \
   }
 
+// Macro to get c++ string from Utf8String(JS string)
+#ifdef UNICODE
+  #define GETCPPSTR(to, from, len)                                      \
+    if(len > 0) {                                                       \
+      to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
+      MEMCHECK( data->schema ) ;                                        \
+      from->Write((uint16_t *) to);                                     \
+    }
+#else
+  #define GETCPPSTR(to, from, len)   \
+    if(len > 0) {                    \
+      to = strndup(*from, len);      \
+    }
+#endif
 
 // From node v10 NODE_DEFINE_CONSTANT
 #define NODE_ODBC_DEFINE_CONSTANT(constructor_template, constant)       \

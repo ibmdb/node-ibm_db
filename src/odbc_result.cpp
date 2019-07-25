@@ -32,7 +32,7 @@ using namespace node;
 Nan::Persistent<Function> ODBCResult::constructor;
 Nan::Persistent<String> ODBCResult::OPTION_FETCH_MODE;
 
-void ODBCResult::Init(v8::Handle<Object> exports)
+NAN_MODULE_INIT(ODBCResult::Init)
 {
   DEBUG_PRINTF("ODBCResult::Init\n");
   Nan::HandleScope scope;
@@ -64,9 +64,9 @@ void ODBCResult::Init(v8::Handle<Object> exports)
   Nan::SetAccessor(instance_template, Nan::New("fetchMode").ToLocalChecked(), FetchModeGetter, FetchModeSetter);
   
   // Attach the Database Constructor to the target object
-  constructor.Reset(constructor_template->GetFunction());
-  exports->Set(Nan::New("ODBCResult").ToLocalChecked(),
-               constructor_template->GetFunction());
+  constructor.Reset(Nan::GetFunction(constructor_template).ToLocalChecked());
+  target->Set(Nan::New("ODBCResult").ToLocalChecked(),
+              Nan::GetFunction(constructor_template).ToLocalChecked());
 }
 
 ODBCResult::~ODBCResult()
@@ -153,7 +153,7 @@ NAN_SETTER(ODBCResult::FetchModeSetter)
   ODBCResult *obj = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
   
   if (value->IsNumber()) {
-    obj->m_fetchMode = value->Int32Value();
+    obj->m_fetchMode = Nan::To<int32_t>(value).FromJust();
   }
 }
 
@@ -185,10 +185,11 @@ NAN_METHOD(ODBCResult::Fetch)
   else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
     cb = Local<Function>::Cast(info[1]);  
     
-    Local<Object> obj = info[0]->ToObject();
+    Local<Object> obj = info[0]->ToObject(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Object>());
+    //Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked(); 
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
-    if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
       data->fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
     }
   }
@@ -342,10 +343,11 @@ NAN_METHOD(ODBCResult::FetchSync)
   int fetchMode = objResult->m_fetchMode;
   
   if (info.Length() == 1 && info[0]->IsObject()) {
-    Local<Object> obj = info[0]->ToObject();
+    //Local<Object> obj = info[0]->ToObject();
+    Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked();
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
-    if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
       fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
     }
   }
@@ -442,10 +444,10 @@ NAN_METHOD(ODBCResult::FetchAll)
   else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
     cb = Local<Function>::Cast(info[1]);  
     
-    Local<Object> obj = info[0]->ToObject();
+    Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked();
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
-    if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
       data->fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
     }
   }
@@ -630,10 +632,10 @@ NAN_METHOD(ODBCResult::FetchAllSync)
   int fetchMode = self->m_fetchMode;
 
   if (info.Length() == 1 && info[0]->IsObject()) {
-    Local<Object> obj = info[0]->ToObject();
+    Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked();
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
-    if (obj->Has(fetchModeKey) && obj->Get(fetchModeKey)->IsInt32()) {
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
       fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
     }
   }
