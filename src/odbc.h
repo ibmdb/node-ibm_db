@@ -283,16 +283,16 @@ struct query_request {
 // Macro to get c++ string from Utf8String(JS string)
 #ifdef UNICODE
   #define GETCPPSTR(to, from, len)                                      \
-    if(len > 0) {                                                       \
+    if(len > 0 && strcmp(*from, "null")) {                              \
       to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
       MEMCHECK( data->schema ) ;                                        \
       from->Write((uint16_t *) to);                                     \
-    }
+    } else { len = 0; }
 #else
-  #define GETCPPSTR(to, from, len)   \
-    if(len > 0) {                    \
-      to = strndup(*from, len);      \
-    }
+  #define GETCPPSTR(to, from, len)                                      \
+    if(len > 0 && strcmp(*from, "null")) {                              \
+      to = strndup(*from, len);                                         \
+    } else { len = 0; }
 #endif
 
 // From node v10 NODE_DEFINE_CONSTANT

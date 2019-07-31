@@ -893,8 +893,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
     params[i].buffer_length = 0;
     params[i].decimals      = 0;
 
-    DEBUG_PRINTF("ODBC::GetParametersFromArray - &param[%i].length = %p\n",
-                 i, &params[i].length);
+    DEBUG_PRINTF("ODBC::GetParametersFromArray - param[%i].length = %d\n",
+                 i, params[i].length);
 
     if (value->IsArray()) 
     {
@@ -970,77 +970,36 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
 void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 {
-    Local<String> string = value->ToString(v8::Isolate::GetCurrent());
-    int length = string->Length();
-    int bufflen = 0;
-    int flags = String::HINT_MANY_WRITES_EXPECTED |
-                String::NO_NULL_TERMINATION |
-                String::REPLACE_INVALID_UTF8;
+    Nan::Utf8String string(value);
+    int length = string.length();
+    int bufflen = length;
       
-    param->length        = SQL_NTS;
+    param->length        = length; 
     if(!param->c_type || (param->c_type == SQL_CHAR))
         param->c_type = SQL_C_TCHAR;
     #ifdef UNICODE
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if(param->c_type != SQL_C_BINARY)
-        bufflen = (length * sizeof(uint16_t)) + sizeof(uint16_t);
+        bufflen = (length + 1) * sizeof(uint16_t);
     #else
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
     if(param->c_type != SQL_C_BINARY)
         bufflen = length + 1;
     #endif
+    if(param->c_type == SQL_C_BINARY)
+    {
+        bufflen = length + 1;
+    }
     if(bufflen < param->buffer_length && (param->paramtype % 2 == 0))
         bufflen = param->buffer_length;
     param->buffer_length = bufflen;
+    param->size          = bufflen;
 
-    if(param->c_type == SQL_C_BINARY || param->paramtype == FILE_PARAM)
-    {
-        param->buffer_length = length;
-        param->length        = length; 
-    }
-    param->size          = param->buffer_length;
-    if(param->c_type == SQL_C_BINARY)
-    {
-        param->buffer_length++ ;
-    }
     param->buffer        = malloc(param->buffer_length);
     MEMCHECK( param->buffer );
-
-    if(param->paramtype == FILE_PARAM)
-    {
-        #if NODE_MAJOR_VERSION >= 11
-        string->WriteUtf8(v8::Isolate::GetCurrent(), (char *) param->buffer, param->buffer_length, 0, flags);
-        #else
-        string->WriteUtf8((char *) param->buffer);
-        #endif
-    }
-    else if(param->c_type == SQL_C_BINARY)
-    {
-#if (NODE_MODULE_VERSION < NODE_0_12_MODULE_VERSION)
-        memcpy(param->buffer, &string, param->buffer_length);
-        //param->buffer = &string;
-#else
-  #if NODE_MAJOR_VERSION >= 11
-        string->WriteOneByte(v8::Isolate::GetCurrent(), (uint8_t *)param->buffer, param->buffer_length, 0, flags);
-  #else
-        string->WriteOneByte((uint8_t *)param->buffer);
-  #endif
-#endif
-    }
-    else
-    {
-        #ifdef UNICODE
-        string->Write((uint16_t *) param->buffer);
-        #else
-          #if NODE_MAJOR_VERSION >= 11
-            string->WriteUtf8(v8::Isolate::GetCurrent(), (char *) param->buffer, param->buffer_length, 0, flags);
-          #else
-            string->WriteUtf8((char *) param->buffer);
-          #endif
-        #endif
-    }
+    memcpy(param->buffer, *string, param->buffer_length);
 
     if(param->paramtype == FILE_PARAM)  // For SQLBindFileToParam()
     {
@@ -1150,8 +1109,8 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
 
         DEBUG_PRINTF(
           "ODBC::BindParameters - param[%i]: c_type=%i type=%i "
-          "buffer_length=%i size=%i length=%i &length=%p\n", i, prm.c_type, prm.type,
-          prm.buffer_length, prm.size, prm.length, &params[i].length);
+          "buffer_length=%i size=%i length=%i length=%i\n", i, prm.c_type, prm.type,
+          prm.buffer_length, prm.size, prm.length, params[i].length);
 
         if(prm.paramtype == FILE_PARAM)  // FILE
         {

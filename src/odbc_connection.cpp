@@ -1193,7 +1193,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
-  Parameter* params = new Parameter[0];
+  Parameter* params = NULL;
   SQLRETURN ret;
   SQLHSTMT hSTMT;
   int paramCount = 0;
@@ -1241,7 +1241,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
       
       Local<String> optionSqlKey = Nan::New<String>(OPTION_SQL);
       if (Nan::HasOwnProperty(obj, optionSqlKey).IsJust() && Nan::Get(obj, optionSqlKey).ToLocalChecked()->IsString()) {
-        Nan::Utf8String sql3(info[0]);
+        Nan::Utf8String sql3(Nan::Get(obj, optionSqlKey).ToLocalChecked());
         len = sql3.length();
         GETCPPSTR(sql, sql3, len);
       }
@@ -1430,7 +1430,7 @@ NAN_METHOD(ODBCConnection::Tables)
 
   conn->Ref();
 
-  DEBUG_PRINTF("ODBCConnection::Tables - Exit\n");
+  DEBUG_PRINTF("ODBCConnection::Tables - Exit, catalog=%s, schema=%s, table=%s,type=%s\n",data->catalog,data->schema,data->table,data->type);
   info.GetReturnValue().Set(Nan::Undefined());
 }
 
