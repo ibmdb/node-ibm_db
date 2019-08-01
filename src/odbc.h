@@ -285,13 +285,16 @@ struct query_request {
   #define GETCPPSTR(to, from, len)                                      \
     if(len > 0 && strcmp(*from, "null")) {                              \
       to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
-      MEMCHECK( data->schema ) ;                                        \
+      MEMCHECK( to ) ;                                                  \
       from->Write((uint16_t *) to);                                     \
     } else { len = 0; }
 #else
   #define GETCPPSTR(to, from, len)                                      \
     if(len > 0 && strcmp(*from, "null")) {                              \
-      to = strndup(*from, len);                                         \
+      to = (char *)malloc(len + 1);                                     \
+      MEMCHECK( to ) ;                                                  \
+      memcpy(to, *from, len);                                           \
+      ((char*)to)[len] = '\0';                                          \
     } else { len = 0; }
 #endif
 
