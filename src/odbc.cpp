@@ -614,7 +614,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           else
           {
             memcpy(tmp_out_ptr, (char *) buffer, bufferLength);
-            free(buffer);
+            //free((uint8_t *)buffer);
             buffer = tmp_out_ptr;
             len = 0;
             ret = SQLGetData( hStmt,
