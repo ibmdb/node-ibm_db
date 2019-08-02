@@ -286,7 +286,8 @@ struct query_request {
     if(len > 0 && strcmp(*from, "null")) {                              \
       to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
       MEMCHECK( to ) ;                                                  \
-      from->Write((uint16_t *) to);                                     \
+      memcpy(to, *from, len);                                           \
+      ((uint16_t*)to)[len] = '\0';                                      \
     } else { len = 0; }
 #else
   #define GETCPPSTR(to, from, len)                                      \
