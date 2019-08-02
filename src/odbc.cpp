@@ -1247,7 +1247,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
       Nan::SetPrototype(objError, Exception::Error(Nan::New((uint16_t *) errorMessage).ToLocalChecked()));
       objError->Set(Nan::New("message").ToLocalChecked(), Nan::New((uint16_t *) errorMessage).ToLocalChecked());
       objError->Set(Nan::New("state").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState).ToLocalChecked());
-      objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState));
+      objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New(native);
 #else
       Nan::SetPrototype(objError, Exception::Error(Nan::New(errorMessage).ToLocalChecked()));
       objError->Set(Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
