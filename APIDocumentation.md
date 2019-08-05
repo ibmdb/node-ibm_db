@@ -56,7 +56,10 @@ Open a connection to a database.
     The connection string is typically defined as: `DSN=dbname;UID=username;PWD=passwd`.  To
     connect to remote Db2 databases, the connectivity information will need to be set up in the
     Communications Database (CDB).  Please refer to scenario 1 in the following
-    [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html).
+    [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html). 
+    For a complete list of supported configuration keywords, 
+    please refer to [CLI/ODBC configuration keywords](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0007964.html) 
+    * Selecting default schema is also supported using `CURRENTSCHEMA=schemaname;` (or CurrentSchema)
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
