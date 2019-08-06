@@ -85,7 +85,7 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   
   // Attach the Database Constructor to the target object
   constructor.Reset(Nan::GetFunction(constructor_template).ToLocalChecked());
-  target->Set( Nan::New("ODBCConnection").ToLocalChecked(),
+  Nan::Set(target, Nan::New("ODBCConnection").ToLocalChecked(),
     Nan::GetFunction(constructor_template).ToLocalChecked());
 }
 
@@ -176,7 +176,7 @@ NAN_SETTER(ODBCConnection::SystemNamingSetter)
 
   ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
-  obj->systemNaming = value->BooleanValue(Nan::GetCurrentContext()).FromJust();
+  obj->systemNaming = Nan::To<bool>(value).FromJust();
 }
 
 /*
@@ -1002,7 +1002,7 @@ NAN_METHOD(ODBCConnection::Query)
       
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (Nan::HasOwnProperty(obj, optionNoResultsKey).IsJust() && Nan::Get(obj, optionNoResultsKey).ToLocalChecked()->IsBoolean()) {
-        data->noResultObject = obj->Get(optionNoResultsKey)->BooleanValue(Nan::GetCurrentContext()).FromJust();
+        data->noResultObject = Nan::To<bool>(Nan::Get(obj, optionNoResultsKey).ToLocalChecked()).FromJust();
       }
       else {
         data->noResultObject = false;
@@ -1107,7 +1107,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
   if (SQL_SUCCEEDED(data->result)) {
       for(int i = 0; i < data->paramCount; i++) {
           if(data->params[i].paramtype % 2 == 0) {
-              sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(data->params[i]));
+              Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(data->params[i]));
               outParamCount++;
           }
       }
@@ -1258,7 +1258,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
       
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (Nan::HasOwnProperty(obj, optionNoResultsKey).IsJust() && Nan::Get(obj, optionNoResultsKey).ToLocalChecked()->IsBoolean()) {
-        noResultObject = obj->Get(optionNoResultsKey)->BooleanValue(Nan::GetCurrentContext()).FromJust();
+        noResultObject = Nan::To<bool>(Nan::Get(obj, optionNoResultsKey).ToLocalChecked()).FromJust();
         DEBUG_PRINTF("ODBCConnection::QuerySync - under if noResultObject=%i\n", noResultObject);
       }
       else {
@@ -1308,7 +1308,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
         if (SQL_SUCCEEDED(ret)) {
           for(int i = 0; i < paramCount; i++) { // For stored Procedure CALL
             if(params[i].paramtype % 2 == 0) {
-              sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(params[i]));
+                Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(params[i]));
               outParamCount++;
             }
           }
@@ -1318,7 +1318,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
     FREE_PARAMS( params, paramCount ) ;
   }
   
-  delete sql;
+  free((char*)sql);
   
   //check to see if there was an error during execution
   if (ret == SQL_ERROR) {
@@ -1343,8 +1343,8 @@ NAN_METHOD(ODBCConnection::QuerySync)
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element.
       Local<Array> resultset = Nan::New<Array>();
-      resultset->Set(0, Nan::Null());
-      resultset->Set(1, sp_result);
+      Nan::Set(resultset, 0, Nan::Null());
+      Nan::Set(resultset, 1, sp_result);
       info.GetReturnValue().Set(resultset);
     } else {
       info.GetReturnValue().Set(Nan::Null());
@@ -1364,8 +1364,8 @@ NAN_METHOD(ODBCConnection::QuerySync)
     if( outParamCount ) // Its a CALL stmt with OUT params.
     { // Return an array with outparams as second element. [result, outparams]
       Local<Array> resultset = Nan::New<Array>();
-      resultset->Set(0, js_result);
-      resultset->Set(1, sp_result);
+      Nan::Set(resultset, 0, js_result);
+      Nan::Set(resultset, 1, sp_result);
       info.GetReturnValue().Set(resultset);
     } else {
       info.GetReturnValue().Set(js_result);

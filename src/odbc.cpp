@@ -55,8 +55,7 @@ NAN_MODULE_INIT(ODBC::Init)
   constructor_template->SetClassName(Nan::New("ODBC").ToLocalChecked());
 
   // Reserve space for one Handle<Value>
-  Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
-  instance_template->SetInternalFieldCount(1);
+  constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
   
   PropertyAttribute constant_attributes = static_cast<PropertyAttribute>(ReadOnly | DontDelete);
   constructor_template->Set(Nan::New<String>("SQL_CLOSE").ToLocalChecked(), Nan::New<Number>(SQL_CLOSE), constant_attributes);
@@ -72,9 +71,9 @@ NAN_MODULE_INIT(ODBC::Init)
   Nan::SetPrototypeMethod(constructor_template, "createConnectionSync", CreateConnectionSync);
 
   // Attach the Database Constructor to the target object
-  constructor.Reset(Nan::GetFunction(constructor_template).ToLocalChecked());
-  target->Set(Nan::New("ODBC").ToLocalChecked(),
-          Nan::GetFunction(constructor_template).ToLocalChecked());
+  Local<Function> function = Nan::GetFunction(constructor_template).ToLocalChecked();
+  constructor.Reset(function);
+  Nan::Set(target, Nan::New<String>("ODBC").ToLocalChecked(), function);
   
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
   // Initialize uv_async so that we can prevent node from exiting
@@ -153,7 +152,7 @@ NAN_METHOD(ODBC::CreateConnection)
   DEBUG_PRINTF("ODBC::CreateConnection - Entry\n");
   Nan::HandleScope scope;
 
-  Local<Function> cb = info[0].As<Function>();
+  Local<Function> cb = Nan::To<v8::Function>(info[0]).ToLocalChecked();
   Nan::Callback *callback = new Nan::Callback(cb);
   //REQ_FUN_ARG(0, cb);
 
@@ -663,11 +662,11 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 #ifdef __MVS__
         // Workaround(zOS): The ascii conversion tool has issues with %i in the following
         // fprintf string.  Forcing it to __fprintf_a and setting _AE_BIMODAL
-          __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
+          __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
                   ", columnType = %i, index = %i\n", ret, (long)(hStmt) >> 16 & 0x0000ffff, 
                   (long)(hStmt) & 0x0000ffff, (int) column.type, column.index);
 #else
-          fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %i:%i"
+          fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
                   ", columnType = %i, index = %i\n", ret, (long)(hStmt) >> 16 & 0x0000ffff, 
                   (long)(hStmt) & 0x0000ffff, (int) column.type, column.index);
 #endif
@@ -831,11 +830,11 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
         
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
-    tuple->Set( Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
-                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+    Nan::Set(tuple, Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
+             GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #else
-    tuple->Set( Nan::New((const char *) columns[i].name).ToLocalChecked(),
-                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+    Nan::Set(tuple, Nan::New((const char *) columns[i].name).ToLocalChecked(),
+             GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
   
@@ -856,8 +855,8 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
         
   for(int i = 0; i < *colCount; i++) {
     Nan::TryCatch try_catch;
-    array->Set( Nan::New(i),
-                GetColumnValue( hStmt, columns[i], buffer, bufferLength));
+    Nan::Set(array, Nan::New(i),
+             GetColumnValue( hStmt, columns[i], buffer, bufferLength));
     if (try_catch.HasCaught()) {
         FatalException(try_catch);
         break;
@@ -883,9 +882,13 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
       return params;
   }
   memset(params, '\0', *paramCount * sizeof(Parameter));
+  Local<Value> value;
+  Local<Value> val;
+  Local<Array> paramArray;
+  int arrlen = 0;
 
   for (int i = 0; i < *paramCount; i++) {
-    Local<Value> value = values->Get(i);
+    value = Nan::Get(values, i).ToLocalChecked();
     
     params[i].paramtype     = SQL_PARAM_INPUT;
     params[i].size          = 0;
@@ -898,9 +901,8 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
     if (value->IsArray()) 
     {
-      Local<Value> val;
-      Local<Array> paramArray = Local<Array>::Cast(value);
-      int arrlen = paramArray->Length();
+      paramArray = Local<Array>::Cast(value);
+      arrlen = paramArray->Length();
       if(arrlen < 4)
       {
           DEBUG_PRINTF("ODBC::GetParametersFromArray - arrlen = %i\n", arrlen);
@@ -908,17 +910,17 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
           return params;
       }
 
-      val =  paramArray->Get(0); 
+      val =  Nan::Get(paramArray, 0).ToLocalChecked(); 
       if(val->IsInt32())
           params[i].paramtype = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
 
-      val =  paramArray->Get(1); 
+      val =  Nan::Get(paramArray, 1).ToLocalChecked(); 
       if(val->IsInt32())
           params[i].c_type = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
       else
           params[i].c_type = SQL_C_CHAR;
 
-      val =  paramArray->Get(2); 
+      val =  Nan::Get(paramArray, 2).ToLocalChecked(); 
       if(val->IsInt32())
           params[i].type = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
       else
@@ -926,12 +928,12 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
       if(arrlen == 5)
       {
-          val =  paramArray->Get(4); 
+          val =  Nan::Get(paramArray, 4).ToLocalChecked(); 
           if(val->IsInt32())
               params[i].buffer_length = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
       }
 
-      val =  paramArray->Get(3); 
+      val =  Nan::Get(paramArray, 3).ToLocalChecked(); 
       if (val->IsNull()) {
           GetNullParam(&params[i], i+1);
       }
@@ -1077,13 +1079,12 @@ void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
 
 void ODBC::GetBoolParam(Local<Value> value, Parameter * param, int num)
 {
-    bool *boolean    = new bool(value->BooleanValue(Nan::GetCurrentContext()).FromJust());
+    bool boolean    = Nan::To<bool>(value).FromJust();
     int64_t  *number = new int64_t(0);
-    if(*boolean == true) {
+    if(boolean == true) {
       delete number;
       number = new int64_t(1);
     }
-    delete boolean;
     // Db2 stores boolean data in the form of 0 or 1 only.
     // So overwrite the intered true or fase with 1 or 0 as bigint
     param->c_type = SQL_C_SBIGINT;
@@ -1242,17 +1243,16 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
      if (i == 0) {
       DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);
       
-      objError->Set(Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
+      Nan::Set(objError, Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
+      Nan::Set(objError, Nan::New("sqlcode").ToLocalChecked(), Nan::New(native));
 #ifdef UNICODE
       Nan::SetPrototype(objError, Exception::Error(Nan::New((uint16_t *) errorMessage).ToLocalChecked()));
-      objError->Set(Nan::New("message").ToLocalChecked(), Nan::New((uint16_t *) errorMessage).ToLocalChecked());
-      objError->Set(Nan::New("state").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState).ToLocalChecked());
-      objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New(native);
+      Nan::Set(objError, Nan::New("message").ToLocalChecked(), Nan::New((uint16_t *) errorMessage).ToLocalChecked());
+      Nan::Set(objError, Nan::New("state").ToLocalChecked(), Nan::New((uint16_t *) errorSQLState).ToLocalChecked());
 #else
       Nan::SetPrototype(objError, Exception::Error(Nan::New(errorMessage).ToLocalChecked()));
-      objError->Set(Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
-      objError->Set(Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
-      objError->Set(Nan::New("sqlcode").ToLocalChecked(), Nan::New(native));
+      Nan::Set(objError, Nan::New("message").ToLocalChecked(), Nan::New(errorMessage).ToLocalChecked());
+      Nan::Set(objError, Nan::New("state").ToLocalChecked(), Nan::New(errorSQLState).ToLocalChecked());
 #endif
      }
      if (native == -1) { break; }
@@ -1316,7 +1316,7 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
       break;
     }
 
-    rows->Set(
+    Nan::Set(rows,
       Nan::New(count), 
       ODBC::GetRecordTuple(
         hSTMT,

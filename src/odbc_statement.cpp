@@ -66,7 +66,7 @@ NAN_MODULE_INIT(ODBCStatement::Init)
 
   // Attach the Database Constructor to the target object
   constructor.Reset(Nan::GetFunction(t).ToLocalChecked());
-  target->Set(Nan::New("ODBCStatement").ToLocalChecked(),
+  Nan::Set(target, Nan::New("ODBCStatement").ToLocalChecked(),
               Nan::GetFunction(t).ToLocalChecked());
 }
 
@@ -203,7 +203,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t* req, int status)
   if (SQL_SUCCEEDED( data->result )) {
     for(int i = 0; i < stmt->paramCount; i++) { // For stored Procedure CALL
       if(stmt->params[i].paramtype % 2 == 0) {
-        sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
+          Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
         outParamCount++;
       }
     }
@@ -275,7 +275,7 @@ NAN_METHOD(ODBCStatement::ExecuteSync)
   if (SQL_SUCCEEDED(ret)) {
     for(int i = 0; i < stmt->paramCount; i++) { // For stored Procedure CALL
       if(stmt->params[i].paramtype % 2 == 0) {
-        sp_result->Set(Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
+          Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(stmt->params[i]));
         outParamCount++;
       }
     }
@@ -307,8 +307,8 @@ NAN_METHOD(ODBCStatement::ExecuteSync)
     if( outParamCount ) // Its a CALL stmt with OUT params.
     {   // Return an array with outparams as second element. [result, outparams]
         Local<Array> resultset = Nan::New<Array>();
-        resultset->Set(0, js_result);
-        resultset->Set(1, sp_result);
+        Nan::Set(resultset, 0, js_result);
+        Nan::Set(resultset, 1, sp_result);
         info.GetReturnValue().Set(resultset);
     }
     else

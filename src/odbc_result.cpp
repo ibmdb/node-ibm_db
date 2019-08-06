@@ -65,7 +65,7 @@ NAN_MODULE_INIT(ODBCResult::Init)
   
   // Attach the Database Constructor to the target object
   constructor.Reset(Nan::GetFunction(constructor_template).ToLocalChecked());
-  target->Set(Nan::New("ODBCResult").ToLocalChecked(),
+  Nan::Set(target, Nan::New("ODBCResult").ToLocalChecked(),
               Nan::GetFunction(constructor_template).ToLocalChecked());
 }
 
@@ -185,12 +185,12 @@ NAN_METHOD(ODBCResult::Fetch)
   else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
     cb = Local<Function>::Cast(info[1]);  
     
-    Local<Object> obj = info[0]->ToObject(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Object>());
-    //Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked(); 
+    //Local<Object> obj = info[0]->ToObject(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Object>());
+    Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked(); 
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
-      data->fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
+      data->fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
     }
   }
   else {
@@ -348,7 +348,7 @@ NAN_METHOD(ODBCResult::FetchSync)
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
-      fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
+      fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
     }
   }
   
@@ -448,7 +448,7 @@ NAN_METHOD(ODBCResult::FetchAll)
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
-      data->fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
+      data->fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
     }
   }
   else {
@@ -543,7 +543,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status)
   else {
     Local<Array> rows = Nan::New(data->rows);
     if (data->fetchMode == FETCH_ARRAY) {
-      rows->Set(
+      Nan::Set(rows,
         Nan::New(data->count), 
         ODBC::GetRecordArray(
           self->m_hSTMT,
@@ -554,7 +554,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status)
       );
     }
     else {
-      rows->Set(
+      Nan::Set(rows,
         Nan::New(data->count), 
         ODBC::GetRecordTuple(
           self->m_hSTMT,
@@ -636,7 +636,7 @@ NAN_METHOD(ODBCResult::FetchAllSync)
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
     if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32()) {
-      fetchMode = Nan::To<Uint32>(obj->Get(fetchModeKey)).ToLocalChecked()->Value();
+      fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
     }
   }
   
@@ -676,7 +676,7 @@ NAN_METHOD(ODBCResult::FetchAllSync)
       }
 
       if (fetchMode == FETCH_ARRAY) {
-        rows->Set(
+        Nan::Set(rows,
           Nan::New(count), 
           ODBC::GetRecordArray(
             self->m_hSTMT,
@@ -687,7 +687,7 @@ NAN_METHOD(ODBCResult::FetchAllSync)
         );
       }
       else {
-        rows->Set(
+        Nan::Set(rows,
           Nan::New(count), 
           ODBC::GetRecordTuple(
             self->m_hSTMT,
@@ -781,8 +781,8 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync)
   }
   
   for (int i = 0; i < self->colCount; i++) {
-    cols->Set(Nan::New(i),
-              Nan::New((const char *) self->columns[i].name).ToLocalChecked());
+    Nan::Set(cols, Nan::New(i),
+             Nan::New((const char *) self->columns[i].name).ToLocalChecked());
   }
     
   info.GetReturnValue().Set(cols);
@@ -807,15 +807,15 @@ NAN_METHOD(ODBCResult::GetColumnMetadataSync)
 
   for (int i = 0; i < self->colCount; i ++) {
     Local<Object> col = Nan::New<Object>();
-    col->Set(Nan::New("index").ToLocalChecked(), Nan::New(self->columns[i].index));
-    col->Set(Nan::New("SQL_DESC_CONCISE_TYPE").ToLocalChecked(), Nan::New((const char *) self->columns[i].name).ToLocalChecked());
-    col->Set(Nan::New("SQL_DESC_TYPE_NAME").ToLocalChecked(), Nan::New((const char *) self->columns[i].type_name).ToLocalChecked());
-    col->Set(Nan::New("SQL_DESC_DISPLAY_SIZE").ToLocalChecked(), Nan::New(self->columns[i].max_display_len));
-    col->Set(Nan::New("SQL_DESC_PRECISION").ToLocalChecked(), Nan::New(self->columns[i].precision));
-    col->Set(Nan::New("SQL_DESC_SCALE").ToLocalChecked(), Nan::New(self->columns[i].scale));
-    col->Set(Nan::New("SQL_DESC_LENGTH").ToLocalChecked(), Nan::New(self->columns[i].field_len));
+    Nan::Set(col, Nan::New("index").ToLocalChecked(), Nan::New(self->columns[i].index));
+    Nan::Set(col, Nan::New("SQL_DESC_CONCISE_TYPE").ToLocalChecked(), Nan::New((const char *) self->columns[i].name).ToLocalChecked());
+    Nan::Set(col, Nan::New("SQL_DESC_TYPE_NAME").ToLocalChecked(), Nan::New((const char *) self->columns[i].type_name).ToLocalChecked());
+    Nan::Set(col, Nan::New("SQL_DESC_DISPLAY_SIZE").ToLocalChecked(), Nan::New(self->columns[i].max_display_len));
+    Nan::Set(col, Nan::New("SQL_DESC_PRECISION").ToLocalChecked(), Nan::New(self->columns[i].precision));
+    Nan::Set(col, Nan::New("SQL_DESC_SCALE").ToLocalChecked(), Nan::New(self->columns[i].scale));
+    Nan::Set(col, Nan::New("SQL_DESC_LENGTH").ToLocalChecked(), Nan::New(self->columns[i].field_len));
 
-    columns->Set(Nan::New(i), col);
+    Nan::Set(columns, Nan::New(i), col);
   }
 
   info.GetReturnValue().Set(columns);
