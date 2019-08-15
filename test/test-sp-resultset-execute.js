@@ -41,7 +41,8 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
     try {
       conn.querySync("drop table " + schema + ".mytab1");
     } catch (e) {};
-    conn.querySync({"sql":"create table " + schema + ".mytab1 (c1 int, c2 varchar(20))", "noResults":true});
+    err = conn.querySync({"sql":"create table " + schema + ".mytab1 (c1 int, c2 varchar(20))", "noResults":true});
+    if(err) {console.log(err); }
     if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
       // Db2 on z/OS does not support multi-row inserts
       conn.querySync("insert into " + schema + ".mytab1 values (2, 'bimal')");
