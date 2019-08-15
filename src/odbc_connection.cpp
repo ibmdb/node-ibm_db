@@ -1193,7 +1193,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
-  Parameter* params = NULL;
+  Parameter* params = new Parameter[0];
   SQLRETURN ret;
   SQLHSTMT hSTMT;
   int paramCount = 0;

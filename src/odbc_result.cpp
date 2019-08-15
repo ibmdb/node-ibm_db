@@ -121,10 +121,7 @@ NAN_METHOD(ODBCResult::New)
 
   //specify the buffer length
   objODBCResult->bufferLength = MAX_VALUE_SIZE;
-  
-  //initialze a buffer for this object
-  objODBCResult->buffer = (uint16_t *) malloc(objODBCResult->bufferLength+2);
-  MEMCHECK( objODBCResult->buffer );
+  objODBCResult->buffer = NULL; // Will get allocated in ODBC::GetColumnValue
 
   //set the initial colCount to 0
   objODBCResult->colCount = 0;
@@ -185,7 +182,6 @@ NAN_METHOD(ODBCResult::Fetch)
   else if (info.Length() == 2 && info[0]->IsObject() && info[1]->IsFunction()) {
     cb = Local<Function>::Cast(info[1]);  
     
-    //Local<Object> obj = info[0]->ToObject(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Object>());
     Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked(); 
     
     Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);

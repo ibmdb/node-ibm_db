@@ -220,14 +220,14 @@ struct query_request {
 
 //Require String Argument; Save String as Wide String (UCS2)
 #define REQ_WSTR_ARG(I, VAR)                                             \
-  if (info.Length() <= (I) || !info[I]->IsString())                     \
-    return Nan::ThrowTypeError("Argument " #I " must be a string");       \
-  String::Value VAR(info[I]->ToString());
+  if (info.Length() <= (I) || !info[I]->IsString())                      \
+    return Nan::ThrowTypeError("Argument " #I " must be a string");      \
+  Nan::Utf8String VAR(info[I]);
 
 //Require String Argument; Save String as Object
 #define REQ_STRO_ARG(I, VAR)                                             \
-  if (info.Length() <= (I) || !info[I]->IsString())                     \
-    return Nan::ThrowTypeError("Argument " #I " must be a string");       \
+  if (info.Length() <= (I) || !info[I]->IsString())                      \
+    return Nan::ThrowTypeError("Argument " #I " must be a string");      \
   Nan::Utf8String VAR(info[I]);
 
 //Require String or Null Argument; Save String as Utf8
@@ -286,6 +286,7 @@ struct query_request {
     if(len > 0 && strcmp(*from, "null")) {                              \
       to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
       MEMCHECK( to ) ;                                                  \
+      /*std::copy(*from, *from + len, (uint16_t*)to); */                \
       memcpy(to, *from, len);                                           \
       ((uint16_t*)to)[len] = '\0';                                      \
     } else { len = 0; }

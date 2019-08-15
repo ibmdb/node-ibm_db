@@ -417,8 +417,6 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, 
                 SQL_TIMESTAMP, SQL_TYPE_TIME);
-  //reset the buffer
-  buffer[0] = '\0';
 
   switch ((int) column.type) 
   {
@@ -583,14 +581,16 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
     default :
       uint16_t * tmp_out_ptr = NULL;
-      int newbufflen = 0;
+      int newbufflen = bufferLength + terCharLen;
       int secondGetData = 0;
       len = 0;
+      buffer = (uint16_t*)malloc(newbufflen);
+      memset(buffer, '\0', newbufflen);
       ret = SQLGetData( hStmt,
                         column.index,
                         ctype,
                         (char *) buffer,
-                        bufferLength + terCharLen,
+                        newbufflen,
                         &len);
 
       DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
@@ -600,15 +600,16 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
       if( ret == SQL_SUCCESS_WITH_INFO )
       {
-          newbufflen = len + bufferLength;
-          if(newbufflen + terCharLen > 0x3fffffff)
-              terCharLen = 0x3fffffff - terCharLen;
-          tmp_out_ptr = (uint16_t *)malloc( newbufflen + terCharLen);
+          newbufflen = len + terCharLen;
+          if(newbufflen > 0x3fffffff) {
+              newbufflen = 0x3fffffff;
+          }
+          tmp_out_ptr = (uint16_t *)malloc( newbufflen );
           if(tmp_out_ptr == NULL)
           {
             ret = -3;
             errmsg = (char*)"Failed to allocate memory buffer for column data.";
-            DEBUG_PRINTF("Failed to allocate memory buffer of size %d\n", newbufflen + terCharLen);
+            DEBUG_PRINTF("Failed to allocate memory buffer of size %d\n", newbufflen);
           }
           else
           {
@@ -620,7 +621,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                               column.index,
                               ctype,
                               (char *) buffer + bufferLength,
-                              newbufflen + terCharLen,
+                              newbufflen,
                               &len);
             DEBUG_PRINTF("ODBC::GetColumnValue - String: index=%i name=%s type=%i len=%i "
                          "ret=%i bufferLength=%i\n", column.index, column.name, 
@@ -980,6 +981,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     if(!param->c_type || (param->c_type == SQL_CHAR))
         param->c_type = SQL_C_TCHAR;
     #ifdef UNICODE
+    param->length        = SQL_NTS; // Required for unicode string. 
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if(param->c_type != SQL_C_BINARY)
@@ -1002,6 +1004,10 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     param->buffer        = malloc(param->buffer_length);
     MEMCHECK( param->buffer );
     memcpy(param->buffer, *string, param->buffer_length);
+    #ifdef UNICODE
+    ((char*)param->buffer)[param->buffer_length - 2] = '\0';
+    #endif
+    ((char*)param->buffer)[param->buffer_length - 1] = '\0';
 
     if(param->paramtype == FILE_PARAM)  // For SQLBindFileToParam()
     {
