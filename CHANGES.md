@@ -1,3 +1,25 @@
+2019-08-19, Version 2.6.0
+=========================
+
+ * update windows binary in build.zip file (Priyanka Manoharan)
+
+ * fix: use nan converters (Bimal Jha)
+
+ * fix for issue #563 (Bimal Jha)
+
+ * fix memory leak issue #452 (Bimal Jha)
+
+ * Added section on configuration keywords available (#560) (Dariusz Danielewski)
+
+ * support for executeFile Api (#558) (PriyankaManoharan04)
+
+ * Node 12.x Support (#564) (Bimal Kumar Jha)
+
+ * Add vscode binary for 4.2.5 (Bimal Jha)
+
+ * electron 4.2.5 version is supported (#556) (Akhil Ravuri)
+
+
 2019-07-19, Version 2.5.3
 =========================
 
