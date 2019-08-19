@@ -157,7 +157,7 @@ NAN_SETTER(ODBCConnection::ConnectTimeoutSetter)
   ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
   
   if (value->IsNumber()) {
-    obj->connectTimeout = value->Uint32Value(Nan::GetCurrentContext()).FromJust();
+    obj->connectTimeout = Nan::To<int32_t>(value).FromJust();
   }
 }
 

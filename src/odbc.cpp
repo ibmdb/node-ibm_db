@@ -913,17 +913,17 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
       val =  Nan::Get(paramArray, 0).ToLocalChecked(); 
       if(val->IsInt32())
-          params[i].paramtype = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
+          params[i].paramtype = Nan::To<int32_t>(val).FromJust();
 
       val =  Nan::Get(paramArray, 1).ToLocalChecked(); 
       if(val->IsInt32())
-          params[i].c_type = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
+          params[i].c_type = Nan::To<int32_t>(val).FromJust();
       else
           params[i].c_type = SQL_C_CHAR;
 
       val =  Nan::Get(paramArray, 2).ToLocalChecked(); 
       if(val->IsInt32())
-          params[i].type = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
+          params[i].type = Nan::To<int32_t>(val).FromJust();
       else
           params[i].type = SQL_CHAR;
 
@@ -931,7 +931,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
       {
           val =  Nan::Get(paramArray, 4).ToLocalChecked(); 
           if(val->IsInt32())
-              params[i].buffer_length = val->IntegerValue(Nan::GetCurrentContext()).FromJust();
+              params[i].buffer_length = Nan::To<int32_t>(val).FromJust();
       }
 
       val =  Nan::Get(paramArray, 3).ToLocalChecked(); 
@@ -1048,7 +1048,7 @@ void ODBC::GetNullParam(Parameter * param, int num)
 
 void ODBC::GetInt32Param(Local<Value> value, Parameter * param, int num)
 {
-    int64_t  *number = new int64_t(value->IntegerValue(Nan::GetCurrentContext()).FromJust());
+    int64_t  *number = new int64_t(Nan::To<int32_t>(value).FromJust());
     param->c_type = SQL_C_SBIGINT;
     if(!param->type || (param->type == 1)) 
         param->type = SQL_BIGINT;
@@ -1064,7 +1064,7 @@ void ODBC::GetInt32Param(Local<Value> value, Parameter * param, int num)
 
 void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
 {
-    double *number   = new double(value->NumberValue(Nan::GetCurrentContext()).FromJust());
+    double *number   = new double(Nan::To<double>(value).FromJust());
       
     if(!param->c_type || (param->c_type == SQL_C_CHAR)) 
         param->c_type    = SQL_C_DOUBLE;
