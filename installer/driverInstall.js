@@ -21,7 +21,7 @@ var deleteInstallerFile = false;
 var platform = os.platform();
 
 var vscode_build = false;
-var electron_version = '3.0.0';
+var electron_version = '4.2.7';
 
 if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
     console.log('\nProceeding to build IBM_DB for Electron framework...');
@@ -32,8 +32,8 @@ if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect
         vscodeVer = parseFloat(codeOut.split('\n')[0]);
 
         if(!isNaN(vscodeVer)){
-	    if(vscodeVer >= 1.36){
-                electron_version = "4.2.5";
+            if (vscodeVer >= 1.36) {
+                electron_version = "4.2.7";
             }
             else if(vscodeVer >= 1.30 && vscodeVer < 1.36){
                 electron_version = "3.0.0";
@@ -530,9 +530,10 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.9.1';
                     var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
-                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.0';
+                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.1';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.16.0';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.16.3';
+                    var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
@@ -552,7 +553,8 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9  ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||  ODBC_BINDINGS ;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
