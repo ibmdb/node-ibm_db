@@ -1139,7 +1139,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     js_info[3] = Nan::New<External>((void*)canFreeHandle);
 
     // Check now to see if there was an error (as there may be further result sets)
-    if (data->result < SQL_SUCCESS) {
+    if (data->result != SQL_SUCCESS) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
       info[1] = Nan::Null();
       SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
@@ -1321,7 +1321,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
   free((char*)sql);
   
   //check to see if there was an error during execution
-  if (ret == SQL_ERROR) {
+  if (ret != SQL_SUCCESS) {
     //Free stmt handle and then throw error.
     Local<Value> err = ODBC::GetSQLError(
       SQL_HANDLE_STMT,
