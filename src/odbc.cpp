@@ -584,7 +584,15 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       int newbufflen = bufferLength + terCharLen;
       int secondGetData = 0;
       len = 0;
-      buffer = (uint16_t*)malloc(newbufflen);
+      if (!buffer) {
+        buffer = (uint16_t*)malloc(newbufflen);
+        if(buffer == NULL)
+        {
+          ret = -3;
+          errmsg = (char*)"Failed to allocate memory buffer for column data.";
+          DEBUG_PRINTF("Failed to allocate memory buffer of size %d\n", newbufflen);
+        }
+      }
       memset(buffer, '\0', newbufflen);
       ret = SQLGetData( hStmt,
                         column.index,
@@ -647,7 +655,10 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
             str = Nan::New((char *) buffer).ToLocalChecked();
             #endif
           }
-          if(tmp_out_ptr) free(tmp_out_ptr);
+          if(tmp_out_ptr) {
+            free(tmp_out_ptr); // tmp_out_ptr is pointing to buffer too.
+            buffer = NULL;
+          }
           //return scope.Escape(Nan::CopyBuffer((char*)buffer, 39767).ToLocalChecked());
       }
       else 

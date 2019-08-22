@@ -666,8 +666,6 @@ NAN_METHOD(ODBCResult::FetchAllSync)
       
       //check to see if we are at the end of the recordset
       if (ret == SQL_NO_DATA) {
-        ODBC::FreeColumns(self->columns, &self->colCount);
-        
         break;
       }
 
@@ -696,9 +694,7 @@ NAN_METHOD(ODBCResult::FetchAllSync)
       count++;
     }
   }
-  else {
-    ODBC::FreeColumns(self->columns, &self->colCount);
-  }
+  ODBC::FreeColumns(self->columns, &self->colCount);
   
   //throw the error object if there were errors
   if (errorCount > 0) {
@@ -781,6 +777,7 @@ NAN_METHOD(ODBCResult::GetColumnNamesSync)
              Nan::New((const char *) self->columns[i].name).ToLocalChecked());
   }
     
+  ODBC::FreeColumns(self->columns, &self->colCount);
   info.GetReturnValue().Set(cols);
   DEBUG_PRINTF("ODBCResult::GetColumnNamesSync - Exit\n");
 }
@@ -814,6 +811,7 @@ NAN_METHOD(ODBCResult::GetColumnMetadataSync)
     Nan::Set(columns, Nan::New(i), col);
   }
 
+  ODBC::FreeColumns(self->columns, &self->colCount);
   info.GetReturnValue().Set(columns);
   DEBUG_PRINTF("ODBCResult::GetColumnMetadataSync - Exit\n");
 }

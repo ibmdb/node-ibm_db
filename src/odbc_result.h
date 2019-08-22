@@ -23,7 +23,7 @@ class ODBCResult : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_FETCH_MODE;
    static Nan::Persistent<Function> constructor;
-   static  NAN_MODULE_INIT(Init);
+   static NAN_MODULE_INIT(Init);
    
    void Free();
    
