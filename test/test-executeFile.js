@@ -133,7 +133,7 @@ ibmdb.open(cn, function (err, conn) {
         }
     });
 
-    var outputfile4 = __dirname + '/data/abc/abc1/out3.txt';
+    var outputfile4 = __dirname + '/data/abc1/out3.txt';
     conn.executeFile(inputfile3, '@', outputfile4, function (err) {
         if (err) {
             console.log(err)
@@ -147,6 +147,16 @@ ibmdb.open(cn, function (err, conn) {
                 }
                 result14 = result4.toString();
                 assert.deepEqual(result14, '[{"NO":1,"NAME":"pri"},{"NO":2,"NAME":"anbu"}]@[{"NO":1},{"NO":2}]@');
+                fs.stat((outputfile4), function (err) {
+                    if (!err) {
+                        fs.unlink((outputfile4), function (err) {
+                            if (err) {
+                                console.log("error1")
+                            }
+                            fs.rmdirSync(__dirname + '/data/abc1')
+                        });
+                    }
+                });
             });
         }
     });

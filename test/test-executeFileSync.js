@@ -51,12 +51,13 @@ ibmdb.open(cn, function (err, conn) {
         fs.unlinkSync(outputfile3)
     }
 
-    var outputfile4 = __dirname + '/data/abc/abc/out3.txt';
+    var outputfile4 = __dirname + '/data/abc/out3.txt';
     conn.executeFileSync(inputfile3, '@', outputfile4);
     var result4 = fs.readFileSync(outputfile4, 'utf8')
     assert.deepEqual(result4, '[{"NO":1,"NAME":"pri"},{"NO":2,"NAME":"anbu"}]@[{"NO":1},{"NO":2}]@');
     if (fs.existsSync(outputfile4)) {
         fs.unlinkSync(outputfile4)
+        fs.rmdirSync(__dirname + '/data/abc')
     }
 
     var err = null;
