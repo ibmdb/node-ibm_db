@@ -375,10 +375,21 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
   Nan::HandleScope scope;
   SQLLEN rowCount = 0;
   SQLRETURN ret = data->result;
+  Local<Value> info[2];
+  int warning = 0;
   
   //an easy reference to the statment object
   ODBCStatement* self = data->stmt->self();
 
+  // Store warning message of SQLExecute now only.
+  if (ret > SQL_SUCCESS) {
+      info[0] = ODBC::GetSQLError(
+        SQL_HANDLE_STMT,
+        self->m_hSTMT,
+        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery"
+      );
+      warning = 1;
+  }
   if ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
     ret = SQLRowCount(self->m_hSTMT, &rowCount);
   }
@@ -390,16 +401,14 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
       data->cb);
   }
   else {
-    Local<Value> info[2];
-
-    if (ret > SQL_SUCCESS) {
+    if ((ret > SQL_SUCCESS) && (warning == 0)) {
       info[0] = ODBC::GetSQLError(
         SQL_HANDLE_STMT,
         self->m_hSTMT,
-        (char *) "[node-ibm_db] Error in ODBCStatement::UV_AfterExecuteNonQuery"
+        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery"
       );
     }
-    else {
+    else if (!warning) {
       info[0] = Nan::Null();
     }
     info[1] = Nan::New<Number>(rowCount);
