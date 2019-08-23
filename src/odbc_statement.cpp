@@ -373,32 +373,35 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
   execute_work_data* data = (execute_work_data *)(req->data);
   
   Nan::HandleScope scope;
+  SQLLEN rowCount = 0;
+  SQLRETURN ret = data->result;
   
   //an easy reference to the statment object
   ODBCStatement* self = data->stmt->self();
 
-  //First thing, let's check if the execution of the query returned any errors 
-  if(data->result == SQL_ERROR) {
+  if ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
+    ret = SQLRowCount(self->m_hSTMT, &rowCount);
+  }
+
+  if (ret < SQL_SUCCESS) {
     ODBC::CallbackSQLError(
       SQL_HANDLE_STMT,
       self->m_hSTMT,
       data->cb);
   }
   else {
-    SQLLEN rowCount = 0;
-    
-    SQLRETURN ret = SQLRowCount(self->m_hSTMT, &rowCount);
-    
-    if (!SQL_SUCCEEDED(ret)) {
-      rowCount = 0;
-    }
-    
-    SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
-    DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery SQLFreeStmt called for m_hSTMT = %X\n", self->m_hSTMT);
-    
     Local<Value> info[2];
 
-    info[0] = Nan::Null();
+    if (ret > SQL_SUCCESS) {
+      info[0] = ODBC::GetSQLError(
+        SQL_HANDLE_STMT,
+        self->m_hSTMT,
+        (char *) "[node-ibm_db] Error in ODBCStatement::UV_AfterExecuteNonQuery"
+      );
+    }
+    else {
+      info[0] = Nan::Null();
+    }
     info[1] = Nan::New<Number>(rowCount);
 
     Nan::TryCatch try_catch;
@@ -410,9 +413,11 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
     }
   }
 
+  SQLFreeStmt(self->m_hSTMT, SQL_CLOSE);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery SQLFreeStmt called for m_hSTMT = %X\n", self->m_hSTMT);
+
   self->Unref();
   delete data->cb;
-  
   free(data);
   free(req);
   DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteNonQuery - Exit\n");
@@ -428,33 +433,32 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuerySync)
   DEBUG_PRINTF("ODBCStatement::ExecuteNonQuerySync - Entry\n");
   
   Nan::HandleScope scope;
+  SQLLEN rowCount = 0;
+  SQLRETURN ret = SQL_SUCCESS;
 
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
 
-  SQLRETURN ret = SQLExecute(stmt->m_hSTMT); 
+  ret = SQLExecute(stmt->m_hSTMT);
+
+  if ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
+    ret = SQLRowCount(stmt->m_hSTMT, &rowCount);
+  }
   
-  if(ret == SQL_ERROR) {
+  if (ret < SQL_SUCCESS) {
     Nan::ThrowError(ODBC::GetSQLError(
       SQL_HANDLE_STMT,
       stmt->m_hSTMT,
-      (char *) "[node-odbc] Error in ODBCStatement::ExecuteSync"
+      (char *) "[node-ibm_db] Error in ODBCStatement::ExecuteNonQuerySync"
     ));
-    
+
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
     info.GetReturnValue().Set(Nan::Null());
   }
   else {
-    SQLLEN rowCount = 0;
-    
-    SQLRETURN ret = SQLRowCount(stmt->m_hSTMT, &rowCount);
-    
-    if (!SQL_SUCCEEDED(ret)) {
-      rowCount = 0;
-    }
-    
     SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
-    
     info.GetReturnValue().Set(Nan::New<Number>(rowCount));
   }
+  DEBUG_PRINTF("ODBCStatement::ExecuteNonQuerySync - Exit\n");
 }
 
 /*
