@@ -408,7 +408,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   int ret; 
   Local<String> str;
   SQLSMALLINT ctype = SQL_C_TCHAR;
-  char * errmsg = (char *) "[node-odbc] Error in ODBC::GetColumnValue";
+  char * errmsg = (char *) "[node-ibm_db] Error in ODBC::GetColumnValue";
 #ifdef UNICODE
   int terCharLen = 2;
 #else
@@ -1175,7 +1175,7 @@ Local<Value> ODBC::CallbackSQLError (
   Local<Value> objError = CallbackSQLError(
     handleType,
     handle,
-    (char *) "[node-odbc] SQL_ERROR",
+    (char *) "[node-ibm_db] SQL_ERROR",
     cb);
   return scope.Escape(objError);
 }
@@ -1312,15 +1312,12 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
     
     //check to see if there was an error
     if (ret == SQL_ERROR)  {
-      //TODO: what do we do when we actually get an error here...
-      //should we throw??
-      
       errorCount++;
       
       objError = ODBC::GetSQLError(
         SQL_HANDLE_STMT, 
         hSTMT,
-        (char *) "[node-odbc] Error in ODBC::GetAllRecordsSync"
+        (char *) "[node-ibm_db] Error in ODBC::GetAllRecordsSync"
       );
       
       break;
@@ -1328,8 +1325,6 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
     
     //check to see if we are at the end of the recordset
     if (ret == SQL_NO_DATA) {
-      ODBC::FreeColumns(columns, &colCount);
-      
       break;
     }
 
@@ -1345,8 +1340,7 @@ Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
 
     count++;
   }
-  //TODO: what do we do about errors!?!
-  //we throw them
+  ODBC::FreeColumns(columns, &colCount);
   return scope.Escape(rows);
 }
 
