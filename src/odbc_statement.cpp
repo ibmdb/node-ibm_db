@@ -62,6 +62,7 @@ NAN_MODULE_INIT(ODBCStatement::Init)
   Nan::SetPrototypeMethod(t, "bind", Bind);
   Nan::SetPrototypeMethod(t, "bindSync", BindSync);
   
+  Nan::SetPrototypeMethod(t, "close", Close);
   Nan::SetPrototypeMethod(t, "closeSync", CloseSync);
 
   // Attach the Database Constructor to the target object
@@ -955,6 +956,126 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status)
   free(data);
   free(req);
   DEBUG_PRINTF("ODBCStatement::UV_AfterBind - Exit\n");
+}
+
+/*
+ * Close
+ * stmt.close([sql_close,] function(err) {})
+ */
+
+NAN_METHOD(ODBCStatement::Close)
+{
+  DEBUG_PRINTF("ODBCStatement::Close- Entry\n");
+
+  Nan::HandleScope scope;
+
+  Local<Function> cb;
+  SQLUSMALLINT closeOption;
+
+  if (info.Length() == 2) {
+	if (!info[0]->IsInt32()) {
+		return Nan::ThrowTypeError("Argument 0 must be an Integer.");
+	}
+	else if (!info[1]->IsFunction()) {
+		return Nan::ThrowTypeError("Argument 1 must be an Function.");
+	}
+	closeOption = (SQLUSMALLINT)Nan::To<v8::Int32>(info[0]).ToLocalChecked()->Value();
+	cb = Local<Function>::Cast(info[1]);
+  }
+  else if (info.Length() == 1) {
+	if (!info[0]->IsFunction()) {
+		return Nan::ThrowTypeError("ODBCStatement::Close(): Argument 0 must be a Function.");
+	}
+	closeOption = SQL_DROP;
+	cb = Local<Function>::Cast(info[0]);
+  }
+
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+
+  uv_work_t* work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK(work_req);
+
+  close_statement_work_data* data = (close_statement_work_data *)
+     (calloc(1, sizeof(close_statement_work_data)));
+	MEMCHECK(data);
+
+  data->cb = new Nan::Callback(cb);
+  data->stmt = stmt;
+  work_req->data = data;
+  data->closeOption = closeOption;
+
+  DEBUG_PRINTF("ODBCStatement::Close closeOption=%d ,stmt=%X\n", closeOption, stmt->m_hSTMT);
+
+  uv_queue_work(
+	uv_default_loop(),
+	work_req,
+	UV_Close,
+	(uv_after_work_cb)UV_AfterClose);
+
+  stmt->Ref();
+
+  info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCStatement::Close - Exit\n");
+}
+void ODBCStatement::UV_Close(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_Close- Entry\n");
+
+  close_statement_work_data* data = (close_statement_work_data *)(req->data);
+
+  ODBCStatement* stmt = data->stmt;
+
+  DEBUG_PRINTF("ODBCStatement::UV_Close m_hSTMT=%X\n", data->stmt->m_hSTMT);
+
+  SQLRETURN ret;
+
+  if (data->closeOption == SQL_DROP) {
+	stmt->Free();
+	data->result = 0;
+  }
+  else {
+	ret = SQLFreeStmt((SQLHSTMT)stmt->m_hSTMT, data->closeOption);
+	data->result = ret;
+  }
+
+  DEBUG_PRINTF("ODBCStatement::UV_Close - Exit m_hSTMT=%X, result=%i\n", stmt->m_hSTMT, data->result);
+}
+
+
+void ODBCStatement::UV_AfterClose(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterClose- Entry\n");
+
+  Nan::HandleScope scope;
+
+  close_statement_work_data* data = (close_statement_work_data *)(req->data);
+
+  ODBCStatement*  self = data->stmt->self();
+
+  if (data->result != SQL_SUCCESS) {
+	ODBC::CallbackSQLError(
+		SQL_HANDLE_STMT,
+		data->stmt->m_hSTMT,
+		data->cb);
+  }
+  else {
+	Local<Value> info[1];
+
+	info[0] = Nan::Null();
+	Nan::TryCatch try_catch;
+	data->cb->Call(1, info);
+
+	if (try_catch.HasCaught()) {
+		FatalException(try_catch);
+	}
+  }
+
+  self->Unref();
+  delete data->cb;
+
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterClose - Exit\n");
 }
 
 /*
