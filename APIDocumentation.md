@@ -427,7 +427,7 @@ ibmdb.open(cn,function(err,conn){
       else result.closeSync();
 
       //Close the connection
-      stmt.closeSync(function(err){
+      stmt.close(function(err){
         if(err){
           console.log(err)
         }
