@@ -50,6 +50,7 @@ using namespace node;
       for (int i = 0; i < count; i++) {                              \
         if (prm = params[i], prm.buffer != NULL) {                   \
           switch (prm.c_type) {                                      \
+            case SQL_C_SBIGINT:                                      \
             case SQL_C_LONG:    delete (int64_t *)prm.buffer; break; \
             case SQL_C_DOUBLE:  delete (double  *)prm.buffer; break; \
             case SQL_C_BIT:     delete (bool    *)prm.buffer; break; \

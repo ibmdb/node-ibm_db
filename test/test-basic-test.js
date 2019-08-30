@@ -38,11 +38,15 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
     if (err) {
       //could not prepare for some reason
       console.log(err);
+      stmt.closeSync();
       return conn.closeSync();
     }
     //Bind and Execute the statment asynchronously
     stmt.executeNonQuery([34245, 'bimal'], function (err, ret) {
-      if( err ) console.log(err);  
+      if (err) {
+        console.log(err);
+        stmt.closeSync();
+      }
       //else ret.closeSync(); // call closeSync() for execute().
       else console.log("Inserted row count = " + ret);
       assert.equal(ret, 1);
@@ -50,10 +54,14 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
       conn.prepare("select * from mytab1", function (err, stmt) {
         if(err) {
           console.log(err);
+          stmt.closeSync();
           return conn.closeSync();
         }
         stmt.execute([], function(err, result) {
-          if(err) console.log(err);
+          if (err) {
+            console.log(err);
+            stmt.closeSync();
+          }
           else {
             data = result.fetchAllSync(); // Use fetchAllSync({fetchMode:3}) to get data as array.
             console.log("Column Names = ", result.getColumnNamesSync());
@@ -61,6 +69,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log("Fetched Data = " );
             console.log(data);
             result.closeSync();
+            stmt.closeSync();
             assert.deepEqual(data, [ { C1: 4, C2: 'für' }, { C1: 34245, C2: 'bimal' } ]);
             var valueArray = [];
             valueArray.push(34245);
@@ -69,8 +78,9 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log(data);
             assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
             conn.querySync("drop table mytab1");
-            conn.close(function () { console.log('done'); });
           }
+          conn.close(function () { console.log('done'); });
+          ibmdb.close();
         });
       });  
     });

@@ -392,7 +392,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount)
   }
 
   delete [] columns;
-  
+  columns = NULL;
   *colCount = 0;
 }
 
