@@ -60,6 +60,10 @@ class ODBCStatement : public Nan::ObjectWrap {
     static NAN_METHOD(Bind);
     static void UV_Bind(uv_work_t* work_req);
     static void UV_AfterBind(uv_work_t* work_req, int status);
+
+    static NAN_METHOD(Close);
+    static void UV_Close(uv_work_t* work_req);
+    static void UV_AfterClose(uv_work_t* work_req, int status);
     
     //sync methods
     static NAN_METHOD(CloseSync);
@@ -118,5 +122,13 @@ struct bind_work_data {
   ODBCStatement *stmt;
   int result;
 };
+
+struct close_statement_work_data {
+  Nan::Callback* cb;
+  ODBCStatement *stmt;
+  SQLUSMALLINT closeOption;
+  int result;
+};
+
 
 #endif
