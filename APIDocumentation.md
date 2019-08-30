@@ -427,8 +427,12 @@ ibmdb.open(cn,function(err,conn){
       else result.closeSync();
 
       //Close the connection
-      stmt.closeSync();
-	  conn.close(function(err){});
+      stmt.closeSync(function(err){
+        if(err){
+          console.log(err)
+        }
+        conn.close(function(err){});
+      });
     });
   });
 });
