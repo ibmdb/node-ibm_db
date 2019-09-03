@@ -10,11 +10,14 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 
 ## Prerequisite
 
-- For higher versions of node (When building with Node 4 onwards) the compiler must support
-C++11. Note the default compiler on RHEL 6 does not have the required support.
+- Make sure your system has C++ compiler installed that support C++11 standard.
+
+- For non-windows platforms: gcc compiler version >= 4.8.3 is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
-- Python 2.7 is needed by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
+- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 4.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
+
+- Python version >= 2.7.0 && < 3.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
@@ -25,7 +28,9 @@ node-gyp 3.4.0<br>
 npm 3.10.10<br>
 ibm_db: 2.3.0
 
-- Recommended version of node.js is >= V4.X. For node.js version < 4.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows. 
+- Recommended version of node.js is >= V6.X. For node.js version < 4.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows. 
+
+- The latest node.js version using which `ibm_db` is tested: 12.9.1
 
 ## Install
 
