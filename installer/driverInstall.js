@@ -23,6 +23,7 @@ var platform = os.platform();
 var vscode_build = false;
 var electron_version = '4.2.7';
 
+console.log("platform = ", platform);
 if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
     console.log('\nProceeding to build IBM_DB for Electron framework...');
     vscode_build = true;
@@ -436,6 +437,7 @@ var install_node_ibm_db = function(file_url) {
                     }
 
                     removeDir('build/Release');
+                    removeDir('build/Debug');
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
                     {
@@ -470,11 +472,15 @@ var install_node_ibm_db = function(file_url) {
 
                 if(platform == 'darwin' && arch == 'x64') {
                     // Run the install_name_tool
-                    var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" ./build/Release/odbc_bindings.node" ;
-		    if( isDownloaded ) // For issue #329
-		    {
-		      nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib ./build/Release/odbc_bindings.node";
-		    }
+                    var addonBinary = "./build/Release/odbc_bindings.node";
+                    if (!fs.existsSync(addonBinary)) {
+                      addonBinary = "./build/Debug/odbc_bindings.node";
+                    }
+                    var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" " + addonBinary;
+                    if( isDownloaded ) // For issue #329
+                    {
+                      nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib " + addonBinary;
+                    }
                     var nameToolCmdProcess = exec(nameToolCommand , 
                     function (error1, stdout1, stderr1) {
                         if (error1 !== null) {
