@@ -1,3 +1,35 @@
+2019-09-03, Version 2.6.1
+=========================
+
+ * fix: macos install issue (Bimal Jha)
+
+ * doc: update (Bimal Jha)
+
+ * Update windows binary in build.zip file (Priyanka Manoharan)
+
+ * fix: for issue #569 (Bimal Jha)
+
+ * fix: for memleak issue #567 (Bimal Jha)
+
+ * update windows binary in build.zip file (Priyanka Manoharan)
+
+ * Support for ODBCStatement.close() async method (#325) (PriyankaManoharan04)
+
+ * fix: for issue #542 (Bimal Jha)
+
+ * fix: return execute warning before rowCount warning (Bimal Jha)
+
+ * fix: for issue #551 (Bimal Jha)
+
+ * message update (Bimal Jha)
+
+ * update test files (Priyanka Manoharan)
+
+ * fix: for issue #567 (Bimal Jha)
+
+ * fix: for issue #557 (Bimal Jha)
+
+
 2019-08-19, Version 2.6.0
 =========================
 
