@@ -19,6 +19,8 @@ Install a newer compiler or upgrade older one.
 
 - Python version >= 2.7.0 && < 3.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
+- **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python2.7 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
+
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
 - On z/OS, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
@@ -39,7 +41,13 @@ You may install the package using npm install command:
 ```
 npm install ibm_db
 ```
-
+For **Docker Linux Container**, use below commands:
+```
+yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel
+install python2.7.x
+install node.js
+npm install --unsafe-perm ibm_db
+```
 > For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
