@@ -375,6 +375,9 @@ var install_node_ibm_db = function(file_url) {
                 {
                     // "node-gyp" PASSED: RUN "msbuild" command.
                     var msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64 ";
+                    if (fs.existsSync('build/Debug')) {
+                        msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Debug;Platform=x64 ";
+                    }
 
                     // getting the "binding.sln" (project solution) file path for "msbuild" command.
                     if (fs.existsSync(CURRENT_DIR + "/build/binding.sln"))
