@@ -23,23 +23,24 @@
 14. [.execute([bindingParameters], callback)](#executeApi)
 15. [.executeSync([bindingParameters])](#executeSyncApi)
 16. [.executeNonQuery([bindingParameters], callback)](#executeNonQueryApi)
-17. [.fetch(option, callback)](#fetchApi)
-18. [.fetchSync(option)](#fetchSyncApi)
-19. [.fetchAll(option, callback)](#fetchAllApi)
-20. [.fetchAllSync(option)](#fetchAllSyncApi)
-21. [.beginTransaction(callback)](#beginTransactionApi)
-22. [.beginTransactionSync()](#beginTransactionSyncApi)
-23. [.commitTransaction(callback)](#commitTransactionApi)
-24. [.commitTransactionSync()](#commitTransactionSyncApi)
-25. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-26. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-27. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
-28. [.getColumnNamesSync()](#getColumnNamesSyncApi)
-29. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
-30. [.getSQLErrorSync()](#getSQLErrorSyncApi)
-31. [.debug(value)](#enableDebugLogs)
-32. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
-33. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
+17. [.executeNonQuerySync([bindingParameters])](#executeNonQuerySyncApi)
+18. [.fetch(option, callback)](#fetchApi)
+19. [.fetchSync(option)](#fetchSyncApi)
+20. [.fetchAll(option, callback)](#fetchAllApi)
+21. [.fetchAllSync(option)](#fetchAllSyncApi)
+22. [.beginTransaction(callback)](#beginTransactionApi)
+23. [.beginTransactionSync()](#beginTransactionSyncApi)
+24. [.commitTransaction(callback)](#commitTransactionApi)
+25. [.commitTransactionSync()](#commitTransactionSyncApi)
+26. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+27. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+28. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
+29. [.getColumnNamesSync()](#getColumnNamesSyncApi)
+30. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
+31. [.getSQLErrorSync()](#getSQLErrorSyncApi)
+32. [.debug(value)](#enableDebugLogs)
+33. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
+34. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -491,14 +492,46 @@ ibmdb.open(cn,function(err,conn){
       if( err ) console.log(err);
       else console.log("Affected rows = " + ret);
 
-      //Close the connection
-	  conn.close(function(err){});
+      //Close the stmt and connection
+      stmt.close();
+      conn.close(function(err){});
     });
   });
 });
 ```
 
-### <a name="fetchApi"></a> 17) .fetch(option, callback)
+### <a name="executeNonQuerySyncApi"></a> 17) .executeNonQuerySync([bindingParameters])
+
+Execute a non query prepared statement synchronously and returns the number of rows affected in a table by the statement.
+
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+
+It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn,function(err,conn){
+  conn.querySync("create table mytab (id int, text varchar(30))");
+  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+    if (err) {
+      console.log(err);
+      return conn.closeSync();
+    }
+
+    //Bind and Execute the statment asynchronously
+    var rowCount = stmt.executeNonQuerySync([ 42, 'hello world' ]);
+    console.log("Affected rows = " + rowCount);
+
+    //Close the stmt and connection
+    stmt.closeSync();
+    conn.closeSync();
+  });
+});
+```
+
+### <a name="fetchApi"></a> 18) .fetch(option, callback)
 
 Fetch a row of data from ODBCResult object asynchronously.
 
@@ -542,7 +575,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="fetchSyncApi"></a> 18) .fetchSync(option)
+### <a name="fetchSyncApi"></a> 19) .fetchSync(option)
 
 Fetch a row of data from ODBCResult object synchronously.
 
@@ -569,7 +602,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="fetchAllApi"></a> 19) .fetchAll(option, callback)
+### <a name="fetchAllApi"></a> 20) .fetchAll(option, callback)
 
 Fetch all rows from ODBCResult object asynchronously for the executed statement.
 
@@ -610,7 +643,7 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="fetchAllSyncApi"></a> 20) .fetchAllSync(option)
+### <a name="fetchAllSyncApi"></a> 21) .fetchAllSync(option)
 
 Fetch all rows from ODBCResult object Synchronously for the executed statement.
 
@@ -635,17 +668,17 @@ ibmdb.open(cn,function(err,conn){
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
 
-### <a name="beginTransactionApi"></a> 21) .beginTransaction(callback)
+### <a name="beginTransactionApi"></a> 22) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 22) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 23) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 23) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 24) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -682,7 +715,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 24) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 25) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -711,7 +744,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 25) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 26) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -748,7 +781,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 26) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 27) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -777,7 +810,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="setIsolationLevelApi"></a> 27) .setIsolationLevel(isolationLevel)
+### <a name="setIsolationLevelApi"></a> 28) .setIsolationLevel(isolationLevel)
 
 Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction.
 
@@ -794,7 +827,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="getColumnNamesSyncApi"></a> 28) .getColumnNamesSync()
+### <a name="getColumnNamesSyncApi"></a> 29) .getColumnNamesSync()
 
 Synchronously retrieve the name of columns returned by the resulset. It
  operates on ODBCResult object.
@@ -806,7 +839,7 @@ Synchronously retrieve the name of columns returned by the resulset. It
       result.closeSync(); conn.closeSync(); }); });
 ```
 
-### <a name="getColumnMetadataSyncApi"></a> 29) .getColumnMetadataSync()
+### <a name="getColumnMetadataSyncApi"></a> 30) .getColumnMetadataSync()
 
 Synchronously retrieve the metadata about columns returned by the resulset. It
  operates on ODBCResult object.
@@ -823,7 +856,7 @@ Synchronously retrieve the metadata about columns returned by the resulset. It
   });
 ```
 
-### <a name="getSQLErrorSyncApi"></a> 30) .getSQLErrorSync()
+### <a name="getSQLErrorSyncApi"></a> 31) .getSQLErrorSync()
 
 Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API. It operates on ODBCResult object.
 ```javascript
@@ -838,7 +871,7 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
   });
 ```
 
-### <a name="enableDebugLogs"></a> 31) .debug(value)
+### <a name="enableDebugLogs"></a> 32) .debug(value)
 
 Enable console logs.
 
@@ -869,7 +902,7 @@ ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS. <==**
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 32) .executeFileSync(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileSyncApi"></a> 33) .executeFileSync(sqlFile,[delimiter],[outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -895,7 +928,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="executeFileApi"></a> 33) .executeFile(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileApi"></a> 34) .executeFile(sqlFile,[delimiter],[outputFile])
 
 Asynchronously issue multiple SQL query from the file to the database that is currently open.
 
