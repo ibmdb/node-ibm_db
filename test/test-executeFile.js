@@ -9,6 +9,10 @@ ibmdb.open(cn, function (err, conn) {
     if (err) {
         return console.log(err);
     }
+    try {
+      conn.querySync("drop table sample");
+      conn.querySync("drop table sample1");
+    } catch(e) {}
 
     var inputfile = __dirname + '/data/sample1.txt';
     conn.executeFile(inputfile, function (err, res) {

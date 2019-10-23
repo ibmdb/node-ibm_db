@@ -84,9 +84,9 @@ ibmdb.open(cn, function (err,conn) {
             console.log("Lengths after select = " + size1+ ", " + size2);
             console.log("buffer after select : " + bufferReturn);
 
-            assert(len1, size1);
-            assert(len2, size2);
-            assert(bufferInsert, bufferReturn);
+            assert.strictEqual(len1, size1);
+            assert.strictEqual(len2, size2);
+            assert.strictEqual(bufferInsert, bufferReturn);
 
             fs.unlinkSync(outputfile1);
             fs.unlink(outputfile2, function () { console.log('done'); });
