@@ -44,7 +44,7 @@ odbc.open(common.connectionString, function(err, conn) {
           console.log("result = ", result);
           conn.closeSync();
         }
-        assert(err['message'].search("SQL0204N") > 0);
+        assert(err['message'].search("SQL0204N|42704") > 0);
         console.log('Done');
         process.exit(errorCount);
     });
