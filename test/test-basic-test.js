@@ -2,6 +2,7 @@ var common = require("./common")
     , ibmdb = require("../")
     , assert = require("assert")
     , cn = common.connectionString;
+var platform = require('os').platform();
 
 console.log("Trying to open a connection ... ");
 ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
@@ -12,7 +13,11 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
   try{
     conn.querySync("drop table mytab1");
   } catch (e) {}
-  conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+  if (platform == 'os390') {
+    conn.querySync("create table mytab1 (c1 int, c2 varchar(10)) ccsid UNICODE");
+  } else {
+    conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+  }
   conn.querySync("insert into mytab1 values ( 4, 'für')");
   conn.query('select 1, 4, 5 from sysibm.sysdummy1;', function (err, data) {
     if (err) {

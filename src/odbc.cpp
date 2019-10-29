@@ -16,6 +16,7 @@
 */
 #ifdef __MVS__
   #define _AE_BIMODAL
+  #include <_Nascii.h>
 #endif
 
 #include <string.h>
@@ -120,9 +121,14 @@ NAN_METHOD(ODBC::New)
 
   dbo->m_hEnv = (SQLHENV)NULL;
   
+  #ifdef __MVS__
+    int ori_mode = __ae_thread_swapmode(__AE_EBCDIC_MODE);
+  #endif
   // Initialize the Environment handle
   int ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &dbo->m_hEnv);
-  
+  #ifdef __MVS__
+    __ae_thread_swapmode(ori_mode);
+  #endif
   if (!SQL_SUCCEEDED(ret)) {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
     
