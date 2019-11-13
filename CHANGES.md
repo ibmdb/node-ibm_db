@@ -1,3 +1,6 @@
+2019-1-13, Version 2.6.2
+=========================
+ * fix: Security vulnerability in unzipper. Issue #588 (Lincoln Kupke)
 2019-09-03, Version 2.6.1
 =========================
 
