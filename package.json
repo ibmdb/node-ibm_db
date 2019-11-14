@@ -33,7 +33,7 @@
     "q": "^1.5.1",
     "request": "^2.88.0",
     "targz": "^1.0.1",
-    "unzipper": "^0.8.14"
+    "unzipper": "^0.10.5"
   },
   "keywords": [
     "node",
