@@ -992,11 +992,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 {
     //Nan::Utf8String string(value);
     //int length = string.length();
-    #if NODE_MAJOR_VERSION >= 11
-    Local<String> string = value->ToString(v8::Isolate::GetCurrent());
-    #else
-    Local<String> string = value->ToString();
-    #endif
+    Local<String> string = value->ToString(ISOLATE);
     int length = string->Length();
     int bufflen = length;
       
@@ -1014,11 +1010,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
         param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
     if(param->c_type != SQL_C_BINARY)
     {
-        #if (NODE_MAJOR_VERSION > 8)
-        bufflen = string->Utf8Length(v8::Isolate::GetCurrent()) + 1;
-        #else
-        bufflen = string->Utf8Length() + 1;
-        #endif
+        bufflen = string->Utf8Length( ISOLATE ) + 1;
         param->length = bufflen - 1;
     }
     #endif
@@ -1036,34 +1028,18 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 
     if(param->paramtype == FILE_PARAM)
     {
-        #if (NODE_MAJOR_VERSION > 8)
-        string->WriteUtf8(v8::Isolate::GetCurrent(), (char *) param->buffer);
-        #else
-        string->WriteUtf8((char *) param->buffer);
-        #endif
+        string->WriteUtf8( ISOLATECOMMA (char *) param->buffer );
     }
     else if(param->c_type == SQL_C_BINARY)
     {
-        #if (NODE_MAJOR_VERSION > 8)
-        string->WriteOneByte(v8::Isolate::GetCurrent(), (uint8_t *)param->buffer);
-        #else
-        string->WriteOneByte((uint8_t *)param->buffer);
-        #endif
+        string->WriteOneByte( ISOLATECOMMA (uint8_t *)param->buffer );
     }
     else
     {
       #ifdef UNICODE
-        #if (NODE_MAJOR_VERSION > 8)
-        string->Write(v8::Isolate::GetCurrent(), (uint16_t *) param->buffer);
-        #else
-        string->Write((uint16_t *) param->buffer);
-        #endif
+        string->Write( ISOLATECOMMA (uint16_t *) param->buffer );
       #else
-        #if (NODE_MAJOR_VERSION > 8)
-        string->WriteUtf8(v8::Isolate::GetCurrent(), (char *) param->buffer);
-        #else
-        string->WriteUtf8((char *) param->buffer);
-        #endif
+        string->WriteUtf8( ISOLATECOMMA (char *) param->buffer );
       #endif
     }
     #ifdef UNICODE

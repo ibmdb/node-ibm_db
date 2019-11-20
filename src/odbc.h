@@ -38,6 +38,14 @@ using namespace node;
 #define FETCH_OBJECT 4
 #define SQL_DESTROY 9999
 
+#if (NODE_MAJOR_VERSION >= 11)
+#define ISOLATE v8::Isolate::GetCurrent()
+#define ISOLATECOMMA v8::Isolate::GetCurrent(),
+#else
+#define ISOLATE 
+#define ISOLATECOMMA 
+#endif
+
 // Workaround(zOS): Db2 supplied headers do not define SQL_SUCCEEDED
 #ifndef SQL_SUCCEEDED
 #define SQL_SUCCEEDED(rc) (((rc)&(~1))==0)
