@@ -82,10 +82,29 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log("conn.querySync('select * from mytab1 where c1 = ?;', valueArray)" );
             console.log(data);
             assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
-            conn.querySync("drop table mytab1");
+
+            /* Check for empty result set */
+            console.log("conn.prepare('delete from mytab1 where c1 = 89')");
+            conn.prepare("delete from mytab1 where c1 = 89",
+              function (err, stmt2) {
+              if(err) {
+                console.log(err);
+                stmt2.closeSync();
+                return conn.closeSync();
+              }
+              stmt2.executeNonQuery(function(err, rows) {
+                if (err) {
+                  console.log(err);
+                  assert.equal(rows, 1); //It should always assert.
+                }
+                console.log("Deleted row count = " + rows);
+                stmt2.closeSync();
+                conn.querySync("drop table mytab1");
+                conn.close(function () { console.log('done'); });
+                ibmdb.close();
+              });
+            });  // conn.prepare
           }
-          conn.close(function () { console.log('done'); });
-          ibmdb.close();
         });
       });  
     });

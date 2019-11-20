@@ -383,12 +383,11 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
   ODBCStatement* self = data->stmt->self();
 
   // Store warning message of SQLExecute now only.
-  if (ret > SQL_SUCCESS) {
+  if (ret > SQL_SUCCESS && ret != SQL_NO_DATA_FOUND) {
       info[0] = ODBC::GetSQLError(
         SQL_HANDLE_STMT,
         self->m_hSTMT,
-        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery"
-      );
+        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery");
       warning = 1;
   }
   if ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
@@ -402,12 +401,11 @@ void ODBCStatement::UV_AfterExecuteNonQuery(uv_work_t* req, int status)
       data->cb);
   }
   else {
-    if ((ret > SQL_SUCCESS) && (warning == 0)) {
+    if ((ret > SQL_SUCCESS) && (warning == 0) && (ret != SQL_NO_DATA_FOUND)) {
       info[0] = ODBC::GetSQLError(
         SQL_HANDLE_STMT,
         self->m_hSTMT,
-        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery"
-      );
+        (char *) "[node-ibm_db] Warning in ODBCStatement::UV_AfterExecuteNonQuery for SQLRowCount.");
     }
     else if (!warning) {
       info[0] = Nan::Null();
