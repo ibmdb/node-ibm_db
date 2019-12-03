@@ -21,7 +21,8 @@ var deleteInstallerFile = false;
 var platform = os.platform();
 
 var vscode_build = false;
-var electron_version = '4.2.7';
+var electron_version = 'vscode';
+var electronMap = {};
 
 console.log("platform = ", platform);
 if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
@@ -33,24 +34,25 @@ if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect
         vscodeVer = parseFloat(codeOut.split('\n')[0]);
 
         if(!isNaN(vscodeVer)){
-            if (vscodeVer >= 1.36) {
-                electron_version = "4.2.7";
+            if (vscodeVer >= 1.40) {
+                electron_version = "vscode"; // 6.1.5 for 1.40.2
             }
-            else if(vscodeVer >= 1.30 && vscodeVer < 1.36){
-                electron_version = "3.0.0";
+            else if (vscodeVer >= 1.36) {
+                electron_version = "e4.2.7";
             }
-            else{
-                electron_version = "2.0.12";
+            else {// vscode version older than 1.36 not supported
+                electron_version = "e3.0.0"; // old binary, not getting updated.
             }
-            console.log(`Detected VS Code version ${vscodeVer}, will use Electron version ${electron_version}`);
+            console.log("Detected VSCode version ", vscodeVer);
         }
-		else{
-            console.log(`Unable to detect VSCode version, will use Electron version ${electron_version}`);
+		else {
+            console.log("Unable to detect VSCode version");
         }
     }
     catch(e){
-        console.log(`Unable to detect VSCode version, will use Electron version ${electron_version}`);
+        console.log(`Unable to detect VSCode version`);
     }
+
 }
 /*
  * "process.env.IBM_DB_INSTALLER_URL"
@@ -349,7 +351,7 @@ var install_node_ibm_db = function(file_url) {
 
         //Build triggered from the VSCode extension
         if(vscode_build){
-            buildString = buildString + ` --target=${electron_version} --arch=x64 --dist-url=https://atom.io/download/electron `;
+            buildString = buildString + ` --arch=x64 --dist-url=https://atom.io/download/electron `;
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
@@ -531,25 +533,25 @@ var install_node_ibm_db = function(file_url) {
 
                 if(vscode_build)
                 {
-                    odbcBindingsNode = 'build\/Release\/odbc_bindings_e' + electron_version + '.node';
+                    odbcBindingsNode = 'build\/Release\/odbc_bindings_' + electron_version + '.node';
                 }
                 else
                 {
                     //Windows node binary names should update here.
-                    var ODBC_BINDINGS_V4 = 'build\/Release\/odbc_bindings.node.4.9.1';
                     var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
-                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.1';
+                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.2';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.16.3';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.17.0';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.13.1';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
-                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 4.0) {
+                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 6.0) {
                         console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
                             '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 4.X. ' +
-                            'Otherwise please use the node.js version >= 4.X\n');
+                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 6.X. ' +
+                            'Otherwise please use the node.js version >= 6.X\n');
                         process.exit(1);
                     }
 
@@ -557,13 +559,13 @@ var install_node_ibm_db = function(file_url) {
                      * odbcBindingsNode will consist of the node binary-
                      * file name according to the node version in the system.
                      */
-                    odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 5.0) && ODBC_BINDINGS_V4   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
+                    odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9  ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9   ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
@@ -634,7 +636,7 @@ var install_node_ibm_db = function(file_url) {
         .once('error', function (err) {
             console.log(err);
         });
-    };
+    }
 
     function showDownloadingProgress(received, total) {
         var percentage = ((received * 100) / total).toFixed(2);
