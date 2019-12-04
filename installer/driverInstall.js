@@ -21,7 +21,7 @@ var deleteInstallerFile = false;
 var platform = os.platform();
 
 var vscode_build = false;
-var electron_version = 'vscode';
+var electron_version = '6.1.5';
 var electronMap = {};
 
 console.log("platform = ", platform);
@@ -35,22 +35,22 @@ if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect
 
         if(!isNaN(vscodeVer)){
             if (vscodeVer >= 1.40) {
-                electron_version = "vscode"; // 6.1.5 for 1.40.2
+                electron_version = "6.1.5";
             }
             else if (vscodeVer >= 1.36) {
-                electron_version = "e4.2.7";
+                electron_version = "4.2.7";
             }
             else {// vscode version older than 1.36 not supported
-                electron_version = "e3.0.0"; // old binary, not getting updated.
+                electron_version = "3.0.0"; // old binary, not getting updated.
             }
-            console.log("Detected VSCode version ", vscodeVer);
+            console.log("Detected VSCode version ", vscodeVer, ", will use Electron version ", electron_version);
         }
 		else {
-            console.log("Unable to detect VSCode version");
+            console.log("Unable to detect VSCode version, will use Electron version ", electron_version);
         }
     }
     catch(e){
-        console.log(`Unable to detect VSCode version`);
+        console.log("Unable to detect VSCode version, will use Electron version ", electron_version);
     }
 
 }
@@ -351,7 +351,7 @@ var install_node_ibm_db = function(file_url) {
 
         //Build triggered from the VSCode extension
         if(vscode_build){
-            buildString = buildString + ` --arch=x64 --dist-url=https://atom.io/download/electron `;
+            buildString = buildString + " --target=" + electron_version + " --arch=x64 --dist-url=https://atom.io/download/electron";
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
@@ -533,7 +533,7 @@ var install_node_ibm_db = function(file_url) {
 
                 if(vscode_build)
                 {
-                    odbcBindingsNode = 'build\/Release\/odbc_bindings_' + electron_version + '.node';
+                    odbcBindingsNode = 'build\/Release\/odbc_bindings_e' + electron_version + '.node';
                 }
                 else
                 {
