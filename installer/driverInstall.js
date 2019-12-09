@@ -26,6 +26,15 @@ var electron_version = '6.1.5';
 var electronMap = {};
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
+if (platform != 'win32') {
+  try {
+    var makeVersion = execSync('make -v').toString();
+    makeVersion = makeVersion.split('\n')[0];
+    console.log("make version = ", makeVersion);
+  } catch (e) {
+    console.log("Unable to find 'make' in PATH. Installation may fail!");
+  }
+}
 if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
     console.log('\nProceeding to build IBM_DB for Electron framework...');
     vscode_build = true;

@@ -25,6 +25,8 @@ Install a newer compiler or upgrade older one.
 
 - On z/OS, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
 
+- On z/OS and other non-Windows platform, `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
+
 - On z/OS only certain versions of node-gyp are supported. This was tested with:<br>
 node-gyp 3.4.0<br>
 npm 3.10.10<br>
