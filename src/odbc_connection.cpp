@@ -310,9 +310,9 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status)
 
   delete data->cb;
   
-  free(data->connection);
-  free(data);
-  free(req);
+  FREE(data->connection);
+  FREE(data);
+  FREE(req);
   DEBUG_PRINTF("ODBCConnection::UV_AfterOpen - Exit\n");
 }
 
@@ -434,7 +434,7 @@ NAN_METHOD(ODBCConnection::OpenSync)
     #endif*/
   }
 
-  free(connectionString);
+  FREE(connectionString);
   DEBUG_PRINTF("ODBCConnection::OpenSync - Exit\n");
   
   if (err) {
@@ -677,7 +677,7 @@ NAN_METHOD(ODBCConnection::CreateDbSync)
      }
    }
 
-   free(databaseNameString);
+   FREE(databaseNameString);
    if ( !( info[1]->IsNull() ) ) free(codeSetString);
    if ( !( info[1]->IsNull() ) ) free(modeString);
    DEBUG_PRINTF("ODBCConnection::CreateDbSync - Exit\n");
@@ -769,7 +769,7 @@ NAN_METHOD(ODBCConnection::DropDbSync)
      }
    }
 
-   free(databaseNameString);
+   FREE(databaseNameString);
    DEBUG_PRINTF("ODBCConnection::DropDbSync - Exit\n");
 
    if (err) {
@@ -1168,14 +1168,14 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
       FREE_PARAMS( data->params, data->paramCount ) ;
   }
 
-  free(data->sql);
-  free(data->catalog);
-  free(data->schema);
-  free(data->table);
-  free(data->type);
-  free(data->column);
-  free(data);
-  free(req);
+  FREE(data->sql);
+  FREE(data->catalog);
+  FREE(data->schema);
+  FREE(data->table);
+  FREE(data->type);
+  FREE(data->column);
+  FREE(data);
+  FREE(req);
   
   //scope.Close(Undefined());
   DEBUG_PRINTF("ODBCConnection::UV_AfterQuery - Exit\n");
@@ -1318,7 +1318,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
     FREE_PARAMS( params, paramCount ) ;
   }
   
-  free((char*)sql);
+  FREE(sql);
   
   //check to see if there was an error during execution
   if (ret != SQL_SUCCESS) {
@@ -1458,6 +1458,10 @@ void ODBCConnection::UV_Tables(uv_work_t* req)
   
   // this will be checked later in UV_AfterQuery
   data->result = ret; 
+  FREE(data->catalog);
+  FREE(data->schema);
+  FREE(data->table);
+  FREE(data->type);
   DEBUG_PRINTF("ODBCConnection::UV_Tables - Exit\n");
 }
 
@@ -1546,6 +1550,10 @@ void ODBCConnection::UV_Columns(uv_work_t* req)
   
   // this will be checked later in UV_AfterQuery
   data->result = ret;
+  FREE(data->catalog);
+  FREE(data->schema);
+  FREE(data->table);
+  FREE(data->column);
   DEBUG_PRINTF("ODBCConnection::UV_Columns - Exit\n");
 }
 

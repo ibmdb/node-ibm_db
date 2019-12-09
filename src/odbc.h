@@ -316,3 +316,19 @@ struct query_request {
                 static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
 
 #endif
+
+// Macro to fee the memory allocated by GETCPPSTR
+#ifdef UNICODE
+  #define FREE(var)               \
+    if (var != NULL) {            \
+      free((uint16_t *)var);      \
+      var = NULL;                 \
+    }
+#else
+  #define FREE(var)               \
+    if (var != NULL) {            \
+      free((char *)var);          \
+      var = NULL;                 \
+    }
+#endif
+

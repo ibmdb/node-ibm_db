@@ -392,6 +392,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
 
 void ODBC::FreeColumns(Column* columns, short* colCount)
 {
+  DEBUG_PRINTF("ODBC::GetColumns - Entry\n");
   for(int i = 0; i < *colCount; i++) {
       delete [] columns[i].name;
       delete [] columns[i].type_name;
@@ -400,6 +401,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount)
   delete [] columns;
   columns = NULL;
   *colCount = 0;
+  DEBUG_PRINTF("ODBC::GetColumns - Exit\n");
 }
 
 /*
@@ -590,7 +592,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       int newbufflen = bufferLength + terCharLen;
       int secondGetData = 0;
       len = 0;
-      if (!buffer) {
+      if (buffer == NULL) {
         buffer = (uint16_t*)malloc(newbufflen);
         if(buffer == NULL)
         {
@@ -628,7 +630,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           else
           {
             memcpy(tmp_out_ptr, (char *) buffer, bufferLength);
-            free((uint8_t *)buffer);
+            free((uint16_t *)buffer);
             buffer = tmp_out_ptr;
             len = 0;
             ret = SQLGetData( hStmt,
@@ -646,6 +648,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
 
       if((int)len == SQL_NULL_DATA) {
+          FREE(buffer);
           return scope.Escape(Nan::Null());
       }
       // In case of secondGetData, we already have result from first getdata
@@ -661,15 +664,14 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
             str = Nan::New((char *) buffer).ToLocalChecked();
             #endif
           }
-          if(tmp_out_ptr) {
-            free(tmp_out_ptr); // tmp_out_ptr is pointing to buffer too.
-            buffer = NULL;
-          }
+          FREE(buffer);
+
           //return scope.Escape(Nan::CopyBuffer((char*)buffer, 39767).ToLocalChecked());
       }
       else 
       {
         DEBUG_PRINTF("ODBC::GetColumnValue - An error has occurred, ret = %i\n", ret);
+        FREE(buffer);
         //an error has occured
         //possible values for ret are SQL_ERROR (-1) and SQL_INVALID_HANDLE (-2)
         //If we have an invalid handle, then stuff is way bad and we should abort

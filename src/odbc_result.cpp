@@ -84,9 +84,11 @@ void ODBCResult::Free()
     m_canFreeHandle = 0;
   }
   
-  if (bufferLength > 0) {
+  if (bufferLength != 0) {
     bufferLength = 0;
-    free(buffer);
+  }
+  if (buffer != NULL) {
+    free((uint16_t *)buffer);
     buffer = NULL;
   }
 }
@@ -291,6 +293,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t* work_req, int status)
   }
   else {
     ODBC::FreeColumns(data->objResult->columns, &data->objResult->colCount);
+    FREE(data->objResult->buffer);
     
     Local<Value> info[2];
     
@@ -399,6 +402,7 @@ NAN_METHOD(ODBCResult::FetchSync)
   }
   else {
     ODBC::FreeColumns(objResult->columns, &objResult->colCount);
+    FREE(objResult->buffer);
 
     //if there was an error, pass that as arg[0] otherwise Null
     if (error) {
@@ -593,6 +597,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t* work_req, int status)
 
     data->cb->Call(3, info);
     ODBC::FreeColumns(self->columns, &self->colCount);
+    FREE(self->buffer);
     delete data->cb;
     data->rows.Reset();
     data->objError.Reset();
@@ -695,6 +700,7 @@ NAN_METHOD(ODBCResult::FetchAllSync)
     }
   }
   ODBC::FreeColumns(self->columns, &self->colCount);
+  FREE(self->buffer);
   
   //throw the error object if there were errors
   if (errorCount > 0) {

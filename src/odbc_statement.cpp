@@ -93,9 +93,11 @@ void ODBCStatement::Free()
     m_hSTMT = (SQLHSTMT)NULL;
   }
     
-  if (bufferLength > 0) {
-      if(buffer) free(buffer);
+  if(buffer != NULL) {
+      free((uint16_t *)buffer);
       buffer = NULL;
+  }
+  if (bufferLength > 0) {
       bufferLength = 0;
   }
   DEBUG_PRINTF("ODBCStatement::Free - Exit\n");
