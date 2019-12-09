@@ -19,12 +19,13 @@ var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
 var INSTALLER_FILE; 
 var deleteInstallerFile = false;
 var platform = os.platform();
+var arch = os.arch();
 
 var vscode_build = false;
 var electron_version = '6.1.5';
 var electronMap = {};
 
-console.log("platform = ", platform);
+console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
     console.log('\nProceeding to build IBM_DB for Electron framework...');
     vscode_build = true;
@@ -67,7 +68,6 @@ installerURL = installerURL + "/";
 var install_node_ibm_db = function(file_url) {
     var readStream;
     var writeStream;
-    var arch = os.arch();
     var endian = os.endianness();
     var installerfileURL;
 
@@ -351,7 +351,7 @@ var install_node_ibm_db = function(file_url) {
 
         //Build triggered from the VSCode extension
         if(vscode_build){
-            buildString = buildString + " --target=" + electron_version + " --arch=x64 --dist-url=https://atom.io/download/electron";
+            buildString = buildString + " --target=" + electron_version + " --arch=" + arch + " --dist-url=https://atom.io/download/electron";
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
