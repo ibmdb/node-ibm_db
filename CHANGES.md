@@ -1,3 +1,37 @@
+2019-12-09, Version 2.6.2
+=========================
+
+ * doc: update for issue #593 (Bimal Jha)
+
+ * fix: update windows binary using latest code (Bimal Jha)
+
+ * fix: for memory leak issue #576 (Bimal Jha)
+
+ * fix: update windows binary for vscode 1.40.x (Bimal Jha)
+
+ * update windows binaries (Bimal Jha)
+
+ * fix: add executeNonQuerySync in odbc.js issue #595 (Bimal Jha)
+
+ * fix: ignore sqlcode 100 by executeNonQuery, issue #591 (Bimal Jha)
+
+ * fix: use v8::Isolate for nodev >= 11 (Bimal Jha)
+
+ * fix: update unzipper version, issue #588 (Bimal Jha)
+
+ * Support for node v12 on z/OS, and fix some test cases for z/OS (#586) (alexcfyung)
+
+ * force push connection to the queue when poolSize breaches maxPool boundry (#581) (ashutoshrnjn)
+
+ * doc: update doc for executeNonQuerySync API, issue #583 (Bimal Jha)
+
+ * fix: blob data corruption issue #582 (Bimal Jha)
+
+ * support for install --debug option on windows (Priyanka Manoharan)
+
+ * doc: Docker Linux Container instructions (Bimal Jha)
+
+
 2019-09-03, Version 2.6.1
 =========================
 
