@@ -1138,6 +1138,9 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     js_info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
     js_info[3] = Nan::New<External>((void*)canFreeHandle);
 
+    // Ingnore SQL_NO_DATA_FOUND warning, fix for issue 573
+    if (data->result == SQL_NO_DATA_FOUND) data->result = SQL_SUCCESS;
+
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result != SQL_SUCCESS) {
       info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
@@ -1320,6 +1323,9 @@ NAN_METHOD(ODBCConnection::QuerySync)
   
   FREE(sql);
   
+  // Ingnore SQL_NO_DATA_FOUND warning, fix for issue 573
+  if (ret == SQL_NO_DATA_FOUND) ret = SQL_SUCCESS;
+
   //check to see if there was an error during execution
   if (ret != SQL_SUCCESS) {
     //Free stmt handle and then throw error.

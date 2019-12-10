@@ -34,6 +34,7 @@ connections.forEach(function (db) {
   console.log("Closed connection ", openCount--);
 });
 
+/* Test case to test the fix of issue #557 */
 odbc.open(common.connectionString, function(err, conn) {
     conn.query("select * from mytab; select 1 from sysibm.sysdummy1;",
       function(err, result) {
@@ -41,9 +42,9 @@ odbc.open(common.connectionString, function(err, conn) {
           console.log(err);
         }
         else {
-          console.log("result = ", result);
           conn.closeSync();
         }
+        console.log("result = ", result);
         assert(err['message'].search("SQL0204N|42704") > 0);
         console.log('Done');
         process.exit(errorCount);

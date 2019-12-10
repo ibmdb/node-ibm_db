@@ -89,6 +89,16 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log(data);
             assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
 
+            /* Check to ensure query ignores sqlcode 100, issue #573 */
+            conn.query("UPDATE mytab1 set c1 = 5 where c1 = 89; select 1 " +
+                    "from sysibm.sysdummy1;", function(error, result, sqlca) {
+              if(error) console.log("Error ====>> ", error);
+              else {
+                console.log("Result of UPDATE Query = ", result);
+              }
+              console.log("SQLCA = ", sqlca);
+              assert.equal(error, null);
+
             /* Check for empty result set */
             console.log("conn.prepare('delete from mytab1 where c1 = 89')");
             conn.prepare("delete from mytab1 where c1 = 89",
@@ -110,6 +120,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
                 ibmdb.close();
               });
             });  // conn.prepare
+            });  // conn.query
           }
         });
       });  
