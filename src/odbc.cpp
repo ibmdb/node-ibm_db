@@ -994,7 +994,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 {
     //Nan::Utf8String string(value);
     //int length = string.length();
-    Local<String> string = value->ToString(ISOLATE);
+    Local<String> string = value->TOSTRING ;
     int length = string->Length();
     int bufflen = length;
       
