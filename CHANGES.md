@@ -1,3 +1,17 @@
+2019-12-11, Version 2.6.3
+=========================
+
+ * update windows binary using latest code (Bimal Jha)
+
+ * fea: check electron version during installation, issue #598 (Bimal Jha)
+
+ * fix: ignore sqlcode 100 by query APIs, issue #573 (Bimal Jha)
+
+ * fix: for issues #598, #599 (Bimal Jha)
+
+ * test: adding new test case of perf testing (Bimal Jha)
+
+
 2019-12-09, Version 2.6.2
 =========================
 
