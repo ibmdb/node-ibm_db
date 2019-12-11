@@ -23,47 +23,15 @@ var arch = os.arch();
 
 var vscode_build = false;
 var electron_version = '6.1.5';
-var electronMap = {};
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
-if (platform != 'win32') {
-  try {
-    var makeVersion = execSync('make -v').toString();
-    makeVersion = makeVersion.split('\n')[0];
-    console.log("make version = ", makeVersion);
-  } catch (e) {
-    console.log("Unable to find 'make' in PATH. Installation may fail!");
-  }
-}
-if((process.env.npm_config_vscode)||(__dirname.toLowerCase().indexOf('db2connect')!=-1)){
-    console.log('\nProceeding to build IBM_DB for Electron framework...');
-    vscode_build = true;
 
-    try{
-        var codeOut = execSync('code --version').toString();
-        vscodeVer = parseFloat(codeOut.split('\n')[0]);
+/* Show make version on non-windows platform, if installed. */
+printMakeVersion();
 
-        if(!isNaN(vscodeVer)){
-            if (vscodeVer >= 1.40) {
-                electron_version = "6.1.5";
-            }
-            else if (vscodeVer >= 1.36) {
-                electron_version = "4.2.7";
-            }
-            else {// vscode version older than 1.36 not supported
-                electron_version = "3.0.0"; // old binary, not getting updated.
-            }
-            console.log("Detected VSCode version ", vscodeVer, ", will use Electron version ", electron_version);
-        }
-		else {
-            console.log("Unable to detect VSCode version, will use Electron version ", electron_version);
-        }
-    }
-    catch(e){
-        console.log("Unable to detect VSCode version, will use Electron version ", electron_version);
-    }
+/* Find electron version to use if ibm_db requires electron headers. */
+findElectronVersion();
 
-}
 /*
  * "process.env.IBM_DB_INSTALLER_URL"
  * USE: to by-pass the IBM provided URL for downloading clidriver.
@@ -681,3 +649,74 @@ var install_node_ibm_db = function(file_url) {
 }; //install_node_ibm_db
 
 install_node_ibm_db();
+
+function printMakeVersion() {
+  if (platform != 'win32') {
+    try {
+      var makeVersion = execSync('make -v').toString();
+      makeVersion = makeVersion.split('\n')[0];
+      console.log("make version =", makeVersion);
+    } catch (e) {
+      console.log("Unable to find 'make' in PATH. Installation may fail!");
+    }
+  }
+}
+
+/* Detect electron version to compile ibm_db by checking version of installed
+   electron package, or version of installed VSCode in the system.
+ */
+function findElectronVersion() {
+  if ((process.env.npm_config_vscode) ||
+     (__dirname.toLowerCase().indexOf('db2connect') != -1))
+  {
+    console.log('\nProceeding to build IBM_DB for Electron framework...\n');
+    vscode_build = true;
+
+    try {
+        var npmOut = execSync('npm ls electron').toString();
+        var electronVer = null;
+        if (npmOut != null) {
+          npmOut = npmOut.split('\n');
+          for (var i = 0; i < npmOut.length; i++) {
+            if (npmOut[i].indexOf('-- electron@') >= 0) {
+              electronVer = npmOut[i].split('@')[1];
+              break;
+            }
+          }
+        }
+
+        if (electronVer != null) {
+          electron_version = electronVer;
+          console.log("Detected electron installation, will use Electron",
+                  "version", electron_version, "to install ibm_db.");
+        }
+        else {
+          var codeOut = execSync('code --version').toString();
+          vscodeVer = parseFloat(codeOut.split('\n')[0]);
+          if(!isNaN(vscodeVer)) {
+            if (vscodeVer >= 1.40) {
+                electron_version = "6.1.5";
+            }
+            else if (vscodeVer >= 1.36) {
+                electron_version = "4.2.7";
+            }
+            else {// vscode version older than 1.36 not supported
+                electron_version = "3.0.0"; // old binary, not getting updated.
+            }
+            console.log("Detected VSCode version", vscodeVer,
+                    ", will use Electron version ", electron_version);
+          }
+		  else {
+            console.log("Unable to detect VSCode version,",
+                    "will use Electron version ", electron_version);
+          }
+        }
+    }
+    catch(e){
+      console.log("Unable to detect VSCode version,",
+              "will use Electron version ", electron_version);
+    }
+    console.log("");
+  }
+}
+
