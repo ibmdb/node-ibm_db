@@ -997,6 +997,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     Local<String> string = value->TOSTRING ;
     int length = string->Length();
     int bufflen = length;
+    int terCharLen = 1;
       
     param->length        = length; 
     if(!param->c_type || (param->c_type == SQL_CHAR))
@@ -1007,6 +1008,7 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
         param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if(param->c_type != SQL_C_BINARY)
         bufflen = (length + 1) * sizeof(uint16_t);
+    terCharLen = 2;
     #else
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
@@ -1020,8 +1022,8 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     {
         bufflen = length + 1;
     }
-    if(bufflen < param->buffer_length && (param->paramtype % 2 == 0))
-        bufflen = param->buffer_length;
+    if(bufflen <= param->buffer_length && (param->paramtype % 2 == 0))
+        bufflen = param->buffer_length + terCharLen;
     param->buffer_length = bufflen;
     param->size          = bufflen;
 
