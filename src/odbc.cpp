@@ -1078,8 +1078,8 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 
 void ODBC::GetNullParam(Parameter * param, int num)
 {
-    param->c_type = SQL_C_DEFAULT;
-    param->type   = SQL_VARCHAR;
+    param->c_type = param->c_type ? param->c_type : SQL_C_DEFAULT;
+    param->type   = param->type ? param->type : SQL_VARCHAR;
     param->length = SQL_NULL_DATA;
 
     DEBUG_PRINTF("ODBC::GetNullParam: param%u : paramtype=%u, c_type=%i, "

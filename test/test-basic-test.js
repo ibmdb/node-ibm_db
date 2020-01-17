@@ -14,12 +14,13 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
     conn.querySync("drop table mytab1");
   } catch (e) {}
   if (platform == 'os390') {
-    conn.querySync("create table mytab1 (c1 int, c2 varchar(10)) ccsid UNICODE");
+    conn.querySync("create table mytab1 (c1 int, c2 varchar(10)), c3 blob(100) ccsid UNICODE");
   } else {
-    conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+    conn.querySync("create table mytab1 (c1 int, c2 varchar(10), c3 blob(100))");
   }
-  var stmt = conn.prepareSync("insert into mytab1 values ( ?, ?)");
-  var insertedRows = stmt.executeNonQuerySync([4, 'für']);
+  var stmt = conn.prepareSync("insert into mytab1 values ( ?, ?, ?)");
+  var param = { CType: 'BLOB', DataType: 'BLOB', Data: null };
+  var insertedRows = stmt.executeNonQuerySync([4, 'für', param]);
   console.log("insertedRows = ", insertedRows);
   stmt.closeSync();
 
@@ -45,7 +46,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
   console.log("Selected data with special character  = ", d);
   assert.equal(d.length, 1);
 
-  conn.prepare("insert into mytab1 VALUES (?, ?)", function (err, stmt) {
+  conn.prepare("insert into mytab1 VALUES (?, ?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
@@ -53,7 +54,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
       return conn.closeSync();
     }
     //Bind and Execute the statment asynchronously
-    stmt.executeNonQuery([34245, 'bimal'], function (err, ret) {
+    stmt.executeNonQuery([34245, 'bimal', param], function (err, ret) {
       if (err) {
         console.log(err);
         stmt.closeSync();
@@ -81,13 +82,13 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             console.log(data);
             result.closeSync();
             stmt.closeSync();
-            assert.deepEqual(data, [ { C1: 4, C2: 'für' }, { C1: 34245, C2: 'bimal' } ]);
+            assert.deepEqual(data, [ { C1: 4, C2: 'für', C3: null }, { C1: 34245, C2: 'bimal', C3: null } ]);
             var valueArray = [];
             valueArray.push(34245);
             data = conn.querySync('select * from mytab1 where c1 = ?;', valueArray);
             console.log("conn.querySync('select * from mytab1 where c1 = ?;', valueArray)" );
             console.log(data);
-            assert.deepEqual(data, [ [ 34245, 'bimal' ] ]);
+            assert.deepEqual(data, [ [ 34245, 'bimal', null ] ]);
 
             /* Check to ensure query ignores sqlcode 100, issue #573 */
             conn.query("UPDATE mytab1 set c1 = 5 where c1 = 89; select 1 " +
