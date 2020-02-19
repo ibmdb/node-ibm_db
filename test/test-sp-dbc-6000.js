@@ -4,7 +4,14 @@
 
 var ibmdb = require("../")
   , assert = require("assert")
-  , connStr = "database=RS22DC1A;hostname=rs22.rocketsoftware.com;port=3750;uid=newton;pwd=A2m8test";
+  , common = require("./common")
+  , connStr = common.connectionString;
+
+//connStr = "database=RS22DC1A;hostname=rs22.rocketsoftware.com;port=3750;uid=" + common.connectionObject.UID + ";pwd=" + common.connectionObject.PWD;
+
+if (process.env.IBM_DB_SERVER_TYPE !== "ZOS") {
+    return;
+}
 
 var proc = "CREATE PROCEDURE SYSPROC.TBV8930 (in vlog_header varchar(200), out  return_code char(05), out sql_code integer, out result varchar(200)) language sql commit on return no query acceleration NONE asutime LIMIT 5002 reads sql data dynamic result sets 1 package owner DVLPP with explain MAIN: BEGIN declare sqlcode integer; declare sqlstate char(5); declare c1 cursor with return for select lower(vlog_header) as vlog_header from sysibm.sysdummy1; set result = upper(vlog_header) ; set return_code = '00000' , sql_code = 0 ; open c1; END MAIN"; 
 
