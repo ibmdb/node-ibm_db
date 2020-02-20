@@ -34,7 +34,7 @@ ibm_db: 2.3.0
 
 - Recommended version of node.js is >= V6.X. For node.js version < 6.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
-- The latest node.js version using which `ibm_db` is tested: 13.3.0
+- The latest node.js version using which `ibm_db` is tested: 13.8.0
 
 ## Install
 
