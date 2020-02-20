@@ -1,3 +1,17 @@
+2020-02-20, Version 2.6.4
+=========================
+
+ * upd: windows binary (Bimal Jha)
+
+ * upd: test file (Bimal Jha)
+
+ * fix: remove deletion of local var, issue #610 (Bimal Jha)
+
+ * fix: to insert null value using dynamic sql #604 (Bimal Jha)
+
+ * fix: allocate one more byte for output params (Bimal Jha)
+
+
 2019-12-11, Version 2.6.3
 =========================
 
