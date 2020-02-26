@@ -64,7 +64,8 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
     // Call SP Synchronously.
     stmt = conn.prepareSync(query);
     //console.log(stmt.bindSync(['1', param2]));
-    result = stmt.executeSync(['1', param2]);
+    // Passing '1' throws SQL0420N on windows, so use 1.
+    result = stmt.executeSync([1, param2]);
     console.log("Result for Sync call of PROC1 (1 OUT param and 2 Result Sets) ==>");
     if(Array.isArray(result))
     {
@@ -85,7 +86,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
     // Call SP Asynchronously.
     conn.prepare(query, function (err, stmt) {
       if (err) console.log(err);
-      stmt.execute(['1', param2], function(err, result, outparams) {
+      stmt.execute([1, param2], function(err, result, outparams) {
         if( err ) console.log(err);  
         else {
           data = result.fetchAllSync();
@@ -112,7 +113,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
         conn.querySync(proc2);
         // Call SP Synchronously.
         stmt = conn.prepareSync(query);
-        result = stmt.executeSync(['1', param2]);
+        result = stmt.executeSync([1, param2]);
         console.log("Result for Sync call of PROC2 (1 OUT param and no Result Set) ==>");
         if(Array.isArray(result))
         {
@@ -128,7 +129,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
         // Call SP Asynchronously.
         conn.prepare(query, function (err, stmt) {
           if (err) console.log(err);
-          stmt.execute(['1', param2], function(err, result, outparams) {
+          stmt.execute([1, param2], function(err, result, outparams) {
             if( err ) console.log(err);  
             else {
               result.closeSync();
@@ -148,7 +149,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
             conn.querySync(proc3);
             // Call SP Synchronously.
             stmt = conn.prepareSync(query);
-            result = stmt.executeSync(['1', 'abc']);
+            result = stmt.executeSync([1, 'abc']);
             console.log("Result for Sync call of PROC3 (only 2 Result Sets) ==>");
             if(Array.isArray(result))
             {
@@ -169,7 +170,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
             // Call SP Asynchronously.
             conn.prepare(query, function (err, stmt) {
               if (err) console.log(err);
-              stmt.execute(['1', 'abc'], function(err, result, outparams) {
+              stmt.execute([1, 'abc'], function(err, result, outparams) {
                 if( err ) console.log(err);  
                 else {
                   data = result.fetchAllSync();

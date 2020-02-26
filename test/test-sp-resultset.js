@@ -54,12 +54,12 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
     conn.querySync(proc1);
 
     // Call SP Synchronously.
-    result = conn.querySync(query, ['1', param2]);
+    result = conn.querySync(query, [1, param2]);
     console.log("Result for Sync call of proc1 ==>");
     console.log(result);
     assert.equal(result.length, 3);
     // Call SP Asynchronously.
-    conn.query(query, ['1', param2], function (err, result) {
+    conn.query(query, [1, param2], function (err, result) {
         if (err) console.log(err);
         else {
           console.log("Result for Async call of proc1 ==>");
@@ -76,12 +76,12 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
         }
         conn.querySync(proc2);
         // Call SP Synchronously.
-        result = conn.querySync(query, ['1', param2]);
+        result = conn.querySync(query, [1, param2]);
         console.log("Result for Sync call of proc2 ==>");
         console.log(result);
         assert.equal(result.length, 1);
         // Call SP Asynchronously.
-        conn.query(query, ['1', param2], function (err, result) {
+        conn.query(query, [1, param2], function (err, result) {
             if (err) console.log(err);
             else {
               console.log("Result for Async call of proc2 ==>");
@@ -103,7 +103,7 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
             console.log(result);
             assert.equal(result.length, 2);
             // Call SP Asynchronously.
-            conn.query(query, ['1', 'abc'], function (err, result) {
+            conn.query(query, [1, 'abc'], function (err, result) {
                 if (err) console.log(err);
                 else {
                   console.log("Result for Async call of proc3 ==>");
