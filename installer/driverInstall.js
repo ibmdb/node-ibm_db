@@ -22,7 +22,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '6.1.5';
+var electron_version = '7.1.11';
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 
