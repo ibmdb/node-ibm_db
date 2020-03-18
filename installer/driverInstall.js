@@ -694,7 +694,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.40) {
+            if (vscodeVer >= 1.43) {
+                electron_version = "7.1.11";
+            }
+            else if (vscodeVer >= 1.40) {
                 electron_version = "6.1.5";
             }
             else if (vscodeVer >= 1.36) {
