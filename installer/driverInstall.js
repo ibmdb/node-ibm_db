@@ -37,8 +37,10 @@ findElectronVersion();
  * USE: to by-pass the IBM provided URL for downloading clidriver.
  * HOW: set environment variable with alternate downloading URL link.
  *      or locally downloaded "tar/zipped clidriver's" parent directory path.
+ *      You can add IBM_DB_INSTALLER_URL in .npmrc file too.
  */
-installerURL = process.env.IBM_DB_INSTALLER_URL || installerURL;
+installerURL = process.env.npm_config_IBM_DB_INSTALLER_URL ||
+               process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
 //Function to download clidriver and install node-ibm_db
