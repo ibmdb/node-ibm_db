@@ -417,6 +417,7 @@ Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github
 * Joachim Kainz
 * Oleg Efimov
 * paulhendrix
+* Acker Apple (me+ibm_db@ackerapple.com)
 * IBM
 
 ## Contributing to the node-ibm_db

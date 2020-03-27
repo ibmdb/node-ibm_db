@@ -1,3 +1,9 @@
+2020-03-27, Version 2.7.0
+=========================
+
+ * Support for named binding parameters using https://www.npmjs.com/package/bind-sql-string
+
+
 2020-02-20, Version 2.6.4
 =========================
 
