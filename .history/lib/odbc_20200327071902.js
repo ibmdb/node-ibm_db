@@ -470,7 +470,7 @@ Database.prototype.query = function (query, params, cb)
 
   // cast object named parameters into a question mark array
   if (typeof (params) === "object" && !Array.isArray(params)) {
-    const bindConfig = bindSqlString(query, params);
+    const bindConfig = bindSqlString(sql, params);
     query = bindConfig.sql; // cast named markers into question markers
     params = bindConfig.parameters; // cast object to array
   }
