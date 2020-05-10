@@ -62,6 +62,9 @@ NAN_MODULE_INIT(ODBCStatement::Init)
   Nan::SetPrototypeMethod(t, "bind", Bind);
   Nan::SetPrototypeMethod(t, "bindSync", BindSync);
   
+  Nan::SetPrototypeMethod(t, "setAttr", SetAttr);
+  Nan::SetPrototypeMethod(t, "setAttrSync", SetAttrSync);
+  
   Nan::SetPrototypeMethod(t, "close", Close);
   Nan::SetPrototypeMethod(t, "closeSync", CloseSync);
 
@@ -956,6 +959,181 @@ void ODBCStatement::UV_AfterBind(uv_work_t* req, int status)
   free(data);
   free(req);
   DEBUG_PRINTF("ODBCStatement::UV_AfterBind - Exit\n");
+}
+
+/*
+ * SetAttrSync
+ * 
+ */
+
+NAN_METHOD(ODBCStatement::SetAttrSync)
+{
+  DEBUG_PRINTF("ODBCStatement::SetAttrSync - Entry\n");
+  Nan::HandleScope scope;
+
+  REQ_ARGS(2);
+  REQ_INT_ARG(0, attr);
+  SQLPOINTER valuePtr = NULL;
+  SQLINTEGER stringLength = SQL_IS_INTEGER;
+  
+  if( info[1]->IsInt32() ) {
+      valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+  } else if (info[1]->IsNull()) {
+      valuePtr = (SQLPOINTER)0;
+  } else if (info[1]->IsString()) {
+      Nan::Utf8String value(info[1]);
+      stringLength = value.length();
+      GETCPPSTR(valuePtr, value, stringLength);
+  } else {
+      return Nan::ThrowTypeError("Unsupported Statement Attribute Value.");
+  }
+  
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  DEBUG_PRINTF("ODBCStatement::SetAttrSync: hENV=%X, hDBC=%X, hSTMT=%X, "
+    "Attribute=%d, value=%i, length=%d\n",
+    stmt->m_hENV, stmt->m_hDBC, stmt->m_hSTMT, attr, valuePtr, stringLength);
+
+  SQLRETURN ret = SQLSetStmtAttr(stmt->m_hSTMT, attr, valuePtr, stringLength);
+
+  if (stringLength != SQL_IS_INTEGER) {
+    FREE(valuePtr);
+  }
+
+  if (SQL_SUCCEEDED(ret)) {
+    info.GetReturnValue().Set(Nan::True());
+  }
+  else {
+    Nan::ThrowError(ODBC::GetSQLError(
+      SQL_HANDLE_STMT,
+      stmt->m_hSTMT,
+      (char *) "[node-odbc] Error in ODBCStatement::SetAttrSync"
+    ));
+    
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+  DEBUG_PRINTF("ODBCStatement::SetAttrSync - Exit\n");
+}
+
+/*
+ * SetAttr
+ * 
+ */
+
+NAN_METHOD(ODBCStatement::SetAttr)
+{
+  DEBUG_PRINTF("ODBCStatement::SetAttr - Entry\n");
+  
+  Nan::HandleScope scope;
+  REQ_ARGS(3);
+
+  ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
+  
+  setattr_work_data* data = 
+    (setattr_work_data *) calloc(1, sizeof(setattr_work_data));
+  MEMCHECK( data );
+
+  data->stmt = stmt;
+  
+  REQ_INT_ARG(0, attr);
+  data->attr = attr;
+  data->valuePtr = NULL;
+  data->stringLength = SQL_IS_INTEGER;
+
+  if( info[1]->IsInt32() ) {
+      data->valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+  } else if (info[1]->IsNull()) {
+      data->valuePtr = (SQLPOINTER)0;
+  } else if (info[1]->IsString()) {
+      Nan::Utf8String value(info[1]);
+      data->stringLength = value.length();
+      GETCPPSTR(data->valuePtr, value, data->stringLength);
+  } else {
+      return Nan::ThrowTypeError("Unsupported Statement Attribute Value.");
+  }
+  
+  REQ_FUN_ARG(2, cb);
+
+  DEBUG_PRINTF("ODBCStatement::SetAttr: hENV=%X, hDBC=%X, hSTMT=%X, "
+    "Attribute=%d, value=%i, length=%d\n",
+    data->stmt->m_hENV, data->stmt->m_hDBC, data->stmt->m_hSTMT,
+    data->attr, data->valuePtr, data->stringLength
+  );
+  
+  data->cb = new Nan::Callback(cb);
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(), 
+    work_req, 
+    UV_SetAttr, 
+    (uv_after_work_cb)UV_AfterSetAttr);
+
+  stmt->Ref();
+
+  info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCStatement::SetAttr - Exit\n");
+}
+
+void ODBCStatement::UV_SetAttr(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_SetAttr - Entry\n");
+  
+  setattr_work_data* data = (setattr_work_data *)(req->data);
+
+  data->result = SQLSetStmtAttr(data->stmt->m_hSTMT,
+                                data->attr,
+                                data->valuePtr,
+                                data->stringLength);
+
+  DEBUG_PRINTF("ODBCStatement::UV_SetAttr - Exit\n");
+}
+
+void ODBCStatement::UV_AfterSetAttr(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterSetAttr - Entry\n");
+  
+  setattr_work_data* data = (setattr_work_data *)(req->data);
+  
+  Nan::HandleScope scope;
+  
+  //an easy reference to the statment object
+  ODBCStatement* self = data->stmt->self();
+
+  //Check if there were errors 
+  if(data->result == SQL_ERROR) {
+    ODBC::CallbackSQLError(
+      SQL_HANDLE_STMT,
+      self->m_hSTMT,
+      data->cb);
+  }
+  else {
+    Local<Value> info[2];
+
+    info[0] = Nan::Null();
+    info[1] = Nan::True();
+
+    Nan::TryCatch try_catch;
+
+    data->cb->Call( 2, info);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
+  }
+
+  self->Unref();
+  delete data->cb;
+  if (data->stringLength != SQL_IS_INTEGER) {
+      FREE(data->valuePtr);
+  }
+  
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterSetAttr - Exit\n");
 }
 
 /*

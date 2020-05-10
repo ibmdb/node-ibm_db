@@ -69,6 +69,11 @@ using namespace node;
             default:     free(prm.buffer); prm.buffer = NULL; break; \
           }                                                          \
         }                                                            \
+        if (prm.arraySize > 0) {                                     \
+            free(prm.strLenArray);                                   \
+            prm.strLenArray = NULL;                                  \
+            prm.arraySize = 0;                                       \
+        }                                                            \
       }                                                              \
       free(params);                                                  \
     }                                                                \
@@ -111,6 +116,8 @@ typedef struct {
   SQLLEN       length;
   SQLUINTEGER  fileOption;    // For BindFileToParam
   SQLINTEGER   fileIndicator; // For BindFileToParam
+  int          arraySize;     // For Array Insert
+  SQLINTEGER * strLenArray;   // For Array Insert
 } Parameter;
 
 class ODBC : public Nan::ObjectWrap {
@@ -146,6 +153,7 @@ class ODBC : public Nan::ObjectWrap {
     static void GetInt32Param(Local<Value> value, Parameter * param, int num);
     static void GetNumberParam(Local<Value> value, Parameter * param, int num);
     static void GetBoolParam(Local<Value> value, Parameter * param, int num);
+    static void GetArrayParam(Local<Value> value, Parameter * param, int num);
 
     static NAN_METHOD(New);
 
@@ -279,7 +287,7 @@ struct query_request {
 #define REQ_INT_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsInt32())                      \
     return Nan::ThrowTypeError("Argument " #I " invalid");              \
-  SQLUSMALLINT VAR = (Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value());
+  SQLINTEGER VAR = (Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value());
 
 #define OPT_INT_ARG(I, VAR, DEFAULT)                                    \
   SQLUSMALLINT VAR;                                                     \

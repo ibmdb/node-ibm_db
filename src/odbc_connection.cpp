@@ -34,6 +34,7 @@ Nan::Persistent<Function> ODBCConnection::constructor;
 Nan::Persistent<String> ODBCConnection::OPTION_SQL;
 Nan::Persistent<String> ODBCConnection::OPTION_PARAMS;
 Nan::Persistent<String> ODBCConnection::OPTION_NORESULTS;
+Nan::Persistent<String> ODBCConnection::OPTION_ARRAYSIZE;
 
 NAN_MODULE_INIT(ODBCConnection::Init)
 {
@@ -43,6 +44,7 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   OPTION_SQL.Reset(Nan::New<String>("sql").ToLocalChecked());
   OPTION_PARAMS.Reset(Nan::New<String>("params").ToLocalChecked());
   OPTION_NORESULTS.Reset(Nan::New<String>("noResults").ToLocalChecked());
+  OPTION_ARRAYSIZE.Reset(Nan::New<String>("ArraySize").ToLocalChecked());
 
   Local<FunctionTemplate> constructor_template = Nan::New<FunctionTemplate>(New);
 
@@ -111,7 +113,7 @@ void ODBCConnection::Free()
 
 NAN_METHOD(ODBCConnection::New)
 {
-  DEBUG_PRINTF("ODBCConnection::New\n");
+  DEBUG_PRINTF("ODBCConnection::New - Entry\n");
   Nan::HandleScope scope;
   
   REQ_EXT_ARG(0, js_henv);
@@ -130,6 +132,7 @@ NAN_METHOD(ODBCConnection::New)
   conn->systemNaming = false;
 
   info.GetReturnValue().Set(info.Holder());
+  DEBUG_PRINTF("ODBCConnection::New - Exit\n");
 }
 
 NAN_GETTER(ODBCConnection::ConnectedGetter)
@@ -1007,6 +1010,14 @@ NAN_METHOD(ODBCConnection::Query)
       else {
         data->noResultObject = false;
       }
+      
+      Local<String> optionArraySize = Nan::New(OPTION_ARRAYSIZE);
+      if (Nan::HasOwnProperty(obj, optionArraySize).IsJust() && Nan::Get(obj, optionArraySize).ToLocalChecked()->IsInt32()) {
+        data->arraySize = Nan::To<int32_t>(Nan::Get(obj, optionArraySize).ToLocalChecked()).FromJust();
+      }
+      else {
+        data->arraySize = 0;
+      }
     }
     else {
       return Nan::ThrowTypeError("ODBCConnection::Query(): Argument 0 must be a String or an Object.");
@@ -1074,6 +1085,12 @@ void ODBCConnection::UV_Query(uv_work_t* req)
       data->sqlLen);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+      if (data->arraySize > 0) { // Its array insert
+          ret = SQLSetStmtAttr (data->hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
+                                SQL_PARAM_BIND_BY_COLUMN, 0);
+          ret = SQLSetStmtAttr (data->hSTMT, SQL_ATTR_PARAMSET_SIZE,
+                                (SQLPOINTER)data->arraySize, 0);
+      }
 
       ret = ODBC::BindParameters( data->hSTMT, data->params, data->paramCount ) ;
 
@@ -1203,6 +1220,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
   int outParamCount = 0; // Non-zero tells its a SP.
   Local<Array> sp_result = Nan::New<Array>();
   bool noResultObject = false;
+  int32_t arraySize = 0;
   int len = 0;
   
   //Check arguments for different variations of calling this function
@@ -1267,6 +1285,15 @@ NAN_METHOD(ODBCConnection::QuerySync)
       else {
         noResultObject = false;
       }
+      
+      Local<String> optionArraySize = Nan::New(OPTION_ARRAYSIZE);
+      if (Nan::HasOwnProperty(obj, optionArraySize).IsJust() && Nan::Get(obj, optionArraySize).ToLocalChecked()->IsInt32()) {
+        arraySize = Nan::To<int32_t>(Nan::Get(obj, optionArraySize).ToLocalChecked()).FromJust();
+        DEBUG_PRINTF("ODBCConnection::QuerySync - under if arraySize =%i\n", arraySize);
+      }
+      else {
+        arraySize = 0;
+      }
     }
     else {
       return Nan::ThrowTypeError("ODBCConnection::QuerySync(): Argument 0 must be a String or an Object.");
@@ -1285,7 +1312,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
                   conn->m_hDBC, 
                   &hSTMT );
 
-  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%X, noResultObject=%i\n", hSTMT, noResultObject);
+  DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%X, noResultObject=%i, arraySize = %d\n", hSTMT, noResultObject, arraySize);
   //check to see if should excute a direct or a parameter bound query
   if (!SQL_SUCCEEDED(ret)) {
     //We'll check again later
@@ -1305,6 +1332,12 @@ NAN_METHOD(ODBCConnection::QuerySync)
       len);
     
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+      if (arraySize > 0) { // Its array insert
+          ret = SQLSetStmtAttr (hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
+                                SQL_PARAM_BIND_BY_COLUMN, 0);
+          ret = SQLSetStmtAttr (hSTMT, SQL_ATTR_PARAMSET_SIZE,
+                                (SQLPOINTER) arraySize, 0);
+      }
       ret = ODBC::BindParameters( hSTMT, params, paramCount ) ;
       if (SQL_SUCCEEDED(ret)) {
         ret = SQLExecute(hSTMT);

@@ -211,6 +211,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status)
     Local<Value> info[1];
     
     info[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
+    DEBUG_PRINTF("ODBC::UV_AfterCreateConnection - Got error in connection.\n");
     
     data->cb->Call(1, info);
   }
@@ -228,6 +229,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status)
   }
   
   if (try_catch.HasCaught()) {
+      DEBUG_PRINTF("ODBC::UV_AfterCreateConnection - Received FatalException.\n");
       Nan::FatalException(try_catch);
   }
 
@@ -966,6 +968,9 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
       else if (val->IsBoolean()) {
           GetBoolParam(val, &params[i], i+1);
       }
+      else if (val->IsArray()) {
+          GetArrayParam(val, &params[i], i+1);
+      }
       else
       {
           GetStringParam(val, &params[i], i+1);
@@ -1022,8 +1027,11 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     {
         bufflen = length + 1;
     }
-    if(bufflen <= param->buffer_length && (param->paramtype % 2 == 0))
+    if(bufflen <= param->buffer_length &&
+       ((param->paramtype % 2 == 0) || (param->arraySize > 0)))
+    {
         bufflen = param->buffer_length + terCharLen;
+    }
     param->buffer_length = bufflen;
     param->size          = bufflen;
 
@@ -1155,6 +1163,114 @@ void ODBC::GetBoolParam(Local<Value> value, Parameter * param, int num)
                  param->decimals, *number, param->buffer_length, param->length);
 }
 
+void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
+{
+    Local<Array> valueArray = Local<Array>::Cast(value);
+    int arrlen = valueArray->Length();
+    param->arraySize = arrlen;
+
+    // Its array insert of size arrlen. Set stmt attribute
+    bool boolean    = Nan::To<bool>(value).FromJust();
+    if(arrlen <= 0) {
+        param->buffer = new int[0];
+        return;
+    }
+
+    Local<Value> val =  Nan::Get(valueArray, 0).ToLocalChecked(); 
+    param->strLenArray = new SQLINTEGER[arrlen];
+
+    if (val->IsNull()) {
+        GetNullParam(param, num);
+        param->buffer = new int[arrlen];
+        for( int i = 0; i < arrlen; i++ ) {
+          param->strLenArray[i] = SQL_NULL_DATA;
+        }
+    }
+    else if (val->IsInt32()) {
+        int64_t *number = new int64_t[arrlen];
+        for( int i = 0; i < arrlen; i++) {
+          val =  Nan::Get(valueArray, i).ToLocalChecked();
+          number[i] = Nan::To<int64_t>(val).FromJust();
+          param->strLenArray[i] = sizeof(int64_t);
+        }
+        param->c_type = SQL_C_SBIGINT;
+        if(!param->type || (param->type == 1)) 
+            param->type = SQL_BIGINT;
+        param->buffer = number;
+    }
+    else if (val->IsNumber()) {
+        double *number   = new double[arrlen];
+        int decimals = 0;
+
+        for( int i = 0; i < arrlen; i++) {
+          val =  Nan::Get(valueArray, i).ToLocalChecked();
+          GetNumberParam(val, param, num);
+          number[i] = *(double*)param->buffer;
+          param->strLenArray[i] = param->length;
+          delete param->buffer;
+          param->buffer = NULL;
+          decimals = (decimals < param->decimals) ? param->decimals : decimals;
+        }
+    
+        param->decimals = decimals;
+        param->buffer  = number;
+    }
+    else if (val->IsBoolean()) {
+        int64_t *boolean = new int64_t[arrlen];
+        for( int i = 0; i < arrlen; i++) {
+          val =  Nan::Get(valueArray, i).ToLocalChecked();
+          GetBoolParam(val, param, num);
+          boolean[i] = *(int64_t*)(param->buffer);
+          param->strLenArray[i] = (SQLINTEGER)param->length;
+          delete param->buffer;
+          param->buffer = NULL;
+        }
+        param->buffer  = boolean;
+    }
+    else
+    {
+        SQLPOINTER * buff = (SQLPOINTER *)NULL; 
+        SQLULEN bufflen = 0;
+        SQLULEN cbValueMax = 0;
+        //char **buff = (char **) new int64_t[arrlen];
+        for( int i = 0; i < arrlen; i++) {
+          val =  Nan::Get(valueArray, i).ToLocalChecked();
+          GetStringParam(val, param, num);
+          if( i == 0 ) {
+              bufflen = arrlen * param->buffer_length;
+              cbValueMax = param->buffer_length;
+              buff = (SQLPOINTER *) malloc(bufflen);
+              DEBUG_PRINTF("ODBC::GetArrayParam Function: param%u : bufflen=%i, "
+                      "cbValueMax=%i\n", num, bufflen, cbValueMax);
+          }
+          bufflen  = cbValueMax;
+          if( bufflen > param->buffer_length ) {
+              bufflen = param->buffer_length;
+          }
+          memcpy((char*)buff + i * cbValueMax, param->buffer, bufflen);
+          param->strLenArray[i] = (SQLINTEGER)param->length;
+          // Free the memory param->buffer as data is already copied
+          FREE(param->buffer);
+          // Reset buffer_length which was incremented by GetStringParam
+          if( i < arrlen - 1 ) {
+#ifdef UNICODE
+            param->buffer_length -= 2;
+#else
+            param->buffer_length -= 1;
+#endif
+          }
+        }
+        param->buffer  = buff;
+    }
+
+    DEBUG_PRINTF("ODBC::GetArrayParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer=%lld, buffer_length=%i"
+                 ", length=%i, arraySize=%d, strLenArray[0]=%i\n",
+                 num, param->paramtype, param->c_type, param->type, param->size,
+                 param->decimals, *((char *)param->buffer+param->size), param->buffer_length,
+                 param->length, param->arraySize, param->strLenArray[0]);
+}
+
 SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
 {
     SQLRETURN ret = SQL_SUCCESS;
@@ -1180,6 +1296,20 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
                       &params[i].fileOption,     // *FileOptions,  // SQL_FILE_READ = 2
                       prm.decimals,        // MaxFileNameLength, 
                       &params[i].fileIndicator); // *IndicatorValue); // 0 
+        }
+        else if(prm.arraySize > 0)  // Bind Array Parameter
+        {
+            ret = SQLBindParameter(
+                      hSTMT,                    //StatementHandle
+                      i + 1,                    //ParameterNumber
+                      prm.paramtype,            //InputOutputType
+                      prm.c_type,               //ValueType
+                      prm.type,                 //ParameterType
+                      prm.size,                 //ColumnSize
+                      prm.decimals,             //DecimalDigits
+                      prm.buffer,               //ParameterValuePtr
+                      prm.buffer_length,        //BufferLength
+                      prm.strLenArray);       //StrLen_or_IndPtr
         }
         else
             ret = SQLBindParameter(

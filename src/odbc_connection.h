@@ -32,6 +32,7 @@ class ODBCConnection : public Nan::ObjectWrap {
    static Nan::Persistent<String> OPTION_SQL;
    static Nan::Persistent<String> OPTION_PARAMS;
    static Nan::Persistent<String> OPTION_NORESULTS;
+   static Nan::Persistent<String> OPTION_ARRAYSIZE;
    static Nan::Persistent<Function> constructor;
    
    static NAN_MODULE_INIT(Init);
@@ -136,6 +137,7 @@ struct query_work_data {
   int paramCount;
   int completionType;
   bool noResultObject;
+  int32_t arraySize;
   
   void *sql;
   void *catalog;

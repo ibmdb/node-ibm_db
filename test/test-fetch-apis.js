@@ -8,12 +8,13 @@ var common = require("./common")
   ;
 
 ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
+  conn.querySync("create table hits (col1 varchar(40), col2 int, col3 decimal(11,0))");
+  conn.querySync("insert into hits values ('something', 42, 343434)");
+  conn.querySync("insert into hits values ('für', 43, 35353535)");
 
   // Fetch data Synchronously using fetchSync() API.
   var stmt = conn.prepareSync("select * from hits");
+  stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
   var result = stmt.executeSync();
   var data = 0;
   console.log("-------------------------------------------------------------");
@@ -38,7 +39,7 @@ ibmdb.open(cn,function(err,conn){
     else {
       console.log("Selected data using fetchAll() API = ", data);
       console.log("No of columns in selected data = ", colcount);
-      assert.deepEqual(colcount, 2);
+      assert.deepEqual(colcount, 3);
     }
     result.closeSync();
 
