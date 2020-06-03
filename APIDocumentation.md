@@ -41,6 +41,8 @@
 32. [.debug(value)](#enableDebugLogs)
 33. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
 34. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
+35. [.setAttr(attributeName, value, callback)](#setAttrApi)
+36. [.setAttrSync(attributeName, value)](#setAttrSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -134,8 +136,9 @@ try {
 
 Issue an asynchronous SQL query to the database which is currently open.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}. noResults accepts only true or false values.
 If true - query() will not return any result. "sql" field is mandatory in Object, others are _OPTIONAL_.
+For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
@@ -166,13 +169,34 @@ ibmdb.open(cn, function (err, conn) {
     });
 });
 ```
+Example for Array Insert:
+```javascript
+  var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
+  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
+  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
+  var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
+  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
+  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
+                      params: [param1, param2, param3, param4],
+                      ArraySize:5};
+
+  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  conn.query(queryOptions, function(err, result) {
+    if(err) console.log(err);
+    else {
+      var data = conn.querySync("select * from arrtab");
+      console.log("\nSelected data for table ARRTAB =\n", data);
+    }
+  });
+```
 
 ### <a name="querySyncApi"></a> 4) .querySync(sqlQuery [, bindingParameters])
 
 Synchronously issue a SQL query to the database that is currently open.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}. noResults accepts only true or false values.
 If true - query() will not return any result. If noResults is true for CALL statement, querySync returns only OutParams. "sql" field is mandatory in Object, others are optional.
+For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -189,6 +213,20 @@ ibmdb.open(cn, function(err, conn){
   console.log(rows);
 });
 ```
+Example for Array Insert:
+```javascript
+  var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
+  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
+  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
+  var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
+  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
+  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
+                      params: [param1, param2, param3, param4],
+                      ArraySize:5};
+
+  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  conn.querySync(queryOptions);
+```
 
 ### <a name="queryStreamApi"></a> 5) .queryStream(sqlQuery [, bindingParameters])
 
@@ -196,7 +234,9 @@ Synchronously issue a SQL query to the database that is currently open and retur
 a Readable stream. Application can listen the events emmitted by returned stream
 and take action.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - query() will not return any result. "sql" field is mandatory in Object, others are optional.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
+noResults accepts only true or false values. If true - query() will not return any result. "sql" field is mandatory in Object, others are optional.
+For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -225,9 +265,10 @@ ibmdb.open(cn, function(err, conn)
 Issue an asynchronous SQL query to the database which is currently open and return (err, result, outparams) to callback function. `result` is ODBCResult object. Uisng `result`, call `result.fetchAllSync()` to retrieve all rows; call `result.getColumnMetadataSync()` to get meta data info or call `result.fetchSync()` to retrieve each row one by one and process. Execute `result.closeSync()` once done with the `result` object.
 `query` returns all the rows on call, but `queryResult` returns the result object and rows need to be fetched by the caller.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - queryResult() will not return any result object and value of result will be null.
 "sql" field is mandatory in Object, others are _OPTIONAL_.
+For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any ? characters (called parameter marker) in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
@@ -262,7 +303,9 @@ Synchronously issue a SQL query to the database that is currently open and retur
 
 `querySync`API returns all the rows on call, but `queryResultSync` API returns the `ODBCResult` object using which application should call fetch APIs to get data.
 
-* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue}. noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
+* **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
+noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
+For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -965,6 +1008,13 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
+### <a name="setAttrApi"></a> 35) .setAttr(attributeName, value, callback)
+
+Set statement level attributes asynchronously. It requires attributeName and corresponding value.
+
+### <a name="setAttrSyncApi"></a> 36) .setAttrSync(attributeName, value)
+
+Set statement level attributes synchronously. It requires attributeName and corresponding value.
 
 ## Create and Drop Database APIs
 
@@ -1138,6 +1188,8 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
  - INOUT - Bind the parameter using SQL_PARAM_INPUT_OUTPUT. It is also used for Stored Procedure call.
  - FILE  - It tells the Data is a filename that contains actual data to load. If you want to load an image to database, use this input type along with DataType as BLOB for binary file.
    f.e. `{ParamType: "FILE", DataType: "BLOB", Data: "mypic.jpg"}`
+ - ARRAY - It tells the Data is an Array of same type and size. It must be used for Array Insert i.e. to insert data for multiple rows using single execute.
+   If one parameter is of type ARRAY, all parameters passed to an API must be of type ARRAY and of equal size. Check [test/test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
 
 * **CType**: C Data type of the parameter to be bound. Default value is CHAR.
 * **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR
@@ -1158,13 +1210,15 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 [[1,1,1,38], {"Data": "string"}]
 [38, {ParamType:"INPUT", DataType: "CLOB", "Data": var1}] - here var1 contains full CLOB data to be inserted.
 [38, {ParamType:"FILE", DataType: "CLOB", "Data": filename}] - here filename is the name of file which has large character data.
+[{ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]}, {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]}] - for Array insert.
 ```
 The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
 
-Pass bind parameters as Object if you want to insert a BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:
+Pass bind parameters as Object if you want to insert an Array or BLOB or CLOB data to DB2. Check below test files to know how to insert a BLOB and CLOB data from buffer and file:
 
  - [test-blob-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-insert.js) - To insert a BLOB and CLOB data using memory buffer. Application need to read the file contents and then use as bind parameter.
  - [test-blob-file.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-file.js) - To insert an image file and large text file directly to database without reading it by application.
+ - [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) - For Array Insert.
 
 ## <a name="callStmt"></a>CALL Statement
 
