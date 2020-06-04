@@ -25,6 +25,10 @@ function insertCallback(err, data) {
   insertCount += 1;
   
   if (insertCount === 3) {
+    let param1 = {ParamType: "IN", DataType: "SQL_CHAR", Data: 'rocket'};
+    let data = db.querySync("select COLTEXT from final table (insert into " + common.tableName + " (COLTEXT) values (?))", [param1]);
+    console.log("Inserted data = ", data);
+    assert.deepEqual(data, [ { COLTEXT: 'rocket' } ]);
     common.dropTables(db, function () {
       db.close(function () {
         console.error("Done");
