@@ -1,6 +1,7 @@
 # node-ibm_db
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
+Async APIs return promises if callback function is not used.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
@@ -189,8 +190,9 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
 
 ```javascript
 var ibmdb = require('ibm_db');
+var connStr = "DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP";
 
-ibmdb.open("DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<dbport>;PROTOCOL=TCPIP", function (err,conn) {
+ibmdb.open(connStr, function (err,conn) {
   if (err) return console.log(err);
   
   conn.query('select 1 from sysibm.sysdummy1', function (err, data) {
@@ -202,6 +204,20 @@ ibmdb.open("DATABASE=<dbname>;HOSTNAME=<myhost>;UID=db2user;PWD=password;PORT=<d
     });
   });
 });
+
+ibmdb.open(connStr).then(
+    conn => {
+      conn.query("select 1 from sysibm.sysdummy1").then(data => {
+        console.log(data);
+        conn.closeSync();
+      }, err => {
+        console.log(err);
+      });
+    }, err => {
+      console.log(err)
+    }
+);
+
 ```
 
 ## Un-Install
