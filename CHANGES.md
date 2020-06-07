@@ -1,3 +1,31 @@
+2020-06-07, Version 2.7.0
+=========================
+
+ * fix vulnerabilities (Bimal Jha)
+
+ * update windows binaries (Bimal Jha)
+
+ * doc update (Bimal Jha)
+
+ * doc update for issue #658 (Bimal Jha)
+
+ * upd: test file for issue #634 (Bimal Jha)
+
+ * doc: update for array insert (Bimal Jha)
+
+ * fix for issue #655 (Bimal Jha)
+
+ * fea: Add support for Array Insert #233, #489 (Bimal Jha)
+
+ * fea: read value of IBM_DB_INSTALLER_URL from .npmrc file (Bimal Jha)
+
+ * support for electron7.1.11 version (#619) (Akhil Ravuri)
+
+ * upd: version of minimist to fix security vulnerability (Bimal Jha)
+
+ * upd: test files for Windows to avoid SQL0420N error (Bimal Jha)
+
+
 2020-02-20, Version 2.6.4
 =========================
 
