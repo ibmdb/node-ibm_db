@@ -399,50 +399,17 @@ using directory `/nodeapp` for example.
 ```
 
 ```
-5. Install node-gyp and other dependencies (refer package.json)
-
-npm install -g node-gyp
-npm install moment
-npm install nan@2.2.0
-npm install bindings@1.0.0
-etc...
-```
-
-```
-6. Set the msbuild path into `PATH` environment variable.
+5. Set the msbuild path into `PATH` environment variable.
    ie.: `C:\Program Files (x86)\MSBuild\14.0\bin\`.
 ```
 
 ```
-7. Run node-gyp configure build command.
-
-node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false --verbose
-```
-
-If `node-gyp configure build` command succeeded then Follow these steps.
-
-```
-8. Delete `build\Release folder`.
-9. Open `build\odbc_bindings.vcxproj` file and edit following enteries:
-
-Step1: Search AdditionalDependencies tag in file.
-
-<AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\Users\IBM_ADMIN\.node-gyp\5.3.0\$(Configuration)\node.lib&quot;;$(IBM_DB_HOME)\lib\db2cli64.lib;$(IBM_DB_HOME)\lib\db2app64.lib</AdditionalDependencies>
-
-Step2: Delete `kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib` from all tag entries.
-
-<AdditionalDependencies>;&quot;C:\Users\IBM_ADMIN\.node-gyp\5.3.0\$(Configuration)\node.lib&quot;;$(IBM_DB_HOME)\lib\db2cli64.lib;$(IBM_DB_HOME)\lib\db2app64.lib</AdditionalDependencies>
+6. Build odbc_bindings.node using npm command
+cd node-ibm_db
+npm install
 ```
 
 ```
-10. Finally run below msbuild command:
-
-msbuild build/binding.sln /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64
-
-Note: This command will run only in windows command prompt.
-```
-
-```
-11. Check for `\node-ibm_db\build\Release\odbc_bindings.node` file, If it's there
+7. Check for `\node-ibm_db\build\Release\odbc_bindings.node` file, If it's there
     Well Done :)
 ```

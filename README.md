@@ -186,6 +186,30 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
     Reference Chapter 3 in the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) for more instructions.
 
 
+## How to get ibm_db instance?
+
+The simple api is based on the instances of `Database` class. You may get an 
+instance by one of the following ways:
+
+```javascript
+require("ibm_db").open(connectionString, function (err, conn){
+  //conn is already open now if err is falsy
+});
+```
+
+or by using the helper function:
+
+```javascript
+var ibmdb = require("ibm_db")();
+``` 
+
+or by creating an instance with the constructor function:
+
+```javascript
+var Database = require("ibm_db").Database
+  , ibmdb = new Database();
+```
+
 ## Quick Example
 
 ```javascript
@@ -285,29 +309,19 @@ https://groups.google.com/forum/#!forum/node-ibm_db
    
 If no solution found, you can open a new issue on github or start a new topic in google groups.
 
-## How to get ibm_db instance?
+### To to verify database connectivity using ODBC and generate db2trace?
 
-The simple api is based on the instances of `Database` class. You may get an 
-instance by one of the following ways:
+cd to `ibm_db/installer` directory and update database connection information for `db2cli validate` command in `testODBCConnection.sh` file for non-Windows platform and execute it.
+For Windows platform, update connection info for `db2cli validate` command in `testODBCConnection.bat` file and execute it from Administrator Command Prompt.
+Script `testODBCConnection` set the required environment variables, validate database connectivity and gerate db2trace files.
 
-```javascript
-require("ibm_db").open(connectionString, function (err, conn){
-  //conn is already open now if err is falsy
-});
+### How to get db2trace for any node.js test file?
 ```
-
-or by using the helper function:
-
-```javascript
-var ibmdb = require("ibm_db")();
-``` 
-
-or by creating an instance with the constructor function:
-
-```javascript
-var Database = require("ibm_db").Database
-  , ibmdb = new Database();
+copy test.js to ibm-db/test directory
+cd ibm_db/test
+./trace test.js
 ```
+trace script works only on non-windows platform. For Windows, use `testODBCConnection.bat` script. You can replace `db2cli validate` command with `node test.js`in `testODBCConnection.bat` script and execute it.
 
 ## Build Options
 

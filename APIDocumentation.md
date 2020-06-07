@@ -433,11 +433,15 @@ Binds the parameters for prepared statement.
 * **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err)`
 
+* For **ARRAY INSERT** - Each value should be an array of size passed as `ArraySize` in query() APIs or equal to the value of attribute SQL_ATTR_PARAMSET_SIZE set using setAttr() APIs for prepared statement.
+
 ### <a name="bindSyncApi"></a> 13) .bindSync(bindingParameters)
 
 Binds the parameters for prepared statement synchronously. If `bindSync()` is used, then no need to pass `bindingParameters` to next `execute()` or `executeSync()` statement.
 
 * **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+
+* For **ARRAY INSERT** - Each value should be an array of size passed as `ArraySize` in query() APIs or equal to the value of attribute SQL_ATTR_PARAMSET_SIZE set using setAttr() APIs for prepared statement.
 
 ### <a name="executeApi"></a> 14) .execute([bindingParameters], callback)
 
@@ -446,6 +450,7 @@ Execute a prepared statement.
 * **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err, result, outparams)`
 outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure.
+* For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
 Returns a `Statement` object via the callback
 
@@ -487,6 +492,7 @@ ibmdb.open(cn,function(err,conn){
 Execute a prepared statement synchronously.
 
 * **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
+* For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
 Returns a `Statement` object. If prepared statement is a stored procedure with INOUT or OUT parameter, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of such array is an `Statement` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
 
@@ -515,6 +521,7 @@ Execute a non query prepared statement and returns the number of rows affected i
 
 * **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
 * **callback** - `callback (err, affectedRowCount)`
+* For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
 It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1 via the callback function.
 
@@ -548,6 +555,7 @@ ibmdb.open(cn,function(err,conn){
 Execute a non query prepared statement synchronously and returns the number of rows affected in a table by the statement.
 
 * **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
 It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1.
 
@@ -1011,10 +1019,21 @@ ibmdb.open(cn, function(err, conn){
 ### <a name="setAttrApi"></a> 35) .setAttr(attributeName, value, callback)
 
 Set statement level attributes asynchronously. It requires attributeName and corresponding value.
+```
+stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
+    if(err) { console.log(err); stmt.closeSync(); }
+    else { ... }
+});
+```
 
 ### <a name="setAttrSyncApi"></a> 36) .setAttrSync(attributeName, value)
 
 Set statement level attributes synchronously. It requires attributeName and corresponding value.
+```
+var err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
+err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
+err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
+```
 
 ## Create and Drop Database APIs
 
