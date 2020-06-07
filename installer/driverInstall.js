@@ -22,7 +22,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '7.1.11';
+var electron_version = '7.2.4';
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 
@@ -519,11 +519,12 @@ var install_node_ibm_db = function(file_url) {
                     //Windows node binary names should update here.
                     var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
-                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.16.2';
+                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.17.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.17.0';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.19.0';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.13.1';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.16.1';
+                    var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 6.0) {
@@ -544,7 +545,8 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
@@ -696,7 +698,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.43) {
+            if (vscodeVer >= 1.45) {
+                electron_version = "7.2.4";
+            }
+            else if (vscodeVer >= 1.43) {
                 electron_version = "7.1.11";
             }
             else if (vscodeVer >= 1.40) {
