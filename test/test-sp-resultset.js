@@ -5,6 +5,9 @@ var common = require("./common")
 
 if(schema == undefined) schema = "NEWTON";
 
+//==================== TEST 1 =============================
+console.log("==================== TEST 1 =============================\n");
+
 var proc1 = "create or replace procedure " + schema + ".PROC2 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; set v2 = 'success'; end";
 var proc2 = "create or replace procedure " + schema + ".PROC2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
 var proc3 = "create or replace procedure " + schema + ".PROC2 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; end";
@@ -118,10 +121,69 @@ ibmdb.open(common.connectionString, {fetchMode : 3}, function (err, conn) {
                   conn.querySync("drop procedure " + schema + ".PROC2 ( INT, VARCHAR(30) )");
                 }
                 conn.querySync("drop table " + schema + ".mytab1");
-                // Close connection in last only.
-                conn.close(function (err) { console.log("done.");});
+                // Call second test
+                testDate(conn);
             });
         });
     });
 });
+
+//==================== TEST 2 =============================
+
+function testDate(conn)
+{
+    console.log("\n==================== TEST 2 ===========================\n");
+    var proc1 = "create procedure " + schema + ".PROC4(IN v1 int, OUT v2 DATE)"+
+        " dynamic result sets 1 language sql begin  declare cr1  cursor with " +
+        "return for select c1, c2 from " + schema + ".mytab1; open cr1; " +
+        "set v2 = CURRENT DATE; end";
+    var param2 = {ParamType:"OUTPUT", DataType:"DATE", Data:"2020-08-15", Length:30};
+    var query = "call " + schema + ".PROC4(?, ?)";
+    var dropProc = "drop procedure " + schema + ".PROC2";
+
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      // - When creating an SQL native procedure on z/OS, you will need to
+      // have a WLM environment defined for your system if you want to run
+      // the procedure in debugging mode. Adding "disable debug mode" to
+      // bypass this requirement.
+      proc1 = proc1.replace(" begin", " disable debug mode begin");
+    }
+    try {
+      conn.querySync("create table " + schema + ".mytab1 (c1 int, c2 DATE)");
+    } catch (e) { console.log(e); }
+
+    conn.querySync("insert into " +schema+ ".mytab1 values (5, '2020-04-22')");
+
+    // Create Stored Procedure
+    try {
+       conn.querySync(dropProc);
+    } catch(e) { };
+    var err = conn.querySync(proc1);
+    if(err.length) { console.log(err); }
+
+    // Call SP Synchronously.
+    var result = conn.querySync(query, [1, param2]);
+    console.log("Result for Sync call of proc4 ==>");
+    console.log(result);
+    assert.equal(result.length, 2);
+    // Call SP Asynchronously.
+    conn.query(query, [1, param2], function (err, result) {
+        if (err) console.log(err);
+        else {
+          console.log("Result for Async call of proc4 ==>");
+          console.log(result);
+          assert.equal(result.length, 2);
+        }
+
+        // Do Cleanup.
+        if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+          conn.querySync("drop procedure " + schema + ".PROC4");
+        } else {
+          conn.querySync("drop procedure " + schema + ".PROC4 ( INT, DATE )");
+        }
+        conn.querySync("drop table " + schema + ".mytab1");
+        // Close connection in last only.
+        conn.close(function (err) { console.log("done.");});
+    });
+}
 
