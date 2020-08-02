@@ -1236,38 +1236,38 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
         for( int i = 0; i < arrlen; i++) {
           val =  Nan::Get(valueArray, i).ToLocalChecked();
           GetStringParam(val, param, num);
+          // Reset buffer_length which was incremented by GetStringParam
+#ifdef UNICODE
+          param->buffer_length -= 2;
+#else
+          param->buffer_length -= 1;
+#endif
           if( i == 0 ) {
-              bufflen = arrlen * param->buffer_length;
-              cbValueMax = param->buffer_length;
+              cbValueMax = param->buffer_length; //Length of each element of array
+              bufflen = arrlen * cbValueMax;
               buff = (SQLPOINTER *) malloc(bufflen);
               DEBUG_PRINTF("ODBC::GetArrayParam Function: param%u : bufflen=%i, "
                       "cbValueMax=%i\n", num, bufflen, cbValueMax);
           }
-          bufflen  = cbValueMax;
-          if( bufflen > param->buffer_length ) {
-              bufflen = param->buffer_length;
+          bufflen  = cbValueMax; // Length of max data to be copied.
+          if( param->length > 0 && bufflen > param->length ) {
+              bufflen = param->length;
           }
           memcpy((char*)buff + i * cbValueMax, param->buffer, bufflen);
-          param->strLenArray[i] = (SQLINTEGER)param->length;
+          param->strLenArray[i] = bufflen;
           // Free the memory param->buffer as data is already copied
           FREE(param->buffer);
-          // Reset buffer_length which was incremented by GetStringParam
-          if( i < arrlen - 1 ) {
-#ifdef UNICODE
-            param->buffer_length -= 2;
-#else
-            param->buffer_length -= 1;
-#endif
-          }
         }
         param->buffer  = buff;
+        param->buffer_length = cbValueMax;
+        param->size = cbValueMax;
     }
 
     DEBUG_PRINTF("ODBC::GetArrayParam: param%u : paramtype=%u, c_type=%i, "
                  "type=%i, size=%i, decimals=%i, buffer=%lld, buffer_length=%i"
                  ", length=%i, arraySize=%d, strLenArray[0]=%i\n",
                  num, param->paramtype, param->c_type, param->type, param->size,
-                 param->decimals, *((char *)param->buffer+param->size), param->buffer_length,
+                 param->decimals, *((char *)param->buffer), param->buffer_length,
                  param->length, param->arraySize, param->strLenArray[0]);
 }
 

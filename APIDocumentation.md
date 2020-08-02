@@ -174,8 +174,12 @@ Example for Array Insert:
   var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
   var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
   var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
-  var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
-  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
+  var namearr = ["Row 10", "Row 203456", "Row 30", "Row 40", "Last Row"];
+
+  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
+  // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
+  // Default value is the length of first member of Array.
+
   var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
@@ -219,7 +223,11 @@ Example for Array Insert:
   var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
   var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
   var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
-  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
+
+  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
+  // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
+  // Default value is the length of first member of Array.
+
   var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
@@ -1209,6 +1217,8 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
    f.e. `{ParamType: "FILE", DataType: "BLOB", Data: "mypic.jpg"}`
  - ARRAY - It tells the Data is an Array of same type and size. It must be used for Array Insert i.e. to insert data for multiple rows using single execute.
    If one parameter is of type ARRAY, all parameters passed to an API must be of type ARRAY and of equal size. Check [test/test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+    Use "Length: <maxDataLen>" in param Object for unequal size of data.
+    Default value is the length of first member of Array.
 
 * **CType**: C Data type of the parameter to be bound. Default value is CHAR.
 * **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR

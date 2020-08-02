@@ -4,7 +4,7 @@ var common = require("./common")
   , insertCount = 0;
   ;
 
-ibmdb.debug(true);
+//ibmdb.debug(true);
 ibmdb.open(common.connectionString, function(err, conn) {
   if(err) {
     console.log(err);
@@ -13,12 +13,14 @@ ibmdb.open(common.connectionString, function(err, conn) {
 
   // Insert array data using querySync API
   // =====================================
-  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
-  conn.querySync("insert into arrtab values (9, 4.5, true, 'rocket')");
+  err = conn.querySync("create table arrtab (c1 int, c2 double, c3 smallint, c4 varchar(10))");
+  if(err.length) { console.log(err); return; }
+  err = conn.querySync("insert into arrtab values (9, 4.5, true, 'rocket')");
+  if(err.length) { console.log(err); return; }
   var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
   var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
   var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
-  var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
+  var namearr = ["Row 10", "Row 200", "Row 30", "Row 4000", "Last Row"];
   var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
   var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
                       params: [param1, param2, param3, param4],
@@ -30,8 +32,20 @@ ibmdb.open(common.connectionString, function(err, conn) {
   // ================================================
   conn.querySync("create table arrtab2 (c1 int, c2 varchar(10))");
   var param5 = {ParamType:"ARRAY", DataType:1, Data:[10,20,30,40]};
-  var namearr = ["Row 10", "Row 20", "Row 30", "Last Row"];
-  var param6 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
+  var namearr = ["Row 10", "Row 2000", "Row 30", "Last Row"];
+  var param6 = {ParamType:"ARRAY", DataType:1, Data:namearr};
+
+  //Note: param4 uses "Length" key, but param6 do not use Length key
+  var tab2data =  [
+        { C1: 10, C2: 'Row 10' },
+        { C1: 20, C2: 'Row 20' },
+        { C1: 30, C2: 'Row 30' },
+        { C1: 40, C2: 'Last R' },
+        { C1: 10, C2: 'Row 10' },
+        { C1: 20, C2: 'Row 20' },
+        { C1: 30, C2: 'Row 30' },
+        { C1: 40, C2: 'Last R' }
+      ];
 
   var stmt = conn.prepareSync("insert into arrtab2 values (?, ?)");
   stmt.bindSync([param5, param6]);
@@ -62,6 +76,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
                 var data = conn.querySync("select * from arrtab2");
                 console.log("\nSelected data for table ARRTAB2 =\n", data);
                 conn.querySync("drop table arrtab2");
+                assert.deepEqual(data, tab2data);
                 conn.closeSync();
               });
             }

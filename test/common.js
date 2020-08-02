@@ -3,16 +3,21 @@ const os = require('os');
 
 //exports.connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
 exports.connectionString = "";
+var isZOS = false;
+if (os.type() === "OS/390") {
+    isZOS = true;
+}
 
 try {
-  if (os.type() === "OS/390") {
+  if (isZOS) {
+    process.env.IBM_DB_SERVER_TYPE="ZOS";
     exports.connectionObject = require('./config.testConnectionStrings.zos.json');
   } else {
     exports.connectionObject = require('./config.testConnectionStrings.json');
   }
 }
 catch (e) {
-  if (os.type() === "OS/390") {
+  if (isZOS) {
     // On z/OS, ODBC driver uses a local connection that only requires DSN, UID and PWD.
     exports.connectionObject = {
        DSN : "{Db2 ODBC Driver}",
@@ -42,7 +47,7 @@ exports.connectionObject.UID     = process.env.IBM_DB_UID      || exports.connec
 exports.connectionObject.PWD     = process.env.IBM_DB_PWD      || exports.connectionObject.PWD;
 
 // Construct the connection string
-if (os.type() === "OS/390") {
+if (isZOS) {
   // On z/OS, ODBC driver uses a local connection that only requires DSN, UID and PWD.
   exports.connectionObject.DSN = process.env.IBM_DB_DBNAME  || exports.connectionObject.DSN;
   exports.connectionString = "DSN=" + exports.connectionObject["DSN"] + ";" +
