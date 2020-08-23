@@ -1056,13 +1056,10 @@ Delimiter splits mutliple query in the sqlFile.
 
 * **callback** - `callback (error, value)`
 
-   Depending on the type of information that is being retrieved, 5 types of information can be returned:
+   Depending on the type of information that is being retrieved, 2 types of information can be returned:
 
-   - 16-bit integer value
-   - 32-bit integer value
-   - 32-bit binary value
-   - 32-bit mask
-   - Null-terminated character string
+   - String value
+   - Number value
 
 ```javascript
 var ibmdb = require("ibm_db")
