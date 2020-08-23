@@ -43,6 +43,8 @@
 34. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
 35. [.setAttr(attributeName, value, callback)](#setAttrApi)
 36. [.setAttrSync(attributeName, value)](#setAttrSyncApi)
+37. [.getInfo(infoType, [infoLength], callback)](#getInfoApi)
+38. [.getInfoSync(infoType, [infoLength])](#getInfoSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -1041,6 +1043,59 @@ Set statement level attributes synchronously. It requires attributeName and corr
 var err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
 err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
+```
+
+### <a name="getInfoApi"></a> 37) .getInfo(infoType, [infoLength], callback)
+
+Asynchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
+
+* **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
+Delimiter splits mutliple query in the sqlFile.
+
+* **callback** - `callback (error, value)`
+
+   Depending on the type of information that is being retrieved, 5 types of information can be returned:
+
+   - 16-bit integer value
+   - 32-bit integer value
+   - 32-bit binary value
+   - 32-bit mask
+   - Null-terminated character string
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn) {
+    conn.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
+      if(error) console.log(error);
+      else console.log("SQL_DBMS_NAME(Server Type) = ", data);
+      conn.closeSync();
+    });
+});
+```
+
+### <a name="getInfoSyncApi"></a> 38) .getInfoSync(infoType, [infoLength])
+
+Synchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
+
+* **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
+Delimiter splits mutliple query in the sqlFile.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn)
+{
+    let serverVersion = conn.getInfoSync(ibmdb.SQL_DBMS_VER);
+    console.log("SQL_DBMS_VER(Server Version) = ", serverVersion);
+    conn.closeSync();
+});
 ```
 
 ## Create and Drop Database APIs

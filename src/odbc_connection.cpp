@@ -81,6 +81,8 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   Nan::SetPrototypeMethod(constructor_template, "endTransactionSync", EndTransactionSync);
 
   Nan::SetPrototypeMethod(constructor_template, "setIsolationLevel", SetIsolationLevel);
+  Nan::SetPrototypeMethod(constructor_template, "getInfo", GetInfo);
+  Nan::SetPrototypeMethod(constructor_template, "getInfoSync", GetInfoSync);
   
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
@@ -1957,3 +1959,387 @@ NAN_METHOD(ODBCConnection::SetIsolationLevel)
   }
   DEBUG_PRINTF("ODBCConnection::SetIsolationLevel - Exit\n");
 }
+
+/*
+ * GetInfoSync
+ */
+
+NAN_METHOD(ODBCConnection::GetInfoSync)
+{
+  DEBUG_PRINTF("ODBCConnection::GetInfoSync - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  Local<Value> objError;
+  SQLRETURN ret = SQL_SUCCESS;
+  bool error = false;
+  SQLPOINTER rgbInfo = (SQLPOINTER) NULL;
+  SQLSMALLINT cbInfo = 0;
+  
+  REQ_ARGS(2);
+  REQ_INT_ARG(0, infotype);
+  REQ_INT_ARG(1, infolen);
+
+  rgbInfo = malloc(infolen);
+  MEMCHECK( rgbInfo );
+  ret = SQLGetInfo(
+    conn->m_hDBC,
+    infotype,
+    rgbInfo,
+    infolen,
+    &cbInfo);
+
+  DEBUG_PRINTF("ODBCConnection::GetInfoSync infoType=%i; infoLen=%i, ret=%d\n",
+               infotype, infolen, ret);
+
+  if (!SQL_SUCCEEDED(ret)) {
+    error = true;
+
+    objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
+  }
+
+  if (error) {
+    Nan::ThrowError(objError);
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+  else {
+    Local<Value> value = getInfoValue((SQLUSMALLINT)infotype, rgbInfo);
+    info.GetReturnValue().Set(value);
+  }
+  DEBUG_PRINTF("ODBCConnection::GetInfoSync - Exit\n");
+}
+
+/*
+ * GetInfo
+ */
+
+NAN_METHOD(ODBCConnection::GetInfo)
+{
+  DEBUG_PRINTF("ODBCConnection::GetInfo - Entry\n");
+  Nan::HandleScope scope;
+
+  REQ_ARGS(3);
+  REQ_INT_ARG(0, infotype);
+  REQ_INT_ARG(1, infolen);
+  REQ_FUN_ARG(2, cb);
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
+  
+  getinfo_work_data* data = 
+    (getinfo_work_data *) calloc(1, sizeof(getinfo_work_data));
+  MEMCHECK( data ) ;
+  
+  data->cb = new Nan::Callback(cb);
+  data->conn = conn;
+  data->infoType = infotype;
+  data->buffLen = infolen;
+
+  work_req->data = data;
+  
+  uv_queue_work(
+    uv_default_loop(), 
+    work_req, 
+    UV_GetInfo,
+    (uv_after_work_cb)UV_AfterGetInfo);
+
+  conn->Ref();
+
+  DEBUG_PRINTF("ODBCConnection::GetInfo - Exit\n");
+  info.GetReturnValue().Set(Nan::Undefined());
+}
+
+void ODBCConnection::UV_GetInfo(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_GetInfo - Entry\n");
+  
+  //get our work data
+  getinfo_work_data* data = (getinfo_work_data *)(req->data);
+  SQLSMALLINT valueLen = 0;
+
+  DEBUG_PRINTF("ODBCConnection::UV_GetInfo m_hDBC=%X, infoType=%d, infoLen=%d\n",
+    data->conn->m_hDBC, data->infoType, data->buffLen);
+  
+  data->buffer = malloc(data->buffLen);
+  MEMCHECK( data->buffer ) ;
+
+  data->rc = SQLGetInfo(
+    data->conn->m_hDBC,
+    data->infoType,
+    data->buffer,
+    data->buffLen,
+    &valueLen);
+
+  data->valueLen = valueLen;
+  DEBUG_PRINTF("ODBCConnection::UV_GetInfo - Exit: infoValuePtr=%s, valueLen=%d, rc=%d\n",
+          data->buffer, valueLen, data->rc);
+}
+
+void ODBCConnection::UV_AfterGetInfo(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetInfo - Entry\n");
+  Nan::HandleScope scope;
+  Local<Value> info[2];
+
+  getinfo_work_data* data = (getinfo_work_data *)(req->data);
+
+  if (data->rc != SQL_SUCCESS) {
+    info[0] = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->m_hDBC, (char *) "[node-ibm_db] SQL_ERROR");
+    info[1] = Nan::Null();
+  } else {
+    info[0] = Nan::Null();
+    info[1] = getInfoValue(data->infoType, data->buffer);
+  }
+
+  Nan::TryCatch try_catch;
+
+  data->cb->Call( 2, info);
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+  
+  delete data->cb;
+
+  free(data->buffer);
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetInfo - Exit\n");
+}
+
+Local<Value> getInfoValue( SQLUSMALLINT fInfoType, SQLPOINTER info )
+{
+    Local<Value> result;
+
+    if( info == NULL ) {
+        return Nan::Null();
+    }
+
+    switch ((unsigned int) fInfoType)
+    {
+        // null terminated string
+        case SQL_DATA_SOURCE_NAME          :
+        case SQL_DRIVER_NAME               :
+        case SQL_DRIVER_VER                :
+        case SQL_DRIVER_BLDLEVEL           :
+        case SQL_DB2_DRIVER_VER            :
+        case SQL_ODBC_VER                  :
+        case SQL_ROW_UPDATES               :
+        case SQL_SERVER_NAME               :
+        case SQL_SEARCH_PATTERN_ESCAPE     :
+        case SQL_DATABASE_NAME             :
+        case SQL_DBMS_NAME                 :
+        case SQL_XOPEN_CLI_YEAR            :
+        case SQL_DBMS_VER                  :
+        case SQL_DBMS_FUNCTIONLVL          :
+        case SQL_ACCESSIBLE_TABLES         :
+        case SQL_ACCESSIBLE_PROCEDURES     :
+        case SQL_DATA_SOURCE_READ_ONLY     :
+        case SQL_EXPRESSIONS_IN_ORDERBY    :
+        case SQL_IDENTIFIER_QUOTE_CHAR     :
+        case SQL_MULT_RESULT_SETS          :
+        case SQL_MULTIPLE_ACTIVE_TXN       :
+        case SQL_OUTER_JOINS               :
+        case SQL_SCHEMA_TERM               :
+        case SQL_PROCEDURE_TERM            :
+        case SQL_TABLE_TERM                :
+        case SQL_USER_NAME                 :
+        case SQL_PROCEDURES                :
+        case SQL_INTEGRITY                 :
+        case SQL_DRIVER_ODBC_VER           :
+        case SQL_COLUMN_ALIAS              :
+        case SQL_KEYWORDS                  :
+        case SQL_ORDER_BY_COLUMNS_IN_SELECT:
+        case SQL_SPECIAL_CHARACTERS        :
+        case SQL_MAX_ROW_SIZE_INCLUDES_LONG:
+        case SQL_NEED_LONG_DATA_LEN        :
+        case SQL_LIKE_ESCAPE_CLAUSE        :
+        case SQL_CATALOG_NAME              :
+        case SQL_CATALOG_NAME_SEPARATOR    :
+        case SQL_CATALOG_TERM              :
+        case SQL_COLLATION_SEQ             :
+        case SQL_DESCRIBE_PARAMETER        :
+            result = Nan::New<String>((char *) info).ToLocalChecked();
+            break;
+
+        // 16 bit integer
+        case SQL_MAX_DRIVER_CONNECTIONS    :
+        case SQL_ACTIVE_ENVIRONMENTS       :
+        case SQL_MAX_CONCURRENT_ACTIVITIES :
+        case SQL_ODBC_API_CONFORMANCE      :
+        case SQL_ODBC_SAG_CLI_CONFORMANCE  :
+        case SQL_ODBC_SQL_CONFORMANCE      :
+        case SQL_CONCAT_NULL_BEHAVIOR      :
+        case SQL_CURSOR_COMMIT_BEHAVIOR    :
+        case SQL_CURSOR_ROLLBACK_BEHAVIOR  :
+        case SQL_IDENTIFIER_CASE           :
+        case SQL_MAX_COLUMN_NAME_LEN       :
+        case SQL_MAX_CURSOR_NAME_LEN       :
+        case SQL_MAX_SCHEMA_NAME_LEN       :
+        case SQL_MAX_MODULE_NAME_LEN       :
+        case SQL_MAX_PROCEDURE_NAME_LEN    :
+        case SQL_MAX_TABLE_NAME_LEN        :
+        case SQL_TXN_CAPABLE               :
+        case SQL_CORRELATION_NAME          :
+        case SQL_NON_NULLABLE_COLUMNS      :
+        case SQL_FILE_USAGE                :
+        case SQL_NULL_COLLATION            :
+        case SQL_GROUP_BY                  :
+        case SQL_QUOTED_IDENTIFIER_CASE    :
+        case SQL_MAX_COLUMNS_IN_GROUP_BY   :
+        case SQL_MAX_COLUMNS_IN_INDEX      :
+        case SQL_MAX_COLUMNS_IN_ORDER_BY   :
+        case SQL_MAX_COLUMNS_IN_SELECT     :
+        case SQL_MAX_COLUMNS_IN_TABLE      :
+        case SQL_MAX_TABLES_IN_SELECT      :
+        case SQL_MAX_USER_NAME_LEN         :
+        case SQL_CATALOG_LOCATION          :
+        case SQL_MAX_CATALOG_NAME_LEN      :
+        case SQL_MAX_IDENTIFIER_LEN        :
+            result = Nan::New<Number>(*((SQLSMALLINT *) info));
+            break;
+
+        // 32 bit integer
+        case SQL_DRIVER_HDBC               :
+        case SQL_DRIVER_HENV               :
+        case SQL_DRIVER_HSTMT              :
+        case SQL_DRIVER_HDESC              :
+        case SQL_DRIVER_HLIB               :
+        case SQL_MAX_ROW_SIZE              :
+        case SQL_ASYNC_MODE                :
+        case SQL_MAX_STATEMENT_LEN         :
+        case SQL_MAX_CHAR_LITERAL_LEN      :
+        case SQL_MAX_INDEX_SIZE            :
+        case SQL_MAX_BINARY_LITERAL_LEN    :
+        case SQL_CURSOR_SENSITIVITY        :
+        case SQL_DEFAULT_TXN_ISOLATION     :
+        case SQL_MAX_ASYNC_CONCURRENT_STATEMENTS:
+        case SQL_ODBC_INTERFACE_CONFORMANCE:
+        case SQL_PARAM_ARRAY_ROW_COUNTS    :
+        case SQL_PARAM_ARRAY_SELECTS       :
+        case SQL_DTC_TRANSITION_COST       :
+        case SQL_DATABASE_CODEPAGE         :
+        case SQL_APPLICATION_CODEPAGE      :
+        case SQL_CONNECT_CODEPAGE          :
+        case SQL_DB2_DRIVER_TYPE           :
+            result = Nan::New<Number>(*((SQLINTEGER *) info));
+            break;
+
+        case SQL_INPUT_CHAR_CONVFACTOR     :
+        case SQL_OUTPUT_CHAR_CONVFACTOR    :
+            result = Nan::New<Number>(*((SQLFLOAT *) info));
+            break;
+
+        // 32 bit binary Mask
+        case SQL_CATALOG_USAGE             :
+        case SQL_FETCH_DIRECTION           :
+        case SQL_SCROLL_CONCURRENCY        :
+        case SQL_SCROLL_OPTIONS            :
+        case SQL_CONVERT_FUNCTIONS         :
+        case SQL_NUMERIC_FUNCTIONS         :
+        case SQL_STRING_FUNCTIONS          :
+        case SQL_SYSTEM_FUNCTIONS          :
+        case SQL_TIMEDATE_FUNCTIONS        :
+        case SQL_CONVERT_BIGINT            :
+        case SQL_CONVERT_INTERVAL_YEAR_MONTH :
+        case SQL_CONVERT_INTERVAL_DAY_TIME :
+        case SQL_CONVERT_WCHAR             :
+        case SQL_CONVERT_WVARCHAR          :
+        case SQL_CONVERT_WLONGVARCHAR      :
+        case SQL_UNION                     :
+        case SQL_CONVERT_BINARY            :
+        case SQL_CONVERT_BIT               :
+        case SQL_CONVERT_CHAR              :
+        case SQL_CONVERT_DATE              :
+        case SQL_CONVERT_DECIMAL           :
+        case SQL_CONVERT_DOUBLE            :
+        case SQL_CONVERT_FLOAT             :
+        case SQL_CONVERT_INTEGER           :
+        case SQL_CONVERT_LONGVARCHAR       :
+        case SQL_CONVERT_NUMERIC           :
+        case SQL_CONVERT_REAL              :
+        case SQL_CONVERT_SMALLINT          :
+        case SQL_CONVERT_TIME              :
+        case SQL_CONVERT_TIMESTAMP         :
+        case SQL_CONVERT_TINYINT           :
+        case SQL_CONVERT_VARBINARY         :
+        case SQL_CONVERT_VARCHAR           :
+        case SQL_CONVERT_LONGVARBINARY     :
+        case SQL_TXN_ISOLATION_OPTION      :
+        case SQL_LOCK_TYPES                :
+        case SQL_POS_OPERATIONS            :
+        case SQL_POSITIONED_STATEMENTS     :
+        case SQL_GETDATA_EXTENSIONS        :
+        case SQL_BOOKMARK_PERSISTENCE      :
+        case SQL_STATIC_SENSITIVITY        :
+        case SQL_ALTER_TABLE               :
+        case SQL_ALTER_DOMAIN              :
+        case SQL_IBM_ALTERTABLEVARCHAR     :
+        case SQL_SCHEMA_USAGE              :
+        case SQL_MODULE_USAGE              :
+        case SQL_SUBQUERIES                :
+        case SQL_TIMEDATE_ADD_INTERVALS    :
+        case SQL_TIMEDATE_DIFF_INTERVALS   :
+        case SQL_OJ_CAPABILITIES           :
+        case SQL_BATCH_ROW_COUNT           :
+        case SQL_BATCH_SUPPORT             :
+        case SQL_CREATE_ASSERTION          :
+        case SQL_CREATE_CHARACTER_SET      :
+        case SQL_CREATE_COLLATION          :
+        case SQL_CREATE_DOMAIN             :
+        case SQL_CREATE_SCHEMA             :
+        case SQL_CREATE_MODULE             :
+        case SQL_CREATE_TABLE              :
+        case SQL_CREATE_TRANSLATION        :
+        case SQL_CREATE_VIEW               :
+        case SQL_DROP_ASSERTION            :
+        case SQL_DROP_CHARACTER_SET        :
+        case SQL_DROP_COLLATION            :
+        case SQL_DROP_DOMAIN               :
+        case SQL_DROP_SCHEMA               :
+        case SQL_DROP_MODULE               :
+        case SQL_DROP_TABLE                :
+        case SQL_DROP_TRANSLATION          :
+        case SQL_DROP_VIEW                 :
+        case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
+        case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
+        case SQL_KEYSET_CURSOR_ATTRIBUTES1 :
+        case SQL_KEYSET_CURSOR_ATTRIBUTES2 :
+        case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
+        case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
+        case SQL_INDEX_KEYWORDS            :
+        case SQL_INFO_SCHEMA_VIEWS         :
+        case SQL_SQL92_DATETIME_FUNCTIONS  :
+        case SQL_SQL92_FOREIGN_KEY_DELETE_RULE:
+        case SQL_SQL92_FOREIGN_KEY_UPDATE_RULE:
+        case SQL_SQL92_GRANT               :
+        case SQL_SQL92_NUMERIC_VALUE_FUNCTIONS:
+        case SQL_SQL92_PREDICATES          :
+        case SQL_SQL92_RELATIONAL_JOIN_OPERATORS:
+        case SQL_SQL92_REVOKE              :
+        case SQL_SQL92_ROW_VALUE_CONSTRUCTOR:
+        case SQL_SQL92_STRING_FUNCTIONS    :
+        case SQL_SQL92_VALUE_EXPRESSIONS   :
+        case SQL_STANDARD_CLI_CONFORMANCE  :
+        case SQL_STATIC_CURSOR_ATTRIBUTES1 :
+        case SQL_STATIC_CURSOR_ATTRIBUTES2 :
+        case SQL_AGGREGATE_FUNCTIONS       :
+        case SQL_DATETIME_LITERALS         :
+        case SQL_DDL_INDEX                 :
+        case SQL_INSERT_STATEMENT          :
+        case SQL_SQL_CONFORMANCE           :
+        case CLI_INTERNAL_ATTRIBUTES       :
+            result = Nan::New<Number>(*((SQLINTEGER *) info));
+            break;
+
+        default:
+            result = Nan::New((char *) info).ToLocalChecked();
+            break;
+    }
+    return result;
+}
+

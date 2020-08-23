@@ -27,6 +27,8 @@
 #define SQLDropDb   SQLDropDbW
 #endif
 
+#define CLI_INTERNAL_ATTRIBUTES 2569
+
 class ODBCConnection : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_SQL;
@@ -91,6 +93,10 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(Tables);
     static void UV_Tables(uv_work_t* req);
     
+    static NAN_METHOD(GetInfo);
+    static void UV_GetInfo(uv_work_t* work_req);
+    static void UV_AfterGetInfo(uv_work_t* work_req, int status);
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(CreateDbSync);
@@ -101,6 +107,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(CallSync);
     static NAN_METHOD(BeginTransactionSync);
     static NAN_METHOD(EndTransactionSync);
+    static NAN_METHOD(GetInfoSync);
     static NAN_METHOD(SetIsolationLevel);
     
     struct Fetch_Request {
@@ -165,5 +172,17 @@ struct close_connection_work_data {
   ODBCConnection *conn;
   int result;
 };
+
+struct getinfo_work_data {
+  Nan::Callback* cb;
+  ODBCConnection *conn;
+  SQLRETURN rc;
+  SQLUSMALLINT infoType;
+  SQLPOINTER buffer;
+  SQLSMALLINT buffLen;
+  SQLSMALLINT valueLen;
+};
+
+Local<Value> getInfoValue( SQLUSMALLINT fInfoType, SQLPOINTER info );
 
 #endif
