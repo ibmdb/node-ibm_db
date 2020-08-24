@@ -1166,30 +1166,37 @@ void ODBC::GetBoolParam(Local<Value> value, Parameter * param, int num)
 void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
 {
     Local<Array> valueArray = Local<Array>::Cast(value);
+    Local<Value> val = Nan::Null();
     int arrlen = valueArray->Length();
-    param->arraySize = arrlen;
 
-    // Its array insert of size arrlen. Set stmt attribute
-    bool boolean    = Nan::To<bool>(value).FromJust();
+    param->arraySize = arrlen;
     if(arrlen <= 0) {
         param->buffer = new int[0];
         return;
     }
 
-    Local<Value> val =  Nan::Get(valueArray, 0).ToLocalChecked(); 
     param->strLenArray = new SQLINTEGER[arrlen];
 
-    if (val->IsNull()) {
-        GetNullParam(param, num);
-        param->buffer = new int[arrlen];
-        for( int i = 0; i < arrlen; i++ ) {
-          param->strLenArray[i] = SQL_NULL_DATA;
+    for (int j = 0; j < arrlen; j++) {
+      val =  Nan::Get(valueArray, j).ToLocalChecked();
+      if (val->IsNull()) {
+        param->strLenArray[j] = SQL_NULL_DATA;
+        if (j == arrlen - 1) { // i.e. All data in array is null
+          GetNullParam(param, num);
+          param->buffer = new int[arrlen];
         }
-    }
-    else if (val->IsInt32()) {
+        continue;
+      }
+      else if (val->IsInt32()) {
         int64_t *number = new int64_t[arrlen];
-        for( int i = 0; i < arrlen; i++) {
-          val =  Nan::Get(valueArray, i).ToLocalChecked();
+        for( int i = j; i < arrlen; i++) {
+          if (i != j) {
+            val =  Nan::Get(valueArray, i).ToLocalChecked();
+            if (val->IsNull()) {
+               param->strLenArray[i] = SQL_NULL_DATA;
+               continue;
+            }
+          }
           number[i] = Nan::To<int64_t>(val).FromJust();
           param->strLenArray[i] = sizeof(int64_t);
         }
@@ -1197,13 +1204,19 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
         if(!param->type || (param->type == 1)) 
             param->type = SQL_BIGINT;
         param->buffer = number;
-    }
-    else if (val->IsNumber()) {
+      }
+      else if (val->IsNumber()) {
         double *number   = new double[arrlen];
         int decimals = 0;
 
-        for( int i = 0; i < arrlen; i++) {
-          val =  Nan::Get(valueArray, i).ToLocalChecked();
+        for( int i = j; i < arrlen; i++) {
+          if (i != j) {
+            val =  Nan::Get(valueArray, i).ToLocalChecked();
+            if (val->IsNull()) {
+              param->strLenArray[i] = SQL_NULL_DATA;
+              continue;
+            }
+          }
           GetNumberParam(val, param, num);
           number[i] = *(double*)param->buffer;
           param->strLenArray[i] = param->length;
@@ -1214,11 +1227,17 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
     
         param->decimals = decimals;
         param->buffer  = number;
-    }
-    else if (val->IsBoolean()) {
+      }
+      else if (val->IsBoolean()) {
         int64_t *boolean = new int64_t[arrlen];
-        for( int i = 0; i < arrlen; i++) {
-          val =  Nan::Get(valueArray, i).ToLocalChecked();
+        for( int i = j; i < arrlen; i++) {
+          if (i != j) {
+            val =  Nan::Get(valueArray, i).ToLocalChecked();
+            if (val->IsNull()) {
+              param->strLenArray[i] = SQL_NULL_DATA;
+              continue;
+            }
+          }
           GetBoolParam(val, param, num);
           boolean[i] = *(int64_t*)(param->buffer);
           param->strLenArray[i] = (SQLINTEGER)param->length;
@@ -1226,15 +1245,21 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           param->buffer = NULL;
         }
         param->buffer  = boolean;
-    }
-    else
-    {
+      }
+      else
+      {
         SQLPOINTER * buff = (SQLPOINTER *)NULL; 
         SQLULEN bufflen = 0;
         SQLULEN cbValueMax = 0;
         //char **buff = (char **) new int64_t[arrlen];
-        for( int i = 0; i < arrlen; i++) {
-          val =  Nan::Get(valueArray, i).ToLocalChecked();
+        for( int i = j; i < arrlen; i++) {
+          if (i != j) {
+            val =  Nan::Get(valueArray, i).ToLocalChecked();
+            if (val->IsNull()) {
+              param->strLenArray[i] = SQL_NULL_DATA;
+              continue;
+            }
+          }
           GetStringParam(val, param, num);
           // Reset buffer_length which was incremented by GetStringParam
 #ifdef UNICODE
@@ -1242,7 +1267,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
 #else
           param->buffer_length -= 1;
 #endif
-          if( i == 0 ) {
+          if( i == j ) {
               cbValueMax = param->buffer_length; //Length of each element of array
               bufflen = arrlen * cbValueMax;
               buff = (SQLPOINTER *) malloc(bufflen);
@@ -1261,6 +1286,8 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
         param->buffer  = buff;
         param->buffer_length = cbValueMax;
         param->size = cbValueMax;
+      }
+      break; // From outer for loop.
     }
 
     DEBUG_PRINTF("ODBC::GetArrayParam: param%u : paramtype=%u, c_type=%i, "

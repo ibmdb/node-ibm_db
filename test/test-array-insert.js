@@ -17,10 +17,10 @@ ibmdb.open(common.connectionString, function(err, conn) {
   if(err.length) { console.log(err); return; }
   err = conn.querySync("insert into arrtab values (9, 4.5, true, 'rocket')");
   if(err.length) { console.log(err); return; }
-  var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
-  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
-  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
-  var namearr = ["Row 10", "Row 200", "Row 30", "Row 4000", "Last Row"];
+  var param1 = {ParamType:"ARRAY", DataType:1, Data:[null,5,6,7,8]};
+  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,null,6.14,7,8.3]};
+  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,null,false,true]};
+  var namearr = [null, "Row 200", null, "Row 4000", "Last Row"];
   var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
   var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
                       params: [param1, param2, param3, param4],
