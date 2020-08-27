@@ -1,3 +1,29 @@
+2020-08-27, Version 2.7.1
+=========================
+
+ * doc: update latest test node.js version (Bimal Jha)
+
+ * upd: windows binary files (Bimal Jha)
+
+ * update: PATH and LIB to use GSKit libs of clidriver of ibm_db (Bimal Jha)
+
+ * fea: Allow null value in Array Insert #679 (Bimal Jha)
+
+ * doc: correct info about getInfo API (Bimal Jha)
+
+ * feature: Add support for getInfo() API (Bimal Jha)
+
+ * doc: update db2connect license version to v11.5 (Bimal Jha)
+
+ * fix: for array insert bug #660 (Bimal Jha)
+
+ * build(deps): bump lodash from 4.17.14 to 4.17.19 (#673) (dependabot[bot])
+
+ * upd: test file for issue #647 (Bimal Jha)
+
+ * update README.md for node.js v14.4.0 (Bimal Jha)
+
+
 2020-06-07, Version 2.7.0
 =========================
 
