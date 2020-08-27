@@ -103,7 +103,7 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=user
 ```
 You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
-**Note:** The SSL Certificate file must have `.arm` extention. Certificate file with `.crt` or any other extention would not work with `SSLServerCertificate` keyword. You need to create keystoredb using GSKit and add certificate of other extention to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+**Note:** You can also create keystoredb using GSKit and add certificate file to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
 ### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
 
