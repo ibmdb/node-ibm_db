@@ -22,7 +22,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '7.2.4';
+var electron_version = '7.3.2';
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 
@@ -521,9 +521,9 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
                     var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.17.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.19.0';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.22.0';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.16.1';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.18.3';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
@@ -688,30 +688,33 @@ function findElectronVersion() {
             }
           }
         }
+    } catch (e) {
+        console.log("Unable to detect electon installation.");
+    }
 
-        if (electronVer != null) {
-          electron_version = electronVer;
-          console.log("Detected electron installation, will use Electron",
+    if (electronVer != null) {
+        electron_version = electronVer;
+        console.log("Detected electron installation, will use Electron",
                   "version", electron_version, "to install ibm_db.");
-        }
-        else {
+    } else {
+        try {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.45) {
+            if (vscodeVer >= 1.47) {
+                electron_version = "7.3.2";
+            }
+            else if (vscodeVer >= 1.46) {
+                electron_version = "7.3.1";
+            }
+            else if (vscodeVer >= 1.45) {
                 electron_version = "7.2.4";
             }
             else if (vscodeVer >= 1.43) {
                 electron_version = "7.1.11";
             }
-            else if (vscodeVer >= 1.40) {
-                electron_version = "6.1.5";
-            }
-            else if (vscodeVer >= 1.36) {
-                electron_version = "4.2.7";
-            }
-            else {// vscode version older than 1.36 not supported
-                electron_version = "3.0.0"; // old binary, not getting updated.
+            else {// vscode version older than 1.43 not supported
+                electron_version = "6.1.5"; // old binary, not getting updated.
             }
             console.log("Detected VSCode version", vscodeVer,
                     ", will use Electron version ", electron_version);
@@ -721,10 +724,10 @@ function findElectronVersion() {
                     "will use Electron version ", electron_version);
           }
         }
-    }
-    catch(e){
-      console.log("Unable to detect VSCode version,",
-              "will use Electron version ", electron_version);
+        catch(e){
+            console.log("Unable to find VSCode version,",
+                    "will use Electron version ", electron_version);
+        }
     }
     console.log("");
   }
