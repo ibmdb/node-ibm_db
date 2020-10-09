@@ -20,7 +20,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
   var param1 = {ParamType:"ARRAY", DataType:1, Data:[null,5,6,7,8]};
   var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,null,6.14,7,8.3]};
   var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,null,false,true]};
-  var namearr = [null, "Row 200", null, "Row 4000", "Last Row"];
+  var namearr = ["", "Row 200", null, "Row 4000", "Last Row"];
   var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
   var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
                       params: [param1, param2, param3, param4],
@@ -77,6 +77,79 @@ ibmdb.open(common.connectionString, function(err, conn) {
                 console.log("\nSelected data for table ARRTAB2 =\n", data);
                 conn.querySync("drop table arrtab2");
                 assert.deepEqual(data, tab2data);
+                conn.closeSync();
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+});
+
+ibmdb.open(common.connectionString, function(err, conn) {
+  if(err) {
+    console.log(err);
+    return;
+  }
+
+  // Insert array data using querySync API
+  // =====================================
+  err = conn.querySync("create table arrtab3 (c1 varchar(10))");
+  if(err.length) { console.log(err); return; }
+  var params1 = [{ParamType:"ARRAY", DataType:1, Data: ["","Hello"], Length:5}];
+  var params2 = [{ParamType:"ARRAY", DataType:1, Data: ["Hello",""], Length:5}];
+  var queryOptions1 = {sql:"insert into arrtab3 values (?)", 
+                      params: [{ParamType:"ARRAY", DataType:1, Data: ["","Hello"], Length:5}],
+                      ArraySize:2};
+  var queryOptions2 = {sql:"insert into arrtab3 values (?)", 
+                      params: [{ParamType:"ARRAY", DataType:1, Data: ["Hello",""], Length:5}],
+                      ArraySize:2};
+
+  conn.querySync(queryOptions1);
+  conn.querySync(queryOptions2);
+
+  // Insert array data using prepare-bind-execute API
+  // ================================================
+  conn.querySync("create table arrtab4 (c1 varchar(10))");
+
+  var tab4data =  [
+        { C1: '' },
+        { C1: 'Hello' },
+        { C1: 'Hello' },
+        { C1: '' }
+      ];
+
+  var stmt = conn.prepareSync("insert into arrtab4 values (?)");
+  stmt.bindSync(params1);
+  stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 2);
+  var result = stmt.executeSync();
+  stmt.closeSync();
+
+  // Insert array data using query API
+  // =====================================
+  conn.query(queryOptions1, function(err, result) {
+    if(err) console.log(err);
+    else {
+      var data = conn.querySync("select * from arrtab3");
+      console.log("\nSelected data for table ARRTAB3 =\n", data);
+      conn.querySync("drop table arrtab3");
+
+      // Insert array data using prepare-bind-execute API
+      // ================================================
+      conn.prepare("insert into arrtab4 values (?)", function(err, stmt) {
+        if(err) { console.log(err); stmt.closeSync(); }
+        else {
+          stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 2, function(err, result) {
+            if(err) { console.log(err); stmt.closeSync(); }
+            else {
+              stmt.execute(params2, function(err, result) {
+                if(err) console.log(err);
+                stmt.closeSync();
+                var data = conn.querySync("select * from arrtab4");
+                console.log("\nSelected data for table ARRTAB4 =\n", data);
+                conn.querySync("drop table arrtab4");
+                assert.deepEqual(data, tab4data);
                 conn.closeSync();
               });
             }
