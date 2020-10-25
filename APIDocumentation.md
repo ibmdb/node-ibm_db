@@ -92,18 +92,22 @@ ibmdb.open(connStr, function (err, connection) {
 
 ```
 
-* **Secure Database Connection using SSL/TSL** - ibm_db supports secure connection to Database Server over SSL same as ODBC/CLI driver. If you have SSL Certificate from server or an CA signed certificate, just use it in connection string as below:
+* <a name="SSLConnection"></a> **Secure Database Connection using SSL/TSL** - ibm_db supports secure connection to Database Server over SSL same as ODBC/CLI driver. If you have SSL Certificate from server or an CA signed certificate, just use it in connection string as below:
 
 ```javascript
-connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL;SSLServerCertificate=<cert.arm_file_path>;";
+connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;Security=SSL;SSLServerCertificate=<cert.arm_file_path>;PROTOCOL=TCPIP;UID=username;PWD=passwd;";
 ```
-To connect to dashDB in bluemix, just use below connection string:
+> Note the two extra keywords **Security** and **SSLServerCertificate** used in connection string. `SSLServerCertificate` should point to the SSL Certificate from server or an CA signed certificate. Also, `PORT` must be `SSL` port and not the TCPI/IP port. Make sure Db2 server is configured to accept connection on SSL port else `ibm_db` will throw SQL30081N error.
+
+To connect to dashDB in IBM Cloud, use below connection string:
 ```
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL";
 ```
-You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+> We just need to add **Security=SSL** in connection string to have a secure connection against Db2 server in IBM Cloud.
 
-**Note:** You can also create keystoredb using GSKit and add certificate file to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+
+**Note:** You can also create keystoredb using GSKit and add certificate file to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
 ### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
 

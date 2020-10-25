@@ -9,7 +9,9 @@ Async APIs return promises if callback function is not used.
 
 ## API Documentation
 
-> For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
+- For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
+
+- For Secure Database connection using **SSL/TSL**: Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md#SSLConnection).
 
 ## Prerequisite
 
