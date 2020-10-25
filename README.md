@@ -5,6 +5,8 @@ Async APIs return promises if callback function is not used.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
+**SQL1598N** - Check [here](#sql1598n).
+
 ## API Documentation
 
 > For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
@@ -51,6 +53,14 @@ install python2.7.x
 install node.js
 npm install --unsafe-perm ibm_db
 ```
+
+- `npm install ibm_db` internally downloads and install platform specific clidriver of recent release from [here](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/).
+To avoid this download, you can manually download clidriver from this location or install any verison of IBM Data Server Driver Package or Db2 Client or Sever in your system and point the install directory using `IBM_DB_HOME` environment variable. If `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is set, `npm install ibm_db` do not download clidriver.
+
+- `ibm_db` works with all supported versions of Db2 Client and Server. Instead of using open source driver specific [clidriver](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/) for `ibm_db`, you may download and install DSDRIVER or DB2Client from [IBM Fix Central](https://www.ibm.com/support/fixcentral/) or [IBM Passport Advantage](https://www.ibm.com/support/pages/what-passport-advantage-and-how-do-i-access-it) of Db2 V11.1.0.0 onwards.
+
+- If `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is not set, `ibm_db` always downloads [open source driver specific clidriver](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/) and use it. Ignores any other installation.
+
 > For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 
@@ -245,11 +255,11 @@ ibmdb.open(connStr).then(
 ```
 
 ## Un-Install
-
+<a name="downloadCli"></a>
 To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
 
 
-## For z/OS and iSeries Connectivity
+## <a name="sql1598n"></a>For z/OS and iSeries Connectivity and SQL1598N error
 
 For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
 no license file is required. However, if you want to use node-ibm_db 
@@ -259,6 +269,10 @@ unlimited number of client connection. You can buy db2connect license from IBM.
 The connectivity can be enabled either on server using db2connectactivate
 utility or on client using client side license file. If you have client side
 license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective.
+
+In absense of a valid db2connect license file, `ibm_db` will throw **SQL1598N** error. Client side license file name should be `db2con*.lic`.
+
+If `IBM_DB_HOME` is set, you need to have same version of db2connect license as installed db2 client. Check db2 client version using `db2level` command.
 
 To know more about license and purchasing cost, please contact [IBM Customer Support](http://www-05.ibm.com/support/operations/zz/en/selectcountrylang.html).
 
