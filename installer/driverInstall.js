@@ -525,6 +525,7 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
                     var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.18.3';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.9.0';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 6.0) {
@@ -546,7 +547,8 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
