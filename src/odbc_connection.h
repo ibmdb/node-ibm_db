@@ -29,6 +29,10 @@
 
 #define CLI_INTERNAL_ATTRIBUTES 2569
 
+#ifndef SQL_DBMS_FUNCTIONLVL
+  #define SQL_DBMS_FUNCTIONLVL 203
+#endif
+
 class ODBCConnection : public Nan::ObjectWrap {
   public:
    static Nan::Persistent<String> OPTION_SQL;
