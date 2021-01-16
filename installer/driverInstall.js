@@ -8,7 +8,7 @@ var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
-var request = require('request');
+var axios = require('axios');
 
 //IBM provided URL for downloading clidriver.
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
@@ -592,7 +592,7 @@ var install_node_ibm_db = function(file_url) {
         }
     }
 
-    // Function to download clidriver file using request module.
+    // Function to download clidriver file using axios module.
     function downloadCliDriver(installerfileURL) {
         // Variable to save downloading progress
         var received_bytes = 0;
@@ -600,19 +600,18 @@ var install_node_ibm_db = function(file_url) {
 
         var outStream = fs.createWriteStream(INSTALLER_FILE);
 
-        request
-            .get(installerfileURL)
-                .on('error', function(err) {
-                    console.log(err);
-                })
-                .on('response', function(data) {
-                    total_bytes = parseInt(data.headers['content-length']);
-                })
-                .on('data', function(chunk) {
+        axios.get(installerfileURL, {responseType: 'stream'})
+             .then(function (response) {
+                total_bytes = parseInt(response.headers['content-length']);
+                response.data.on('data', (chunk) => {
                     received_bytes += chunk.length;
                     showDownloadingProgress(received_bytes, total_bytes);
-                })
-                .pipe(outStream);
+                });
+                response.data.pipe(outStream);
+              })
+             .catch(error => {
+                console.log(error)
+              });
 
         deleteInstallerFile = true;
         outStream.once('close', copyAndExtractCliDriver)
