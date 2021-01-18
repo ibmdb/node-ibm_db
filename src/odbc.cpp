@@ -430,6 +430,8 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   switch ((int) column.type) 
   {
+    case SQL_BIGINT :
+      DEBUG_PRINTF("BIGINT DATA SELECTED\n");
     case SQL_INTEGER : 
     case SQL_SMALLINT :
     case SQL_TINYINT : 
@@ -463,9 +465,14 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       break;
 
+    case SQL_NUMERIC :
+      DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
+    case SQL_DECIMAL :
+      DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
+    case SQL_DECFLOAT :
+      DEBUG_PRINTF("DECFLOAT DATA SELECTED\n");
     case SQL_FLOAT :
     case SQL_REAL :
-    case SQL_DECFLOAT :
     case SQL_DOUBLE : 
       {
         double value;
@@ -558,23 +565,8 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
       }
       break;
-	/*
-	case SQL_NUMERIC :
-    case SQL_DECIMAL :
-    case SQL_BIGINT :
-    case SQL_BLOB :
-    */
 	case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED\n");
-    case SQL_NUMERIC :
-        if((int) column.type == SQL_NUMERIC)
-          DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
-    case SQL_DECIMAL :
-        if((int) column.type == SQL_DECIMAL)
-          DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
-    case SQL_BIGINT :
-        if((int) column.type == SQL_BIGINT)
-          DEBUG_PRINTF("BIGINT DATA SELECTED\n");
     case SQL_DBCLOB:
         if((int) column.type == SQL_DBCLOB)
         {
