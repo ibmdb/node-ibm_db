@@ -1,3 +1,39 @@
+2021-01-20, Version 2.7.2
+=========================
+
+ * update windows binaries (Bimal Jha)
+
+ * fix: return decimal, numeric and decfloat columns as number, issue #693 (Bimal Jha)
+
+ * Remove dependency on request package and add axios, issue #642 (Bimal Jha)
+
+ * add test case for Array Insert in Stored Procedure, issue #717 (Bimal Jha)
+
+ * define SQL_DBMS_FUNCTIONLVL if not defined, issue #729 (Bimal Jha)
+
+ * update Readme with v15.4.0 (Bimal Jha)
+
+ * support for node v15.x (Bimal Jha)
+
+ * doc: update for SSL connection (Bimal Jha)
+
+ * doc: update for issue #713 (Bimal Jha)
+
+ * add invalid connections check for prepared statement (#711) (Guilherme G. M)
+
+ * Revert "add invalid connections check for prepared statement (#705)" (#710) (Bimal Kumar Jha)
+
+ * add invalid connections check for prepared statement (#705) (Guilherme G. M)
+
+ * add test for issue #706 (Bimal Jha)
+
+ * update bl package version to fix high severity vulnerability (Bimal Jha)
+
+ * add support for promises in executeFile API (Bimal Jha)
+
+ * Add support for electron 9.2.1 (Bimal Jha)
+
+
 2020-08-27, Version 2.7.1
 =========================
 
