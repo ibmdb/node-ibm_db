@@ -22,7 +22,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '9.2.1';
+var electron_version = '9.3.5';
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 
@@ -521,11 +521,11 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
                     var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.17.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.22.0';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.23.1';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.18.3';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.20.1';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.9.0';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.15.4';
 
                     // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 6.0) {
@@ -702,7 +702,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.49) {
+            if (vscodeVer >= 1.52) {
+                electron_version = "9.3.5";
+            }
+            else if (vscodeVer >= 1.49) {
                 electron_version = "9.2.1";
             }
             else if (vscodeVer >= 1.47) {
