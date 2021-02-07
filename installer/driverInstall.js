@@ -22,7 +22,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '9.3.5';
+var electron_version = '11.2.1';
 
 console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
 
@@ -702,7 +702,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.52) {
+            if (vscodeVer >= 1.53){
+                electron_version = "11.2.1";
+            }
+            else if (vscodeVer >= 1.52) {
                 electron_version = "9.3.5";
             }
             else if (vscodeVer >= 1.49) {
