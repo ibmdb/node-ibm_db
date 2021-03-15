@@ -1212,7 +1212,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           GetNumberParam(val, param, num);
           number[i] = *(double*)param->buffer;
           param->strLenArray[i] = param->length;
-          delete param->buffer;
+          delete (double *)param->buffer;
           param->buffer = NULL;
           decimals = (decimals < param->decimals) ? param->decimals : decimals;
         }
@@ -1233,7 +1233,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           GetBoolParam(val, param, num);
           boolean[i] = *(int64_t*)(param->buffer);
           param->strLenArray[i] = (SQLINTEGER)param->length;
-          delete param->buffer;
+          delete (int64_t *)param->buffer;
           param->buffer = NULL;
         }
         param->buffer  = boolean;
@@ -1267,7 +1267,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
                       "cbValueMax=%i\n", num, bufflen, cbValueMax);
           }
           bufflen  = cbValueMax; // Length of max data to be copied.
-          if( param->length > 0 && bufflen > param->length ) {
+          if( param->length > 0 && bufflen > (SQLUINTEGER)param->length ) {
               bufflen = param->length;
           }
           memcpy((char*)buff + i * cbValueMax, param->buffer, bufflen);

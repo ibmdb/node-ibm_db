@@ -22,6 +22,9 @@ ibmdb.open(common.connectionString, function (err, conn) {
                         params: [param1, param2],
                         ArraySize: 5};
 
+    try { conn.querySync("drop table arrtab2;"); }
+    catch (e) { }
+
     conn.beginTransactionSync();
     var ret = conn.querySync("create table arrtab2(c1 int, c2 varchar(10));");
     console.log("crete table ret = ", ret);
