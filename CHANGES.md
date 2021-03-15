@@ -1,3 +1,13 @@
+2021-03-15, Version 2.7.3
+=========================
+
+ * fix warnings and test failure (Bimal Jha)
+
+ * fix: remove undefined macros for z/OS (Bimal Jha)
+
+ * update windows binary for Electron 11.2.1 (Bimal Jha)
+
+
 2021-01-20, Version 2.7.2
 =========================
 
