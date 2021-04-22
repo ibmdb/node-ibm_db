@@ -6,7 +6,7 @@ var common = require("./common")
 const expectedData =
 [ { C1: 1,
     C2: 2,
-    C3: '456736789',
+    C3: '2234567890',
     C4: 1234,
     C5: 67.98,
     C6: 5689,
@@ -27,7 +27,7 @@ const expectedData =
 const zosexpectedData =
 [ { C1: 1,
     C2: 2,
-    C3: '456736789',
+    C3: '2234567890',
     C4: 1234,
     C5: 67.98,
     C6: 5689,
@@ -53,11 +53,11 @@ ibmdb.open(cn, function(err, conn) {
   } catch (e) {}
     if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
         conn.querySync("create table mytab1 (c1 int, c2 SMALLINT, c3 BIGINT, c4 INTEGER, c5 DECIMAL(4,2), c6 NUMERIC, c7 float, c8 double, c9 decfloat, c10 char(10), c11 varchar(10), c12 char for bit data, c13 clob(10),c14 dbclob(100), c15 date, c16 time, c17 timestamp, c18 blob(10)) ccsid unicode");
-        conn.querySync("insert into mytab1 values (1, 2, 456736789, 1234, 67.98, 5689, 56.2390, 34567890, 45.234, 'bimal', 'kumar', '\x50', 'jha123456','㐀㐁㐂㐃㐄㐅㐆','2015-09-10', '10:16:33', '2015-09-10 10:16:33.770139', BLOB(x'616263'))");
+        conn.querySync("insert into mytab1 values (1, 2, 2234567890, 1234, 67.98, 5689, 56.2390, 34567890, 45.234, 'bimal', 'kumar', '\x50', 'jha123456','㐀㐁㐂㐃㐄㐅㐆','2015-09-10', '10:16:33', '2015-09-10 10:16:33.770139', BLOB(x'616263'))");
     }
     else {
         conn.querySync("create table mytab1 (c1 int, c2 SMALLINT, c3 BIGINT, c4 INTEGER, c5 DECIMAL(4,2), c6 NUMERIC, c7 float, c8 double, c9 decfloat, c10 char(10), c11 varchar(10), c12 char for bit data, c13 clob(10),c14 dbclob(100), c15 date, c16 time, c17 timestamp, c18 blob(10), c19 boolean) ccsid unicode");
-        conn.querySync("insert into mytab1 values (1, 2, 456736789, 1234, 67.98, 5689, 56.2390, 34567890, 45.234, 'bimal', 'kumar', '\x50', 'jha123456','㐀㐁㐂㐃㐄㐅㐆','2015-09-10', '10:16:33', '2015-09-10 10:16:33.770139', BLOB(x'616263'), true)");
+        conn.querySync("insert into mytab1 values (1, 2, 2234567890, 1234, 67.98, 5689, 56.2390, 34567890, 45.234, 'bimal', 'kumar', '\x50', 'jha123456','㐀㐁㐂㐃㐄㐅㐆','2015-09-10', '10:16:33', '2015-09-10 10:16:33.770139', BLOB(x'616263'), true)");
     }
     conn.query("select * from mytab1", function (err, data) {
       if(err) console.log(err);
@@ -74,12 +74,12 @@ ibmdb.open(cn, function(err, conn) {
       conn.querySync("delete from mytab1");
       var blobParam = {DataType: "BLOB", Data: new Buffer.from('abc')};
         if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
-            err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, 456736789, 1234, 67.98, 5689, 56.2390, 34567890,
+            err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, 2234567890, 1234, 67.98, 5689, 56.2390, 34567890,
                 45.234, 'bimal', 'kumar', '\x50', 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
                 '10:16:33', '2015-09-10 10:16:33.770139', blobParam]);
         }
         else {
-            err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, 456736789, 1234, 67.98, 5689, 56.2390, 34567890,
+            err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, 2234567890, 1234, 67.98, 5689, 56.2390, 34567890,
                 45.234, 'bimal', 'kumar', '\x50', 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
                 '10:16:33', '2015-09-10 10:16:33.770139', blobParam, true]);
         }

@@ -430,8 +430,6 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   switch ((int) column.type) 
   {
-    case SQL_BIGINT :
-      DEBUG_PRINTF("BIGINT DATA SELECTED\n");
     case SQL_INTEGER : 
     case SQL_SMALLINT :
     case SQL_TINYINT : 
@@ -444,8 +442,8 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                           sizeof(value), 
                           &len);
         
-        DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i\n", 
-                     column.index, column.name, column.type, len, ret);
+        DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i, val = %ld\n", 
+                     column.index, column.name, column.type, len, ret, value);
         
         if ((int)len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
@@ -461,6 +459,29 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
         }
         else {
           return scope.Escape(Nan::New<Number>(value));
+        }
+      }
+      break;
+
+    case SQL_BIGINT :
+      DEBUG_PRINTF("BIGINT DATA SELECTED\n");
+      {
+        long long value;
+        ret = SQLGetData( hStmt, 
+                          column.index, 
+                          SQL_C_SBIGINT,
+                          &value, 
+                          sizeof(value), 
+                          &len);
+        
+        DEBUG_PRINTF("ODBC::GetColumnValue - BigInt: index=%i name=%s type=%i len=%i ret=%i, value=%ld\n", 
+                     column.index, column.name, column.type, len, ret, value);
+        
+        if ((int)len == SQL_NULL_DATA) {
+          return scope.Escape(Nan::Null());
+        }
+        else {
+          return scope.Escape(Nan::New<Number>((long long)value));
         }
       }
       break;
