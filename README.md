@@ -20,7 +20,7 @@ Async APIs return promises if callback function is not used.
 - For non-windows platforms: gcc compiler version >= 8.4 is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
-- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 6.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
+- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 8.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
 
 - Python version >= 2.7.0 && < 3.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
@@ -37,11 +37,11 @@ node-gyp 3.4.0<br>
 npm 3.10.10<br>
 ibm_db: 2.3.0
 
-- Recommended version of node.js is >= V6.X. For node.js version < 6.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
+- Recommended version of node.js is >= V8.X. For node.js version < 8.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
-- For Node.js V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
+- For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 15.6.0
+- The latest node.js version using which `ibm_db` is tested: 16.3.0
 
 ## Install
 

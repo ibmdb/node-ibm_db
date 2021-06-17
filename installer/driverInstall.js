@@ -517,22 +517,21 @@ var install_node_ibm_db = function(file_url) {
                 else
                 {
                     //Windows node binary names should update here.
-                    var ODBC_BINDINGS_V6 = 'build\/Release\/odbc_bindings.node.6.17.1';
-                    var ODBC_BINDINGS_V7 = 'build\/Release\/odbc_bindings.node.7.10.1';
                     var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.17.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.23.1';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.0';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
                     var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.20.1';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.15.4';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.17.1';
+                    var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
 
-                    // Windows add-on binary for node.js v0.10.x and v0.12.7 has been discontinued.
-                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 6.0) {
+                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x and 7.x has been discontinued.
+                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) {
                         console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
                             '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 6.X. ' +
-                            'Otherwise please use the node.js version >= 6.X\n');
+                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 8.X. ' +
+                            'Otherwise please use the node.js version >= 8.X\n');
                         process.exit(1);
                     }
 
@@ -540,15 +539,14 @@ var install_node_ibm_db = function(file_url) {
                      * odbcBindingsNode will consist of the node binary-
                      * file name according to the node version in the system.
                      */
-                    odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 7.0) && ODBC_BINDINGS_V6   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) && ODBC_BINDINGS_V7   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
+                    odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14   ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
