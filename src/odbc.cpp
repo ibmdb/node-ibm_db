@@ -1132,11 +1132,6 @@ void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
     Nan::Utf8String string(value);
     int length = string.length();
     char* ptr = strchr(*string, '.');
-    if (ptr) {
-      param->decimals = length - (ptr - *string) - 1;
-    } else {
-      param->decimals = 0;
-    }
       
     if(!param->c_type || (param->c_type == SQL_C_CHAR)) 
         param->c_type    = SQL_C_DOUBLE;
@@ -1146,6 +1141,17 @@ void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
     param->buffer_length = sizeof(double);
     param->length        = param->buffer_length;
     param->size          = sizeof(double);
+    if (ptr) {
+      param->decimals = length - (ptr - *string) - 1;
+      if (param->type == SQL_DECIMAL) {
+          param->size = length - 1;
+      }
+    } else {
+      param->decimals = 0;
+      if (param->type == SQL_DECIMAL) {
+          param->size = length;
+      }
+    }
 
     DEBUG_PRINTF("ODBC::GetNumberParam: param%u : paramtype=%u, c_type=%i, "
                  "type=%i, size=%i, decimals=%i, buffer=%f, buffer_length=%i, "
