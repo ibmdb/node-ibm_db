@@ -50,6 +50,16 @@ You may install the package using npm install command:
 ```
 npm install ibm_db
 ```
+You may install `ibm_db` in `quiet` mode using either of below commands:
+```
+npm install --quiet ibm_db
+npm install -q ibm_db
+```
+You may install `ibm_db` in `silent` mode using either of below commands:
+```
+npm install --silent ibm_db
+npm install -s ibm_db
+```
 For **Docker Linux Container**, use below commands:
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel

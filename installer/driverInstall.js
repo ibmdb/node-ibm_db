@@ -12,7 +12,8 @@ var axios = require('axios');
 
 //IBM provided URL for downloading clidriver.
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
-var license_agreement = '\n\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in '+DOWNLOAD_DIR+'   Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
+var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in ';
+var license_agreement2 = '. Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
@@ -23,8 +24,20 @@ var arch = os.arch();
 
 var vscode_build = false;
 var electron_version = '12.0.4';
+var downloadProgress = 0;
+var silentInstallation = false;
 
-console.log("platform = ", platform, ", arch = ", arch, ", node.js version = ", process.version);
+if(process.env.npm_config_loglevel == 'warn') { // -quiet option
+    downloadProgress = 1;
+}
+if(process.env.npm_config_loglevel == 'silent') { // -silent option
+    downloadProgress = 4;
+    silentInstallation = true;
+}
+if(downloadProgress == 0) {
+  printMsg("platform = " + platform + ", arch = " + arch +
+           ", node.js version = " + process.version);
+}
 
 /* Show make version on non-windows platform, if installed. */
 printMakeVersion();
@@ -128,59 +141,61 @@ var install_node_ibm_db = function(file_url) {
           // Build the binary
           buildBinary(!IS_ENVIRONMENT_VAR);
         } else {
-                IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
-                if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
-                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
-                } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
-                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
-                } else {
-                        IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
-                }
+            IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
+            if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
+            } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+            } else {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+            }
 
-                if(IS_ENVIRONMENT_VAR){
-                        console.log('IBM_DB_HOME environment variable have already been ' +
-                                        'set to -> ' + IBM_DB_HOME +
-                                        '\n\nDownloading of clidriver skipped - build is in progress...\n');
-                }else{
-                        console.log('Rebuild Process: Found clidriver at -> '+ IBM_DB_HOME +
-                                        '\n\nDownloading of clidriver skipped - build is in progress...\n');
-                }
+            if(IS_ENVIRONMENT_VAR) {
+              printMsg('IBM_DB_HOME environment variable have already ' +
+                  'set to -> ' + IBM_DB_HOME +
+                  '\n\nDownloading of clidriver skipped - build is in progress...\n');
+            } else {
+              printMsg('Rebuild Process: Found clidriver at -> ' + IBM_DB_HOME +
+                '\n\nDownloading of clidriver skipped - build is in progress...\n');
+            }
 
-                if (!fs.existsSync(IBM_DB_HOME)) {
-                        console.log(IBM_DB_HOME + ' directory does not exist. Please check if you have ' + 
-                                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-                }
+            if (!fs.existsSync(IBM_DB_HOME)) {
+              printMsg(IBM_DB_HOME + " directory does not exist. Please " +
+                       "check if you have set the IBM_DB_HOME environment" +
+                       " variable\'s value correctly.\n");
+            }
 
-                if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)){
-                        if (!fs.existsSync(IBM_DB_INCLUDE)) {
-                                console.log(IBM_DB_INCLUDE + ' directory does not exist. Please check if you have ' + 
-                                                'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-                        }
-                }
+            if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)) {
+              if (!fs.existsSync(IBM_DB_INCLUDE)) {
+                printMsg(IBM_DB_INCLUDE + " directory does not exist. " +
+                        "Please check if you have set the IBM_DB_HOME " +
+                        "environment variable\'s value correctly.\n");
+              }
+            }
 
-                if (!fs.existsSync(IBM_DB_LIB)) {
-                        console.log(IBM_DB_LIB + ' directory does not exist. Please check if you have ' + 
-                                        'set the IBM_DB_HOME environment variable\'s value correctly.\n');
-                }
-                if( platform != 'win32') {
-                        if(!fs.existsSync(IBM_DB_HOME + "/lib"))
-                                fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
+            if (!fs.existsSync(IBM_DB_LIB)) {
+              console.log(IBM_DB_LIB, " directory does not exist. Please ",
+                  "check if you have set the IBM_DB_HOME environment ",
+                  "variable\'s value correctly.\n");
+            }
+            if( platform != 'win32') {
+              if(!fs.existsSync(IBM_DB_HOME + "/lib"))
+                fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
 
-                        if((platform == 'linux') || (platform =='aix') ||
-                                        (platform == 'darwin' && arch == 'x64')) {
-                                removeWinBuildArchive();
-                                buildBinary(!IS_ENVIRONMENT_VAR);
-                        }
-                }
-                else if(platform == 'win32' && arch == 'x64') {
-                        buildBinary(!IS_ENVIRONMENT_VAR);
-                }
-                else {
-                        console.log('Building binaries for node-ibm_db. This platform ' +
-                                        'is not completely supported, you might encounter errors. ' +
-                                        'In such cases please open an issue on our repository, ' +
-                                        'https://github.com/ibmdb/node-ibm_db. \n');
-                }
+              if((platform == 'linux') || (platform =='aix') ||
+                 (platform == 'darwin' && arch == 'x64')) {
+                  removeWinBuildArchive();
+                  buildBinary(!IS_ENVIRONMENT_VAR);
+              }
+            }
+            else if(platform == 'win32' && arch == 'x64') {
+              buildBinary(!IS_ENVIRONMENT_VAR);
+            } else {
+              console.log('Building binaries for node-ibm_db. This platform ' +
+                  'is not completely supported, you might encounter errors. ' +
+                  'In such cases please open an issue on our repository, ' +
+                  'https://github.com/ibmdb/node-ibm_db. \n');
+            }
         }
     }
     else
@@ -255,8 +270,10 @@ var install_node_ibm_db = function(file_url) {
         var file_name = url.parse(installerfileURL).pathname.split('/').pop();
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
 
-        console.log('Downloading DB2 ODBC CLI Driver from ' +
-                    installerfileURL+'...\n');
+        license_agreement += path.resolve(DOWNLOAD_DIR, 'clidriver') + license_agreement2;
+        printMsg(license_agreement);
+        printMsg('Downloading DB2 ODBC CLI Driver from ' +
+                 installerfileURL + ' ...\n');
 
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
@@ -272,14 +289,12 @@ var install_node_ibm_db = function(file_url) {
         if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
 
-            // Using the "unzipper" module to extract the zipped "clidriver",
-            // and on successful close, printing the license_agreement
+            // Using the "unzipper" module to extract the zipped "clidriver".
             var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
 
             extractCLIDriver.on('close', function() {
-                console.log(license_agreement);
-                console.log('Downloading and extraction of DB2 ODBC ' +
-                    'CLI Driver completed successfully... \n');
+                printMsg('\n\nDownloading and extraction of DB2 ODBC ' +
+                         'CLI Driver completed successfully. \n');
 
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
@@ -300,9 +315,8 @@ var install_node_ibm_db = function(file_url) {
                 process.exit(1);
               }
               else {
-                console.log(license_agreement);
-                console.log('Downloading and extraction of DB2 ODBC ' +
-                            'CLI Driver completed successfully ...\n');
+                printMsg('\n\nDownloading and extraction of DB2 ODBC ' +
+                         'CLI Driver completed successfully.\n');
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
@@ -340,14 +354,16 @@ var install_node_ibm_db = function(file_url) {
 
             var childProcess = exec(buildString, function (error, stdout, stderr)
             {
-                console.log(stdout);
+                if( downloadProgress == 0 ) console.log(stdout);
 
                 if (error !== null)
                 {
                     // "node-gyp" FAILED: RUN Pre-compiled Binary Installation process.
-                    console.log(error);
-                    console.log('\nnode-gyp build process failed! \n\n' +
-                    'Proceeding with Pre-compiled Binary Installation. \n');
+                    if(!downloadProgress) {
+                      console.log(error);
+                      printMsg('\nnode-gyp build process failed! \n\n' +
+                        'Proceeding with Pre-compiled Binary Installation. \n');
+                    }
                     installPreCompiledWinBinary();
                     return;
                 }    
@@ -405,7 +421,7 @@ var install_node_ibm_db = function(file_url) {
                                     installPreCompiledWinBinary();
                                     return;
                                 }
-                                else console.log("\nKernel additional dependencies removed successfully!\n");
+                                else printMsg("\nKernel additional dependencies removed successfully!\n");
                             });
                         });
                     }
@@ -425,19 +441,19 @@ var install_node_ibm_db = function(file_url) {
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
                     {
-                        console.log(stdout);
+                        if( downloadProgress == 0 ) printMsg(stdout);
                         if (error !== null)
                         {
                             // "msbuild" FAILED: RUN Pre-compiled Binary Installation process.
-                            console.log(error);
-                            console.log('\nmsbuild build process failed! \n\n' +
+                            printMsg(error);
+                            printMsg('\nmsbuild build process failed! \n\n' +
                             'Proceeding with Pre-compiled Binary Installation. \n');
                             installPreCompiledWinBinary();
                             return;
                         }
                         else
                         {
-                            console.log("\nnode-ibm_db installed successfully!\n");
+                            printMsg("\nibm_db installed successfully.\n");
                         }
                     });
                 }
@@ -448,7 +464,7 @@ var install_node_ibm_db = function(file_url) {
         {
             var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
             var childProcess = exec(buildString, function (error, stdout, stderr) {
-                console.log(stdout);
+                if( downloadProgress == 0 ) printMsg(stdout);
                 if (error !== null) {
                     console.log(error);
                     process.exit(1);
@@ -474,6 +490,7 @@ var install_node_ibm_db = function(file_url) {
                         }
                     });
                 }
+                printMsg("ibm_db installed successfully.");
             });
         }
     } //buildBinary
@@ -574,9 +591,9 @@ var install_node_ibm_db = function(file_url) {
                         process.exit(1);
                     })
                     .on('finish', function() {
-                      console.log("\n" + 
+                      printMsg("\n" +
                       "===================================\n"+
-                      "node-ibm_db installed successfully!\n"+
+                      "ibm_db installed successfully.\n"+
                       "===================================\n");
                     });
 
@@ -620,6 +637,23 @@ var install_node_ibm_db = function(file_url) {
 
     function showDownloadingProgress(received, total) {
         var percentage = ((received * 100) / total).toFixed(2);
+        if(downloadProgress > 0) {
+          if(percentage > 0 && downloadProgress == 1) {
+            printProgress(percentage, received, total);
+            downloadProgress++;
+          } else if(percentage > 50 && downloadProgress == 2) {
+            printProgress(percentage, received, total);
+            downloadProgress++;
+          } else if(percentage == 100 && downloadProgress == 3) {
+            printProgress(percentage, received, total);
+            downloadProgress++;
+          }
+        } else {
+            printProgress(percentage, received, total);
+        }
+    }
+
+    function printProgress(percentage, received, total) {
         process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
         process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
     }
@@ -658,9 +692,9 @@ function printMakeVersion() {
     try {
       var makeVersion = execSync('make -v').toString();
       makeVersion = makeVersion.split('\n')[0];
-      console.log("make version =", makeVersion);
+      if( downloadProgress == 0 ) printMsg("make version =" + makeVersion);
     } catch (e) {
-      console.log("Unable to find 'make' in PATH. Installation may fail!");
+      printMsg("Unable to find 'make' in PATH. Installation may fail!");
     }
   }
 }
@@ -672,7 +706,7 @@ function findElectronVersion() {
   if ((process.env.npm_config_vscode) ||
      (__dirname.toLowerCase().indexOf('db2connect') != -1))
   {
-    console.log('\nProceeding to build IBM_DB for Electron framework...\n');
+    printMsg('\nProceeding to build IBM_DB for Electron framework...\n');
     vscode_build = true;
 
     try {
@@ -688,13 +722,13 @@ function findElectronVersion() {
           }
         }
     } catch (e) {
-        console.log("Unable to detect electon installation.");
+        printMsg("Unable to detect electon installation.");
     }
 
     if (electronVer != null) {
         electron_version = electronVer;
-        console.log("Detected electron installation, will use Electron",
-                  "version", electron_version, "to install ibm_db.");
+        printMsg("Detected electron installation, will use Electron version" +
+                 electron_version + "to install ibm_db.");
     } else {
         try {
           var codeOut = execSync('code --version').toString();
@@ -724,20 +758,26 @@ function findElectronVersion() {
             else {// vscode version older than 1.45 not supported
                 electron_version = "7.1.11"; // old binary, not getting updated.
             }
-            console.log("Detected VSCode version", vscodeVer,
-                    ", will use Electron version ", electron_version);
+            printMsg("Detected VSCode version" + vscodeVer +
+                    ", will use Electron version " + electron_version);
           }
 		  else {
-            console.log("Unable to detect VSCode version,",
-                    "will use Electron version ", electron_version);
+            printMsg("Unable to detect VSCode version," +
+                    "will use Electron version " + electron_version);
           }
         }
         catch(e){
-            console.log("Unable to find VSCode version,",
-                    "will use Electron version ", electron_version);
+            printMsg("Unable to find VSCode version," +
+                    "will use Electron version " + electron_version);
         }
     }
-    console.log("");
+    printMsg("");
   }
+}
+
+function printMsg(msg) {
+    if(!silentInstallation) {
+        console.log(msg);
+    }
 }
 
