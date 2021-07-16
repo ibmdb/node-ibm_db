@@ -929,7 +929,12 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
   conn.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Fetched Data = ", result.fetchAllSync() );
-      console.log("SQLError = ", result.getSQLErrorSync());
+      var problem = result.getSQLErrorSync();
+      if (problem.sqlcode < 0) { // This sqlcode is negative and is therefore an error
+        console.log("SQLError = ", problem);
+      } else if (problem.sqlcode > 0) { // This sqlcode is positive and is therefore a warning
+        console.log("SQLWarning = ", problem);
+      }
       result.closeSync();
       conn.closeSync();
     });
