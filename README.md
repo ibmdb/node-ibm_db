@@ -60,6 +60,11 @@ You may install `ibm_db` in `silent` mode using either of below commands:
 npm install --silent ibm_db
 npm install -s ibm_db
 ```
+When using `ibm_db` in a package.json file, you can set below environment variables to install `ibm_db` in `--quiet` or `--silent` mode:
+```
+export npm_config_loglevel=warn   => For quiet mode installation.
+export npm_config_loglevel=silent => For silent mode installation.
+```
 For **Docker Linux Container**, use below commands:
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel
