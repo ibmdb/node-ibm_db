@@ -72,13 +72,15 @@ function openConnectionsUsingPool() {
             console.log(elapsedTime(), "Total execution time for Query"+connectionIndex+" = ", totalTime, "sec."); 
 
             if (connectionIndex == connectCount) {
-              console.log("Going to close connections.. \n");
               connection.querySync("drop table mtab1");
+              console.log("Going to close connections.. \n");
               closeConnections();
             }
             else
             {
-              connection.close();
+              connection.close(function() {
+                console.log(elapsedTime(), "Connection " + connectionIndex + " closed.");
+              });
             }
         });
       });

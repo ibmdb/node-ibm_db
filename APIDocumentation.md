@@ -1167,8 +1167,8 @@ to Db2 on z/OS is to a specific subsystem, this API is not applicable.
 
 ## <a name="PoolAPIs"></a>Connection Pooling APIs
 
-node-ibm_db reuses node-odbc pool.
-The node-odbc `Pool` is a rudimentary connection pool which will attempt to have
+node-ibm_db reuses its own connection pooling mechanism.
+The ibm_db `Pool` is a rudimentary connection pool which will attempt to have
 database connections ready and waiting for you when you call the `open` method.
 
 If you use a `Pool` instance, any connection that you close will get added to
@@ -1179,9 +1179,11 @@ For applications using multiple connections simultaneously, it is recommended to
 use Pool.open instead of [ibmdb.open](#openApi).
 
 1.  [.open(connectionString, callback)](#openPoolApi)
-2.  [.close(callback)](#closePoolApi)
-3.  [.init(N, connStr)](#initPoolApi)
-4.  [.setMaxPoolSize(N)](#setMaxPoolSize)
+2.  [.openSync(connectionString)](#openSyncPoolApi)
+3.  [.close(callback)](#closePoolApi)
+4.  [.closeSync()](#closeSyncPoolApi)
+5.  [.init(N, connStr)](#initPoolApi)
+6.  [.setMaxPoolSize(N)](#setMaxPoolSize)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
@@ -1199,17 +1201,47 @@ pool.open(cn, function (err, db) {
 	if (err) {
 		return console.log(err);
 	}
-
-	//db is now an open database connection and can be used like normal
-	//if we run some queries with db.query(...) and then call db.close();
-	//a connection to `cn` will be re-opened silently behind the scene
-	//and will be ready the next time we do `pool.open(cn)`
+    console.log("Connection opened successfully.");
+    console.log("Data = ", conn.querySync("select 1 as c1 from sysibm.sysdummy1"));
+    conn.close(function (error) { // RETURN CONNECTION TO POOL
+        if (error) {
+          console.log("Error while closing connection,", error);
+          return;
+        }
+    });
 });
 ```
 
-### <a name="closePoolApi"></a> 2) .close(callback)
+### <a name="openSyncPoolApi"></a> 2) .openSync(connectionString)
 
-Close all connections in the `Pool` instance
+Get a `Database` connection synchronously which is already connected to `connectionString`
+
+* **connectionString** - The connection string for your database
+
+Check [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for example.
+```javascript
+var Pool = require("ibm_db").Pool
+	, pool = new Pool()
+    , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+try {
+    var conn = pool.openSync(connectionString);
+} catch(error) {
+    console.log("Unable to open connection,", error);
+    return;
+}
+console.log("Connection opened successfully.");
+console.log("Data = ", conn.querySync("select 1 as c1 from sysibm.sysdummy1"));
+var err = conn.closeSync(); // RETURN DB CONNECTION TO POOL.
+if (err) {
+    console.log("Error while closing connection,", err);
+    return;
+}
+```
+
+### <a name="closePoolApi"></a> 3) .close(callback)
+
+Close all connections in the `Pool` instance asynchronously.
 
 * **callback** - `callback (err)`
 
@@ -1219,22 +1251,51 @@ var Pool = require("ibm_db").Pool
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 pool.open(cn, function (err, db) {
-	if (err) {
-		return console.log(err);
-	}
+    if (err) {
+        return console.log(err);
+    }
 
-	//db is now an open database connection and can be used like normal
-	//but all we will do now is close the whole pool
+    //db is now an open database connection and can be used like normal connection.
+    //but all we will do now is close the whole pool using close() API.
+    //Use conn.close() to return the connection back to pool for next use.
 
-	pool.close(function () {
-		console.log("all connections in the pool are closed");
-	});
+    pool.close(function () {
+        console.log("All connections in the pool are closed.");
+    });
 });
 ```
 
-### <a name="initPoolApi"></a> 3) .init(N, connStr)
+### <a name="closeSyncPoolApi"></a> 4) .closeSync()
+
+Close all connections in the `Pool` instance synchronously.
+Check [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for example.
+
+```javascript
+var Pool = require("ibm_db").Pool
+	, pool = new Pool()
+    , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+try {
+    var conn = pool.openSync(connectionString);
+} catch(error) {
+    console.log("Unable to open connection,", error);
+    return;
+}
+console.log("Connection opened successfully.");
+
+//conn is now an open database connection and can be used like normal connection.
+//but all we will do now is close the whole pool using closeSync() API.
+//Use conn.closeSync() to return the connection back to pool for next use.
+
+var error = pool.closeSync();
+if (error) { console.log("Error while closing pool,", error); return; }
+console.log("All connections in the pool are closed.");
+```
+
+### <a name="initPoolApi"></a> 5) .init(N, connStr)
 
 Initialize `Pool` with N no of active connections using supplied connection string.
+It is a synchronous API. We do not need an asynchronous version of this API.
 
 * **N** - No of connections to be initialized.
 * **connStr** - The connection string for your database
@@ -1248,12 +1309,18 @@ if(ret != true)
 
 pool.open(connStr, function(err, db) { ...
 ```
+Check [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for example.
 
-### <a name="setMaxPoolSize"></a> 4) .setMaxPoolSize(N)
+### <a name="setMaxPoolSize"></a> 6) .setMaxPoolSize(N)
 
 Number of maximum connection to database supported by current pool.
 
 * **N** - No of maximum connections in the pool.
+If we call pool.open() or openSync() API and **N** connections are already in use,
+subsequent connection request will be queued and wait till connection timeout,
+so that if any connection get closed before timeout, the open request will be served.
+Check [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for example.
+
 ```
 pool.setMaxPoolSize(20);
 pool.open(connStr, function(err, db) { ...
