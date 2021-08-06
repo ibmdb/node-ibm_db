@@ -183,7 +183,7 @@ var install_node_ibm_db = function(file_url) {
                 fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
 
               if((platform == 'linux') || (platform =='aix') ||
-                 (platform == 'darwin' && arch == 'x64')) {
+                 (platform == 'darwin' && (arch == 'x64' || arch == 'arm64'))) {
                   removeWinBuildArchive();
                   buildBinary(!IS_ENVIRONMENT_VAR);
               }
@@ -226,7 +226,7 @@ var install_node_ibm_db = function(file_url) {
         } 
         else if(platform == 'darwin') 
         {
-            if(arch == 'x64') {
+            if(arch == 'x64' || arch == 'arm64') {
                 installerfileURL = installerURL + 'macos64_odbc_cli.tar.gz';
             } else {
                 console.log('Mac OS 32 bit not supported. Please use an ' +
@@ -470,7 +470,7 @@ var install_node_ibm_db = function(file_url) {
                     process.exit(1);
                 }
 
-                if(platform == 'darwin' && arch == 'x64') {
+                if(platform == 'darwin') {
                     // Run the install_name_tool
                     var addonBinary = "./build/Release/odbc_bindings.node";
                     if (!fs.existsSync(addonBinary)) {
