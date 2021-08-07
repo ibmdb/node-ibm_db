@@ -57,6 +57,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
     stmt.executeNonQuery([34245, 'bimal', param], function (err, ret) {
       if (err) {
         console.log(err);
+        console.log(err.sqlcode);
         stmt.closeSync();
       }
       //else ret.closeSync(); // call closeSync() for execute().
@@ -83,12 +84,14 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             result.closeSync();
             stmt.closeSync();
             assert.deepEqual(data, [ { C1: 4, C2: 'für', C3: null }, { C1: 34245, C2: 'bimal', C3: null } ]);
+            // Insert null value in BLOB colum C3, using querySync API
+            conn.querySync("insert into mytab1 VALUES (?, ?, ?)", [345, 'bimal', param]);
             var valueArray = [];
-            valueArray.push(34245);
+            valueArray.push(345);
             data = conn.querySync('select * from mytab1 where c1 = ?;', valueArray);
             console.log("conn.querySync('select * from mytab1 where c1 = ?;', valueArray)" );
             console.log(data);
-            assert.deepEqual(data, [ [ 34245, 'bimal', null ] ]);
+            assert.deepEqual(data, [ [ 345, 'bimal', null ] ]);
 
             /* Check to ensure query ignores sqlcode 100, issue #573 */
             conn.query("UPDATE mytab1 set c1 = 5 where c1 = 89; select 1 " +

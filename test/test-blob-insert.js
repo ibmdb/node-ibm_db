@@ -6,13 +6,13 @@ var common = require("./common"),
     ibmdb = require("../"),
     assert = require("assert"),
     fs = require('fs'),
-    cn = common.connectionString,
+    connString = common.connectionString,
     inputfile1 = 'data/phool.jpg',
     inputfile2 = 'data/trc.fmt',
     outputfile1 = 'phool2.jpg',
     outputfile2 = 'trc2.fmt';
 
-ibmdb.open(cn, function (err,conn) {
+ibmdb.open(connString, function (err,conn) {
   if (err) {
     console.log(err);
   }
@@ -23,7 +23,7 @@ ibmdb.open(cn, function (err,conn) {
   try {
     conn.querySync("create table mytab (empId int, photo BLOB(1M), trace CLOB(1M), buffer BLOB(1M))");
   } catch (e) {};
-  
+
   var img1= fs.readFileSync(inputfile1,'binary');
   var text= fs.readFileSync(inputfile2,'ascii');
   var buf = Buffer.from('49 49 2A 00 C8 8C 00 00 73 C5 3C 13 83 39 98 35', 'binary');
@@ -56,7 +56,7 @@ ibmdb.open(cn, function (err,conn) {
     var buffer = {CType: "BLOB", DataType: "BLOB", Data: buf};
 
     stmt.execute([18, photo, tracefile, buffer], function (err, result) {
-      if( err ) console.log(err);  
+      if( err ) console.log(err);
       else result.closeSync();
 
       conn.prepare("select * from mytab", function (err, stmt) {
@@ -77,7 +77,8 @@ ibmdb.open(cn, function (err,conn) {
               conn.querySync("drop table mytab");
             } catch (e) {};
             result.closeSync();
-  
+            conn.closeSync();
+
             var size1 = fs.statSync(outputfile1)["size"];
             var size2 = fs.statSync(outputfile2)["size"];
 
@@ -89,10 +90,54 @@ ibmdb.open(cn, function (err,conn) {
             assert.strictEqual(bufferInsert, bufferReturn);
 
             fs.unlinkSync(outputfile1);
-            fs.unlink(outputfile2, function () { console.log('done'); });
+            fs.unlink(outputfile2, function () {});
           }
+          testNullInsert();
         });
       });
     });
   });
 });
+
+function testNullInsert()
+{
+  console.log("\n Test null value insert in BLOB coloum.");
+  console.log(" ======================================\n");
+  const createTable = `create table Aaa (
+    id CHAR(128) primary key not null,
+    derp BLOB(65536)
+    )`;
+
+  const updateBlob = `merge into Aaa as T
+    USING (VALUES(?, ?))
+    as V(id, derp)
+    on T.id = V.id
+    WHEN MATCHED THEN UPDATE SET
+    T.derp = V.derp
+    WHEN NOT MATCHED THEN
+    INSERT (id, derp)
+    VALUES (V.id, V.derp)
+    `;
+  let param = { CType: 'BLOB', DataType: 'BLOB', Data: null };
+
+  ibmdb.open(connString, (err, conn) => {
+    if (err) {
+        console.log(err);
+        return;
+    }
+
+    let result = conn.querySync(createTable);
+
+    let stmt = conn.prepareSync(updateBlob);
+
+    result = stmt.executeSync(['Aaa_123', param]);
+
+    result.closeSync();
+
+    data = conn.querySync('select * from Aaa;');
+    console.log(data);
+    conn.querySync('drop table Aaa;');
+    conn.closeSync();
+    assert.equal(data[0]['DERP'], null);
+  });
+}
