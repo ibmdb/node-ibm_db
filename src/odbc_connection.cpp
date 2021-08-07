@@ -1162,7 +1162,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
 
     // Check now to see if there was an error (as there may be further result sets)
     if (data->result != SQL_SUCCESS) {
-      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[node-ibm_db] SQL_ERROR");
+      info[0] = ODBC::GetSQLError(SQL_HANDLE_STMT, data->hSTMT, (char *) "[ibm_db] SQL_ERROR");
       info[1] = Nan::Null();
       SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
       data->hSTMT = (SQLHSTMT)NULL;

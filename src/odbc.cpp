@@ -1426,7 +1426,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle)
   return scope.Escape(GetSQLError(
     handleType,
     handle,
-    (char *) "[node-ibm_db] SQL_ERROR"));
+    (char *) "[ibm_db] SQL_ERROR"));
 }
 
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message)
