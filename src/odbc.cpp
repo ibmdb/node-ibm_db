@@ -1206,7 +1206,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
         }
         continue;
       }
-      else if (val->IsInt32()) {
+      else if (val->IsInt32() && params.type != 3) { //type=3 means DECIMAL
         int64_t *number = new int64_t[arrlen];
         for( int i = j; i < arrlen; i++) {
           if (i != j) {
