@@ -62,6 +62,7 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
       result = conn.querySync("CALL PROC2(?, ?)", [param2, param3]);
       console.log("Result for Sync call of proc2 ==>");
       console.log(result);
+      assert.deepEqual(result, [ 89.233 ]);
       // Call SP Asynchronously.
       conn.query(query, [param1], function (err, result) {
         if (err) console.log(err);

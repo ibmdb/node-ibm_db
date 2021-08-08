@@ -4,7 +4,8 @@ var common = require("./common")
   , insertCount = 0;
   ;
 
-//ibmdb.debug(true);
+//ibmdb.debug(2);
+console.log("\n Test 1:\n =======\n");
 ibmdb.open(common.connectionString, function(err, conn) {
   if(err) {
     console.log(err);
@@ -56,7 +57,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
   // Insert array data using query API
   // =====================================
   conn.query(queryOptions, function(err, result) {
-    if(err) console.log(err);
+    if(err) console.log("Error in query,", err);
     else {
       var data = conn.querySync("select * from arrtab");
       console.log("\nSelected data for table ARRTAB =\n", data);
@@ -78,6 +79,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
                 conn.querySync("drop table arrtab2");
                 assert.deepEqual(data, tab2data);
                 conn.closeSync();
+                testEmptyArryElement();
               });
             }
           });
@@ -87,6 +89,9 @@ ibmdb.open(common.connectionString, function(err, conn) {
   });
 });
 
+// Test array insert when one of the element in array is empty.
+function testEmptyArryElement() {
+console.log("\n Test 2:\n =======\n");
 ibmdb.open(common.connectionString, function(err, conn) {
   if(err) {
     console.log(err);
@@ -133,18 +138,18 @@ ibmdb.open(common.connectionString, function(err, conn) {
     else {
       var data = conn.querySync("select * from arrtab3");
       console.log("\nSelected data for table ARRTAB3 =\n", data);
-      conn.querySync("drop table arrtab3");
+      console.log("drop table result = ", conn.querySync("drop table arrtab3"));
 
       // Insert array data using prepare-bind-execute API
       // ================================================
       conn.prepare("insert into arrtab4 values (?)", function(err, stmt) {
-        if(err) { console.log(err); stmt.closeSync(); }
+        if(err) { console.log("error in prepare,", err); stmt.closeSync(); }
         else {
           stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 2, function(err, result) {
-            if(err) { console.log(err); stmt.closeSync(); }
+            if(err) { console.log("error in setAttr,", err); stmt.closeSync(); }
             else {
               stmt.execute(params2, function(err, result) {
-                if(err) console.log(err);
+                if(err) console.log("error in execute,", err);
                 stmt.closeSync();
                 var data = conn.querySync("select * from arrtab4");
                 console.log("\nSelected data for table ARRTAB4 =\n", data);
@@ -159,4 +164,4 @@ ibmdb.open(common.connectionString, function(err, conn) {
     }
   });
 });
-
+}
