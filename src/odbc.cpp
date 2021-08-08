@@ -972,7 +972,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
       if (val->IsNull()) {
           GetNullParam(&params[i], i+1);
       }
-      else if (val->IsInt32()) {
+      else if (val->IsInt32() && params[i].type != 3) { //type=3 means DECIMAL
           GetInt32Param(val, &params[i], i+1);
       }
       else if (val->IsNumber()) {

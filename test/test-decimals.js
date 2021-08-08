@@ -9,7 +9,8 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
   assert.equal(err, null);
 
   var proc1 = "create or replace procedure PROC1 ( IN v1 decimal(11,0) ) language sql begin  insert into mytab1 values (7, 'rocket', v1); end";
-  var param2 = {ParamType:"INOUT", DataType: "DECIMAL", Data: 89.26, Length: 5};
+  // Add proc2 to test the fix of issue #782 => Use integer as default value for decimal OUTPUT param
+  var proc2 = "create or replace procedure PROC2 ( IN v1 decimal(15,3), OUT v2 decimal(15,3) ) language sql begin set v2 = v1 ; end";
   var dropProc = "drop procedure PROC1";
   var query = "CALL PROC1(?)";
   try{
@@ -17,6 +18,9 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
   } catch (e) {}
   try{
     conn.querySync(dropProc);
+  } catch (e) {}
+  try{
+    conn.querySync("drop procedure PROC2");
   } catch (e) {}
 
   err = conn.querySync("create table mytab1 (c1 int, c2 varchar(10), c3 decimal(11, 0))");
@@ -48,10 +52,15 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
       assert.equal(ret, 1);
       
       // Call SP Synchronously.
-  param2 = {ParamType: 'INOUT', CType: 8, DataType: 3, Data: 34534411.3, Length:15};
+      var param2 = {ParamType:"INPUT", DataType: "DECIMAL", Data: 89.23365};
+      var param3 = {ParamType: 'OUTPUT', CType: 8, DataType: 3, Data: 0, Length:15};
       conn.querySync(proc1);
+      conn.querySync(proc2);
       result = conn.querySync(query, [param1]);
       console.log("Result for Sync call of proc1 ==>");
+      console.log(result);
+      result = conn.querySync("CALL PROC2(?, ?)", [param2, param3]);
+      console.log("Result for Sync call of proc2 ==>");
       console.log(result);
       // Call SP Asynchronously.
       conn.query(query, [param1], function (err, result) {
@@ -80,10 +89,10 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
             result.closeSync();
             stmt.closeSync();
 
-                conn.querySync("drop table mytab1");
-                conn.querySync(dropProc);
-                conn.close(function () { console.log('done'); });
-                ibmdb.close();
+            conn.querySync("drop table mytab1");
+            conn.querySync(dropProc);
+            conn.close(function () { console.log('done'); });
+            ibmdb.close();
           }
         });
       });  
