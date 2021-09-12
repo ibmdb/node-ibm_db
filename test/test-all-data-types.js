@@ -94,7 +94,15 @@ ibmdb.open(cn, function(err, conn) {
                assert.deepEqual(data, expectedData);
              }
         }
-        conn.querySync("drop table mytab1");
-        conn.closeSync();
+        ibmdb.debug(2);
+        conn.prepare("select * from mytab1", function(err, stmt) {
+            stmt = stmt.executeSync();
+            data = stmt.fetchAllSync();
+            console.log("Data3 = ", data);
+            console.log("Metadata = ", stmt.getColumnMetadataSync());
+            stmt.closeSync();
+            conn.querySync("drop table mytab1");
+            conn.closeSync();
+        });
     });
 });
