@@ -1,3 +1,41 @@
+2021-09-12, Version 2.8.0
+=========================
+
+ * update README.md with latest tested node version (Bimal Jha)
+
+ * update windows binaries (Bimal Jha)
+
+ * return SQL_DESC_NAME in column metadata, #678 (Bimal Jha)
+
+ * build(deps): bump axios from 0.21.1 to 0.21.2 (#793) (dependabot[bot])
+
+ * Electron 13 Support (#786) (Akhil Ravuri)
+
+ * update test files (Bimal Jha)
+
+ * fix decimla val issue for array insert (Bimal Jha)
+
+ * fix for decimal output param in SP, issue #782 (Bimal Jha)
+
+ * update test file for issue #778 (Bimal Jha)
+
+ * update package-lock.json file (Bimal Jha)
+
+ * fix: stale connection issue #742 (Bimal Jha)
+
+ * fea: Add support for arm64 on MacOS #784 (Bimal Jha)
+
+ * fea: add support for synchronous conn pool apis. #692 (Bimal Jha)
+
+ * doc: add env var info for silent installation (Bimal Jha)
+
+ * Fix: getSQLErrorSync docs for warnings (#781) (David Sint)
+
+ * fea: support for silent installation #743 (Bimal Jha)
+
+ * fea: add new debug level to dump sensitive data, issue #738 (Bimal Jha)
+
+
 2021-06-17, Version 2.7.4
 =========================
 
