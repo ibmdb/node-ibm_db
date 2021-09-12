@@ -534,21 +534,20 @@ var install_node_ibm_db = function(file_url) {
                 else
                 {
                     //Windows node binary names should update here.
-                    var ODBC_BINDINGS_V8 = 'build\/Release\/odbc_bindings.node.8.17.0';
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.0';
+                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.1';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.20.1';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.20.2';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.17.1';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.17.6';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
 
-                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x and 7.x has been discontinued.
-                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 8.0) {
+                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x and 8.x has been discontinued.
+                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) {
                         console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
                             '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 8.X. ' +
-                            'Otherwise please use the node.js version >= 8.X\n');
+                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 9.X. ' +
+                            'Otherwise please use the node.js version >= 9.X\n');
                         process.exit(1);
                     }
 
@@ -556,7 +555,7 @@ var install_node_ibm_db = function(file_url) {
                      * odbcBindingsNode will consist of the node binary-
                      * file name according to the node version in the system.
                      */
-                    odbcBindingsNode = (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) && ODBC_BINDINGS_V8   ||
+                    odbcBindingsNode =
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9   ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
