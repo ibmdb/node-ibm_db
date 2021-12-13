@@ -27,10 +27,12 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "big-integer": "^1.6.51",
     "bindings": "^1.5.0",
     "fs-extra": "^8.1.0",
     "fstream": "^1.0.12",
-    "nan": "^2.14.0",
+    "lodash": "^4.17.21",
+    "nan": "^2.15.0",
     "q": "^1.5.1",
     "targz": "^1.0.1",
     "unzipper": "^0.10.11"
