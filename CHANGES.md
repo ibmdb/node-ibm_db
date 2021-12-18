@@ -1,3 +1,13 @@
+2021-12-18, Version 2.8.1
+=========================
+
+ * add support for node v17.x (Bimal Jha)
+
+ * update nan versio of nodev17.x support (Bimal Jha)
+
+ * update unzipper and big-integer version, issue #795 (Bimal Jha)
+
+
 2021-09-12, Version 2.8.0
 =========================
 
