@@ -537,10 +537,11 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
                     var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.1';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.20.2';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.8';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.17.6';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.18.2';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
+                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.13.1';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x and 8.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) {
@@ -562,7 +563,8 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15   ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 || ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.

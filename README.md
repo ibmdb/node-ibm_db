@@ -13,6 +13,8 @@ Async APIs return promises if callback function is not used.
 
 - For Secure Database connection using **SSL/TSL**: Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md#SSLConnection).
 
+- Got an issue? Need Help? : Check common issues and suggestion [here](#sql1598n).
+
 ## Prerequisite
 
 - Make sure your system has C++ compiler installed that support C++11 standard.
@@ -35,13 +37,13 @@ Install a newer compiler or upgrade older one.
 - On z/OS only certain versions of node-gyp are supported. This was tested with:<br>
 node-gyp 3.4.0<br>
 npm 3.10.10<br>
-ibm_db: 2.3.0
+ibm_db: 2.8.1
 
 - Recommended version of node.js is >= V9.X. For node.js version < 9.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 16.9.1
+- The latest node.js version using which `ibm_db` is tested: 17.2.0
 
 ## Install
 
@@ -332,29 +334,53 @@ npm install ibm_db -vscode
 ```
 ibm_db would automatically be rebuilt with Electron if your installation directory path contains 'db2connect' as a sub-string. This has the same effect as running with '-vscode' flag.
 
-## Need Help?
-
-If you encountered any issue with ibm_db, first check for existing solution or
-work-around under `issues` or on google groups forum. Links are:   
-    
-https://github.com/ibmdb/node-ibm_db/issues    
-https://groups.google.com/forum/#!forum/node-ibm_db   
-   
-If no solution found, you can open a new issue on github or start a new topic in google groups.
-
-### To to verify database connectivity using ODBC and generate db2trace?
+## How to verify database connectivity using ODBC and generate db2trace?
 
 cd to `ibm_db/installer` directory and update database connection information for `db2cli validate` command in `testODBCConnection.sh` file for non-Windows platform and execute it.
 For Windows platform, update connection info for `db2cli validate` command in `testODBCConnection.bat` file and execute it from Administrator Command Prompt.
 Script `testODBCConnection` set the required environment variables, validate database connectivity and gerate db2trace files.
 
-### How to get db2trace for any node.js test file?
+## How to get db2trace for any node.js test file?
 ```
 copy test.js to ibm-db/test directory
 cd ibm_db/test
 ./trace test.js
 ```
 trace script works only on non-windows platform. For Windows, use `testODBCConnection.bat` script. You can replace `db2cli validate` command with `node test.js`in `testODBCConnection.bat` script and execute it.
+
+## Issues while connecting to Informix Server
+
+While using ibm_db against Informix server, you may get few issues if
+server is not configured properly. Also, ibm_db connects to only DRDA port.
+So, make sure drsoctcp of Informix is configured.
+
+### SQL1042C Error
+If ibm_db is returning SQL1042C error while connecting to server, use
+"Authentication=SERVER" in connection string. It should avoid the error.
+Alternatively, you can set Authentication in db2cli.ini file or db2dsdriver.cfg file too.
+
+### code-set conversion error
+If Informix server is not enabled for UNICODE clients or some code-set object
+file is missing on server; server returns this error to ibm_db:
+[IBM][CLI Driver][IDS/UNIX64] Error opening required code-set conversion object file.
+
+To avoid this error, remove UNICODE from binding.gyp file and rebuild the ibm_db.
+
+Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github.com/ibmdb/node-ibm_db/blob/master/installer/ifx.sh) script on non-windows system.
+
+## Need Help?
+
+If you encountered any issue with ibm_db, first check for existing solution or
+work-around under `issues` or on google groups forum. Links are:
+
+https://github.com/ibmdb/node-ibm_db/issues
+https://groups.google.com/forum/#!forum/node-ibm_db
+
+If no solution found, you can open a new issue on github.
+
+### Getting SQL30081N error  occasionally, after some time of inactivity : Check issue#810
+
+### Want to configure db2dsdrivre.cfg file to avoid SQL30081N error: Check issue#808
 
 ## Build Options
 
@@ -450,26 +476,6 @@ var eio = require('eio');
 eio.setMinParallel(threadCount);
 ```
 
-### Issues while connecting to Informix Server
-
-While using ibm_db against Informix server, you may get few issues if
-server is not configured properly. Also, ibm_db connects to only DRDA port.
-So, make sure drsoctcp of Informix is configured.
-
-#### SQL1042C Error
-If ibm_db is returning SQL1042C error while connecting to server, use
-"Authentication=SERVER" in connection string. It should avoid the error.
-Alternatively, you can set Authentication in db2cli.ini file or db2dsdriver.cfg file too.
-
-#### code-set conversion error
-If Informix server is not enabled for UNICODE clients or some code-set object
-file is missing on server; server returns this error to ibm_db:
-[IBM][CLI Driver][IDS/UNIX64] Error opening required code-set conversion object file.
-
-To avoid this error, remove UNICODE from binding.gyp file and rebuild the ibm_db.
-
-Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github.com/ibmdb/node-ibm_db/blob/master/installer/ifx.sh) script on non-windows system.
-
 ## Contributor
 
 * Dan VerWeire (dverweire@gmail.com)
@@ -488,7 +494,7 @@ Also to avoid above issues, you can run [ibm_db/installer/ifx.sh](https://github
 
 ```
 Contributor should add a reference to the DCO sign-off as comment in the pull request(example below):
-DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
+DCO Signed-off-by: Random J Developer <random@developer.org>
 ```
 
 ## License

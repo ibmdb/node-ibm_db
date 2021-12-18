@@ -37,9 +37,7 @@ The [*node-ibm_db*](https://github.com/ibmdb/node-ibm_db) is an asynchronous/syn
 
 Following are the steps to create a Node.js installation for testing.
 
-This node-ibm_db release has been tested with Node 0.10.36, 0.12.7, 4.2.1, 4.2.2, 4.2.6 LTS versions
-and 5.0.0, 5.3.0, 5.10.1 Stable versions on 64-bit/32-bit IBM Linux, IBM AIX, MacOS, Linux on z, 
-Linux on Power System and Windows.
+This node-ibm_db driver has been tested on 64-bit/32-bit IBM Linux, IBM AIX, MacOS, Linux on z, Linux on Power System and Windows.
 
 
 ## <a name="inslnx"></a> 2. Node-ibm_db Installation on Linux.
