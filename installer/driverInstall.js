@@ -88,6 +88,67 @@ var install_node_ibm_db = function(file_url) {
     if(vscode_build && fs.existsSync(path.join(DOWNLOAD_DIR,'clidriver'))){
         deleteFolderRecursive(path.join(DOWNLOAD_DIR,'clidriver'))
     }
+
+    // Check if env var IBM_DB_HOME is set
+    var IS_ENVIRONMENT_VAR;
+    var clidriverFound = true;
+
+    if (process.env.IBM_DB_HOME) {
+      if (fs.existsSync(process.env.IBM_DB_HOME)) {
+        IBM_DB_HOME = process.env.IBM_DB_HOME;
+        IS_ENVIRONMENT_VAR = true;
+      } else {
+      printMsg(process.env.IBM_DB_HOME + " directory does not exist. Please " +
+            "check if you have set the IBM_DB_HOME environment" +
+            " variable\'s value correctly.\n");
+      clidriverFound = false;
+      }
+    }
+
+    if (clidriverFound == false && fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
+        IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+        process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
+        IS_ENVIRONMENT_VAR = false;
+        clidriverFound = true;
+    }
+
+    // Check for the existence of include and lib directories
+    if (IBM_DB_HOME) {
+        if(platform != 'os390') {
+            IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
+            if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
+            } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
+            } else {
+              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
+            }
+
+            if (!fs.existsSync(IBM_DB_LIB)) {
+              console.log(IBM_DB_LIB, " directory does not exist. Please ",
+                  "check if you have set the IBM_DB_HOME environment ",
+                  "variable\'s value correctly.\n");
+              clidriverFound = false;
+            }
+            else if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)) {
+              if (!fs.existsSync(IBM_DB_INCLUDE)) {
+                printMsg(IBM_DB_INCLUDE + " directory does not exist. " +
+                        "Please check if you have set the IBM_DB_HOME " +
+                        "environment variable\'s value correctly.\n");
+                clidriverFound = false;
+              }
+            }
+            if( clidriverFound == false ) {
+                printMsg("Discarding IBM_DB_HOME setting.\n");
+                IS_ENVIRONMENT_VAR = undefined;
+                IBM_DB_HOME = undefined;
+                process.env.IBM_DB_HOME = undefined;
+            }
+        }
+    } else {
+        clidriverFound = false;
+    }
+
     /*
      * IF: IBM_DB_HOME path is set ->
      * CASE 1: If "IBM_DB_HOME" environment variable path is set.
@@ -98,19 +159,8 @@ var install_node_ibm_db = function(file_url) {
      * ELSE: platform specific compressed clidriver package will be download
      * and then extract for further use.
      */
-    if(process.env.IBM_DB_HOME || fs.existsSync(DOWNLOAD_DIR + "/clidriver")) 
+    if(clidriverFound == true)
     {
-        var IS_ENVIRONMENT_VAR;
-        if(process.env.IBM_DB_HOME){
-            IBM_DB_HOME = process.env.IBM_DB_HOME;
-            IS_ENVIRONMENT_VAR = true;
-        }
-        else if (fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
-            IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
-            process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
-            IS_ENVIRONMENT_VAR = false;
-        }
-
         if (platform == 'os390') {
           // On z/OS, we need to extract the include header files from
           // SDSNC.H, and the sidedeck definition from SDSNMACS(DSNAO64C)
@@ -141,15 +191,6 @@ var install_node_ibm_db = function(file_url) {
           // Build the binary
           buildBinary(!IS_ENVIRONMENT_VAR);
         } else {
-            IBM_DB_INCLUDE = path.resolve(IBM_DB_HOME, 'include');
-            if (fs.existsSync(IBM_DB_HOME + "/lib64")) {
-              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib64');
-            } else if (fs.existsSync(IBM_DB_HOME + "/lib32")) {
-              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib32');
-            } else {
-              IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
-            }
-
             if(IS_ENVIRONMENT_VAR) {
               printMsg('IBM_DB_HOME environment variable have already ' +
                   'set to -> ' + IBM_DB_HOME +
@@ -159,25 +200,6 @@ var install_node_ibm_db = function(file_url) {
                 '\n\nDownloading of clidriver skipped - build is in progress...\n');
             }
 
-            if (!fs.existsSync(IBM_DB_HOME)) {
-              printMsg(IBM_DB_HOME + " directory does not exist. Please " +
-                       "check if you have set the IBM_DB_HOME environment" +
-                       " variable\'s value correctly.\n");
-            }
-
-            if(!(platform == 'win32' && IS_ENVIRONMENT_VAR == false)) {
-              if (!fs.existsSync(IBM_DB_INCLUDE)) {
-                printMsg(IBM_DB_INCLUDE + " directory does not exist. " +
-                        "Please check if you have set the IBM_DB_HOME " +
-                        "environment variable\'s value correctly.\n");
-              }
-            }
-
-            if (!fs.existsSync(IBM_DB_LIB)) {
-              console.log(IBM_DB_LIB, " directory does not exist. Please ",
-                  "check if you have set the IBM_DB_HOME environment ",
-                  "variable\'s value correctly.\n");
-            }
             if( platform != 'win32') {
               if(!fs.existsSync(IBM_DB_HOME + "/lib"))
                 fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
@@ -305,7 +327,7 @@ var install_node_ibm_db = function(file_url) {
             extractCLIDriver.on('err', function() {
                 console.log(err);
             });
-        } 
+        }
         else 
         {
             var targz = require('targz');
@@ -351,10 +373,20 @@ var install_node_ibm_db = function(file_url) {
         if( platform == 'win32' && arch == 'x64')
         {
             var buildString = buildString + " --IBM_DB_HOME=\$IBM_DB_HOME";
+            var msbuild = "msbuild";
 
             var childProcess = exec(buildString, function (error, stdout, stderr)
             {
-                if( downloadProgress == 0 ) console.log(stdout);
+                if( downloadProgress == 0 ) {
+                    var lines = stderr.toString().split('\n');
+                    printMsg(stdout);
+                    for( var line of lines) {
+                        if( line.match(/MSBuild.exe/) ) {
+                            msbuild = '"' + line.slice(15) + '"';
+                            break;
+                        }
+                    }
+                }
 
                 if (error !== null)
                 {
@@ -371,9 +403,9 @@ var install_node_ibm_db = function(file_url) {
                 else
                 {
                     // "node-gyp" PASSED: RUN "msbuild" command.
-                    var msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64 ";
+                    var msbuildString = msbuild + " /clp:Verbosity=minimal /nologo /p:Configuration=Release;Platform=x64 ";
                     if (fs.existsSync('build/Debug')) {
-                        msbuildString = "msbuild /clp:Verbosity=minimal /nologo /p:Configuration=Debug;Platform=x64 ";
+                        msbuildString = msbuild + " /clp:Verbosity=minimal /nologo /p:Configuration=Debug;Platform=x64 ";
                     }
 
                     // getting the "binding.sln" (project solution) file path for "msbuild" command.
@@ -441,7 +473,7 @@ var install_node_ibm_db = function(file_url) {
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
                     {
-                        if( downloadProgress == 0 ) printMsg(stdout);
+                        //if( downloadProgress == 0 ) printMsg(stdout);
                         if (error !== null)
                         {
                             // "msbuild" FAILED: RUN Pre-compiled Binary Installation process.
