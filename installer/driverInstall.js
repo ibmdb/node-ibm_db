@@ -23,7 +23,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '13.1.7';
+var electron_version = '17.2.0';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -767,7 +767,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.59){
+            if (vscodeVer >= 1.66){
+                electron_version = "17.2.0";
+            }
+            else if (vscodeVer >= 1.59){
                 electron_version = "13.1.7";
             }
             else if (vscodeVer >= 1.56){
