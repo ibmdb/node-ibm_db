@@ -51,6 +51,10 @@ class ODBCResult : public Nan::ObjectWrap {
     static void UV_FetchAll(uv_work_t* work_req);
     static void UV_AfterFetchAll(uv_work_t* work_req, int status);
     
+    static NAN_METHOD(GetData);
+    static void UV_GetData(uv_work_t* work_req);
+    static void UV_AfterGetData(uv_work_t* work_req, int status);
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(MoreResultsSync);
@@ -60,6 +64,7 @@ class ODBCResult : public Nan::ObjectWrap {
     static NAN_METHOD(GetColumnMetadataSync);
     static NAN_METHOD(GetSQLErrorSync);
     static NAN_METHOD(GetAffectedRowsSync);
+    static NAN_METHOD(GetDataSync);
     
     //property getter/setters
     static NAN_GETTER(FetchModeGetter);
@@ -77,6 +82,14 @@ class ODBCResult : public Nan::ObjectWrap {
       Nan::Persistent<Value> objError;
     };
     
+    struct getdata_work_data {
+      Nan::Callback* cb;
+      ODBCResult *objResult;
+
+      int colNum;
+      int dataSize;
+    };
+
     ODBCResult *self(void) { return this; }
 
   protected:

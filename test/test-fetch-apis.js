@@ -25,6 +25,25 @@ ibmdb.open(cn,function(err,conn){
   }
   result.closeSync();
 
+  // Get column data in chunks using getDataSync API
+  stmt = conn.prepareSync("select * from hits");
+  result = stmt.executeSync();
+  console.log("Retrieve column data using getDataSync API:");
+  console.log(result.fetchSync({fetchMode:0}));
+  console.log("First Row Data = ");
+  console.log(result.getDataSync(1, 4));
+  console.log(result.getDataSync(1, 5));
+  console.log(result.getDataSync(2, 5));
+  console.log(result.getDataSync(3, 5));
+  result.fetchSync({fetchMode:0});
+  console.log("Second Row Data = ");
+  console.log(result.getDataSync(1, 4));
+  console.log(result.getDataSync(1, 5));
+  console.log(result.getDataSync(2, 5));
+  console.log(result.getDataSync(3, 5));
+  result.closeSync();
+  console.log("------------------");
+
   // Fetch data Synchronously using fetchAllSync() API.
   //stmt = conn.prepareSync("select * from hits");
   result = stmt.executeSync();
@@ -43,29 +62,85 @@ ibmdb.open(cn,function(err,conn){
     }
     result.closeSync();
 
-    // Fetch data Asynchronously using fetch() API.
+    // Fetch data Asynchronously using Promisified fetch() API.
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
-      result.fetch(function (err, row) {
-          if(err) { console.log(err); }
-          else {
-            console.log("Selected data using fetch() API = ");
-            console.log("Row1 = ", row);
-            result.fetch({fetchMode:3},function (err, row) {
-              if(err) { console.log(err); }
-              console.log("Row2 = ", row);
-              result.closeSync();
-              conn.querySync("drop table hits");
-              //Close the connection
-              conn.close(function(err){
-                console.log("Connection Closed.");
-                console.log("-------------------------------------------" +
-                            "------------------");
-              });
-            });
-          }
-      });
+      result.fetch().then(row => {
+        console.log("\n\n--------------------------------------------");
+        console.log("Selected data using Promisified fetch() API: ");
+        console.log("--------------------------------------------");
+        console.log("Row1 = ", row);
+        return result.fetch({fetchMode:ibmdb.FETCH_ARRAY});
+      }).then(row => {
+        console.log("Row2 = ", row);
+        result.closeSync();
+
+        // Get column data in chunks using getData API
+        stmt = conn.prepareSync("select * from hits");
+        result = stmt.executeSync();
+        console.log("Retrieve column data using getData API:");
+        return result.fetch({fetchMode:0});
+      }).then(() => {
+        console.log("First Row Data = ");
+        return result.getData(1, 4);
+      }).then(data => {
+        console.log(data);
+        return result.getData(1, 5);
+      }).then(data => {
+        console.log(data);
+        return result.getData(2, 5);
+      }).then(data => {
+        console.log(data);
+        return result.getData(3, 5);
+      }).then(data => {
+        console.log(data);
+        result.fetchSync({fetchMode:0});
+        console.log("Second Row Data = ");
+        return result.getData(1, 4);
+      }).then( data => {
+        console.log(data);
+        return result.getData(1, 5);
+      }).then(data => {
+        console.log(data);
+        console.log(result.getDataSync(2, 2));
+        console.log(result.getDataSync(3, 3));
+        result.closeSync();
+        console.log("------------------");
+        return testAsync(conn);
+      }).then(() => {
+        conn.querySync("drop table hits");
+        //Close the connection
+        conn.close(function(err){
+          console.log("Connection Closed.");
+          console.log("---------------------------------------------------");
+        });
+      }).catch(err => console.log(err));
     });
   });
 });
+
+// Select data asynchronously using async-await
+async function testAsync(conn) {
+  let stmt = conn.prepareSync("select * from hits");
+  let result = stmt.executeSync();
+  console.log("\n\n---------------------------------------");
+  console.log("Retrieve column data using async-await:");
+  console.log("---------------------------------------");
+  await result.fetch({fetchMode:0});
+  process.stdout.write("First Row Data = ");
+  let data = await result.getData(1, 4);
+  process.stdout.write(data);
+  data = await result.getData(1, 5);
+  process.stdout.write(data);
+  process.stdout.write(", " + await result.getData(2, 5));
+  console.log(", ", await result.getData(3, 5));
+  await result.fetch({fetchMode:ibmdb.FETCH_NODATA});
+  process.stdout.write("Second Row Data = ");
+  process.stdout.write(await result.getData(1, 4));
+  process.stdout.write(result.getDataSync(1, 5));
+  process.stdout.write(", " + await result.getData(2, 5));
+  console.log(", ", result.getDataSync(3, 5));
+  result.closeSync();
+  console.log("------ return from testAsync --------\n");
+}
 

@@ -28,23 +28,25 @@
 19. [.fetchSync(option)](#fetchSyncApi)
 20. [.fetchAll(option, callback)](#fetchAllApi)
 21. [.fetchAllSync(option)](#fetchAllSyncApi)
-22. [.beginTransaction(callback)](#beginTransactionApi)
-23. [.beginTransactionSync()](#beginTransactionSyncApi)
-24. [.commitTransaction(callback)](#commitTransactionApi)
-25. [.commitTransactionSync()](#commitTransactionSyncApi)
-26. [.rollbackTransaction(callback)](#rollbackTransactionApi)
-27. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
-28. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
-29. [.getColumnNamesSync()](#getColumnNamesSyncApi)
-30. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
-31. [.getSQLErrorSync()](#getSQLErrorSyncApi)
-32. [.debug(value)](#enableDebugLogs)
-33. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
-34. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
-35. [.setAttr(attributeName, value, callback)](#setAttrApi)
-36. [.setAttrSync(attributeName, value)](#setAttrSyncApi)
-37. [.getInfo(infoType, [infoLength], callback)](#getInfoApi)
-38. [.getInfoSync(infoType, [infoLength])](#getInfoSyncApi)
+22. [.getData(colNum, Size, callback)](#getDataApi)
+23. [.getDataSync(colNum, Size)](#getDataSyncApi)
+24. [.beginTransaction(callback)](#beginTransactionApi)
+25. [.beginTransactionSync()](#beginTransactionSyncApi)
+26. [.commitTransaction(callback)](#commitTransactionApi)
+27. [.commitTransactionSync()](#commitTransactionSyncApi)
+28. [.rollbackTransaction(callback)](#rollbackTransactionApi)
+29. [.rollbackTransactionSync()](#rollbackTransactionSyncApi)
+30. [.setIsolationLevel(isolationLevel)](#setIsolationLevelApi)
+31. [.getColumnNamesSync()](#getColumnNamesSyncApi)
+32. [.getColumnMetadataSync()](#getColumnMetadataSyncApi)
+33. [.getSQLErrorSync()](#getSQLErrorSyncApi)
+34. [.debug(value)](#enableDebugLogs)
+35. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#executeFileSyncApi)
+36. [.executeFile(sqlFile,[delimiter],[outputFile])](#executeFileApi)
+37. [.setAttr(attributeName, value, callback)](#setAttrApi)
+38. [.setAttrSync(attributeName, value)](#setAttrSyncApi)
+39. [.getInfo(infoType, [infoLength], callback)](#getInfoApi)
+40. [.getInfoSync(infoType, [infoLength])](#getInfoSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -601,9 +603,10 @@ ibmdb.open(cn,function(err,conn){
 Fetch a row of data from ODBCResult object asynchronously.
 
 * **option** - _OPTIONAL_ - Object type.
-    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} will return row in array form.
+    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, fetch() API do not return any result and application need to call result.getData() or result.getDataSync() API to retrieve data for a column.
 
-* **callback** - `callback (err, row)`
+* **callback** - `callback (err, row)`. When no `callback` function is passed, fetch() will return Promise.
 
 ```javascript
 var ibmdb = require("ibm_db")
@@ -621,18 +624,17 @@ ibmdb.open(cn,function(err,conn){
     }
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
-      result.fetch(function (err, row) {
+      result.fetch((err, row) => {
           if(err) { console.log(err); }
           else {
             console.log("Row1 = ", row);
-            result.fetch({fetchMode:3}, function (err, row) {
-              if(err) { console.log(err); }
+            result.fetch({fetchMode:ibmdb.FETCH_ARRAY}).then(row => {
               console.log("Row2 = ", row);
               result.closeSync();
               conn.querySync("drop table hits");
               //Close the connection
               conn.close(function(err){console.log("Connection Closed.");});
-            });
+            }).catch(err => console.log(err));
           }
       });
     });
@@ -645,7 +647,8 @@ ibmdb.open(cn,function(err,conn){
 Fetch a row of data from ODBCResult object synchronously.
 
 * **option** - _OPTIONAL_ - Object type.
-    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} will return row in array form.
+    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, fetch() API do not return any result and application need to call result.getData() or result.getDataSync() API to retrieve data for a column.
 
 ```javascript
 var ibmdb = require("ibm_db")
@@ -733,17 +736,91 @@ ibmdb.open(cn,function(err,conn){
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
 
-### <a name="beginTransactionApi"></a> 22) .beginTransaction(callback)
+### <a name="getDataApi"></a> 22) .getData(colNum, Size, callback)
+
+Retrive data for colNum of specified size from ODBCResult object asynchronously.
+
+* **colNum** - Integer - Column Number in the resultset starting from 1.
+
+* **Size** - Integer -  Size of the data being retrieved. For fixed length data, it get ignored.
+
+* **callback** - `callback (err, row)`. When no `callback` function is passed, getData() will return Promise.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn,function(err,conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  var stmt = conn.prepareSync("select * from hits");
+  var result = stmt.executeSync();
+  result.fetch({fetchMode:0})
+      .then(() => {
+        return result.getData(1, 4);
+      }).then(data => {
+        console.log(data);
+        return result.getData(1, 5);
+      }).then(data => {
+        console.log(data);
+        return result.getData(2, 5);
+      }).then(data => {
+        console.log(data);
+        return result.getData(3, 5);
+      }).then(data => {
+        console.log(data);
+      }).catch(err => console.log(err));
+```
+See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
+
+### <a name="getDataSyncApi"></a> 23) .getDataSync(colNum, Size)
+
+Retrive data for colNum of specified size from ODBCResult object synchronously.
+
+* **colNum** - Integer - Column Number in the resultset starting from 1.
+
+* **Size** - Integer -  Size of the data being retrieved. For fixed length data, it get ignored.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn,function(err,conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  var stmt = conn.prepareSync("select * from hits");
+  var result = stmt.executeSync();
+  console.log(result.fetchSync({fetchMode:0}));
+  console.log("First Row Data = ");
+  console.log(result.getDataSync(1, 4));
+  console.log(result.getDataSync(1, 5));
+  console.log(result.getDataSync(2, 5));
+  console.log(result.getDataSync(3, 5));
+  result.fetchSync({fetchMode:0});
+  console.log("Second Row Data = ");
+  console.log(result.getDataSync(1, 4));
+  console.log(result.getDataSync(1, 5));
+  console.log(result.getDataSync(2, 5));
+  console.log(result.getDataSync(3, 5));
+  result.closeSync();
+  conn.closeSync();
+}
+```
+See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
+
+### <a name="beginTransactionApi"></a> 24) .beginTransaction(callback)
 
 Begin a transaction
 
 * **callback** - `callback (err)`
 
-### <a name="beginTransactionSyncApi"></a> 23) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 25) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 24) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 26) .commitTransaction(callback)
 
 Commit a transaction
 
@@ -780,7 +857,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 25) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 27) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -809,7 +886,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 26) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 28) .rollbackTransaction(callback)
 
 Rollback a transaction
 
@@ -846,7 +923,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 27) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 29) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -875,7 +952,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="setIsolationLevelApi"></a> 28) .setIsolationLevel(isolationLevel)
+### <a name="setIsolationLevelApi"></a> 30) .setIsolationLevel(isolationLevel)
 
 Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction.
 
@@ -892,7 +969,7 @@ ibmdb.open(cn, function(err,conn) {
 });
 ```
 
-### <a name="getColumnNamesSyncApi"></a> 29) .getColumnNamesSync()
+### <a name="getColumnNamesSyncApi"></a> 31) .getColumnNamesSync()
 
 Synchronously retrieve the name of columns returned by the resulset. It
  operates on ODBCResult object.
@@ -904,7 +981,7 @@ Synchronously retrieve the name of columns returned by the resulset. It
       result.closeSync(); conn.closeSync(); }); });
 ```
 
-### <a name="getColumnMetadataSyncApi"></a> 30) .getColumnMetadataSync()
+### <a name="getColumnMetadataSyncApi"></a> 32) .getColumnMetadataSync()
 
 Synchronously retrieve the metadata about columns returned by the resulset. It
  operates on ODBCResult object.
@@ -921,7 +998,7 @@ Synchronously retrieve the metadata about columns returned by the resulset. It
   });
 ```
 
-### <a name="getSQLErrorSyncApi"></a> 31) .getSQLErrorSync()
+### <a name="getSQLErrorSyncApi"></a> 33) .getSQLErrorSync()
 
 Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API. It operates on ODBCResult object.
 ```javascript
@@ -941,7 +1018,7 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
   });
 ```
 
-### <a name="enableDebugLogs"></a> 32) .debug(value)
+### <a name="enableDebugLogs"></a> 34) .debug(value)
 
 Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump params.
 
@@ -973,7 +1050,7 @@ ibmdb.debug(2);     // **==> ENABLE CONSOLE LOGS and log parameter values too if
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 33) .executeFileSync(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileSyncApi"></a> 35) .executeFileSync(sqlFile,[delimiter],[outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -999,7 +1076,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="executeFileApi"></a> 34) .executeFile(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileApi"></a> 36) .executeFile(sqlFile,[delimiter],[outputFile])
 
 Asynchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -1036,7 +1113,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="setAttrApi"></a> 35) .setAttr(attributeName, value, callback)
+### <a name="setAttrApi"></a> 37) .setAttr(attributeName, value, callback)
 
 Set statement level attributes asynchronously. It requires attributeName and corresponding value.
 ```
@@ -1046,7 +1123,7 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 });
 ```
 
-### <a name="setAttrSyncApi"></a> 36) .setAttrSync(attributeName, value)
+### <a name="setAttrSyncApi"></a> 38) .setAttrSync(attributeName, value)
 
 Set statement level attributes synchronously. It requires attributeName and corresponding value.
 ```
@@ -1055,7 +1132,7 @@ err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
 err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
 ```
 
-### <a name="getInfoApi"></a> 37) .getInfo(infoType, [infoLength], callback)
+### <a name="getInfoApi"></a> 39) .getInfo(infoType, [infoLength], callback)
 
 Asynchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
@@ -1084,7 +1161,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getInfoSyncApi"></a> 38) .getInfoSync(infoType, [infoLength])
+### <a name="getInfoSyncApi"></a> 40) .getInfoSync(infoType, [infoLength])
 
 Synchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 

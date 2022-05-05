@@ -299,6 +299,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
   for (int i = 0; i < *colCount; i++) {
     //save the index number of this column
     columns[i].index = i + 1;
+    columns[i].getData = false;
     colname[0] = '\0';
     buflen = 0;
 
@@ -394,16 +395,19 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
 
 void ODBC::FreeColumns(Column* columns, short* colCount)
 {
-  DEBUG_PRINTF("ODBC::GetColumns - Entry\n");
+  DEBUG_PRINTF("ODBC::FreeColumns - Entry\n");
   for(int i = 0; i < *colCount; i++) {
       delete [] columns[i].name;
       delete [] columns[i].type_name;
   }
 
-  delete [] columns;
-  columns = NULL;
+  if(columns != NULL)
+  {
+      delete [] columns;
+      columns = NULL;
+  }
   *colCount = 0;
-  DEBUG_PRINTF("ODBC::GetColumns - Exit\n");
+  DEBUG_PRINTF("ODBC::FreeColumns - Exit\n");
 }
 
 /*
@@ -629,7 +633,10 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                    column.type, len, ret, bufferLength);
       newbufflen = len;
 
-      if( ret == SQL_SUCCESS_WITH_INFO )
+      if( column.getData ) {
+          secondGetData = 1; // Don't go for second SQLGetData call.
+      }
+      else if( ret == SQL_SUCCESS_WITH_INFO )
       {
           newbufflen = len + terCharLen;
           if(newbufflen > 0x3fffffff) {

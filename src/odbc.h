@@ -36,6 +36,7 @@ using namespace node;
 #define MODE_CALLBACK_FOR_EACH 2
 #define FETCH_ARRAY 3
 #define FETCH_OBJECT 4
+#define FETCH_NODATA 0
 #define SQL_DESTROY 9999
 
 #if (NODE_MAJOR_VERSION >= 10)
@@ -103,6 +104,7 @@ typedef struct {
   SQLSMALLINT field_len;
   SQLLEN type;
   SQLUSMALLINT index;
+  bool getData;
 } Column;
 
 typedef struct {
