@@ -139,7 +139,7 @@ function testDate(conn)
         "set v2 = CURRENT DATE; end";
     var param2 = {ParamType:"OUTPUT", DataType:"DATE", Data:"2020-08-15", Length:30};
     var query = "call " + schema + ".PROC4(?, ?)";
-    var dropProc = "drop procedure " + schema + ".PROC2";
+    var dropProc = "drop procedure " + schema + ".PROC4";
 
     if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
       // - When creating an SQL native procedure on z/OS, you will need to
@@ -182,8 +182,32 @@ function testDate(conn)
           conn.querySync("drop procedure " + schema + ".PROC4 ( INT, DATE )");
         }
         conn.querySync("drop table " + schema + ".mytab1");
-        // Close connection in last only.
-        conn.close(function (err) { console.log("done.");});
+        testInteger(conn);
     });
+}
+
+//==================== TEST 3  - for issue #835 =============================
+
+function testInteger(conn)
+{
+    console.log("\n==================== TEST 3 ===========================\n");
+    var proc1 = "CREATE PROCEDURE " + schema + ".TEST_PROC ( IN INPUT1 INTEGER, OUT OUTPUT1 INTEGER, OUT OUTPUT2 VARCHAR(500) ) " +
+                "LANGUAGE SQL SPECIFIC " + schema + ".TEST_PROC NOT DETERMINISTIC MODIFIES SQL DATA BEGIN " +
+                "SET OUTPUT1 = INPUT1 + 300; SET OUTPUT2 = 'Hello this a returned result'; END ;";
+    var params = [454548, { ParamType: 'OUTPUT', SQLType: 'INTEGER', Data: 0 },{ ParamType: 'OUTPUT', DataType: 'VARCHAR', Data: '', Length: 500 }];
+    var query = "call " + schema + ".TEST_PROC(?, ?, ?)";
+    var dropProc = "drop procedure " + schema + ".TEST_PROC";
+
+    var err = conn.querySync(proc1);
+    if(err.length) { console.log(err); }
+
+    // Call SP Synchronously.
+    var result = conn.querySync(query, params);
+    console.log("Result for Sync call of test_proc ==>");
+    console.log(result);
+    assert.equal(result.length, 2);
+    conn.querySync("drop procedure " + schema + ".TEST_PROC ( INT, INT, VARCHAR(500) )");
+    // Close connection in last only.
+    conn.close(function (err) { console.log("done.");});
 }
 
