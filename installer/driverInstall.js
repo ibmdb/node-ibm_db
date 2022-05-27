@@ -4,6 +4,7 @@
 
 var fs = require('fs');
 var url = require('url');
+var https = require('https');
 var os = require('os');
 var path = require('path');
 var exec = require('child_process').exec;
@@ -37,6 +38,12 @@ if(process.env.npm_config_loglevel == 'silent') { // -silent option
 if(downloadProgress == 0) {
   printMsg("platform = " + platform + ", arch = " + arch +
            ", node.js version = " + process.version);
+}
+
+var httpsAgent;
+if (process.env.npm_config_cafile) {
+    const ca = fs.readFileSync(process.env.npm_config_cafile);
+    httpsAgent = new https.Agent({ ca });
 }
 
 /* Show make version on non-windows platform, if installed. */
@@ -648,7 +655,7 @@ var install_node_ibm_db = function(file_url) {
 
         var outStream = fs.createWriteStream(INSTALLER_FILE);
 
-        axios.get(installerfileURL, {responseType: 'stream'})
+        axios.get(installerfileURL, {responseType: 'stream', httpsAgent})
              .then(function (response) {
                 total_bytes = parseInt(response.headers['content-length']);
                 response.data.on('data', (chunk) => {
