@@ -92,6 +92,7 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
 
             conn.querySync("drop table mytab1");
             conn.querySync(dropProc);
+            testBigInt(conn);
             conn.close(function () { console.log('done'); });
             ibmdb.close();
           }
@@ -101,4 +102,34 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
     });
   });
 });
+
+// Test for issue #816 - BigInt columns
+function testBigInt(conn)
+{
+    console.log('\nTest BigInt value larger than MAX_SAFE_INTEGER value of JS');
+    console.log('----------------------------------------------------------\n');
+    console.log('JS Number max SAFE value : '+Number.MAX_SAFE_INTEGER);
+    //9007199254740991 = Number.MAX_SAFE_INTEGER
+    let maxSafeInt = Number.MAX_SAFE_INTEGER;
+    let bigIntValue = 9007199254741997n;
+
+    conn.querySync('create table mytab (c1 bigint, c2 varchar(20))');
+    conn.querySync(`insert into mytab values (${maxSafeInt}, 'Max Safe Int'),(${bigIntValue}, 'Big Int Value')`);
+
+    conn.queryResult("select * from mytab", (err, result) => {
+        if(err) {
+            console.log(err);
+        } else {
+            let data;
+            while( data = result.fetchSync() )
+            {
+              console.log('Data Type returned : '+typeof data.C1);
+              console.log(data);
+              assert.deepEqual(typeof data.C1, 'string');
+            }
+            result.closeSync();
+        }
+        conn.querySync("drop table mytab;");
+    });
+}
 

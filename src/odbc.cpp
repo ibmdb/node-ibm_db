@@ -467,29 +467,6 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       break;
 
-    case SQL_BIGINT :
-      DEBUG_PRINTF("BIGINT DATA SELECTED\n");
-      {
-        long long value;
-        ret = SQLGetData( hStmt, 
-                          column.index, 
-                          SQL_C_SBIGINT,
-                          &value, 
-                          sizeof(value), 
-                          &len);
-        
-        DEBUG_PRINTF("ODBC::GetColumnValue - BigInt: index=%i name=%s type=%i len=%i ret=%i, value=%ld\n", 
-                     column.index, column.name, column.type, len, ret, value);
-        
-        if ((int)len == SQL_NULL_DATA) {
-          return scope.Escape(Nan::Null());
-        }
-        else {
-          return scope.Escape(Nan::New<Number>((long long)value));
-        }
-      }
-      break;
-
     case SQL_NUMERIC :
       DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
     case SQL_DECIMAL :
@@ -592,6 +569,12 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       break;
 	case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED\n");
+    case SQL_BIGINT :
+        if((int) column.type == SQL_BIGINT)
+        {
+            ctype = SQL_C_CHAR;
+            DEBUG_PRINTF("BIGINT DATA SELECTED\n");
+        }
     case SQL_DBCLOB:
         if((int) column.type == SQL_DBCLOB)
         {
