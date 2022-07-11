@@ -13,6 +13,7 @@ var axios = require('axios');
 
 //IBM provided URL for downloading clidriver.
 var installerURL = 'https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli';
+var githubURL = 'https://github.com/ibmdb/db2drivers/raw/main/clidriver/';
 var license_agreement = '\n****************************************\nYou are downloading a package which includes the Node.js module for IBM DB2/Informix.  The module is licensed under the Apache License 2.0. The package also includes IBM ODBC and CLI Driver from IBM, which is automatically downloaded as the node module is installed on your system/device. The license agreement to the IBM ODBC and CLI Driver is available in ';
 var license_agreement2 = '. Check for additional dependencies, which may come with their own license agreement(s). Your use of the components of the package and dependencies constitutes your acceptance of their respective license agreements. If you do not accept the terms of any license agreement(s), then delete the relevant component(s) from your device.\n****************************************\n';
 
@@ -69,6 +70,9 @@ var install_node_ibm_db = function(file_url) {
     var writeStream;
     var endian = os.endianness();
     var installerfileURL;
+    var installerfileURL2;
+    var odbc_driver;
+    var gitDownload = false;
 
     var fstream = require('fstream');
     var unzipper = require('unzipper');
@@ -231,47 +235,51 @@ var install_node_ibm_db = function(file_url) {
     {
         if(platform == 'win32') {
             if(arch == 'x64') {
-                installerfileURL = installerURL + 'ntx64_odbc_cli.zip';
+                odbc_driver = 'ntx64_odbc_cli.zip';
             }
         }
         else if(platform == 'linux') 
         {
             if(arch == 'x64') {
-                installerfileURL = installerURL + 'linuxx64_odbc_cli.tar.gz';
+                odbc_driver = 'linuxx64_odbc_cli.tar.gz';
             } else if(arch == 's390x') {
-                installerfileURL = installerURL + 's390x64_odbc_cli.tar.gz';
+                odbc_driver = 's390x64_odbc_cli.tar.gz';
             } else if(arch == 's390') {
-                installerfileURL = installerURL + 's390_odbc_cli.tar.gz';
+                odbc_driver = 's390_odbc_cli.tar.gz';
             } else if(arch == 'ppc64') {
                 if(endian == 'LE')
-                    installerfileURL = installerURL + 'ppc64le_odbc_cli.tar.gz';
+                    odbc_driver = 'ppc64le_odbc_cli.tar.gz';
                 else
-                    installerfileURL = installerURL + 'ppc64_odbc_cli.tar.gz';
+                    odbc_driver = 'ppc64_odbc_cli.tar.gz';
             } else if(arch == 'ppc32') {
-                installerfileURL = installerURL + 'ppc32_odbc_cli.tar.gz';
+                odbc_driver = 'ppc32_odbc_cli.tar.gz';
             } else {
-                installerfileURL = installerURL + 'linuxia32_odbc_cli.tar.gz';
+                odbc_driver = 'linuxia32_odbc_cli.tar.gz';
             }
         } 
         else if(platform == 'darwin') 
         {
-            if(arch == 'x64' || arch == 'arm64') {
-                installerfileURL = installerURL + 'macos64_odbc_cli.tar.gz';
+            if(arch == 'x64') {
+                odbc_driver = 'macos64_odbc_cli.tar.gz';
+            } else if(arch == 'arm64') {
+                console.log('M1 Chip system with arm64 architecture is not supported. ' +
+                            'Please install x64 version of node.js to install ibm_db.\n');
+                process.exit(1);
             } else {
                 console.log('Mac OS 32 bit not supported. Please use an ' +
                             'x64 architecture.\n');
-                return;
+                process.exit(1);
             }
         } 
         else if(platform == 'aix')
         {
             if(arch == 'ppc')
             {
-                installerfileURL = installerURL + 'aix32_odbc_cli.tar.gz';
+                odbc_driver = 'aix32_odbc_cli.tar.gz';
             }
             else
             {
-                installerfileURL = installerURL + 'aix64_odbc_cli.tar.gz';
+                odbc_driver = 'aix64_odbc_cli.tar.gz';
             }
         }
         else if(platform == 'os390')
@@ -286,18 +294,18 @@ var install_node_ibm_db = function(file_url) {
         }
         else
         {
-            installerfileURL = installerURL + platform + arch + 
-                               '_odbc_cli.tar.gz';
+            odbc_driver = platform + arch + '_odbc_cli.tar.gz';
         }
 
-        if(!installerfileURL) {
-            console.log('Unable to fetch driver download file. Exiting the ' +
+        if(!odbc_driver) {
+            console.log('Unable to determine driver download file. Exiting the ' +
                         'install process.\n');
             process.exit(1);
         }
 
-        var file_name = url.parse(installerfileURL).pathname.split('/').pop();
-        INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, file_name);
+        installerfileURL = installerURL + odbc_driver;
+        installerfileURL2 = githubURL + odbc_driver;
+        INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, odbc_driver);
 
         license_agreement += path.resolve(DOWNLOAD_DIR, 'clidriver') + license_agreement2;
         printMsg(license_agreement);
@@ -306,6 +314,7 @@ var install_node_ibm_db = function(file_url) {
 
         fs.stat(installerfileURL, function (err, stats) {
             if (!err && stats.isFile()) {
+                // If IBM_DB_INSTALLER_URL is set and file exists.
                 INSTALLER_FILE = installerfileURL;
                 return copyAndExtractCliDriver();
             }
@@ -315,6 +324,10 @@ var install_node_ibm_db = function(file_url) {
     }  // * END OF EXECUTION */
 
     function copyAndExtractCliDriver() {
+        IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
+        // Delete existing clidriver before unzip/untar
+        deleteFolderRecursive(IBM_DB_HOME);
+
         if(platform == 'win32') {
             readStream = fs.createReadStream(INSTALLER_FILE);
 
@@ -325,7 +338,6 @@ var install_node_ibm_db = function(file_url) {
                 printMsg('\n\nDownloading and extraction of DB2 ODBC ' +
                          'CLI Driver completed successfully. \n');
 
-                IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
                 if(deleteInstallerFile) removeInstallerFile();
@@ -665,7 +677,25 @@ var install_node_ibm_db = function(file_url) {
                 response.data.pipe(outStream);
               })
              .catch(error => {
-                console.log(error)
+                if( error.code ) {
+                  printMsg(error.code + " : " + installerfileURL);
+                }
+                if( error.response ) {
+                  printMsg('Error ' + error.response.status + ': ' +
+                      error.response.statusText + ' - ' + installerfileURL);
+                }
+                // Try download from github as download from IBM site failed.
+                if(!gitDownload) {
+                  gitDownload = true;
+                  printMsg('Downloading DB2 ODBC CLI Driver from ' +
+                           installerfileURL2 + ' ...\n');
+                  downloadCliDriver(installerfileURL2);
+                } else {
+                  if(!error.code && !error.response) printMsg(error);
+                  console.log('\n=====================================');
+                  console.log('Error: Installation of ibm_db failed.');
+                  console.log('=====================================\n');
+                }
               });
 
         deleteInstallerFile = true;
