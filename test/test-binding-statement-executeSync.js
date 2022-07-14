@@ -9,7 +9,7 @@ db.createConnection(function (err, conn) {
   conn.openSync(common.connectionString);
   
   conn.createStatement(function (err, stmt) {
-    var r, result, caughtError;
+    var r, result, caughtError={};
     
     //try excuting without preparing or binding.
     try {

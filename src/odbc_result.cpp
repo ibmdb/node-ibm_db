@@ -173,6 +173,7 @@ NAN_METHOD(ODBCResult::Fetch)
   MEMCHECK( work_req );
   
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
+  if(!data ) free(work_req); // Below MEMCHECK macro will log error and return;
   MEMCHECK( data );
   
   Local<Function> cb;
@@ -194,6 +195,8 @@ NAN_METHOD(ODBCResult::Fetch)
     }
   }
   else {
+    free(data);
+    free(work_req);
     return Nan::ThrowTypeError("ODBCResult::Fetch(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
   
@@ -440,6 +443,7 @@ NAN_METHOD(ODBCResult::FetchAll)
   MEMCHECK( work_req );
   
   fetch_work_data* data = (fetch_work_data *) calloc(1, sizeof(fetch_work_data));
+  if(!data ) free(work_req); // Below MEMCHECK macro will log error and return;
   MEMCHECK( data );
   
   Local<Function> cb;
@@ -460,7 +464,9 @@ NAN_METHOD(ODBCResult::FetchAll)
     }
   }
   else {
-    Nan::ThrowTypeError("ODBCResult::FetchAll(): 1 or 2 arguments are required. The last argument must be a callback function.");
+    free(data);
+    free(work_req);
+    return Nan::ThrowTypeError("ODBCResult::FetchAll(): 1 or 2 arguments are required. The last argument must be a callback function.");
   }
   
   data->rows.Reset(Nan::New<Array>());
@@ -737,21 +743,24 @@ NAN_METHOD(ODBCResult::GetData)
   MEMCHECK( work_req );
 
   getdata_work_data* data = (getdata_work_data *) calloc(1, sizeof(getdata_work_data));
+  if(!data ) free(work_req); // Below MEMCHECK macro will log error and return;
   MEMCHECK( data );
 
   Local<Function> cb;
 
   if (info.Length() == 3 && info[2]->IsFunction()) {
     cb = Local<Function>::Cast(info[2]);
-    data->colNum = colNum;
-    data->dataSize = dataSize;
+    data->colNum = (SQLUINTEGER)colNum;
+    data->dataSize = (SQLUINTEGER)dataSize;
   }
   else if (info.Length() == 2 && info[1]->IsFunction()) {
     cb = Local<Function>::Cast(info[1]);
-    data->colNum = colNum;
+    data->colNum = (SQLUINTEGER)colNum;
     data->dataSize = 0;
   }
   else {
+    free(data);
+    free(work_req);
     return Nan::ThrowTypeError("ODBCResult::GetData(): 2 or 3 arguments are required.");
   }
 
@@ -791,7 +800,7 @@ void ODBCResult::UV_AfterGetData(uv_work_t* work_req, int status)
   info[1] = Nan::Null();
 
   if (objResult->colCount > 0 && data->colNum <= objResult->colCount) {
-    objResult->bufferLength = data->dataSize;
+    objResult->bufferLength = (size_t)data->dataSize;
     objResult->columns[data->colNum -1].getData = true;
 
     Nan::TryCatch tc;
@@ -839,7 +848,7 @@ NAN_METHOD(ODBCResult::GetDataSync)
   DEBUG_PRINTF("ODBCResult::GetDataSync: colNum = %d, dataSize = %d\n", colNum, dataSize);
   if (objResult->colCount > 0 && colNum <= objResult->colCount) {
     Local<Value> data;
-    objResult->bufferLength = dataSize;
+    objResult->bufferLength = (size_t)dataSize;
     objResult->columns[colNum -1].getData = true;
     data = ODBC::GetColumnValue( objResult->m_hSTMT, objResult->columns[colNum -1], objResult->buffer, objResult->bufferLength);
 

@@ -158,6 +158,7 @@ NAN_METHOD(ODBCStatement::Execute)
   
   execute_work_data* data = 
     (execute_work_data *) calloc(1, sizeof(execute_work_data));
+  if(!data) free(work_req);
   MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
@@ -339,6 +340,7 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuery)
   
   execute_work_data* data = 
     (execute_work_data *) calloc(1, sizeof(execute_work_data));
+  if(!data) free(work_req);
   MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
@@ -487,20 +489,26 @@ NAN_METHOD(ODBCStatement::ExecuteDirect)
 
   REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
+  int len = sql.length();
+  void *cppSQL = NULL;
+  GETCPPSTR(cppSQL, sql, len);
 
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  if( !work_req ) free(cppSQL);
   MEMCHECK( work_req );
   
   execute_direct_work_data* data = 
     (execute_direct_work_data *) calloc(1, sizeof(execute_direct_work_data));
+  if(!data) {
+    free(cppSQL);
+    free(work_req);
+  }
   MEMCHECK( data );
 
   data->cb = new Nan::Callback(cb);
-  int len = sql.length();
-  GETCPPSTR(data->sql, sql, len);
-
+  data->sql = cppSQL;
   data->sqlLen = len;
   data->stmt = stmt;
   work_req->data = data;
@@ -665,6 +673,7 @@ NAN_METHOD(ODBCStatement::PrepareSync)
     (SQLTCHAR *) sql2, 
     sqlLen);
   
+  free(sql2);
   if (SQL_SUCCEEDED(ret)) {
     info.GetReturnValue().Set(Nan::True());
   }
@@ -694,19 +703,26 @@ NAN_METHOD(ODBCStatement::Prepare)
   REQ_STRO_ARG(0, sql);
   REQ_FUN_ARG(1, cb);
   int sqlLen = sql.length();
+  void *cppSQL = NULL;
+  GETCPPSTR(cppSQL, sql, sqlLen); // Memory get alloced using malloc
 
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  if(!work_req) free(cppSQL);
   MEMCHECK( work_req );
   
   prepare_work_data* data = 
     (prepare_work_data *) calloc(1, sizeof(prepare_work_data));
+  if(!data ) { // Failed to allocate memory, free allocated resources.
+    free(cppSQL);
+    free(work_req); // Below MEMCHECK macro will log error and return;
+  }
   MEMCHECK( data );
 
-  data->cb = new Nan::Callback(cb);
-  GETCPPSTR(data->sql, sql, sqlLen);
 
+  data->cb = new Nan::Callback(cb);
+  data->sql = cppSQL;
   data->sqlLen = sqlLen;
   data->stmt = stmt;
   work_req->data = data;
@@ -867,6 +883,7 @@ NAN_METHOD(ODBCStatement::Bind)
   
   bind_work_data* data = 
     (bind_work_data *) calloc(1, sizeof(bind_work_data));
+  if(!data) free(work_req);
   MEMCHECK( data );
 
   //if we previously had parameters, then be sure to free them
@@ -1025,37 +1042,44 @@ NAN_METHOD(ODBCStatement::SetAttr)
   DEBUG_PRINTF("ODBCStatement::SetAttr - Entry\n");
   
   Nan::HandleScope scope;
-  REQ_ARGS(3);
-
+  SQLPOINTER valuePtr = NULL;
+  SQLINTEGER stringLength = SQL_IS_INTEGER;
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
-  
-  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
-  MEMCHECK( work_req );
-  
-  setattr_work_data* data = 
-    (setattr_work_data *) calloc(1, sizeof(setattr_work_data));
-  MEMCHECK( data );
 
-  data->stmt = stmt;
-  
+  REQ_ARGS(3);
   REQ_INT_ARG(0, attr);
-  data->attr = attr;
-  data->valuePtr = NULL;
-  data->stringLength = SQL_IS_INTEGER;
+  REQ_FUN_ARG(2, cb);
 
   if( info[1]->IsInt32() ) {
-      data->valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+      valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
   } else if (info[1]->IsNull()) {
-      data->valuePtr = (SQLPOINTER)0;
+      valuePtr = (SQLPOINTER)0;
   } else if (info[1]->IsString()) {
       Nan::Utf8String value(info[1]);
-      data->stringLength = value.length();
-      GETCPPSTR(data->valuePtr, value, data->stringLength);
+      stringLength = value.length();
+      GETCPPSTR(valuePtr, value, stringLength);
   } else {
       return Nan::ThrowTypeError("Unsupported Statement Attribute Value.");
   }
   
-  REQ_FUN_ARG(2, cb);
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  if( !work_req && info[1]->IsString()) {
+    free(valuePtr);
+  }
+  MEMCHECK( work_req );
+
+  setattr_work_data* data =
+    (setattr_work_data *) calloc(1, sizeof(setattr_work_data));
+  if( !data ) {
+    if(info[1]->IsString()) free(valuePtr);
+	free(work_req);
+  }
+  MEMCHECK( data );
+
+  data->stmt = stmt;
+  data->attr = attr;
+  data->valuePtr = valuePtr;
+  data->stringLength = stringLength;
 
   DEBUG_PRINTF("ODBCStatement::SetAttr: hENV=%X, hDBC=%X, hSTMT=%X, "
     "Attribute=%d, value=%i, length=%d\n",
@@ -1148,7 +1172,7 @@ NAN_METHOD(ODBCStatement::Close)
   Nan::HandleScope scope;
 
   Local<Function> cb;
-  SQLUSMALLINT closeOption;
+  SQLUSMALLINT closeOption = SQL_DROP;
 
   if (info.Length() == 2) {
 	if (!info[0]->IsInt32()) {
@@ -1164,7 +1188,6 @@ NAN_METHOD(ODBCStatement::Close)
 	if (!info[0]->IsFunction()) {
 		return Nan::ThrowTypeError("ODBCStatement::Close(): Argument 0 must be a Function.");
 	}
-	closeOption = SQL_DROP;
 	cb = Local<Function>::Cast(info[0]);
   }
 
@@ -1175,7 +1198,8 @@ NAN_METHOD(ODBCStatement::Close)
 
   close_statement_work_data* data = (close_statement_work_data *)
      (calloc(1, sizeof(close_statement_work_data)));
-	MEMCHECK(data);
+  if(!data) free(work_req);
+  MEMCHECK(data);
 
   data->cb = new Nan::Callback(cb);
   data->stmt = stmt;

@@ -85,14 +85,6 @@ using namespace node;
 // before being stringified. #x gives string value of x.
 #define LINESTRING(x) #x
 #define LINENO(x) LINESTRING(x)
-// Check memory allocated successfully or not.
-#define MEMCHECK( buffer )                                           \
-  if (!buffer) {                                                     \
-    Nan::LowMemoryNotification();                                    \
-    Nan::ThrowError( "Could not allocate enough memory in ibm_db "   \
-                     "file " __FILE__ ":" LINENO(__LINE__) ".");     \
-    return;                                                          \
-  }
 
 typedef struct {
   unsigned char *name;
@@ -131,22 +123,22 @@ class ODBC : public Nan::ObjectWrap {
     static NAN_MODULE_INIT(Init);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
     static void FreeColumns(Column* columns, short* colCount);
-    static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, int bufferLength);
+    static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, size_t bufferLength);
     static Local<Value> GetOutputParameter(Parameter prm);
-    static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
-    static Local<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, int bufferLength);
+    static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, size_t bufferLength);
+    static Local<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, size_t bufferLength);
     static Local<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
     static Local<Value> CallbackSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message, Nan::Callback* cb);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle);
     static Local<Value> GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message);
-    static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, int bufferLength);
+    static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, size_t bufferLength);
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     static SQLRETURN  BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
     
     void Free();
     
   protected:
-    ODBC() {}
+    ODBC() { m_hEnv = (SQLHENV)NULL; }
 
     ~ODBC();
 
@@ -213,8 +205,10 @@ struct query_request {
 
 #ifdef UNICODE
     #define SQL_T(x) (L##x)
+    #define UNICHAR uint16_t
 #else
     #define SQL_T(x) (x)
+    #define UNICHAR char
 #endif
 
 #ifdef DEBUG
@@ -301,6 +295,15 @@ struct query_request {
     return Nan::ThrowTypeError("Argument " #I " must be an integer");   \
   }
 
+// Check memory allocated successfully or not.
+#define MEMCHECK( buffer )                                           \
+  if (!buffer) {                                                     \
+    Nan::LowMemoryNotification();                                    \
+    Nan::ThrowError( "Could not allocate enough memory in ibm_db "   \
+                     "file " __FILE__ ":" LINENO(__LINE__) ".");     \
+    return;                                                          \
+  }
+
 // Macro to get c++ string from Utf8String(JS string)
 #ifdef UNICODE
   #define GETCPPSTR(to, from, len)                                      \
@@ -318,6 +321,44 @@ struct query_request {
       MEMCHECK( to ) ;                                                  \
       memcpy(to, *from, len);                                           \
       ((char*)to)[len] = '\0';                                          \
+    } else { len = 0; }
+#endif
+
+// Check memory allocated successfully or not.
+#define MEMCHECK2( buffer, errmsg )                                     \
+  if (!buffer) {                                                        \
+    Nan::LowMemoryNotification();                                       \
+    errmsg = "Could not allocate enough memory in ibm_db "              \
+             "file " __FILE__ ":" LINENO(__LINE__) ".";                 \
+    goto exit;                                                          \
+  }
+
+// Macro to get c++ string from Utf8String(JS string)
+#ifdef UNICODE
+  #define GETCPPSTR2(to, from, len, errmsg)                             \
+    if(len > 0 && strcmp(*from, "null")) {                              \
+      to = (uint16_t *) malloc((len + 1) * sizeof(uint16_t));           \
+      if(to) {                                                          \
+        memcpy(to, *from, len);                                         \
+        ((uint16_t*)to)[len] = '\0';                                    \
+	  } else {                                                          \
+		errmsg = "Could not allocate enough memory in ibm_db "          \
+                 "file " __FILE__ ":" LINENO(__LINE__) ".";             \
+		goto exit;                                                      \
+	  }                                                                 \
+    } else { len = 0; }
+#else
+  #define GETCPPSTR2(to, from, len, errmsg)                             \
+    if(len > 0 && strcmp(*from, "null")) {                              \
+      to = (char *)malloc(len + 1);                                     \
+      if(to) {                                                          \
+        memcpy(to, *from, len);                                         \
+        ((char*)to)[len] = '\0';                                        \
+	  } else {                                                          \
+		errmsg = "Could not allocate enough memory in ibm_db "          \
+                 "file " __FILE__ ":" LINENO(__LINE__) ".";             \
+		goto exit;                                                      \
+	  }                                                                 \
     } else { len = 0; }
 #endif
 

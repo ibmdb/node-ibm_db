@@ -75,7 +75,7 @@ class ODBCResult : public Nan::ObjectWrap {
       ODBCResult *objResult;
       SQLRETURN result;
       
-      int fetchMode;
+      uint16_t fetchMode;
       int count;
       int errorCount;
       Nan::Persistent<Array> rows;
@@ -86,8 +86,8 @@ class ODBCResult : public Nan::ObjectWrap {
       Nan::Callback* cb;
       ODBCResult *objResult;
 
-      int colNum;
-      int dataSize;
+      SQLUINTEGER colNum;
+      SQLUINTEGER dataSize;
     };
 
     ODBCResult *self(void) { return this; }
@@ -97,10 +97,10 @@ class ODBCResult : public Nan::ObjectWrap {
     SQLHDBC m_hDBC;
     SQLHSTMT m_hSTMT;
     bool m_canFreeHandle;
-    int m_fetchMode;
+    uint16_t m_fetchMode;
     
     uint16_t *buffer;
-    int bufferLength;
+    size_t bufferLength;
     Column *columns;
     short colCount;
 };

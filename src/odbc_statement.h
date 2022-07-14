@@ -95,7 +95,7 @@ class ODBCStatement : public Nan::ObjectWrap {
     int paramCount;
     
     uint16_t *buffer;
-    int bufferLength;
+    size_t bufferLength;
     Column *columns;
     short colCount;
 };
@@ -105,7 +105,7 @@ struct execute_direct_work_data {
   ODBCStatement *stmt;
   int result;
   void *sql;
-  int sqlLen;
+  size_t sqlLen;
 };
 
 struct execute_work_data {
@@ -119,7 +119,7 @@ struct prepare_work_data {
   ODBCStatement *stmt;
   int result;
   void *sql;
-  int sqlLen;
+  size_t sqlLen;
 };
 
 struct bind_work_data {

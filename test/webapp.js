@@ -8,6 +8,7 @@ var ibmdb = require("../")
     , img2 = "data/panda.jpg"
     ;
 
+app.disable('x-powered-by');
 //ibmdb.debug(true);
 pool.init(5, cn);
 function getConnection() {
