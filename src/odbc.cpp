@@ -757,12 +757,20 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
                        prm.length, *(short*)prm.buffer);
           return scope.Escape(Nan::New<Number>(*(short*)prm.buffer));
         }
-        else if(prm.length == sizeof(long)){ // 4 on windows, 8 on linux
+        else if(prm.length == sizeof(long)){ // long is 4 byte on windows, 8 byte on linux
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i longval=%i\n",
                        prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
                        prm.length, *(long*)prm.buffer);
           return scope.Escape(Nan::New<Number>(*(long*)prm.buffer));
+        }
+        else if(prm.length == sizeof(long long)){ // 8 byte on all x64
+          // Fix for issue #816 on Windows
+          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
+                       "c_type=%i type=%i buf_len=%i len=%i longval=%i\n",
+                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
+                       prm.length, *(long long*)prm.buffer);
+          return scope.Escape(Nan::New<Number>(*(long long*)prm.buffer));
         }
         else {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "

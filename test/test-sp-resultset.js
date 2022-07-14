@@ -203,10 +203,11 @@ function testInteger(conn)
 
     // Call SP Synchronously.
     var result = conn.querySync(query, params);
+    conn.querySync("drop procedure " + schema + ".TEST_PROC ( INT, INT, VARCHAR(500) )");
     console.log("Result for Sync call of test_proc ==>");
     console.log(result);
     assert.equal(result.length, 2);
-    conn.querySync("drop procedure " + schema + ".TEST_PROC ( INT, INT, VARCHAR(500) )");
+    assert.equal(result[0], 454848);
     // Close connection in last only.
     conn.close(function (err) { console.log("done.");});
 }
