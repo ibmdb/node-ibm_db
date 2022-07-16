@@ -1,3 +1,47 @@
+2022-07-16, Version 2.8.2
+=========================
+
+ * update vscode binaries for mac and linux (Bimal Jha)
+
+ * update precompiled binary for windows (Bimal Jha)
+
+ * fix: Data Lost at position 1022 when retrieving from DBCLOB. #858 (Bimal Jha)
+
+ * fix: big int data returns wrong value on windows, issue #816 (Bimal Jha)
+
+ * fix: code scan issues reported by polaris and add polaris.yml file (Bimal Jha)
+
+ * fix: update moment version to fix vulnerability (Bimal Jha)
+
+ * fix installation failure issue when IBM site is down, #865, #869 (Bimal Jha)
+
+ * fix: return bigint as string #816, #863 (Bimal Jha)
+
+ * add template for reporting an issue (Bimal Jha)
+
+ * Added support for npm config SSL CA-files for driverInstall.js (#857) (Patrick Lindemann)
+
+ * test: update test file to test the issue #835 (Bimal Jha)
+
+ * fea: Add support for getData and getDataSync APIs (Bimal Jha)
+
+ * Update axios version to fix vulnerability CVE-2022-1214 (Bimal Jha)
+
+ * build(deps-dev): bump async from 2.6.1 to 3.2.2 (#840) (dependabot[bot])
+
+ * build(deps): bump minimist from 1.2.5 to 1.2.6 (#839) (dependabot[bot])
+
+ * build(deps-dev): bump moment from 2.22.2 to 2.29.2 (#838) (dependabot[bot])
+
+ * add electron binary for macos (Bimal Jha)
+
+ * add windows binary for vscode1.66 (Bimal Jha)
+
+ * Verify IBM_DB_HOME has include and find MSBuild on windows (Bimal Jha)
+
+ * build(deps): bump follow-redirects from 1.14.3 to 1.14.8 (#825) (dependabot[bot])
+
+
 2021-12-18, Version 2.8.1
 =========================
 
