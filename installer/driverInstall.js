@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '17.2.0';
+var electron_version = '18.3.5';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -385,7 +385,8 @@ var install_node_ibm_db = function(file_url) {
 
         //Build triggered from the VSCode extension
         if(vscode_build){
-            buildString = buildString + " --target=" + electron_version + " --arch=" + arch + " --dist-url=https://atom.io/download/electron";
+            buildString = buildString + " --target=" + electron_version + " --arch=" + arch +
+            " --dist-url=https://electronjs.org/headers/";
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
@@ -576,11 +577,20 @@ var install_node_ibm_db = function(file_url) {
             if(arch == 'x64') {
                 var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
                 var odbcBindingsNode;
+                var fileName;
                 var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
 
                 if(vscode_build)
                 {
-                    odbcBindingsNode = 'build\/Release\/odbc_bindings_e' + electron_version + '.node';
+                    var electronVersion = (electron_version).split('.');
+                    if (platform == 'darwin') {
+                      fileName = "_mac_" + electronVersion[0];
+                    } else if (platform == 'win32') {
+                      fileName = "_win_" + electronVersion[0];
+                    } else {
+                      fileName = "_linux_" + electronVersion[0];
+                    }
+                    odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
                 }
                 else
                 {
@@ -588,11 +598,12 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V9 = 'build\/Release\/odbc_bindings.node.9.11.2';
                     var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.1';
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.8';
+                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.12';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.18.2';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.19.3';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
-                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.13.1';
+                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.15.1';
+                    var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x and 8.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 9.0) {
@@ -608,14 +619,16 @@ var install_node_ibm_db = function(file_url) {
                      * file name according to the node version in the system.
                      */
                     odbcBindingsNode =
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10  ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) && ODBC_BINDINGS_V9  ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15   ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 || ODBC_BINDINGS;
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 18.0) && ODBC_BINDINGS_V17 ||
+                                       ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
@@ -773,42 +786,54 @@ function printMakeVersion() {
    electron package, or version of installed VSCode in the system.
  */
 function findElectronVersion() {
-  if ((process.env.npm_config_vscode) ||
+  if ((process.env.npm_config_vscode) || (process.env.npm_config_electron) ||
      (__dirname.toLowerCase().indexOf('db2connect') != -1))
   {
     printMsg('\nProceeding to build IBM_DB for Electron framework...\n');
     vscode_build = true;
+    var electronVer = null;
 
     try {
-        var npmOut = execSync('npm ls electron').toString();
-        var electronVer = null;
-        if (npmOut != null) {
-          npmOut = npmOut.split('\n');
-          for (var i = 0; i < npmOut.length; i++) {
-            if (npmOut[i].indexOf('-- electron@') >= 0) {
-              electronVer = npmOut[i].split('@')[1];
-              break;
+        if(process.env.npm_config_electron && process.env.npm_config_electron != true) {
+          electronVer = process.env.npm_config_electron;
+        }
+        else if(process.versions.electron) {
+          electronVer = process.versions.electron;
+        } else {
+          var npmOut = execSync('npm ls electron').toString();
+          if (npmOut != null) {
+            npmOut = npmOut.split('\n');
+            for (var i = 0; i < npmOut.length; i++) {
+              if (npmOut[i].indexOf('-- electron@') >= 0) {
+                electronVer = npmOut[i].split('@')[1];
+                break;
+              }
             }
           }
         }
     } catch (e) {
         printMsg("Unable to detect electon installation.");
     }
-
     if (electronVer != null) {
         electron_version = electronVer;
-        printMsg("Detected electron installation, will use Electron version" +
-                 electron_version + "to install ibm_db.");
+        printMsg("Found electron version, will use Electron version " +
+                 electron_version + " to install ibm_db.");
     } else {
         try {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.66){
+            if (vscodeVer >= 1.69){
+                electron_version = "18.3.5";
+            }
+            else if (vscodeVer >= 1.67){
+                electron_version = "17.4.1";
+            }
+            else if (vscodeVer >= 1.66){
                 electron_version = "17.2.0";
             }
-            else if (vscodeVer >= 1.59){
-                electron_version = "13.1.7";
+            else if (vscodeVer >= 1.63){
+                electron_version = "13.5.2";
             }
             else if (vscodeVer >= 1.56){
                 electron_version = "12.0.4";
@@ -816,22 +841,7 @@ function findElectronVersion() {
             else if (vscodeVer >= 1.53){
                 electron_version = "11.2.1";
             }
-            else if (vscodeVer >= 1.52) {
-                electron_version = "9.3.5";
-            }
-            else if (vscodeVer >= 1.49) {
-                electron_version = "9.2.1";
-            }
-            else if (vscodeVer >= 1.47) {
-                electron_version = "7.3.2";
-            }
-            else if (vscodeVer >= 1.46) {
-                electron_version = "7.3.1";
-            }
-            else if (vscodeVer >= 1.45) {
-                electron_version = "7.2.4";
-            }
-            else {// vscode version older than 1.45 not supported
+            else {// vscode version older than 1.53 not supported
                 electron_version = "7.1.11"; // old binary, not getting updated.
             }
             printMsg("Detected VSCode version" + vscodeVer +

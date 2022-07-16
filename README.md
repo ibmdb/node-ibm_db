@@ -39,11 +39,11 @@ node-gyp 3.4.0<br>
 npm 3.10.10<br>
 ibm_db: 2.8.1
 
-- Recommended version of node.js is >= V9.X. For node.js version < 9.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
+- Recommended version of node.js is >= V12.X. For node.js version < 12.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 17.2.0
+- The latest node.js version using which `ibm_db` is tested: 18.6.0
 
 ## Install
 
@@ -67,6 +67,14 @@ When using `ibm_db` in a package.json file, you can set below environment variab
 export npm_config_loglevel=warn   => For quiet mode installation.
 export npm_config_loglevel=silent => For silent mode installation.
 ```
+
+For **ELECTRON** or **VSCode** Installation:
+```
+npm install ibm_db -electron=<electron_version>
+npm install ibm_db -electron="18.3.5"
+npm install ibm_db -vscode
+```
+
 For **Docker Linux Container**, use below commands:
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel

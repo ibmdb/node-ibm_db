@@ -57,15 +57,13 @@
         [ 'OS=="win" and target_arch =="ia32"',
           { 'sources' : ['src/strptime.c', 'src/odbc.cpp'],
             'libraries': [
-               '$(IBM_DB_HOME)/lib/Win32/db2cli.lib',
-               '$(IBM_DB_HOME)/lib/Win32/db2api.lib'],
+               '$(IBM_DB_HOME)/lib/db2app.lib'],
             'include_dirs': ['$(IBM_DB_HOME)/include']
           }],
 
         [ 'OS=="win" and target_arch =="x64"',
           { 'sources' : ['src/strptime.c', 'src/odbc.cpp'],
             'libraries': [
-              '$(IBM_DB_HOME)/lib/db2cli64.lib',
               '$(IBM_DB_HOME)/lib/db2app64.lib'],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
           }],
