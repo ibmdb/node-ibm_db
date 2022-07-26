@@ -47,6 +47,14 @@ if (process.env.npm_config_cafile) {
     httpsAgent = new https.Agent({ ca });
 }
 
+/* Read specific version of clidriver specified with install command
+ * npm install ibm_db -clidriver=v11.1.4
+ */
+var clidriverVersion;
+if(process.env.npm_config_clidriver && process.env.npm_config_clidriver != true) {
+    clidriverVersion = process.env.npm_config_clidriver;
+}
+
 /* Show make version on non-windows platform, if installed. */
 printMakeVersion();
 
@@ -303,9 +311,12 @@ var install_node_ibm_db = function(file_url) {
             process.exit(1);
         }
 
+        INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, odbc_driver);
+        if(clidriverVersion) {
+            odbc_driver = clidriverVersion + "/" + odbc_driver;
+        }
         installerfileURL = installerURL + odbc_driver;
         installerfileURL2 = githubURL + odbc_driver;
-        INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, odbc_driver);
 
         license_agreement += path.resolve(DOWNLOAD_DIR, 'clidriver') + license_agreement2;
         printMsg(license_agreement);

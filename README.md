@@ -4,6 +4,7 @@ An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 Async APIs return promises if callback function is not used.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
+** MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
 
 **SQL1598N** - Check [here](#sql1598n).
 
@@ -24,7 +25,7 @@ Install a newer compiler or upgrade older one.
 
 - For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 9.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
 
-- Python version >= 2.7.0 && < 3.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
+- Python version >= 2.7.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python2.7 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
 
@@ -74,11 +75,17 @@ npm install ibm_db -electron=<electron_version>
 npm install ibm_db -electron="18.3.5"
 npm install ibm_db -vscode
 ```
+To install using **specific version of clidriver** from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/:
+```
+npm install ibm_db -clidriver=<version>
+npm install ibm_db -clidriver=v11.1.4
+npm install ibm_db -clidriver=v11.5.6
+```
 
 For **Docker Linux Container**, use below commands:
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel
-install python2.7.x
+install python2.7.x or python3.x
 install node.js
 npm install --unsafe-perm ibm_db
 ```
@@ -138,6 +145,7 @@ To avoid this download, you can manually download clidriver from this location o
 |              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
 |z/OS          |  s390x         |ODBC support from IBM Db2 for z/OS 11.0 or 12.0 | Yes  |
 
+* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
 
 ### Configure ODBC driver on z/OS
 
