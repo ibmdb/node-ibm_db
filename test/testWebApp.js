@@ -1,5 +1,5 @@
 var common = require("./common")
-	, odbc = require("../odbc.js")
+	, odbc = require("../")
 	, db = new odbc.Database();
 
 db.open(common.connectionString, function(err)
@@ -11,23 +11,22 @@ db.open(common.connectionString, function(err)
 
     require('http').createServer(function (req, res) {
 		if (req.url == "/close") {
-			db.close(function () {});
+			db.closeSync();
 			db = null;
 			res.end();
-			return false;
+			process.exit(1);
 		}
 
-		var query = "select 1234 union select 5345";
+		var query = "select 1234 from sysibm.sysdummy1";
 
-		db.query(query, function(err, rows, moreResultSets)
+		db && db.query(query, function(err, rows)
 		{
 			if (err) {
 				console.error(err.message);
 			}
-
-			err = null;
-			rows = null;
-			moreResultSets = null;
+			console.log(rows);
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.write(JSON.stringify(rows));
 			res.end();
 		});
 	}).listen(8082, "127.0.0.1");
@@ -37,3 +36,4 @@ process.on('uncaughtException', function (err) {
 	console.error('uncaughtException:' + err);
 	console.error(err.stack);
 });
+console.log("App is listening on 127.0.0.1:8082");

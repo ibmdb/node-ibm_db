@@ -5,3 +5,6 @@ deps
 defect
 .DS_Store
 installer/clidriver
+.polaris-coverity.zip
+.synopsys
+.vs
