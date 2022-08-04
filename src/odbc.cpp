@@ -1382,7 +1382,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
                       "cbValueMax=%i\n", num, bufflen, cbValueMax);
           }
           bufflen  = cbValueMax; // Length of max data to be copied.
-          if( param->length > 0 && bufflen > (SQLUINTEGER)param->length ) {
+          if(bufflen > (SQLUINTEGER)param->length ) {
               bufflen = param->length;
           }
           memcpy((char*)buff + i * cbValueMax, param->buffer, bufflen);

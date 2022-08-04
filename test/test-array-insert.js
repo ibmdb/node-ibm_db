@@ -59,7 +59,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
   conn.query(queryOptions, function(err, result) {
     if(err) console.log("Error in query,", err);
     else {
-      var data = conn.querySync("select * from arrtab");
+      var data = conn.querySync('select c1, c2, c3, c4, length(c4) "C4LEN" from arrtab');
       console.log("\nSelected data for table ARRTAB =\n", data);
       conn.querySync("drop table arrtab");
 
@@ -108,7 +108,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
                       params: [{ParamType:"ARRAY", DataType:1, Data: ["","Hello"], Length:5}],
                       ArraySize:2};
   var queryOptions2 = {sql:"insert into arrtab3 values (?)", 
-                      params: [{ParamType:"ARRAY", DataType:1, Data: ["Hello",""], Length:5}],
+                      params: [{ParamType:"ARRAY", DataType:1, Data: ["Hello"," "], Length:5}],
                       ArraySize:2};
 
   conn.querySync(queryOptions1);
@@ -136,9 +136,18 @@ ibmdb.open(common.connectionString, function(err, conn) {
   conn.query(queryOptions1, function(err, result) {
     if(err) console.log(err);
     else {
-      var data = conn.querySync("select * from arrtab3");
+      var data = conn.querySync('select c1, length(c1) "C1LEN" from arrtab3');
       console.log("\nSelected data for table ARRTAB3 =\n", data);
       console.log("drop table result = ", conn.querySync("drop table arrtab3"));
+      var expectedData3 = [
+          { C1: '', C1LEN: 0 },
+          { C1: 'Hello', C1LEN: 5 },
+          { C1: 'Hello', C1LEN: 5 },
+          { C1: ' ', C1LEN: 1 },
+          { C1: '', C1LEN: 0 },
+          { C1: 'Hello', C1LEN: 5 }
+        ];
+      assert.deepEqual(data, expectedData3);
 
       // Insert array data using prepare-bind-execute API
       // ================================================
