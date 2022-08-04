@@ -15,13 +15,13 @@ const expectedData =
     C9: 45.234,
     C10: 'bimal     ',
     C11: 'kumar',
-    C12: '50',
+    C12: Buffer.from('P'),
     C13: 'jha123456',
     C14: '㐀㐁㐂㐃㐄㐅㐆',
     C15: '2015-09-10',
     C16: '10:16:33',
     C17: '2015-09-10 10:16:33.770139',
-    C18: 'abc',
+    C18: Buffer.from('abc'),
     C19: true } ];
 
 const zosexpectedData =
@@ -36,13 +36,13 @@ const zosexpectedData =
     C9: 45.234,
     C10: 'bimal     ',
     C11: 'kumar',
-    C12: '50',
+    C12: Buffer.from('P'),
     C13: 'jha123456',
     C14: '㐀㐁㐂㐃㐄㐅㐆',
     C15: '2015-09-10',
     C16: '10:16:33',
     C17: '2015-09-10 10:16:33.770139',
-    C18: 'abc' } ];
+    C18: Buffer.from('abc') } ];
 
 ibmdb.open(cn, function(err, conn) {
   if(err) console.log(err);
@@ -72,15 +72,15 @@ ibmdb.open(cn, function(err, conn) {
       }
      
       conn.querySync("delete from mytab1");
-      var blobParam = {DataType: "BLOB", Data: new Buffer.from('abc')};
+      var blobParam = {DataType: "BLOB", Data: Buffer.from('abc')};
         if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
             err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, '9007199254741997', 1234, 67.98, 5689, 56.2390, 34567890,
-                45.234, 'bimal', 'kumar', '\x50', 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
+                45.234, 'bimal', 'kumar', Buffer.from('P'), 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
                 '10:16:33', '2015-09-10 10:16:33.770139', blobParam]);
         }
         else {
             err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, '9007199254741997', 1234, 67.98, 5689, 56.2390, 34567890,
-                45.234, 'bimal', 'kumar', '\x50', 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
+                45.234, 'bimal', 'kumar', Buffer.from('P'), 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
                 '10:16:33', '2015-09-10 10:16:33.770139', blobParam, true]);
         }
         if(err.length) { console.log("Err = ", err); }

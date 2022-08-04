@@ -435,6 +435,30 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   switch (column.type)
   {
+    case SQL_BLOB :
+      DEBUG_PRINTF("BLOB DATA SELECTED\n");
+      terCharLen = 0;
+      ctype = SQL_C_BINARY;
+      break;
+    case SQL_BINARY :
+      DEBUG_PRINTF("BINARY DATA SELECTED\n");
+      terCharLen = 0;
+      ctype = SQL_C_BINARY;
+      break;
+    case SQL_VARBINARY :
+      DEBUG_PRINTF("VARBINARY DATA SELECTED\n");
+      terCharLen = 0;
+      ctype = SQL_C_BINARY;
+      break;
+    case SQL_LONGVARBINARY :
+      DEBUG_PRINTF("LONGVARBINARY DATA SELECTED\n");
+      terCharLen = 0;
+      ctype = SQL_C_BINARY;
+      break;
+  }
+
+  switch (column.type)
+  {
     case SQL_INTEGER : 
     case SQL_SMALLINT :
     case SQL_TINYINT : 
@@ -582,17 +606,10 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
             ctype = SQL_C_CHAR;
             DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
         }
-    case SQL_BLOB :
-        if(column.type == SQL_BLOB)
-        {
-            terCharLen = 0;
-            ctype = SQL_C_BINARY;
-            DEBUG_PRINTF("BLOB DATA SELECTED\n");
-        }
     default :
       uint16_t * tmp_out_ptr = NULL;
-      size_t bufferSize = 0;
-      size_t newbufflen = 0;
+      uint32_t bufferSize = 0;
+      uint32_t newbufflen = 0;
       unsigned short secondGetData = 0;
       len = 0;
       bufferSize = bufferLength + terCharLen;
@@ -673,8 +690,11 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       // so return the result irrespective of ret as we already have some data.
       else if (SQL_SUCCEEDED(ret) || secondGetData) 
       {
-          if(ctype == SQL_C_BINARY)
-              str = Nan::NewOneByteString((uint8_t *) buffer, newbufflen).ToLocalChecked();
+          if(ctype == SQL_C_BINARY) { //Return binary data as buffer.
+            //str = Nan::NewOneByteString((uint8_t *) buffer, newbufflen).ToLocalChecked();
+            return scope.Escape(Nan::NewBuffer((char *)buffer, newbufflen).ToLocalChecked());
+            //buffer will be freed by Garbage collector, no need to free here.
+          }
           else {
             str = Nan::New((UNICHAR *) buffer).ToLocalChecked();
           }
@@ -720,8 +740,29 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
 {
   Nan::EscapableHandleScope scope;
   Local<String> str;
+  bool sqlTypeBinary = false;
 
   DEBUG_PRINTF("SQL Type of parameter: %i\n",prm.type);
+  switch (prm.type)
+  {
+    case SQL_BLOB :
+      DEBUG_PRINTF("BLOB DATA SELECTED\n");
+      sqlTypeBinary = true;
+      break;
+    case SQL_BINARY :
+      DEBUG_PRINTF("BINARY DATA SELECTED\n");
+      sqlTypeBinary = true;
+      break;
+    case SQL_VARBINARY :
+      DEBUG_PRINTF("VARBINARY DATA SELECTED\n");
+      sqlTypeBinary = true;
+      break;
+    case SQL_LONGVARBINARY :
+      DEBUG_PRINTF("LONGVARBINARY DATA SELECTED\n");
+      sqlTypeBinary = true;
+      break;
+  }
+
   switch (prm.type)
   {
     case SQL_INTEGER :
@@ -843,8 +884,11 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
       if((int)prm.length == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
       }
-      if(prm.c_type == SQL_C_BINARY)
-          str = Nan::NewOneByteString((uint8_t *) prm.buffer, prm.length).ToLocalChecked();
+      if(sqlTypeBinary || prm.c_type == SQL_C_BINARY) {
+          //str = Nan::NewOneByteString((uint8_t *) prm.buffer, prm.length).ToLocalChecked();
+          //prm.buffer will be freed by Garbage collector, no need to free here.
+          return scope.Escape(Nan::NewBuffer((char *)prm.buffer, prm.length).ToLocalChecked());
+      }
       else {
         str = Nan::New((UNICHAR *) prm.buffer).ToLocalChecked();
       }
@@ -873,7 +917,7 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
              GetColumnValue( hStmt, columns[i], buffer, bufferLength));
 #endif
   }
-  
+
   return scope.Escape(tuple);
 }
 
@@ -925,12 +969,13 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
   for (int i = 0; i < *paramCount; i++) {
     value = Nan::Get(values, i).ToLocalChecked();
-    
+    // Initialise the Parameters
     params[i].paramtype     = SQL_PARAM_INPUT;
     params[i].size          = 0;
     params[i].length        = SQL_NULL_DATA;
     params[i].buffer_length = 0;
     params[i].decimals      = 0;
+    params[i].isBuffer      = false;
 
     DEBUG_PRINTF("ODBC::GetParametersFromArray - param[%i].length = %d\n",
                  i, params[i].length);
@@ -985,10 +1030,16 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
       else if (val->IsArray()) {
           GetArrayParam(val, &params[i], i+1);
       }
+      else if (Buffer::HasInstance(val)) {
+          GetBufferParam(val, &params[i], i+1);
+      }
       else
       {
           GetStringParam(val, &params[i], i+1);
       }
+    }
+    else if (Buffer::HasInstance(value)) {
+        GetBufferParam(value, &params[i], i+1);
     }
     else if (value->IsString()) {
         GetStringParam(value, &params[i], i+1);
@@ -1095,6 +1146,42 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
                  "type=%i, size=%i, decimals=%i, buffer=%s, buffer_length=%i, "
                  "length=%i\n", num, param->paramtype, param->c_type, 
                  param->type, param->size, param->decimals, 
+                 (char *)param->buffer, param->buffer_length, param->length);
+}
+
+void ODBC::GetBufferParam(Local<Value> value, Parameter * param, int num)
+{
+    DEBUG_PRINTF("ODBC::GetBufferParam - It's a buffer.\n");
+    param->buffer = (char *) Buffer::Data(value);
+    param->size          = Buffer::Length(value);
+    param->buffer_length = param->size;
+    param->length        = param->buffer_length;
+    param->isBuffer      = true; // Dont free it in FREE_PARAMS
+
+    if(!param->c_type || (param->c_type == SQL_CHAR))
+        param->c_type = SQL_C_TCHAR;
+    #ifdef UNICODE
+    param->length        = SQL_NTS; // Required for unicode string.
+    if(!param->type || (param->type == SQL_CHAR))
+        param->type = (param->length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
+    if(param->c_type != SQL_C_BINARY)
+        param->size /= 2;
+    #else
+    if(!param->type || (param->type == SQL_CHAR))
+        param->type = (param->length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
+    #endif
+
+    if(param->paramtype == FILE_PARAM)  // For SQLBindFileToParam()
+    {
+        param->decimals = param->buffer_length;
+        param->fileOption = SQL_FILE_READ;
+        param->fileIndicator = 0;
+    }
+
+    DEBUG_PRINTF("ODBC::GetBufferParam: param%u : paramtype=%u, c_type=%i, "
+                 "type=%i, size=%i, decimals=%i, buffer=%s, buffer_length=%i, "
+                 "length=%i\n", num, param->paramtype, param->c_type,
+                 param->type, param->size, param->decimals,
                  (char *)param->buffer, param->buffer_length, param->length);
 }
 

@@ -26,7 +26,7 @@ ibmdb.open(connString, function (err,conn) {
 
   var img1= fs.readFileSync(inputfile1,'binary');
   var text= fs.readFileSync(inputfile2,'ascii');
-  var buf = Buffer.from('49 49 2A 00 C8 8C 00 00 73 C5 3C 13 83 39 98 35', 'binary');
+  var buf = Buffer.from('49 49 2A 00 C8 8C 00 00 73 C5 3C 13 83 39 98 35'.replace(/\s+/g, ''), 'hex');
   var bufferInsert = buf.toString();
 
   var len1 = img1.length;
@@ -87,7 +87,7 @@ ibmdb.open(connString, function (err,conn) {
 
             assert.strictEqual(len1, size1);
             assert.strictEqual(len2, size2);
-            assert.strictEqual(bufferInsert, bufferReturn);
+            assert.deepStrictEqual(buf, bufferReturn);
 
             fs.unlinkSync(outputfile1);
             fs.unlink(outputfile2, function () {});

@@ -59,7 +59,7 @@ using namespace node;
     Parameter prm;                                                   \
     if(params != NULL ) {                                            \
       for (int i = 0; i < count; i++) {                              \
-        if (prm = params[i], prm.buffer != NULL) {                   \
+        if (prm = params[i], prm.buffer != NULL && !prm.isBuffer) {  \
           switch (prm.c_type) {                                      \
             case SQL_C_SBIGINT:                                      \
             case SQL_C_LONG:    delete (int64_t *)prm.buffer; break; \
@@ -112,6 +112,7 @@ typedef struct {
   SQLINTEGER   fileIndicator; // For BindFileToParam
   int          arraySize;     // For Array Insert
   SQLINTEGER * strLenArray;   // For Array Insert
+  bool         isBuffer;
 } Parameter;
 
 class ODBC : public Nan::ObjectWrap {
@@ -148,6 +149,7 @@ class ODBC : public Nan::ObjectWrap {
     static void GetNumberParam(Local<Value> value, Parameter * param, int num);
     static void GetBoolParam(Local<Value> value, Parameter * param, int num);
     static void GetArrayParam(Local<Value> value, Parameter * param, int num);
+    static void GetBufferParam(Local<Value> value, Parameter * param, int num);
 
     static NAN_METHOD(New);
 

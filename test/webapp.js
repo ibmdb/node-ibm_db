@@ -69,7 +69,7 @@ app.get('/:id', function(req, res) {
       return console.log(err);
     } else {
       res.set('Content-Type', 'image/jpeg');
-      res.send(new Buffer(rows[0].IMAGE, 'binary'));
+      res.send(Buffer.from(rows[0].IMAGE, 'binary'));
       res.end();
       console.log("File "+ rows[0].FILENAME + " sent for request no = "+no+", id = "+ imgid);
       conn.close(function(){console.log("Done for request ", no);});
