@@ -13,8 +13,19 @@ common.dropTables(db, function () {
       database : common.databaseName
       , table : common.tableName
     }, function (err, data) {
-      db.closeSync();
+      console.log("db.describe data = ", data);
       assert.ok(data.length, "No records returned when attempting to describe the tabe " + common.tableName);
+      test2();
     });
   });
 });
+
+async function test2() {
+    var result = "";
+
+    result = await db.describe({ database : common.databaseName , table : common.tableName });
+    console.log("db.describe result = ", result);
+    result = await db.describe({ database : common.databaseName });
+    console.log("db.describe result = ", result);
+    db.closeSync();
+}

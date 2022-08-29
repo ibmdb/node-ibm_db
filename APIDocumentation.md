@@ -1020,7 +1020,7 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
 
 ### <a name="enableDebugLogs"></a> 34) .debug(value)
 
-Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump params.
+Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump bind params.
 
 * **value** - true/false/2. Any truthy value enables debug mode.
 
@@ -1031,7 +1031,7 @@ var ibmdb = require("ibm_db")
 ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS, but do not log params. <==**
 ibmdb.debug(2);     // **==> ENABLE CONSOLE LOGS and log parameter values too if passed. <==**
 
-[ibmdb.open](#openApi)(cn, function (err, connection) {
+ibmdb.open(cn, function (err, connection) {
     if (err)
     {
         console.log(err);
