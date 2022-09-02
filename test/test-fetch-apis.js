@@ -140,7 +140,7 @@ async function testAsync(conn) {
   process.stdout.write(result.getDataSync(1, 5));
   process.stdout.write(", " + await result.getData(2, 5));
   console.log(", ", result.getDataSync(3, 5));
-  result.closeSync();
+  await result.close();
   console.log("------ return from testAsync --------\n");
 }
 

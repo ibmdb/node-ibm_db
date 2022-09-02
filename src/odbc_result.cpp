@@ -52,6 +52,7 @@ NAN_MODULE_INIT(ODBCResult::Init)
   Nan::SetPrototypeMethod(constructor_template, "getData", GetData);
 
   Nan::SetPrototypeMethod(constructor_template, "moreResultsSync", MoreResultsSync);
+  Nan::SetPrototypeMethod(constructor_template, "close", Close);
   Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchSync", FetchSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
@@ -799,7 +800,7 @@ void ODBCResult::UV_AfterGetData(uv_work_t* work_req, int status)
   info[0] = Nan::Null();
   info[1] = Nan::Null();
 
-  if (objResult->colCount > 0 && data->colNum <= objResult->colCount) {
+  if (objResult->colCount > 0 && data->colNum <= (unsigned)objResult->colCount) {
     objResult->bufferLength = (size_t)data->dataSize;
     objResult->columns[data->colNum -1].getData = true;
 
@@ -863,6 +864,131 @@ NAN_METHOD(ODBCResult::GetDataSync)
 }
 
 /*
+ * Close
+ * result.close([sql_close,] function(err) {})
+ */
+
+NAN_METHOD(ODBCResult::Close)
+{
+  DEBUG_PRINTF("ODBCResult::Close- Entry\n");
+
+  Nan::HandleScope scope;
+
+  Local<Function> cb;
+  SQLUSMALLINT closeOption = SQL_DROP;
+
+  if (info.Length() == 2) {
+	if (!info[0]->IsInt32()) {
+		return Nan::ThrowTypeError("Argument 0 must be an Integer.");
+	}
+	else if (!info[1]->IsFunction()) {
+		return Nan::ThrowTypeError("Argument 1 must be an Function.");
+	}
+	closeOption = (SQLUSMALLINT)Nan::To<v8::Int32>(info[0]).ToLocalChecked()->Value();
+	cb = Local<Function>::Cast(info[1]);
+  }
+  else if (info.Length() == 1) {
+	if (!info[0]->IsFunction()) {
+		return Nan::ThrowTypeError("ODBCResult::Close(): Argument 0 must be a Function.");
+	}
+	cb = Local<Function>::Cast(info[0]);
+  }
+
+  ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  uv_work_t* work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK(work_req);
+
+  close_result_work_data* data = (close_result_work_data *)
+     (calloc(1, sizeof(close_result_work_data)));
+  if(!data) free(work_req);
+  MEMCHECK(data);
+
+  data->cb = new Nan::Callback(cb);
+  data->objResult = result;
+  data->closeOption = closeOption;
+  work_req->data = data;
+
+  DEBUG_PRINTF("ODBCResult::Close closeOption=%d ,stmt=%X\n", closeOption, result->m_hSTMT);
+
+  uv_queue_work(
+	uv_default_loop(),
+	work_req,
+	UV_Close,
+	(uv_after_work_cb)UV_AfterClose);
+
+  result->Ref();
+
+  info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCResult::Close - Exit\n");
+}
+void ODBCResult::UV_Close(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCResult::UV_Close- Entry\n");
+
+  close_result_work_data* data = (close_result_work_data *)(req->data);
+
+  SQLRETURN ret;
+  ODBCResult* objResult = data->objResult;
+  SQLHSTMT m_hSTMT = (SQLHSTMT)objResult->m_hSTMT;
+
+  DEBUG_PRINTF("ODBCResult::UV_Close m_hSTMT=%X\n", m_hSTMT);
+
+  if (data->closeOption == SQL_DROP && objResult->m_canFreeHandle) {
+	objResult->Free();
+	data->result = 0;
+  }
+  else if (data->closeOption == SQL_DROP && !objResult->m_canFreeHandle) {
+    //We technically can't free the handle so, we'll SQL_CLOSE
+    // Don't set result->m_canFreeHandle to true in this function.
+    // Handle would be freed by the call of ODBCStatement.Close().
+    SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+  }
+  else {
+	ret = SQLFreeStmt(m_hSTMT, data->closeOption);
+	data->result = ret;
+  }
+
+  DEBUG_PRINTF("ODBCResult::UV_Close - Exit m_hSTMT=%X, result=%i\n", m_hSTMT, data->result);
+}
+
+void ODBCResult::UV_AfterClose(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCResult::UV_AfterClose- Entry\n");
+
+  Nan::HandleScope scope;
+
+  close_result_work_data* data = (close_result_work_data *)(req->data);
+  ODBCResult* self = data->objResult->self();
+  SQLHSTMT m_hSTMT = (SQLHSTMT)data->objResult->m_hSTMT;
+
+  if (data->result != SQL_SUCCESS) {
+	ODBC::CallbackSQLError(
+		SQL_HANDLE_STMT,
+		m_hSTMT,
+		data->cb);
+  }
+  else {
+	Local<Value> info[1];
+
+	info[0] = Nan::Null();
+	Nan::TryCatch try_catch;
+	data->cb->Call(1, info);
+
+	if (try_catch.HasCaught()) {
+		FatalException(try_catch);
+	}
+  }
+
+  self->Unref();
+  delete data->cb;
+
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCResult::UV_AfterClose - Exit, m_hSTMT = %X\n", m_hSTMT);
+}
+
+/*
  * CloseSync
  * 
  */
@@ -872,17 +998,17 @@ NAN_METHOD(ODBCResult::CloseSync)
   DEBUG_PRINTF("ODBCResult::CloseSync - Entry\n");
   Nan::HandleScope scope;
 
-  OPT_INT_ARG(0, closeOption, SQL_DESTROY);
+  OPT_INT_ARG(0, closeOption, SQL_DROP);
 
   ODBCResult* result = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
  
   DEBUG_PRINTF("ODBCResult::CloseSync closeOption=%i m_canFreeHandle=%i, hSTMT=%X\n", 
                closeOption, result->m_canFreeHandle,result->m_hSTMT);
 
-  if (closeOption == SQL_DESTROY && result->m_canFreeHandle) {
+  if (closeOption == SQL_DROP && result->m_canFreeHandle) {
     result->Free();
   }
-  else if (closeOption == SQL_DESTROY && !result->m_canFreeHandle) {
+  else if (closeOption == SQL_DROP && !result->m_canFreeHandle) {
     //We technically can't free the handle so, we'll SQL_CLOSE
     // Don't set result->m_canFreeHandle to true in this function.
     // Handle would be freed by the call of ODBCStatement.Close().

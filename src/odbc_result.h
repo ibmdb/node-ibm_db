@@ -55,6 +55,10 @@ class ODBCResult : public Nan::ObjectWrap {
     static void UV_GetData(uv_work_t* work_req);
     static void UV_AfterGetData(uv_work_t* work_req, int status);
 
+    static NAN_METHOD(Close);
+    static void UV_Close(uv_work_t* work_req);
+    static void UV_AfterClose(uv_work_t* work_req, int status);
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(MoreResultsSync);
@@ -88,6 +92,13 @@ class ODBCResult : public Nan::ObjectWrap {
 
       SQLUINTEGER colNum;
       SQLUINTEGER dataSize;
+    };
+
+    struct close_result_work_data {
+      Nan::Callback* cb;
+      ODBCResult *objResult;
+      SQLUSMALLINT closeOption;
+      int result;
     };
 
     ODBCResult *self(void) { return this; }

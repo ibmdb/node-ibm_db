@@ -37,7 +37,7 @@ using namespace node;
 #define FETCH_ARRAY 3
 #define FETCH_OBJECT 4
 #define FETCH_NODATA 0
-#define SQL_DESTROY 9999
+#define SQL_DESTROY SQL_DROP
 
 #if (NODE_MAJOR_VERSION >= 10)
 #define ISOLATE v8::Isolate::GetCurrent()
@@ -302,7 +302,7 @@ struct query_request {
   if (!buffer) {                                                     \
     Nan::LowMemoryNotification();                                    \
     Nan::ThrowError( "Could not allocate enough memory in ibm_db "   \
-                     "file " __FILE__ ":" LINENO(__LINE__) ".");     \
+                     "file " __FILE__ ":" LINENO(__LINE__) );        \
     return;                                                          \
   }
 
@@ -331,7 +331,7 @@ struct query_request {
   if (!buffer) {                                                        \
     Nan::LowMemoryNotification();                                       \
     errmsg = "Could not allocate enough memory in ibm_db "              \
-             "file " __FILE__ ":" LINENO(__LINE__) ".";                 \
+             "file " __FILE__ ":" LINENO(__LINE__) ;                    \
     goto exit;                                                          \
   }
 
@@ -345,7 +345,7 @@ struct query_request {
         ((uint16_t*)to)[len] = '\0';                                    \
 	  } else {                                                          \
 		errmsg = "Could not allocate enough memory in ibm_db "          \
-                 "file " __FILE__ ":" LINENO(__LINE__) ".";             \
+                 "file " __FILE__ ":" LINENO(__LINE__) ;                \
 		goto exit;                                                      \
 	  }                                                                 \
     } else { len = 0; }
@@ -358,7 +358,7 @@ struct query_request {
         ((char*)to)[len] = '\0';                                        \
 	  } else {                                                          \
 		errmsg = "Could not allocate enough memory in ibm_db "          \
-                 "file " __FILE__ ":" LINENO(__LINE__) ".";             \
+                 "file " __FILE__ ":" LINENO(__LINE__) ;                \
 		goto exit;                                                      \
 	  }                                                                 \
     } else { len = 0; }

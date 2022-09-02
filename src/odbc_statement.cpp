@@ -1290,14 +1290,14 @@ NAN_METHOD(ODBCStatement::CloseSync)
   
   Nan::HandleScope scope;
 
-  OPT_INT_ARG(0, closeOption, SQL_DESTROY);
+  OPT_INT_ARG(0, closeOption, SQL_DROP);
   
   ODBCStatement* stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
   
   DEBUG_PRINTF("ODBCStatement::CloseSync closeOption=%i\n", 
                closeOption);
   
-  if (closeOption == SQL_DESTROY) {
+  if (closeOption == SQL_DROP) {
     stmt->Free();
   }
   else {
