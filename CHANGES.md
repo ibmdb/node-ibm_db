@@ -1,3 +1,27 @@
+2022-09-06, Version 3.0.0
+=========================
+
+ * fix: update binaries for windows and vscode (Bimal Jha)
+
+ * fix: Reloading driver causes failures on async functions #514 (Bimal Jha)
+
+ * fea: Convert the library to support Promises for all methods. #715 (Bimal Jha)
+
+ * fea: add result.close API (Bimal Jha)
+
+ * promisify describe related methods (Bimal Jha)
+
+ * update mac binaries for vscode https://github.com/ibmdb/vscode-extension/issues/50 (Bimal Jha)
+
+ * test: update test files (Bimal Jha)
+
+ * fix: Empty Strings in Batch inserts result in corrupt values being inserted #875 (Bimal Jha)
+
+ * fea: Add support for Buffer() for insert and select for binary data. #702, #859, #860, #862, #864 (Bimal Jha)
+
+ * fea: allow installation using specific version of clidriver (Bimal Jha)
+
+
 2022-07-16, Version 2.8.2
 =========================
 
