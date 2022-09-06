@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '18.3.5';
+var electron_version = '19.0.12';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -611,9 +611,9 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
                     var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.12';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.19.3';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.20.0';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
-                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.15.1';
+                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.17.0';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x and 8.x has been discontinued.
@@ -834,26 +834,14 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.69){
+            if (vscodeVer >= 1.71){
+                electron_version = "19.0.12";
+            }
+            else if (vscodeVer >= 1.69){
                 electron_version = "18.3.5";
             }
-            else if (vscodeVer >= 1.67){
+            else {// vscode version older than 1.67 not supported
                 electron_version = "17.4.1";
-            }
-            else if (vscodeVer >= 1.66){
-                electron_version = "17.2.0";
-            }
-            else if (vscodeVer >= 1.63){
-                electron_version = "13.5.2";
-            }
-            else if (vscodeVer >= 1.56){
-                electron_version = "12.0.4";
-            }
-            else if (vscodeVer >= 1.53){
-                electron_version = "11.2.1";
-            }
-            else {// vscode version older than 1.53 not supported
-                electron_version = "7.1.11"; // old binary, not getting updated.
             }
             printMsg("Detected VSCode version" + vscodeVer +
                     ", will use Electron version " + electron_version);
