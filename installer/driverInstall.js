@@ -113,21 +113,15 @@ var install_node_ibm_db = function(file_url) {
     var clidriverFound = true;
 
     if (process.env.IBM_DB_HOME) {
-      if (platform == 'os390'){
-        IBM_DB_HOME = process.env.IBM_DB_HOME;
-        IS_ENVIRONMENT_VAR = true;
-	clidriverFound = true;
-      }else {
-        if (fs.existsSync(process.env.IBM_DB_HOME)) {
+        if (fs.existsSync(process.env.IBM_DB_HOME) || platform == "os390") {
           IBM_DB_HOME = process.env.IBM_DB_HOME;
           IS_ENVIRONMENT_VAR = true;
         } else {
-          printMsg(process.env.IBM_DB_HOME + " directory does not exist. Please " +
-                "check if you have set the IBM_DB_HOME environment" +
+          printMsg(process.env.IBM_DB_HOME + " directory does not exist. Please" +
+                " check if you have set the IBM_DB_HOME environment" +
                 " variable\'s value correctly.\n");
           clidriverFound = false;
         }
-      }
     }
 
     if (clidriverFound == false && fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
