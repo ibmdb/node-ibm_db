@@ -83,6 +83,8 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   Nan::SetPrototypeMethod(constructor_template, "setIsolationLevel", SetIsolationLevel);
   Nan::SetPrototypeMethod(constructor_template, "getInfo", GetInfo);
   Nan::SetPrototypeMethod(constructor_template, "getInfoSync", GetInfoSync);
+  Nan::SetPrototypeMethod(constructor_template, "getTypeInfo", GetTypeInfo);
+  Nan::SetPrototypeMethod(constructor_template, "getTypeInfoSync", GetTypeInfoSync);
   
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
@@ -2420,5 +2422,178 @@ Local<Value> getInfoValue( SQLUSMALLINT fInfoType, SQLPOINTER info )
             break;
     }
     return result;
+}
+
+/*
+ * GetTypeInfoSync
+ */
+
+NAN_METHOD(ODBCConnection::GetTypeInfoSync)
+{
+  DEBUG_PRINTF("ODBCConnection::GetTypeInfoSync - Entry\n");
+  Nan::HandleScope scope;
+  SQLRETURN ret = SQL_SUCCESS;
+  SQLHSTMT hSTMT;
+  SQLSMALLINT fSqlType = 0;
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  REQ_ARGS(1);
+  REQ_INT_ARG(0, datatype);
+  fSqlType = (SQLSMALLINT)datatype;
+
+  //allocate a new statment handle
+  ret = SQLAllocHandle( SQL_HANDLE_STMT,
+                  conn->m_hDBC,
+                  &hSTMT );
+
+  if (!SQL_SUCCEEDED(ret)) {
+    //We'll check again later
+  }
+  else {
+    ret = SQLGetTypeInfo( hSTMT, fSqlType);
+  }
+
+  // Ingnore SQL_NO_DATA_FOUND warning, fix for issue 573
+  if (ret == SQL_NO_DATA_FOUND) ret = SQL_SUCCESS;
+
+  //check to see if there was an error during execution
+  if (ret != SQL_SUCCESS) {
+    //Free stmt handle and then throw error.
+    Local<Value> err = ODBC::GetSQLError(
+      SQL_HANDLE_STMT,
+      hSTMT,
+      (char *) "[node-ibm_db] Error in ODBCConnection::GetTypeInfoSync."
+    );
+    SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
+    hSTMT = (SQLHSTMT)NULL;
+    Nan::ThrowError(err);
+  }
+  else {
+    Local<Value> result[4];
+    bool* canFreeHandle = new bool(true);
+
+    result[0] = Nan::New<External>((void*) (intptr_t) conn->m_hENV);
+    result[1] = Nan::New<External>((void*) (intptr_t) conn->m_hDBC);
+    result[2] = Nan::New<External>((void*) (intptr_t) hSTMT);
+    result[3] = Nan::New<External>((void*)canFreeHandle);
+
+    Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, result).ToLocalChecked();
+
+    info.GetReturnValue().Set(js_result);
+  }
+  DEBUG_PRINTF("ODBCConnection::GetTypeInfoSync - Exit\n");
+  return;
+}
+
+/*
+ * GetTypeInfo
+ */
+
+NAN_METHOD(ODBCConnection::GetTypeInfo)
+{
+  DEBUG_PRINTF("ODBCConnection::GetTypeInfo - Entry\n");
+  Nan::HandleScope scope;
+
+  REQ_ARGS(2);
+  REQ_INT_ARG(0, datatype);
+  REQ_FUN_ARG(1, cb);
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
+
+  gettypeinfo_work_data* data =
+    (gettypeinfo_work_data *) calloc(1, sizeof(gettypeinfo_work_data));
+  if( !data ) free(work_req);
+  MEMCHECK( data ) ;
+
+  data->cb = new Nan::Callback(cb);
+  data->conn = conn;
+  data->dataType = (SQLSMALLINT)datatype;
+
+  work_req->data = data;
+
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_GetTypeInfo,
+    (uv_after_work_cb)UV_AfterGetTypeInfo);
+
+  conn->Ref();
+
+  DEBUG_PRINTF("ODBCConnection::GetTypeInfo - Exit\n");
+  info.GetReturnValue().Set(Nan::Undefined());
+}
+
+void ODBCConnection::UV_GetTypeInfo(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_GetTypeInfo - Entry\n");
+
+  gettypeinfo_work_data* data = (gettypeinfo_work_data *)(req->data);
+  SQLHSTMT hSTMT;
+  SQLRETURN ret = SQL_SUCCESS;
+
+  //allocate a new statment handle
+  ret = SQLAllocHandle( SQL_HANDLE_STMT,
+                  data->conn->m_hDBC,
+                  &hSTMT );
+
+  DEBUG_PRINTF("ODBCConnection::UV_GetTypeInfo - ret=%d, dataType = %d\n",
+               ret, data->dataType);
+  if (!SQL_SUCCEEDED(ret)) {
+    //We'll check again later
+  }
+  else {
+    ret = SQLGetTypeInfo( hSTMT, data->dataType);
+  }
+
+  data->rc = ret;
+  data->hSTMT = hSTMT;
+  DEBUG_PRINTF("ODBCConnection::UV_GetTypeInfo - Exit: rc=%d\n", data->rc);
+}
+
+void ODBCConnection::UV_AfterGetTypeInfo(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetTypeInfo - Entry\n");
+  Nan::HandleScope scope;
+  Local<Value> info[2];
+
+  gettypeinfo_work_data* data = (gettypeinfo_work_data *)(req->data);
+
+  if (data->rc != SQL_SUCCESS) {
+    info[0] = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->m_hDBC, (char *) "[node-ibm_db] SQL_ERROR");
+    info[1] = Nan::Null();
+    SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
+    data->hSTMT = (SQLHSTMT)NULL;
+  } else {
+    Local<Value> result[4];
+    bool* canFreeHandle = new bool(true);
+
+    result[0] = Nan::New<External>((void*) (intptr_t) data->conn->m_hENV);
+    result[1] = Nan::New<External>((void*) (intptr_t) data->conn->m_hDBC);
+    result[2] = Nan::New<External>((void*) (intptr_t) data->hSTMT);
+    result[3] = Nan::New<External>((void*)canFreeHandle);
+
+    Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, result).ToLocalChecked();
+    info[0] = Nan::Null();
+    info[1] = js_result;
+  }
+
+  Nan::TryCatch try_catch;
+
+  data->cb->Call( 2, info);
+
+  data->conn->Unref();
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetTypeInfo - Exit\n");
 }
 

@@ -51,6 +51,8 @@
 42. [.setAttrSync(attributeName, value)](#setAttrSyncApi)
 43. [.getInfo(infoType, [infoLength], callback)](#getInfoApi)
 44. [.getInfoSync(infoType, [infoLength])](#getInfoSyncApi)
+45. [.getTypeInfo(dataType, callback)](#getTypeInfoApi)
+46. [.getTypeInfoSync(dataType)](#getTypeInfoSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -1195,7 +1197,6 @@ Asynchronously retrieve the general information about the database management sy
 * **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
 * **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
-Delimiter splits mutliple query in the sqlFile.
 
 * **callback** - `callback (error, value)`
 
@@ -1224,7 +1225,6 @@ Synchronously retrieve the general information about the database management sys
 * **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
 * **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
-Delimiter splits mutliple query in the sqlFile.
 
 ```javascript
 var ibmdb = require("ibm_db")
@@ -1234,6 +1234,54 @@ ibmdb.open(cn, function(err, conn)
 {
     let serverVersion = conn.getInfoSync(ibmdb.SQL_DBMS_VER);
     console.log("SQL_DBMS_VER(Server Version) = ", serverVersion);
+    conn.closeSync();
+});
+```
+
+### <a name="getTypeInfoApi"></a> 45) .getTypeInfo(dataType, callback)
+
+Asynchronously retrieve the information about the SQL data types that are supported by the connected database server.
+If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
+
+* **dataType** - The SQL data type being queried. The supported values for this argument are described in [SQLGetTypeInfo function (CLI) - Get data type information](https://www.ibm.com/docs/en/db2/11.5?topic=functions-sqlgettypeinfo-function-get-data-type-information). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+* **callback** - `callback (error, result)`
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn) {
+    conn.getTypeInfo(ibmdb.SQL_BLOB, function(error, result) {
+      if(error) console.log(error);
+      else console.log("SQL_BLOB Data Type Info = ", result);
+      conn.closeSync();
+    });
+});
+
+async function main()
+{
+    let conn = await ibmdb.open(cn);
+    let data = await conn.getTypeInfo(ibmdb.SQL_ALL_TYPES);
+    console.log("All supported data types info = ", data);
+    await conn.close();
+}
+```
+
+### <a name="getTypeInfoSyncApi"></a> 46) .getTypeInfoSync(dataType)
+
+Synchronously retrieve the information about the SQL data types that are supported by the connected database server.
+If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
+
+* **dataType** - The SQL data type being queried. The supported values for this argument are described in [SQLGetTypeInfo function (CLI) - Get data type information](https://www.ibm.com/docs/en/db2/11.5?topic=functions-sqlgettypeinfo-function-get-data-type-information). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn) {
+    let result = conn.getTypeInfoSync(ibmdb.SQL_BIGINT);
+    console.log("SQL_BIGINT Data Type Info = ", result);
     conn.closeSync();
 });
 ```
