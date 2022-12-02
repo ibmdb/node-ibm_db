@@ -11,6 +11,8 @@ async function main()
         const conn = await ibmdb.open(cn);
         await testGetInfoSync(conn);
         await testGetTypeInfoSync(conn);
+        await testGetFunctionsSync(conn);
+        await testGetFunctionsAwait(conn);
         await testGetInfoAwait(conn);
         await testGetTypeInfoAwait(conn);
         await testGetInfoCallback(conn);
@@ -23,6 +25,7 @@ async function main()
 
 async function testGetInfoSync(conn)
 {
+  console.log("\n====== testGetInfoSync ======");
   let dbms = conn.getInfoSync(ibmdb.SQL_DBMS_NAME);
   console.log("SQL_DBMS_NAME(Server Type) = ", dbms);
   console.log("SQL_DBMS_VER(Server Version) = ",  conn.getInfoSync(ibmdb.SQL_DBMS_VER));
@@ -32,6 +35,7 @@ async function testGetInfoSync(conn)
 
 async function testGetInfoCallback(conn)
 {
+  console.log("\n====== testGetInfoCallback ======");
   conn.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
     if(error) {
       console.log(error);
@@ -65,6 +69,7 @@ async function testGetInfoCallback(conn)
 
 async function testGetInfoAwait(conn)
 {
+    console.log("\n====== testGetInfoAwait ======");
     try {
       let data =  await conn.getInfo(ibmdb.SQL_INVALID_INFO2);
       console.log("SQL_INVALID_INFO = ",  data);
@@ -99,6 +104,7 @@ async function testGetTypeInfoSync(conn)
 
 async function testGetTypeInfoAwait(conn)
 {
+    console.log("\n====== testGetTypeInfoAwait ======");
     try {
       let data =  await conn.getTypeInfo(ibmdb.SQL_INVALID_TYPE);
       console.log("SQL_INVALID_TYPE = ",  data);
@@ -124,6 +130,7 @@ async function testGetTypeInfoAwait(conn)
 
 async function testGetTypeInfoCallback(conn)
 {
+  console.log("\n====== testGetTypeInfoCallback ======");
   conn.getTypeInfo(ibmdb.NUMERIC, function(error, data) {
     if(error) { console.log(error); }
       else {
@@ -142,5 +149,49 @@ async function testGetTypeInfoCallback(conn)
       });
     }
   });
+}
+
+async function testGetFunctionsSync(conn)
+{
+  console.log("\n====== testGetFunctionsSync ======");
+  let fExists = conn.getFunctionsSync(ibmdb.SQLCONNECT);
+  console.log("Function SQLConnect Exist = ", fExists);
+  console.log("Function SQLFreeConnect Exist = ", conn.getFunctionsSync(ibmdb.SQLFREECONNECT));
+  console.log("Function SQLGetFunctions Supported = ", conn.getFunctionsSync(ibmdb.SQLGETFUNCTIONS));
+  console.log("Function SQLDrivers supported = ", conn.getFunctionsSync(ibmdb.DRIVERS));
+  console.log("Function SQLNumParams supported = ", conn.getFunctionsSync(63));
+  console.log("Function Unknows supported = ", conn.getFunctionsSync(630));
+  console.log("Function SQLDropDb supported = ", conn.getFunctionsSync(ibmdb.SQLDROPDB));
+  console.log("All supported Functions = ", conn.getFunctionsSync(ibmdb.ALLFUNCTIONS));
+  console.log("-------------------------------------\n");
+}
+
+async function testGetFunctionsAwait(conn)
+{
+    console.log("\n====== testGetFunctionsAwait ======");
+    try {
+      let data =  await conn.getFunctions(ibmdb.SQL_INVALID_FUNC);
+      console.log("SQL_INVALID_FUNCTION = ",  data);
+    } catch(e) {
+      console.log("SQL_INVALID_FUNCTION = ",  e);
+    }
+
+    try {
+      let data = await conn.getFunctions(ibmdb.SQLCONNECT);
+      console.log("ibmdb.SQLCONNECT = ", data);
+      console.log("Function SQLGetFunctions Supported = ",
+          await conn.getFunctions(ibmdb.SQLGETFUNCTIONS));
+      conn.getFunctions(ibmdb.DRIVERS)
+            .then(data => console.log("Function DRIVERS supported = ", data))
+            .catch(error => console.log("Function DRIVERS supported = ", error));
+      data = await conn.getFunctions(63)
+             .catch(error => console.log("Function SQLNumParams supported = ", error));
+      console.log("SQLDROPDB = ", await conn.getFunctions(ibmdb.SQLDROPDB));
+      console.log("All supported Functions = ", await conn.getFunctions(ibmdb.ALLFUNCTIONS));
+    } catch (e) {
+        console.log(e);
+        assert(false);
+    }
+    console.log("-------------------------------------\n");
 }
 

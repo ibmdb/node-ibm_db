@@ -272,15 +272,20 @@ struct query_request {
     return Nan::ThrowTypeError("Argument " #I " must be a function");     \
   Local<Function> VAR = Local<Function>::Cast(info[I]);
 
-#define REQ_BOOL_ARG(I, VAR)                                            \
-  if (info.Length() <= (I) || !info[I]->IsBoolean())                    \
+#define REQ_BOOL_ARG(I, VAR)                                              \
+  if (info.Length() <= (I) || !info[I]->IsBoolean())                      \
     return Nan::ThrowTypeError("Argument " #I " must be a boolean");      \
   Local<Boolean> VAR = Nan::To<v8::Boolean>(info[I]).ToLocalChecked();
   
-#define REQ_EXT_ARG(I, VAR)                                             \
-  if (info.Length() <= (I) || !info[I]->IsExternal())                   \
+#define REQ_EXT_ARG(I, VAR)                                               \
+  if (info.Length() <= (I) || !info[I]->IsExternal())                     \
     return Nan::ThrowTypeError("Argument " #I " invalid");                \
   Local<External> VAR = Local<External>::Cast(info[I]);
+
+#define REQ_UINT_ARG(I, VAR)                                               \
+  if (info.Length() <= (I) || !info[I]->IsUint32())                        \
+    return Nan::ThrowTypeError("Argument " #I " invalid");                 \
+  SQLUINTEGER VAR = (Nan::To<v8::Uint32>(info[I]).ToLocalChecked()->Value());
 
 #define REQ_INT_ARG(I, VAR)                                             \
   if (info.Length() <= (I) || !info[I]->IsInt32())                      \

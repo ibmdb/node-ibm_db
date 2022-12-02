@@ -85,6 +85,8 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   Nan::SetPrototypeMethod(constructor_template, "getInfoSync", GetInfoSync);
   Nan::SetPrototypeMethod(constructor_template, "getTypeInfo", GetTypeInfo);
   Nan::SetPrototypeMethod(constructor_template, "getTypeInfoSync", GetTypeInfoSync);
+  Nan::SetPrototypeMethod(constructor_template, "getFunctions", GetFunctions);
+  Nan::SetPrototypeMethod(constructor_template, "getFunctionsSync", GetFunctionsSync);
   
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
@@ -2595,5 +2597,172 @@ void ODBCConnection::UV_AfterGetTypeInfo(uv_work_t* req, int status)
   free(data);
   free(req);
   DEBUG_PRINTF("ODBCConnection::UV_AfterGetTypeInfo - Exit\n");
+}
+
+/*
+ * GetFunctionsSync
+ */
+
+NAN_METHOD(ODBCConnection::GetFunctionsSync)
+{
+  DEBUG_PRINTF("ODBCConnection::GetFunctionsSync - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  Local<Value> objError;
+  SQLRETURN ret = SQL_SUCCESS;
+  SQLUSMALLINT funcId = 0;
+  SQLUSMALLINT supportedPtr = 0;
+  SQLUSMALLINT supportedArr[100] = {0};
+
+  REQ_ARGS(1);
+  REQ_UINT_ARG(0, functionId);
+  funcId = (SQLUSMALLINT)functionId;
+
+  if( funcId ) {
+      ret = SQLGetFunctions( conn->m_hDBC, funcId, &supportedPtr);
+  } else { //For ALL_FUNCTIONS
+      ret = SQLGetFunctions( conn->m_hDBC, funcId, supportedArr);
+  }
+
+  DEBUG_PRINTF("ODBCConnection::GetFunctionsSync funcId=%i; supportedPtr=%i, \
+                ret=%d\n", funcId, supportedPtr, ret);
+
+  if (!SQL_SUCCEEDED(ret)) {
+    objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
+    Nan::ThrowError(objError);
+    info.GetReturnValue().Set(Nan::False());
+  }
+  else {
+    if( funcId )
+    {
+      Local<Value> value = Nan::New<Number>(supportedPtr);
+      info.GetReturnValue().Set(value);
+    }
+    else
+    {
+      Local<Array> value = Nan::New<Array>();
+      for (int i = 0; i < 100; i++)
+      {
+          Nan::Set(value, i, Nan::New<Number>(supportedArr[i]));
+      }
+      info.GetReturnValue().Set(value);
+    }
+  }
+  DEBUG_PRINTF("ODBCConnection::GetFunctionsSync - Exit\n");
+}
+
+/*
+ * GetFunctions
+ */
+
+NAN_METHOD(ODBCConnection::GetFunctions)
+{
+  DEBUG_PRINTF("ODBCConnection::GetFunctions - Entry\n");
+  Nan::HandleScope scope;
+
+  REQ_ARGS(2);
+  REQ_UINT_ARG(0, functionId);
+  REQ_FUN_ARG(1, cb);
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req ) ;
+
+  getfunctions_work_data* data =
+    (getfunctions_work_data *) calloc(1, sizeof(getfunctions_work_data));
+  if( !data ) free(work_req);
+  MEMCHECK( data ) ;
+
+  data->cb = new Nan::Callback(cb);
+  data->conn = conn;
+  data->funcId = (SQLUSMALLINT)functionId;
+
+  work_req->data = data;
+
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_GetFunctions,
+    (uv_after_work_cb)UV_AfterGetFunctions);
+
+  conn->Ref();
+
+  DEBUG_PRINTF("ODBCConnection::GetFunctions - Exit\n");
+  info.GetReturnValue().Set(Nan::Undefined());
+}
+
+void ODBCConnection::UV_GetFunctions(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_GetFunctions - Entry\n");
+
+  //get our work data
+  getfunctions_work_data* data = (getfunctions_work_data *)(req->data);
+
+  DEBUG_PRINTF("ODBCConnection::UV_GetFunctions m_hDBC=%X, funcId=%d\n",
+    data->conn->m_hDBC, data->funcId);
+
+  if( data->funcId )
+  {
+      data->rc = SQLGetFunctions(
+        data->conn->m_hDBC,
+        data->funcId,
+        &data->supportedPtr);
+  }
+  else
+  {
+      data->rc = SQLGetFunctions(
+        data->conn->m_hDBC,
+        data->funcId,
+        data->supportedArr);
+  }
+
+  DEBUG_PRINTF("ODBCConnection::UV_GetFunctions - Exit: supported=%d, rc=%d\n",
+                data->funcId ? data->supportedPtr : data->supportedArr[1], data->rc);
+}
+
+void ODBCConnection::UV_AfterGetFunctions(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetFunctions - Entry\n");
+  Nan::HandleScope scope;
+  Local<Value> info[2];
+
+  getfunctions_work_data* data = (getfunctions_work_data *)(req->data);
+
+  if (data->rc != SQL_SUCCESS) {
+    info[0] = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->m_hDBC, (char *) "[node-ibm_db] SQL_ERROR");
+    info[1] = Nan::Null();
+  } else {
+      info[0] = Nan::Null();
+      if( data->funcId )
+      {
+        info[1] = Nan::New<Number>(data->supportedPtr);
+      }
+      else
+      {
+        Local<Array> value = Nan::New<Array>();
+        for (int i = 0; i < 100; i++)
+        {
+          Nan::Set(value, i, Nan::New<Number>(data->supportedArr[i]));
+        }
+        info[1] = value;
+      }
+  }
+
+  Nan::TryCatch try_catch;
+
+  data->cb->Call( 2, info);
+
+  if (try_catch.HasCaught()) {
+    FatalException(try_catch);
+  }
+
+  delete data->cb;
+
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterGetFunctions - Exit\n");
 }
 

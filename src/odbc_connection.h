@@ -105,6 +105,10 @@ class ODBCConnection : public Nan::ObjectWrap {
     static void UV_GetTypeInfo(uv_work_t* work_req);
     static void UV_AfterGetTypeInfo(uv_work_t* work_req, int status);
 
+    static NAN_METHOD(GetFunctions);
+    static void UV_GetFunctions(uv_work_t* work_req);
+    static void UV_AfterGetFunctions(uv_work_t* work_req, int status);
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(CreateDbSync);
@@ -117,6 +121,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(EndTransactionSync);
     static NAN_METHOD(GetInfoSync);
     static NAN_METHOD(GetTypeInfoSync);
+    static NAN_METHOD(GetFunctionsSync);
     static NAN_METHOD(SetIsolationLevel);
     
     struct Fetch_Request {
@@ -201,5 +206,14 @@ struct gettypeinfo_work_data {
 };
 
 Local<Value> getInfoValue( SQLUSMALLINT fInfoType, SQLPOINTER info );
+
+struct getfunctions_work_data {
+  Nan::Callback* cb;
+  ODBCConnection *conn;
+  SQLRETURN rc;
+  SQLUSMALLINT funcId;
+  SQLUSMALLINT supportedPtr;
+  SQLUSMALLINT supportedArr[100];
+};
 
 #endif

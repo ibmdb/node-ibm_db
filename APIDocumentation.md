@@ -53,6 +53,8 @@
 44. [.getInfoSync(infoType, [infoLength])](#getInfoSyncApi)
 45. [.getTypeInfo(dataType, callback)](#getTypeInfoApi)
 46. [.getTypeInfoSync(dataType)](#getTypeInfoSyncApi)
+47. [.getFunctions(functionId, callback)](#getFunctionsApi)
+48. [.getFunctionsSync(functionId)](#getFunctionsSyncApi)
 
 *   [**Connection Pooling APIs**](#PoolAPIs)
 *   [**bindingParameters**](#bindParameters)
@@ -1282,6 +1284,47 @@ var ibmdb = require("ibm_db")
 ibmdb.open(cn, function(err, conn) {
     let result = conn.getTypeInfoSync(ibmdb.SQL_BIGINT);
     console.log("SQL_BIGINT Data Type Info = ", result);
+    conn.closeSync();
+});
+```
+
+### <a name="getFunctionsApi"></a> 47) .getFunctions(functionId, callback)
+
+Asynchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
+
+* **functionId** - The value for a function being queried. The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+* **callback** - `callback (error, value)`
+
+ - value will have only two values: true or false if a valid function id is passed. For ibmdb.ALLFUNCTIONS or 0, it returns an object of all supported functions with true/false value.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn) {
+    conn.getFunctions(ibmdb.SQLCONNECT, function(error, value) {
+      if(error) console.log(error);
+      else console.log("Is SQLConnect supported : ", value);
+      conn.closeSync();
+    });
+});
+```
+
+### <a name="getFunctionsSyncApi"></a> 48) .getFunctionsSync(functionId)
+
+Synchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
+
+* **functionId** - The value for a function being queried. The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
+
+```javascript
+var ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn)
+{
+    let fExists = conn.getFunctionsSync(ibmdb.SQLFREECONNECT);
+    console.log("Function SQLFreeConnect Exist : ", fExists);
     conn.closeSync();
 });
 ```
