@@ -1355,7 +1355,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
       }
       else
       {
-        SQLPOINTER * buff = (SQLPOINTER *)NULL; 
+        SQLPOINTER * buff = (SQLPOINTER *)NULL;
         SQLULEN bufflen = 0;
         SQLULEN cbValueMax = 0;
         //char **buff = (char **) new int64_t[arrlen];
@@ -1367,13 +1367,19 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
               continue;
             }
           }
-          GetStringParam(val, param, num);
-          // Reset buffer_length which was incremented by GetStringParam
+          if (Buffer::HasInstance(val)) {
+            GetBufferParam(val, param, num);
+          }
+          else
+          {
+            GetStringParam(val, param, num);
+            // Reset buffer_length which was incremented by GetStringParam
 #ifdef UNICODE
-          param->buffer_length -= 2;
+            param->buffer_length -= 2;
 #else
-          param->buffer_length -= 1;
+            param->buffer_length -= 1;
 #endif
+          }
           if( i == j ) {
               cbValueMax = param->buffer_length; //Length of each element of array
               bufflen = arrlen * cbValueMax;
@@ -1388,7 +1394,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           memcpy((char*)buff + i * cbValueMax, param->buffer, bufflen);
           param->strLenArray[i] = bufflen;
           // Free the memory param->buffer as data is already copied
-          FREE(param->buffer);
+          if(param->isBuffer != true) FREE(param->buffer);
         }
         param->buffer  = buff;
         param->buffer_length = cbValueMax;
