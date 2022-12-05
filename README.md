@@ -23,7 +23,7 @@ Async APIs return promises if callback function is not used.
 - For non-windows platforms: gcc compiler version >= 8.4 is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
-- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 9.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
+- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 10.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
 
 - Python version >= 2.7.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
@@ -44,7 +44,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 18.8.0
+- The latest node.js version using which `ibm_db` is tested: 19.2.0
 
 ## Install
 
@@ -72,7 +72,7 @@ export npm_config_loglevel=silent => For silent mode installation.
 For **ELECTRON** or **VSCode** Installation:
 ```
 npm install ibm_db -electron=<electron_version>
-npm install ibm_db -electron="18.3.5"
+npm install ibm_db -electron="19.0.17"
 npm install ibm_db -vscode
 ```
 To install using **specific version of clidriver** from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/:
@@ -89,6 +89,7 @@ install python2.7.x or python3.x
 install node.js
 npm install --unsafe-perm ibm_db
 ```
+**Alpine Linux** is not supported by ibm_db as it is an arm64 architecture.
 
 - `npm install ibm_db` internally downloads and install platform specific clidriver of recent release from [here](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/).
 To avoid this download, you can manually download clidriver from this location or install any verison of IBM Data Server Driver Package or Db2 Client or Sever in your system and point the install directory using `IBM_DB_HOME` environment variable. If `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is set, `npm install ibm_db` do not download clidriver.
