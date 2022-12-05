@@ -1,3 +1,23 @@
+2022-12-05, Version 3.1.0
+=========================
+
+ * update Readme file (Bimal Jha)
+
+ * update: windows binary for nodejs v19.x (Bimal Jha)
+
+ * fix: for binary data array insert issue #883 (Bimal Jha)
+
+ * fix: update nan version to 2.17.0 (Bimal Jha)
+
+ * fea: Add support for getFunctions() APIs (Bimal Jha)
+
+ * build(deps): bump minimatch from 3.0.4 to 3.1.2 (#893) (dependabot[bot])
+
+ * fea: add support for getTypeInfo() APIs (Bimal Jha)
+
+ * Fix error in driverInstaller on z/OS (#884) (jolai)
+
+
 2022-09-06, Version 3.0.0
 =========================
 
