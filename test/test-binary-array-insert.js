@@ -16,10 +16,10 @@ async function main() {
 	console.log(results)
 	
 	const data = [
-      '628bacf012d4628bacf012d4',
+      '628bacf012d4628bacd4',
       '628bacf012d5628bacf012d5',
-      '628bacf012d6628bacf012d6',
-      '628bacf012d7628bacf012d7',
+      '628bacf012d6628bacf0d6',
+      '628bacf012d7628bacf0d7',
       '628bacf012d8628bacf012d8'
     ]
 	ibmdb.debug(2);

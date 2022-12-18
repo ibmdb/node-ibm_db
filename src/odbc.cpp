@@ -1153,10 +1153,17 @@ void ODBC::GetBufferParam(Local<Value> value, Parameter * param, int num)
 {
     DEBUG_PRINTF("ODBC::GetBufferParam - It's a buffer.\n");
     param->buffer = (char *) Buffer::Data(value);
-    param->size          = Buffer::Length(value);
-    param->buffer_length = param->size;
-    param->length        = param->buffer_length;
+    param->length = Buffer::Length(value);
+    int bufflen = param->length;
     param->isBuffer      = true; // Dont free it in FREE_PARAMS
+
+    if(bufflen <= param->buffer_length &&
+       ((param->paramtype % 2 == 0) || (param->arraySize > 0)))
+    {
+        bufflen = param->buffer_length;
+    }
+    param->buffer_length = bufflen;
+    param->size = bufflen;
 
     if(!param->c_type || (param->c_type == SQL_CHAR))
         param->c_type = SQL_C_TCHAR;
