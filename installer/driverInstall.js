@@ -652,7 +652,7 @@ var install_node_ibm_db = function(file_url) {
                 zip.forEach(function(entry) {
                     if (entry.entryName === odbcBindingsNode) {
                         try {
-                            zip.extractEntryTo(entry, path.dirname(ODBC_BINDINGS), false, false, false, path.basename(ODBC_BINDINGS));
+                            zip.extractEntryTo(entry, CURRENT_DIR, true, false, false, ODBC_BINDINGS);
                         } catch (e) {
                             console.log('Installation Failed! \n',e);
                             process.exit(1);
