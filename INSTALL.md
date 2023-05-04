@@ -112,7 +112,7 @@ export IBM_DB_HOME=/home/mysystem/clidriver
 
 npm install -g node-gyp
 npm install moment async bluebird
-npm install nan bindings fstream q request targz unzipper
+npm install nan bindings adm-zip q request targz
 etc...
 ```
 

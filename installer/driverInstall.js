@@ -74,16 +74,13 @@ installerURL = installerURL + "/";
 
 //Function to download clidriver and install node-ibm_db
 var install_node_ibm_db = function(file_url) {
-    var readStream;
-    var writeStream;
     var endian = os.endianness();
     var installerfileURL;
     var installerfileURL2;
     var odbc_driver;
     var gitDownload = false;
 
-    var fstream = require('fstream');
-    var unzipper = require('unzipper');
+    var AdmZip = require('adm-zip');
 
     var IBM_DB_HOME, IBM_DB_INCLUDE, IBM_DB_LIB, IBM_DB_DIR;
 
@@ -340,22 +337,20 @@ var install_node_ibm_db = function(file_url) {
         deleteFolderRecursive(IBM_DB_HOME);
 
         if(platform == 'win32') {
-            readStream = fs.createReadStream(INSTALLER_FILE);
+            var zip = new AdmZip(INSTALLER_FILE);
 
-            // Using the "unzipper" module to extract the zipped "clidriver".
-            var extractCLIDriver = readStream.pipe(unzipper.Extract({path: DOWNLOAD_DIR}));
+            // Using the "adm-zip" module to extract the zipped "clidriver".
+            zip.extractAllToAsync(DOWNLOAD_DIR, false, function(err) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    printMsg('\n\nDownloading and extraction of DB2 ODBC ' +
+                             'CLI Driver completed successfully. \n');
 
-            extractCLIDriver.on('close', function() {
-                printMsg('\n\nDownloading and extraction of DB2 ODBC ' +
-                         'CLI Driver completed successfully. \n');
-
-                process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
-                buildBinary(true);
-                if(deleteInstallerFile) removeInstallerFile();
-            });
-
-            extractCLIDriver.on('err', function() {
-                console.log(err);
+                    process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
+                    buildBinary(true);
+                    if(deleteInstallerFile) removeInstallerFile();
+                }
             });
         }
         else 
@@ -643,35 +638,32 @@ var install_node_ibm_db = function(file_url) {
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
-                // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
+                // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".
                 removeDir('build');
-                readStream = fs.createReadStream(BUILD_FILE);
+                var zip = new AdmZip(BUILD_FILE);
                 /*
-                 * unzipper will parse the build.zip file content and
+                 * adm-zip will parse the build.zip file content and
                  * then it will check for the odbcBindingsNode
                  * (node Binary), when it gets that binary file,
-                 * fstream.Writer will write the same node binary
+                 * zip.extractEntryTo will write the same node binary
                  * but the name will be odbc_bindings.node, and the other
                  * binary files and build.zip will be discarded.
                  */
-                readStream.pipe(unzipper.Parse())
-                    .on('entry', function (entry) {
-                        if(entry.path === odbcBindingsNode) {
-                            entry.pipe(fstream.Writer(ODBC_BINDINGS));
-                        } else {
-                            entry.autodrain();
+                zip.forEach(function(entry) {
+                    if (entry.entryName === odbcBindingsNode) {
+                        try {
+                            zip.extractEntryTo(entry, path.dirname(ODBC_BINDINGS), false, false, false, path.basename(ODBC_BINDINGS));
+                        } catch (e) {
+                            console.log('Installation Failed! \n',e);
+                            process.exit(1);
                         }
-                    })
-                    .on('error', function(e) {
-                        console.log('Installation Failed! \n',e);
-                        process.exit(1);
-                    })
-                    .on('finish', function() {
-                      printMsg("\n" +
-                      "===================================\n"+
-                      "ibm_db installed successfully.\n"+
-                      "===================================\n");
-                    });
+
+                        printMsg("\n" +
+                        "===================================\n"+
+                        "ibm_db installed successfully.\n"+
+                        "===================================\n");
+                    }
+                });
 
                 return 1;
 

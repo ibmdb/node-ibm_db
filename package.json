@@ -19,23 +19,22 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=6.0"
   },
   "scripts": {
     "install": "node installer/driverInstall.js",
     "test": "cd test && node run-tests.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.10",
     "axios": "^0.26.1",
     "big-integer": "^1.6.51",
     "bindings": "^1.5.0",
     "fs-extra": "^8.1.0",
-    "fstream": "^1.0.12",
     "lodash": "^4.17.21",
     "nan": "^2.17.0",
     "q": "^1.5.1",
-    "targz": "^1.0.1",
-    "unzipper": "^0.10.11"
+    "targz": "^1.0.1"
   },
   "keywords": [
     "node",
