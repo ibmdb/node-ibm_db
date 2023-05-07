@@ -5,9 +5,9 @@ Async APIs return promises if callback function is not used.
 
 - **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
-- ** MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
+- **MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
 
-- ** Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
+- **Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
 - **SQL1598N** - Check [here](#sql1598n).
 
@@ -149,7 +149,7 @@ To avoid this download, you can manually download clidriver from this location o
 |              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
 |z/OS          |  s390x         |ODBC support from IBM Db2 for z/OS 11.0 or 12.0 | Yes  |
 
-* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
+* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js. ibm_db with arm64 version of node.js is not supported. For installation instruction, check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
 ### Configure ODBC driver on z/OS
 
