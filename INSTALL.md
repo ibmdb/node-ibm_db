@@ -22,14 +22,15 @@ DEALINGS IN THE SOFTWARE.
 ## Contents
 
 1. [Overview](#Installation)
-2. [Node-ibm_db Installation on Linux](#inslnx)
-3. [Node-ibm_db Installation on AIX on Power Systems](#insaix_p)
-4. [Node-ibm_db Installation on Linux on System z](#inslnx_z)
-5. [Node-ibm_db Installation on Linux on Power System](#inslnx_p) 
-6. [Node-ibm_db Installation on MacOS](#insmac)
-7. [Node-ibm_db Installation on Windows](#inswin)
-8. [Node-ibm_db Installation on z/OS](#inszos)
-9. [Node-ibm_db How to Manually Build on Windows](#inswinbld)
+2. [ibm_db Installation on Linux](#inslnx)
+3. [ibm_db Installation on AIX on Power Systems](#insaix_p)
+4. [ibm_db Installation on Linux on System z](#inslnx_z)
+5. [ibm_db Installation on Linux on Power System](#inslnx_p) 
+6. [ibm_db Installation on MacOS](#insmac)
+7. [ibm_db installation on MacOS M1/M2 Chip System](#m1chip)
+8. [ibm_db Installation on Windows](#inswin)
+9. [ibm_db Installation on z/OS](#inszos)
+10. [ibm_db How to Manually Build on Windows](#inswinbld)
 
 ## <a name="overview"></a> 1. Overview
 
@@ -391,23 +392,78 @@ using directory `/nodeapp` for example.
 3. git clone https://github.com/ibmdb/node-ibm_db/
 ```
 
-```
-4. Set `IBM_DB_HOME` environmental variable with 'clidriver' path, for example clidriver path is : `/home/mysystem/clidriver`
-   and then set `IBM_DB_HOME` to `PATH` variable.
-```
+4. Download platform specific clidriver from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/ , untar/unzip it and set `IBM_DB_HOME` environmental variable to full path of extracted 'clidriver' directory, for example if clidriver is extracted as: `/home/mysystem/clidriver`, then set system level environment variable `IBM_DB_HOME=/home/mysystem/clidriver`.
 
-```
 5. Set the msbuild path into `PATH` environment variable.
    ie.: `C:\Program Files (x86)\MSBuild\14.0\bin\`.
-```
 
-```
 6. Build odbc_bindings.node using npm command
+```
 cd node-ibm_db
 npm install
 ```
 
-```
 7. Check for `\node-ibm_db\build\Release\odbc_bindings.node` file, If it's there
     Well Done :)
+
+## <a name="m1chip"></a> 8. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
+# Install x86_64 gcc@8 on arm64/M1 architecture
+**Warning:** If you use the ARM version of homebrew (as recommended for M1 architectures) you will get the following error message:
+```
+$ brew install gcc-8
+Error: Cannot install in Homebrew on ARM processor in Intel default prefix (/usr/local)!
+Please create a new installation in /opt/homebrew using one of the
+"Alternative Installs" from:
+  https://docs.brew.sh/Installation
+You can migrate your previously installed formula list with:
+  brew bundle dump
+```
+Install `gcc@8` using homebrew `(note: the x86_64 version of homebrew is needed for this, not the recommended ARM based homebrew)`. The clearest instructions on how to install and use the `x86_64` version of `homebrew` is by following below steps:
+*	My arm64/M1 brew is installed here:
+```
+	$ which brew
+	/opt/homebrew/bin/brew
+```
+*	Step 1. Install x86_64 brew under /usr/local/bin/brew
+	`arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
+*	Step 2. Create an alias for the x86_64 brew
+	I added this to my ~/.bashrc as below:
+```
+	# brew hack for x86_64
+	alias brew64='arch -x86_64 /usr/local/bin/brew'
+```
+* Then install gcc@8 using the x86_64 homebrew:
+```
+	brew64 install gcc@8
+```
+
+## Steps to Install Intel Python after verifying setup
+* Open new terminal and run command `arch -x86_64 /bin/bash    or arch -x86_64 /bin/zsh`.
+*  Verify the output of  `gcc -v` command. It should show `Target: x86_64-apple-darwin21` in output.
+* Install Intel Version of Python like: https://www.python.org/ftp/python/3.9.11/python-3.9.11-macosx10.9.pkg
+* Check output of commands `python --version` , `which python` and `file /usr/local/bin/python` commands. It should show `/usr/local/bin/python: Mach-O 64-bit executable x86_64`
+
+## Steps to Install x64 version of Node.js
+* Open new terminal and run command `arch -x86_64 /bin/bash    or arch -x86_64 /bin/zsh`.
+*  Verify the output of  `gcc -v` command. It should show `Target: x86_64-apple-darwin21` in output.
+* Install x64 Version of NodeJS like: https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz
+* Check output of commands `node -v` , `which node` and `file node` commands. It should show `node: Mach-O 64-bit executable x86_64`
+
+## Install ibm_db with x86_64 version of gcc8 and node.js on M1/M2 Chip System
+* Update `~/.zshrc` or `~/.bashrc` file based on your shell with below lines:
+```
+export ARCHFLAGS="-arch x86_64"
+```
+* Open a new terminal and run below commands:
+```
+gcc -v   => Output should have x86_64
+python --version   or python3 --version
+file `which python` or file `which python3`   => Output should have x86_64
+node -v
+file `which node` => Output should have x86_64
+npm uninstall ibm_db
+npm install ibm_db
+cd node_modules/ibm_db/installer
+source ./setenv.sh
+run your test program to verify.
 ```
