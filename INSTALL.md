@@ -407,8 +407,7 @@ npm install
     Well Done :)
 
 ## <a name="m1chip"></a> 8. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
-# Install x86_64 gcc@8 on arm64/M1 architecture
-**Warning:** If you use the ARM version of homebrew (as recommended for M1 architectures) you will get the following error message:
+**Warning:** If you use the ARM version of homebrew (as recommended for M1/M2 chip systems) you will get the following error message:
 ```
 $ brew install gcc-8
 Error: Cannot install in Homebrew on ARM processor in Intel default prefix (/usr/local)!

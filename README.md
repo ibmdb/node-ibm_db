@@ -3,11 +3,13 @@
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 Async APIs return promises if callback function is not used.
 
-**Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
-** MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
-** Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
+- **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
-**SQL1598N** - Check [here](#sql1598n).
+- ** MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
+
+- ** Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
+
+- **SQL1598N** - Check [here](#sql1598n).
 
 ## API Documentation
 
