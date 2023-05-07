@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '19.1.8';
+var electron_version = '19.1.9';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -610,11 +610,12 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
                     var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.12';
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.1';
+                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.3';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
-                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.18.1';
+                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.0';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.12.1';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.16.0';
+                    var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) {
@@ -639,12 +640,14 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 18.0) && ODBC_BINDINGS_V17 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
                                        ODBC_BINDINGS;
                 }
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "unzipper" will create a fresh "build" directory for extraction of "build.zip".
                 removeDir('build');
+                printMsg("ODBC_BINDINGS = " + odbcBindingsNode);
                 readStream = fs.createReadStream(BUILD_FILE);
                 /*
                  * unzipper will parse the build.zip file content and
@@ -834,7 +837,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.74){
+            if (vscodeVer >= 1.75){
+                electron_version = "19.1.9";
+            }
+            else if (vscodeVer >= 1.74){
                 electron_version = "19.1.8";
             }
             else if (vscodeVer >= 1.72){

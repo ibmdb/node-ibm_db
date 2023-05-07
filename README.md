@@ -5,6 +5,7 @@ Async APIs return promises if callback function is not used.
 
 **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 ** MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
+** Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
 **SQL1598N** - Check [here](#sql1598n).
 
@@ -14,7 +15,7 @@ Async APIs return promises if callback function is not used.
 
 - For Secure Database connection using **SSL/TSL**: Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md#SSLConnection).
 
-- Got an issue? Need Help? : Check common issues and suggestion [here](#sql1598n).
+- Got an issue? Need Help? : Check common issues and suggestion [here](#for-aix-install-issue).
 
 ## Prerequisite
 
@@ -23,11 +24,11 @@ Async APIs return promises if callback function is not used.
 - For non-windows platforms: gcc compiler version >= 8.4 is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
-- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 10.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
+- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 12.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
 
-- Python version >= 2.7.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
+- Python version >= 3.6.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
-- **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python2.7 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
+- **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
@@ -44,7 +45,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 19.2.0
+- The latest node.js version using which `ibm_db` is tested: 20.0.0
 
 ## Install
 
@@ -85,7 +86,7 @@ npm install ibm_db -clidriver=v11.5.6
 For **Docker Linux Container**, use below commands:
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel
-install python2.7.x or python3.x
+install python3.x
 install node.js
 npm install --unsafe-perm ibm_db
 ```
@@ -379,10 +380,12 @@ Script `testODBCConnection` set the required environment variables, validate dat
 ## How to get db2trace for any node.js test file?
 ```
 copy test.js to ibm-db/test directory
+cd ibm_db/installer
+source ./setenv.sh
 cd ibm_db/test
 ./trace test.js
 ```
-trace script works only on non-windows platform. For Windows, use `testODBCConnection.bat` script. You can replace `db2cli validate` command with `node test.js`in `testODBCConnection.bat` script and execute it.
+**trace** script works only on non-windows platform. For Windows, use `testODBCConnection.bat` script. You can replace `db2cli validate` command with `node test.js`in `testODBCConnection.bat` script and execute it.
 
 ## Issues while connecting to Informix Server
 
