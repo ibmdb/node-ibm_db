@@ -1,4 +1,28 @@
-2022-12-05, Version 3.1.0
+2023-05-07, Version 3.2.0
+=========================
+
+ * update M1 Chip system installation instruction (Bimal Jha)
+
+ * Replace unzip package to fix Node 18 install error (#922) (Timothy Johnson)
+
+ * update documentation (Bimal Jha)
+
+ * Add MacOS M1/M2 Chip install instructions (Bimal Jha)
+
+ * update windows and vscode binaries (Bimal Jha)
+
+ * add char insert test case for issue #915 (Bimal Jha)
+
+ * update minimist version in package-lock.json file, issue #905 (Bimal Jha)
+
+ * fix for issue #904 - correct typo in promise return (Bimal Jha)
+
+ * fix: use passed length as buffer size for binary array insert, issue #896 (Bimal Jha)
+
+ * fix: for issue #899 - correct hard coded path in mac vscode binary (Bimal Jha)
+
+
+2022-12-04, Version 3.1.0
 =========================
 
  * update Readme file (Bimal Jha)
