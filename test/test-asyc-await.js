@@ -10,6 +10,7 @@ async function main() {
     await test1();
     await test2();
     await test3();
+    await test4();
 }
 
 async function test1() {
@@ -69,4 +70,11 @@ async function test3()
     }
     await pool.close();
     console.log("Test3 done.");
+}
+
+async function test4() {
+    let invalidSQL = ["not an sql"] ;
+    let conn = await ibmdb.open(cn);
+    await conn.prepare(invalidSQL).catch((e) => { console.log(e); });
+    console.log("Test4 done.");
 }
