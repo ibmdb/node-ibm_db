@@ -101,27 +101,36 @@ var install_node_ibm_db = function(file_url) {
      */
 
     //If building for supporting VSCode Extn, then remove Clidriver folder and get it freshly
-    if(vscode_build && fs.existsSync(path.join(DOWNLOAD_DIR,'clidriver'))){
-        deleteFolderRecursive(path.join(DOWNLOAD_DIR,'clidriver'))
+    //If environment variable DOWNLOAD_CLIDRIVER is set to true, then remove Clidriver folder and get it freshly
+    if((vscode_build || process.env.DOWNLOAD_CLIDRIVER == "true") &&
+       fs.existsSync(path.join(DOWNLOAD_DIR,'clidriver'))){
+        deleteFolderRecursive(path.join(DOWNLOAD_DIR,'clidriver'));
+    }
+
+    //If environment variable DOWNLOAD_CLIDRIVER is set to true, then ignore setting of IBM_DB_HOME
+    if(process.env.DOWNLOAD_CLIDRIVER == "true"){
+        process.env.IBM_DB_HOME = '';
+        printMsg('DOWNLOAD_CLIDRIVER environment variable is set, ' +
+                 'proceeding to download clidriver.\n');
     }
 
     // Check if env var IBM_DB_HOME is set
     var IS_ENVIRONMENT_VAR;
-    var clidriverFound = true;
+    var clidriverFound = false;
 
     if (process.env.IBM_DB_HOME) {
         if (fs.existsSync(process.env.IBM_DB_HOME) || platform == "os390") {
           IBM_DB_HOME = process.env.IBM_DB_HOME;
           IS_ENVIRONMENT_VAR = true;
+          clidriverFound = true;
         } else {
           printMsg(process.env.IBM_DB_HOME + " directory does not exist. Please" +
                 " check if you have set the IBM_DB_HOME environment" +
                 " variable\'s value correctly.\n");
-          clidriverFound = false;
         }
     }
 
-    if (clidriverFound == false && fs.existsSync(DOWNLOAD_DIR + "/clidriver")){
+    if (clidriverFound == false && fs.existsSync(DOWNLOAD_DIR + "/clidriver/include/sqlcli.h")){
         IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
         process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
         IS_ENVIRONMENT_VAR = false;
@@ -139,6 +148,7 @@ var install_node_ibm_db = function(file_url) {
             } else {
               IBM_DB_LIB = path.resolve(IBM_DB_HOME, 'lib');
             }
+            clidriverFound = true;
 
             if (!fs.existsSync(IBM_DB_LIB)) {
               console.log(IBM_DB_LIB, " directory does not exist. Please ",
@@ -161,8 +171,6 @@ var install_node_ibm_db = function(file_url) {
                 process.env.IBM_DB_HOME = undefined;
             }
         }
-    } else {
-        clidriverFound = false;
     }
 
     /*

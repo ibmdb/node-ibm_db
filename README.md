@@ -47,7 +47,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 20.0.0
+- The latest node.js version using which `ibm_db` is tested: 20.2.0
 
 ## Install
 
@@ -127,6 +127,14 @@ To avoid this download, you can manually download clidriver from this location o
 
 - TIP:
 	- If you don't have alternate hosting URL then, you can download the tar/zipped file of clidriver from the [IBM Hosted URL](#downloadCli) and can set the **IBM_DB_INSTALLER_URL** environment variable to the downloaded "tar/zipped clidriver's" parent directory path. No need to untar/unzip the clidriver and do not change the name of downloaded file.
+
+`DOWNLOAD_CLIDRIVER :`
+
+- USE:
+	- Set this environment variable to force downloading of odbc/clidriver. If clidriver is already present, existing clidriver will get deleted. If IBM_DB_HOME environment variable is set, still clidriver will get downloaded by ignoring value of IBM_DB_HOME.
+
+- HOW:
+	- On distributed platforms, Set **DOWNLOAD_CLIDRIVER** environment variable to `true` to force downloading of clidriver from IBM hosted URL. Never set DOWNLOAD_CLIDRIVER on z/OS system.
 
 ### <a name="downloadCli"></a> Download clidriver ([based on your platform & architecture](#systemDetails)) from the below IBM Hosted URL:
 > [DOWNLOAD CLI DRIVER](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/)
