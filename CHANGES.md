@@ -1,3 +1,13 @@
+2023-05-21, Version 3.2.1
+=========================
+
+ * add support for DOWNLOAD_CLIDRIVER environment variable (Bimal Jha)
+
+ * fix: catch unhandled exception for conn.prepare, issue #925 (Bimal Jha)
+
+ * correct db2 lib path for macos electron binary, https://github.com/ibmdb/vscode-extension/issues/61 (Bimal Jha)
+
+
 2023-05-07, Version 3.2.0
 =========================
 
