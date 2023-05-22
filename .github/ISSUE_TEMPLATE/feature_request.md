@@ -1,9 +1,7 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-
+Name: Feature request
+About: Suggest an idea for this project
+Title: New Feature/Enhancement Request
 ---
 
 **Is your feature request related to a problem? Please describe.**
