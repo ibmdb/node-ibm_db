@@ -1,7 +1,7 @@
 ---
-Name: Bug report
-About: Opening an issue for this driver
-Title: 'Bug Report'
+name: Bug report
+about: Opening an issue for this driver
+title: 'Bug Report'
 ---
 
 <!-- Please search for existing issues to avoid creating duplicates. -->
@@ -9,7 +9,6 @@ Title: 'Bug Report'
 <!-- Use Help > Provide below information while opening an issue. -->
 
 # Please provide below information while opening an issue to understand your problem
-=====================================================================================
 
 - Operating System Name where ibm_db is installed:
 - Target Db2 Server Version or output of `db2level` command from Db2 database system:
@@ -35,7 +34,7 @@ Title: 'Bug Report'
 - Value of any other ibm_db specific environment variable if in use.
 
 ## Please provide below problem specific info:
-===============================================
+=========================================
 
 ### For Installation related issue
 - please share complete output of `npm install ibm_db` command.
