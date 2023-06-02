@@ -543,7 +543,7 @@ var install_node_ibm_db = function(file_url) {
                       addonBinary = "./build/Debug/odbc_bindings.node";
                     }
                     var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" " + addonBinary;
-                    if( isDownloaded ) // For issue #329
+                    if( isDownloaded || vscode_build) // For issue #329
                     {
                       nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib " + addonBinary;
                     }

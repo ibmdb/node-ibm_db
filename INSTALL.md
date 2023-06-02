@@ -27,10 +27,10 @@ DEALINGS IN THE SOFTWARE.
 4. [ibm_db Installation on Linux on System z](#inslnx_z)
 5. [ibm_db Installation on Linux on Power System](#inslnx_p) 
 6. [ibm_db Installation on MacOS](#insmac)
-7. [ibm_db installation on MacOS M1/M2 Chip System](#m1chip)
-8. [ibm_db Installation on Windows](#inswin)
-9. [ibm_db Installation on z/OS](#inszos)
-10. [ibm_db How to Manually Build on Windows](#inswinbld)
+7. [ibm_db Installation on Windows](#inswin)
+8. [ibm_db Installation on z/OS](#inszos)
+9. [ibm_db How to Manually Build on Windows](#inswinbld)
+10. [ibm_db installation on MacOS M1/M2 Chip System](#m1chip)
 
 ## <a name="overview"></a> 1. Overview
 
@@ -406,10 +406,10 @@ npm install
 7. Check for `\node-ibm_db\build\Release\odbc_bindings.node` file, If it's there
     Well Done :)
 
-## <a name="m1chip"></a> 8. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
+## <a name="m1chip"></a> 10. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
 **Warning:** If you use the ARM version of homebrew (as recommended for M1/M2 chip systems) you will get the following error message:
 ```
-$ brew install gcc-8
+$ brew install gcc-12
 Error: Cannot install in Homebrew on ARM processor in Intel default prefix (/usr/local)!
 Please create a new installation in /opt/homebrew using one of the
 "Alternative Installs" from:
@@ -417,7 +417,7 @@ Please create a new installation in /opt/homebrew using one of the
 You can migrate your previously installed formula list with:
   brew bundle dump
 ```
-Install `gcc@8` using homebrew `(note: the x86_64 version of homebrew is needed for this, not the recommended ARM based homebrew)`. The clearest instructions on how to install and use the `x86_64` version of `homebrew` is by following below steps:
+Install `gcc@12` using homebrew `(note: the x86_64 version of homebrew is needed for this, not the recommended ARM based homebrew)`. The clearest instructions on how to install and use the `x86_64` version of `homebrew` is by following below steps:
 *	My arm64/M1 brew is installed here:
 ```
 	$ which brew
@@ -431,9 +431,14 @@ Install `gcc@8` using homebrew `(note: the x86_64 version of homebrew is needed 
 	# brew hack for x86_64
 	alias brew64='arch -x86_64 /usr/local/bin/brew'
 ```
-* Then install gcc@8 using the x86_64 homebrew:
+* Then install gcc@12 using the x86_64 homebrew:
 ```
-	brew64 install gcc@8
+	brew64 install gcc@12
+```
+* Now find location of `lib/gcc/12/libstdc++.6.dylib` file in your system. It should be inside `/usr/local/homebrew/lib/gcc/12` or `/usr/local/lib/gcc/12` or `/usr/local/homebrew/Cellar/gcc@12/12.2.0/lib/gcc/12` or something similar. You need to find the correct path.
+Suppose path of gcc lib is `/usr/local/homebrew/lib/gcc/12`. Then update your .bashrc/.zshrc file with below line
+```
+export DYLD_LIBRARY_PATH=/usr/local/homebrew/lib/gcc/12:$DYLD_LIBRARY_PATH
 ```
 
 ## Steps to Install Intel Python after verifying setup
@@ -448,11 +453,8 @@ Install `gcc@8` using homebrew `(note: the x86_64 version of homebrew is needed 
 * Install x64 Version of NodeJS like: https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz
 * Check output of commands `node -v` , `which node` and `file node` commands. It should show `node: Mach-O 64-bit executable x86_64`
 
-## Install ibm_db with x86_64 version of gcc8 and node.js on M1/M2 Chip System
-* Update `~/.zshrc` or `~/.bashrc` file based on your shell with below lines:
-```
-export ARCHFLAGS="-arch x86_64"
-```
+## Install ibm_db with x86_64 version of gcc12 and node.js on M1/M2 Chip System
+
 * Open a new terminal and run below commands:
 ```
 gcc -v   => Output should have x86_64
@@ -466,3 +468,17 @@ cd node_modules/ibm_db/installer
 source ./setenv.sh
 run your test program to verify.
 ```
+
+### Getting error and unable to run test file
+* If connection fails with SQL30081N error: means `ibm_db` installation is correct and you need to provide correct connection string.
+
+* If `import ibm_db` fails with `Symbol not found: ___cxa_throw_bad_array_new_length` error or `malloc` error:
+  You need to find the correct location of lib/gcc/12 directory and add it to DYLD_LIBRARY_PATH environment variable.
+  Also, execute below commands from terminal with correct location of `lib/gcc/12/libstdc++.6.dylib` library.
+  ```
+  cd node_modules/ibm_db/installer/clidriverd/lib
+  install_name_tool -change /usr/local/lib/gcc/8/libstdc++.6.dylib <full path of libstdc++.6.dylib> libdb2.dylib
+  f.e.
+  install_name_tool -change /usr/local/lib/gcc/8/libstdc++.6.dylib /usr/local/homebrew/lib/gcc/12/libstdc++.6.dylib libdb2.dylib
+  ```
+Now run your test program and verify.
