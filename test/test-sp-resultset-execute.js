@@ -14,9 +14,9 @@ if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
 
 if(schema == undefined) schema = "NEWTON";
    
-var proc1 = "create procedure " + schema + ".PROC1 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; set v2 = 'success'; end";
-var proc2 = "create procedure " + schema + ".PROC2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
-var proc3 = "create procedure " + schema + ".PROC3 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; end";
+var proc1 = "create or replace procedure " + schema + ".PROC1 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; set v2 = 'success'; end";
+var proc2 = "create or replace procedure " + schema + ".PROC2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
+var proc3 = "create or replace procedure " + schema + ".PROC3 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; end";
 var query1 = "call " + schema + ".PROC1(?, ?)";
 var query2 = "call " + schema + ".PROC2(?, ?)";
 var query3 = "call " + schema + ".PROC3(?, ?)";
@@ -31,6 +31,9 @@ if (isZOS) {
   proc1 = proc1.replace(" begin", " disable debug mode begin");
   proc2 = proc2.replace(" begin", " disable debug mode begin");
   proc3 = proc3.replace(" begin", " disable debug mode begin");
+  proc1 = proc1.replace(" or replace", "");
+  proc2 = proc2.replace(" or replace", "");
+  proc3 = proc3.replace(" or replace", "");
 } else {
   dropProc1 = "drop procedure " + schema + ".PROC1 ( INT, VARCHAR(30) )";
   dropProc2 = "drop procedure " + schema + ".PROC2 ( INT, VARCHAR(30) )";
