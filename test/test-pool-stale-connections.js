@@ -29,6 +29,7 @@ var timer = setInterval(function() {
             console.log("Connection " + err.toString());
         }
 
+        connection.beginTransactionSync();
         connection.query("select 1 from sysibm.sysdummy1", 
           function (err, results) {
             if (err) {
@@ -37,6 +38,7 @@ var timer = setInterval(function() {
             }else{
                 console.log(JSON.stringify(results));
                 assert.equal(JSON.stringify(results), '[{"1":1}]');
+                connection.commitTransactionSync();
             }
             connection.close(function () {
               console.log('Connection closed');
