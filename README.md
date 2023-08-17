@@ -1,7 +1,7 @@
 # node-ibm_db
 
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
-Async APIs return promises if callback function is not used.
+Async APIs return promises if callback function is not used. Async APIs supports async-await programming style.
 
 - **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
@@ -31,6 +31,10 @@ Install a newer compiler or upgrade older one.
 - Python version >= 3.6.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
+
+- **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
+
+- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@8 is required.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
@@ -92,7 +96,7 @@ install python3.x
 install node.js
 npm install --unsafe-perm ibm_db
 ```
-**Alpine Linux** is not supported by ibm_db as it is an arm64 architecture.
+**Alpine Linux** is not supported by `ibm_db` as it is an arm64 architecture.
 
 - `npm install ibm_db` internally downloads and install platform specific clidriver of recent release from [here](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/).
 To avoid this download, you can manually download clidriver from this location or install any verison of IBM Data Server Driver Package or Db2 Client or Sever in your system and point the install directory using `IBM_DB_HOME` environment variable. If `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is set, `npm install ibm_db` do not download clidriver.
@@ -157,7 +161,7 @@ To avoid this download, you can manually download clidriver from this location o
 |              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
 |z/OS          |  s390x         |ODBC support from IBM Db2 for z/OS 11.0 or 12.0 | Yes  |
 
-* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js. ibm_db with arm64 version of node.js is not supported. For installation instruction, check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
+* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js and gcc@8. ibm_db with arm64 version of node.js is not supported. For installation instruction, check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
 ### Configure ODBC driver on z/OS
 
@@ -205,7 +209,7 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
     export STEPLIB=$STEPLIB:$IBM_DB_HOME.SDSNEXIT:$IBM_DB_HOME.SDSNLOAD:$IBM_DB_HOME.SDSNLOD2
     ```
 
-5. Configure an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with ibm_db, the following properties must be set:
+5. Configure an appropriate _Db2 ODBC initialization file_ that can be read at application time. You can specify the file by using either a DSNAOINI data definition statement or by defining a `DSNAOINI` z/OS UNIX environment variable.  For compatibility with `ibm_db`, the following properties must be set:
 
     In COMMON section:
 
@@ -241,6 +245,14 @@ Please refer to the [ODBC Guide and References](https://www.ibm.com/support/know
     AUTOCOMMIT=1
     CURSORHOLD=1
     ```
+
+6. Please make sure tagging of your odbc.ini file is "binary" or "mixed":
+    ```
+    chtag -b $DSNAOINI
+    or
+    chtag -m -c IBM-1047 $DSNAOINI
+    ```
+    If file is tagged text (chtag -t -c IBM1047 $DSNAOINI) the S0C4 abend occurs.
 
     Reference Chapter 3 in the [ODBC Guide and References](https://www.ibm.com/support/knowledgecenter/SSEPEK/pdf/db2z_12_odbcbook.pdf) for more instructions.
 
@@ -371,8 +383,14 @@ Note: "db2cli bind" does not work with DB2 z/OS if the CLI packages (SYSSH*) wer
 
 ## Troubleshooting on z/OS
 Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2 ODBC initialization file_:
-APPLTRACE=1
-APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
+    ```
+    APPLTRACE=1
+    APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
+    ```
+
+### Db2 z/OS: UnicodeDecodeError Exception
+- Make sure you have set `CURRENTAPPENSC=ASCII` or `UNICODE` in ODBC initialization file.
+- Make sure tagging of your ODBC ini file is "binary" or "mixed".
 
 ## Usage within VS Code
 If you are using ibm_db to develop extension for VS Code, then ibm_db has to be rebuilt with Electron libraries. This can be achieved by running:
@@ -407,6 +425,9 @@ So, make sure drsoctcp of Informix is configured.
 If ibm_db is returning SQL1042C error while connecting to server, use
 "Authentication=SERVER" in connection string. It should avoid the error.
 Alternatively, you can set Authentication in db2cli.ini file or db2dsdriver.cfg file too.
+This error mostly comes due to presence of multiple copy of db2 client or gskit library in the system.
+Run db2level command and it shows path other than `ibm_db\installer\clidriver`, set IBM_DB_HOME to this path and reinstall ibm_db.
+If you have `C:\Program Files\IBM\gsk8` directory on windows, remove it from PATH env var and if possible, rename it.
 
 ### code-set conversion error
 If Informix server is not enabled for UNICODE clients or some code-set object
