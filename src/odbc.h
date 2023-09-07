@@ -44,8 +44,8 @@ using namespace node;
 #define ISOLATECOMMA v8::Isolate::GetCurrent(),
 #define TOSTRING ToString(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::String>())
 #else
-#define ISOLATE 
-#define ISOLATECOMMA 
+#define ISOLATE
+#define ISOLATECOMMA
 #define TOSTRING ToString()
 #endif
 
@@ -54,7 +54,7 @@ using namespace node;
 #define SQL_SUCCEEDED(rc) (((rc)&(~1))==0)
 #endif
 
-// Free Bind Parameters 
+// Free Bind Parameters
 #define FREE_PARAMS( params, count )                                 \
     Parameter prm;                                                   \
     if(params != NULL ) {                                            \
@@ -81,7 +81,7 @@ using namespace node;
     params = NULL;                                                   \
     count = 0;
 
-// two macros ensures that any macro used will be expanded 
+// two macros ensures that any macro used will be expanded
 // before being stringified. #x gives string value of x.
 #define LINESTRING(x) #x
 #define LINENO(x) LINESTRING(x)
@@ -106,7 +106,7 @@ typedef struct {
   SQLULEN      size;
   SQLSMALLINT  decimals;
   SQLPOINTER   buffer;
-  SQLLEN       buffer_length;    
+  SQLLEN       buffer_length;
   SQLLEN       length;
   SQLUINTEGER  fileOption;    // For BindFileToParam
   SQLINTEGER   fileIndicator; // For BindFileToParam
@@ -120,12 +120,12 @@ class ODBC : public Nan::ObjectWrap {
     static Nan::Persistent<Function> constructor;
     static uv_mutex_t g_odbcMutex;
     static uv_async_t g_async;
-    
+
     static NAN_MODULE_INIT(Init);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
     static void FreeColumns(Column* columns, short* colCount);
     static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, size_t bufferLength);
-    static Local<Value> GetOutputParameter(Parameter prm);
+    static Local<Value> GetOutputParameter(Parameter *prm);
     static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, size_t bufferLength);
     static Local<Value> GetRecordArray (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, size_t bufferLength);
     static Local<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback* cb);
@@ -135,9 +135,9 @@ class ODBC : public Nan::ObjectWrap {
     static Local<Array>  GetAllRecordsSync (SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t* buffer, size_t bufferLength);
     static Parameter* GetParametersFromArray (Local<Array> values, int* paramCount);
     static SQLRETURN  BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
-    
+
     void Free();
-    
+
   protected:
     ODBC() { m_hEnv = (SQLHENV)NULL; }
 
@@ -157,12 +157,12 @@ class ODBC : public Nan::ObjectWrap {
     static NAN_METHOD(CreateConnection);
     static void UV_CreateConnection(uv_work_t* work_req);
     static void UV_AfterCreateConnection(uv_work_t* work_req, int status);
-    
+
     static void WatcherCallback(uv_async_t* w, int revents);
-    
+
     //sync methods
     static NAN_METHOD(CreateConnectionSync);
-    
+
     ODBC *self(void) { return this; }
 
   protected:
@@ -276,7 +276,7 @@ struct query_request {
   if (info.Length() <= (I) || !info[I]->IsBoolean())                      \
     return Nan::ThrowTypeError("Argument " #I " must be a boolean");      \
   Local<Boolean> VAR = Nan::To<v8::Boolean>(info[I]).ToLocalChecked();
-  
+
 #define REQ_EXT_ARG(I, VAR)                                               \
   if (info.Length() <= (I) || !info[I]->IsExternal())                     \
     return Nan::ThrowTypeError("Argument " #I " invalid");                \

@@ -54,13 +54,13 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   // Reserve space for one Handle<Value>
   Local<ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1);
-  
+
   // Properties
   //Nan::SetAccessor(instance_template, Nan::New("mode").ToLocalChecked(), ModeGetter, ModeSetter);
   Nan::SetAccessor(instance_template, Nan::New("connected").ToLocalChecked(), ConnectedGetter);
   Nan::SetAccessor(instance_template, Nan::New("connectTimeout").ToLocalChecked(), ConnectTimeoutGetter, ConnectTimeoutSetter);
   Nan::SetAccessor(instance_template, Nan::New("systemNaming").ToLocalChecked(), SystemNamingGetter, SystemNamingSetter);
-  
+
   // Prototype Methods
   Nan::SetPrototypeMethod(constructor_template, "open", Open);
   Nan::SetPrototypeMethod(constructor_template, "openSync", OpenSync);
@@ -69,12 +69,12 @@ NAN_MODULE_INIT(ODBCConnection::Init)
 
   Nan::SetPrototypeMethod(constructor_template, "createDbSync", CreateDbSync);
   Nan::SetPrototypeMethod(constructor_template, "dropDbSync", DropDbSync);
-  
+
   Nan::SetPrototypeMethod(constructor_template, "createStatement", CreateStatement);
   Nan::SetPrototypeMethod(constructor_template, "createStatementSync", CreateStatementSync);
   Nan::SetPrototypeMethod(constructor_template, "query", Query);
   Nan::SetPrototypeMethod(constructor_template, "querySync", QuerySync);
-  
+
   Nan::SetPrototypeMethod(constructor_template, "beginTransaction", BeginTransaction);
   Nan::SetPrototypeMethod(constructor_template, "beginTransactionSync", BeginTransactionSync);
   Nan::SetPrototypeMethod(constructor_template, "endTransaction", EndTransaction);
@@ -87,10 +87,10 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   Nan::SetPrototypeMethod(constructor_template, "getTypeInfoSync", GetTypeInfoSync);
   Nan::SetPrototypeMethod(constructor_template, "getFunctions", GetFunctions);
   Nan::SetPrototypeMethod(constructor_template, "getFunctionsSync", GetFunctionsSync);
-  
+
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
-  
+
   // Attach the Database Constructor to the target object
   constructor.Reset(Nan::GetFunction(constructor_template).ToLocalChecked());
   Nan::Set(target, Nan::New("ODBCConnection").ToLocalChecked(),
@@ -121,20 +121,20 @@ NAN_METHOD(ODBCConnection::New)
 {
   DEBUG_PRINTF("ODBCConnection::New - Entry\n");
   Nan::HandleScope scope;
-  
+
   REQ_EXT_ARG(0, js_henv);
   REQ_EXT_ARG(1, js_hdbc);
-  
+
   SQLHENV hENV = (SQLHENV)((intptr_t)js_henv->Value());
   SQLHDBC hDBC = (SQLHDBC)((intptr_t)js_hdbc->Value());
-  
+
   ODBCConnection* conn = new ODBCConnection(hENV, hDBC);
-  
+
   conn->Wrap(info.Holder());
-  
+
   //set default connectTimeout to 30 seconds
   conn->connectTimeout = DEFAULT_CONNECTION_TIMEOUT ;
-  
+
   conn->systemNaming = false;
 
   info.GetReturnValue().Set(info.Holder());
@@ -164,7 +164,7 @@ NAN_SETTER(ODBCConnection::ConnectTimeoutSetter)
   Nan::HandleScope scope;
 
   ODBCConnection *obj = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   if (value->IsNumber()) {
     obj->connectTimeout = Nan::To<int32_t>(value).FromJust();
   }
@@ -190,7 +190,7 @@ NAN_SETTER(ODBCConnection::SystemNamingSetter)
 
 /*
  * Open
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::Open)
@@ -205,31 +205,31 @@ NAN_METHOD(ODBCConnection::Open)
 
   //get reference to the connection object
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   //create a uv work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
- 
+
   //allocate our worker data
-  open_connection_work_data* data = (open_connection_work_data *) 
+  open_connection_work_data* data = (open_connection_work_data *)
     calloc(1, sizeof(open_connection_work_data));
   MEMCHECK2( data, errmsg ) ;
 
   len = connection.length();
   data->connectionLength = len + 1;
 
-  //copy the connection string to the work data  
+  //copy the connection string to the work data
   GETCPPSTR2(data->connection, connection, len, errmsg) ;
-  
+
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
-  
+
   work_req->data = data;
-  
+
   //queue the work
-  uv_queue_work(uv_default_loop(), 
-    work_req, 
-    UV_Open, 
+  uv_queue_work(uv_default_loop(),
+    work_req,
+    UV_Open,
     (uv_after_work_cb)UV_AfterOpen);
 
   conn->Ref();
@@ -249,11 +249,11 @@ void ODBCConnection::UV_Open(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_Open - Entry\n");
   open_connection_work_data* data = (open_connection_work_data *)(req->data);
-  
+
   ODBCConnection* self = data->conn->self();
 
   SetConnectionAttributes(self);
-  
+
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   int ret = SQLDriverConnect(
@@ -265,25 +265,25 @@ void ODBCConnection::UV_Open(uv_work_t* req)
     0,                              //BufferLength - in characters
     NULL,                           //StringLength2Ptr
     SQL_DRIVER_NOPROMPT);           //DriverCompletion
-  
-  
+
+
   if (SQL_SUCCEEDED(ret)) {
     SQLHSTMT hStmt;
-    
+
     //allocate a temporary statment
     ret = SQLAllocHandle(SQL_HANDLE_STMT, self->m_hDBC, &hStmt);
-    
+
     //try to determine if the driver can handle
     //multiple recordsets
     ret = SQLGetFunctions(
       self->m_hDBC,
-      SQL_API_SQLMORERESULTS, 
+      SQL_API_SQLMORERESULTS,
       &self->canHaveMoreResults);
 
     if (!SQL_SUCCEEDED(ret)) {
       self->canHaveMoreResults = 0;
     }
-    
+
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
     hStmt = (SQLHSTMT)NULL;
@@ -297,18 +297,18 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status)
 {
   DEBUG_PRINTF("ODBCConnection::UV_AfterOpen - Entry\n");
   Nan::HandleScope scope;
-  
+
   open_connection_work_data* data = (open_connection_work_data *)(req->data);
-  
+
   Local<Value> argv[1];
-  
+
   bool err = false;
 
   if (data->result) {
     err = true;
 
     Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
-    
+
     argv[0] = objError;
   }
 
@@ -326,7 +326,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t* req, int status)
   }
 
   delete data->cb;
-  
+
   FREE(data->connection);
   FREE(data);
   FREE(req);
@@ -390,19 +390,19 @@ NAN_METHOD(ODBCConnection::OpenSync)
 
   //get reference to the connection object
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
- 
+
   Local<Value> objError;
   SQLRETURN ret;
   bool err = false;
   void * connectionString = NULL;
-  
+
   if (connectionLength <= 0) {
     return Nan::ThrowTypeError("Connection String must be a non-empty string");
   }
-  GETCPPSTR(connectionString, connection, connectionLength); 
-  
+  GETCPPSTR(connectionString, connection, connectionLength);
+
   SetConnectionAttributes(conn);
-  
+
   //Attempt to connect
   //NOTE: SQLDriverConnect requires the thread to be locked
   ret = SQLDriverConnect(
@@ -417,32 +417,32 @@ NAN_METHOD(ODBCConnection::OpenSync)
 
   if (!SQL_SUCCEEDED(ret)) {
     err = true;
-    
+
     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->self()->m_hDBC);
   }
   else {
     SQLHSTMT hStmt;
-    
+
     //allocate a temporary statment
     ret = SQLAllocHandle(SQL_HANDLE_STMT, conn->m_hDBC, &hStmt);
-    
+
     //try to determine if the driver can handle
     //multiple recordsets
     ret = SQLGetFunctions(
       conn->m_hDBC,
-      SQL_API_SQLMORERESULTS, 
+      SQL_API_SQLMORERESULTS,
       &conn->canHaveMoreResults);
 
     if (!SQL_SUCCEEDED(ret)) {
       conn->canHaveMoreResults = 0;
     }
-  
+
     //free the handle
     ret = SQLFreeHandle( SQL_HANDLE_STMT, hStmt);
     hStmt = (SQLHSTMT)NULL;
-    
+
     conn->self()->connected = true;
-    
+
     //only uv_ref if the connection was successful
     /*#if NODE_VERSION_AT_LEAST(0, 7, 9)
       uv_ref((uv_handle_t *)&ODBC::g_async);
@@ -453,7 +453,7 @@ NAN_METHOD(ODBCConnection::OpenSync)
 
   FREE(connectionString);
   DEBUG_PRINTF("ODBCConnection::OpenSync - Exit\n");
-  
+
   if (err) {
     return Nan::ThrowError(objError);
   }
@@ -464,7 +464,7 @@ NAN_METHOD(ODBCConnection::OpenSync)
 
 /*
  * Close
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::Close)
@@ -475,11 +475,11 @@ NAN_METHOD(ODBCConnection::Close)
   REQ_FUN_ARG(0, cb);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
-  close_connection_work_data* data = (close_connection_work_data *) 
+
+  close_connection_work_data* data = (close_connection_work_data *)
     (calloc(1, sizeof(close_connection_work_data)));
   if( !data ) free(work_req);
   MEMCHECK( data ) ;
@@ -488,7 +488,7 @@ NAN_METHOD(ODBCConnection::Close)
   data->conn = conn;
 
   work_req->data = data;
-  
+
   uv_queue_work(
     uv_default_loop(),
     work_req,
@@ -505,10 +505,10 @@ void ODBCConnection::UV_Close(uv_work_t* req)
   DEBUG_PRINTF("ODBCConnection::UV_Close\n");
   close_connection_work_data* data = (close_connection_work_data *)(req->data);
   ODBCConnection* conn = data->conn;
-  
+
   //TODO: check to see if there are any open statements
   //on this connection
-  
+
   conn->Free();
   conn->connected = false;
   data->result = 0;
@@ -522,17 +522,17 @@ void ODBCConnection::UV_AfterClose(uv_work_t* req, int status)
   close_connection_work_data* data = (close_connection_work_data *)(req->data);
 
   ODBCConnection* conn = data->conn;
-  
+
   Local<Value> argv[1];
   bool err = false;
-  
+
   if (data->result) {
     err = true;
     argv[0] = Exception::Error(Nan::New("Error closing database").ToLocalChecked());
   }
   else {
     conn->connected = false;
-    
+
     //only unref if the connection was closed
 //#if NODE_VERSION_AT_LEAST(0, 7, 9)
 //    uv_unref((uv_handle_t *)&ODBC::g_async);
@@ -566,12 +566,12 @@ NAN_METHOD(ODBCConnection::CloseSync)
   Nan::HandleScope scope;
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   //TODO: check to see if there are any open statements
   //on this connection
-  
+
   conn->Free();
-  
+
   conn->connected = false;
 
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
@@ -579,7 +579,7 @@ NAN_METHOD(ODBCConnection::CloseSync)
 #else
   uv_unref(uv_default_loop());
 #endif
-  
+
   DEBUG_PRINTF("ODBCConnection::CloseSync - Exit\n");
   info.GetReturnValue().Set(Nan::True());
 }
@@ -595,7 +595,7 @@ NAN_METHOD(ODBCConnection::CloseSync)
  * This function is not supported for Db2 for z/OS servers.
  *
  * ===Parameters
- * 
+ *
  * connection handle
  *     A valid database connection with parameter ATTACH=true specified.
  *     ('DRIVER={IBM DB2 ODBC DRIVER};ATTACH=true;HOSTNAME=myhost;PORT=1234;PROTOCOL=TCPIP;UID=user;PWD=secret;)
@@ -605,7 +605,7 @@ NAN_METHOD(ODBCConnection::CloseSync)
  *
  * codeSet
  *      Database code set information.
- *      Note: If the value of the codeSet argument is not specified, 
+ *      Note: If the value of the codeSet argument is not specified,
  *      the database is created in the Unicode code page for DB2 data servers and in the UTF-8 code page for IDS data servers.
  *
  * mode
@@ -613,8 +613,8 @@ NAN_METHOD(ODBCConnection::CloseSync)
  *      Note: This value is applicable only to "IDS data servers".
  *
  * ===Return Values
- * 
- * Returns TRUE on success or FALSE on failure. 
+ *
+ * Returns TRUE on success or FALSE on failure.
  */
 
 NAN_METHOD(ODBCConnection::CreateDbSync)
@@ -726,15 +726,15 @@ exit:
  * This function is not supported for Db2 for z/OS servers.
  *
  * ===Parameters
- * 
+ *
  * Connection handle.
  *
  * dbName
  *     Name of the database that is to be dropped.
  *
  * ===Return Values
- * 
- * Returns TRUE on success or FALSE on failure. 
+ *
+ * Returns TRUE on success or FALSE on failure.
  */
 
 NAN_METHOD(ODBCConnection::DropDbSync)
@@ -807,7 +807,7 @@ NAN_METHOD(ODBCConnection::DropDbSync)
 
 /*
  * CreateStatementSync
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::CreateStatementSync)
@@ -816,19 +816,19 @@ NAN_METHOD(ODBCConnection::CreateStatementSync)
   Nan::HandleScope scope;
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-   
+
   SQLHSTMT hSTMT;
 
   SQLAllocHandle(
-    SQL_HANDLE_STMT, 
-    conn->m_hDBC, 
+    SQL_HANDLE_STMT,
+    conn->m_hDBC,
     &hSTMT);
-  
+
   Local<Value> params[3];
   params[0] = Nan::New<External>((void*)(intptr_t)conn->m_hENV);
   params[1] = Nan::New<External>((void*)(intptr_t)conn->m_hDBC);
   params[2] = Nan::New<External>((void*)(intptr_t)hSTMT);
-  
+
   Local<Object> js_result(Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, params).ToLocalChecked());
 
   DEBUG_PRINTF("ODBCConnection::CreateStatementSync - Exit\n");
@@ -837,7 +837,7 @@ NAN_METHOD(ODBCConnection::CreateStatementSync)
 
 /*
  * CreateStatement
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::CreateStatement)
@@ -848,13 +848,13 @@ NAN_METHOD(ODBCConnection::CreateStatement)
   REQ_FUN_ARG(0, cb);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-    
+
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
+
   //initialize our data
-  create_statement_work_data* data = 
+  create_statement_work_data* data =
     (create_statement_work_data *) (calloc(1, sizeof(create_statement_work_data)));
   if( !data ) free(work_req);
   MEMCHECK( data ) ;
@@ -863,11 +863,11 @@ NAN_METHOD(ODBCConnection::CreateStatement)
   data->conn = conn;
 
   work_req->data = data;
-  
+
   uv_queue_work(
-    uv_default_loop(), 
-    work_req, 
-    UV_CreateStatement, 
+    uv_default_loop(),
+    work_req,
+    UV_CreateStatement,
     (uv_after_work_cb)UV_AfterCreateStatement);
 
   conn->Ref();
@@ -879,7 +879,7 @@ NAN_METHOD(ODBCConnection::CreateStatement)
 void ODBCConnection::UV_CreateStatement(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_CreateStatement - Entry\n");
-  
+
   //get our work data
   create_statement_work_data* data = (create_statement_work_data *)(req->data);
 
@@ -888,10 +888,10 @@ void ODBCConnection::UV_CreateStatement(uv_work_t* req)
     data->conn->m_hDBC,
     data->hSTMT
   );
-  
+
   //allocate a new statment handle
-  SQLAllocHandle( SQL_HANDLE_STMT, 
-                  data->conn->m_hDBC, 
+  SQLAllocHandle( SQL_HANDLE_STMT,
+                  data->conn->m_hDBC,
                   &data->hSTMT);
 
   DEBUG_PRINTF("ODBCConnection::UV_CreateStatement - Exit: hENV=%X hDBC=%X hSTMT=%X\n",
@@ -913,12 +913,12 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status)
     data->conn->m_hDBC,
     data->hSTMT
   );
-  
+
   Local<Value> info[3];
   info[0] = Nan::New<External>((void*)(intptr_t)data->conn->m_hENV);
   info[1] = Nan::New<External>((void*)(intptr_t)data->conn->m_hDBC);
   info[2] = Nan::New<External>((void*)(intptr_t)data->hSTMT);
-  
+
   Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCStatement::constructor), 3, info).ToLocalChecked();
 
   info[0] = Nan::Null();
@@ -931,7 +931,7 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t* req, int status)
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-  
+
   data->conn->Unref();
   delete data->cb;
 
@@ -948,13 +948,13 @@ NAN_METHOD(ODBCConnection::Query)
 {
   DEBUG_PRINTF("ODBCConnection::Query - Entry\n");
   Nan::HandleScope scope;
-  
+
   Local<Function> cb;
   int len = 0;
   char *errmsg = NULL;
   uv_work_t* work_req = NULL;
   query_work_data* data = NULL;
-  
+
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
 
   data = (query_work_data *) calloc(1, sizeof(query_work_data));
@@ -965,7 +965,7 @@ NAN_METHOD(ODBCConnection::Query)
   //Check arguments for different variations of calling this function
   if (info.Length() == 3) {
     //handle Query("sql string", [params], function cb () {});
-    
+
     if ( !info[0]->IsString() ) {
       free(data);
       return Nan::ThrowTypeError("Argument 0 must be an String.");
@@ -982,23 +982,23 @@ NAN_METHOD(ODBCConnection::Query)
     Nan::Utf8String sql(info[0]);
     len = sql.length();
     GETCPPSTR2(data->sql, sql, len, errmsg);
-    
+
     data->params = ODBC::GetParametersFromArray(
       Local<Array>::Cast(info[1]),
       &data->paramCount);
-    
+
     cb = Local<Function>::Cast(info[2]);
   }
   else if (info.Length() == 2 ) {
     //handle either Query("sql", cb) or Query({ settings }, cb)
-    
+
     if (!info[1]->IsFunction()) {
       free(data);
       return Nan::ThrowTypeError("ODBCConnection::Query(): Argument 1 must be a Function.");
     }
-    
+
     cb = Local<Function>::Cast(info[1]);
-    
+
     if (info[0]->IsString()) {
       //handle Query("sql", function cb () {})
       Nan::Utf8String sql2(info[0]);
@@ -1011,16 +1011,16 @@ NAN_METHOD(ODBCConnection::Query)
       //rather than adding more arguments to the function signature.
       //specify options on an options object.
       //handle Query({}, function cb () {});
-      
+
       Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked();
-      
+
       Local<String> optionSqlKey = Nan::New(OPTION_SQL);
       if (Nan::HasOwnProperty(obj, optionSqlKey).IsJust() && Nan::Get(obj, optionSqlKey).ToLocalChecked()->IsString()) {
         Nan::Utf8String sql3(Nan::Get(obj, optionSqlKey).ToLocalChecked());
         len = sql3.length();
         GETCPPSTR2(data->sql, sql3, len, errmsg);
       }
-      
+
       Local<String> optionParamsKey = Nan::New(OPTION_PARAMS);
       if (Nan::HasOwnProperty(obj, optionParamsKey).IsJust() && Nan::Get(obj, optionParamsKey).ToLocalChecked()->IsArray()) {
         data->params = ODBC::GetParametersFromArray(
@@ -1030,7 +1030,7 @@ NAN_METHOD(ODBCConnection::Query)
       else {
         data->paramCount = 0;
       }
-      
+
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (Nan::HasOwnProperty(obj, optionNoResultsKey).IsJust() && Nan::Get(obj, optionNoResultsKey).ToLocalChecked()->IsBoolean()) {
         data->noResultObject = Nan::To<bool>(Nan::Get(obj, optionNoResultsKey).ToLocalChecked()).FromJust();
@@ -1038,7 +1038,7 @@ NAN_METHOD(ODBCConnection::Query)
       else {
         data->noResultObject = false;
       }
-      
+
       Local<String> optionArraySize = Nan::New(OPTION_ARRAYSIZE);
       if (Nan::HasOwnProperty(obj, optionArraySize).IsJust() && Nan::Get(obj, optionArraySize).ToLocalChecked()->IsInt32()) {
         data->arraySize = Nan::To<int32_t>(Nan::Get(obj, optionArraySize).ToLocalChecked()).FromJust();
@@ -1067,18 +1067,18 @@ NAN_METHOD(ODBCConnection::Query)
 
   DEBUG_PRINTF("ODBCConnection::Query: sqlLen=%i, sqlSize=%i,sql=%s, hDBC=%X\n",
                data->sqlLen, data->sqlSize, (char*) data->sql, conn->m_hDBC);
-  
+
   work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK2( work_req, errmsg ) ;
 
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
-  
+
   uv_queue_work(
     uv_default_loop(),
-    work_req, 
-    UV_Query, 
+    work_req,
+    UV_Query,
     (uv_after_work_cb)UV_AfterQuery);
 
   conn->Ref();
@@ -1102,10 +1102,10 @@ void ODBCConnection::UV_Query(uv_work_t* req)
   query_work_data* data = (query_work_data *)(req->data);
   SQLRETURN ret;
   DEBUG_PRINTF("ODBCConnection::UV_Query - Entry: hDBC=%X\n", data->conn->m_hDBC);
-  
+
   //allocate a new statment handle
-  SQLAllocHandle( SQL_HANDLE_STMT, 
-                  data->conn->m_hDBC, 
+  SQLAllocHandle( SQL_HANDLE_STMT,
+                  data->conn->m_hDBC,
                   &data->hSTMT );
 
   //check to see if should excute a direct or a parameter bound query
@@ -1113,16 +1113,16 @@ void ODBCConnection::UV_Query(uv_work_t* req)
     // execute the query directly
     ret = SQLExecDirect(
       data->hSTMT,
-      (SQLTCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql,
       data->sqlLen);
   }
   else {
-    // prepare statement, bind parameters and execute statement 
+    // prepare statement, bind parameters and execute statement
     ret = SQLPrepare(
       data->hSTMT,
-      (SQLTCHAR *) data->sql, 
+      (SQLTCHAR *) data->sql,
       data->sqlLen);
-    
+
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
       if (data->arraySize > 0) { // Its array insert
           ret = SQLSetStmtAttr (data->hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
@@ -1147,23 +1147,23 @@ void ODBCConnection::UV_Query(uv_work_t* req)
 void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
 {
   DEBUG_PRINTF("ODBCConnection::UV_AfterQuery - Entry\n");
-  
+
   Nan::HandleScope scope;
-  
+
   query_work_data* data = (query_work_data *)(req->data);
   Local<Array> sp_result = Nan::New<Array>();
   int outParamCount = 0; // Non-zero tells its a SP with OUT param
 
   Nan::TryCatch try_catch;
 
-  DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i, stmt=%X\n", 
+  DEBUG_PRINTF("ODBCConnection::UV_AfterQuery : data->result=%i, data->noResultObject=%i, stmt=%X\n",
           data->result, data->noResultObject, data->hSTMT);
 
   // Retrieve values of INOUT and OUTPUT Parameters of Stored Procedure
   if (SQL_SUCCEEDED(data->result)) {
       for(int i = 0; i < data->paramCount; i++) {
           if(data->params[i].paramtype % 2 == 0) {
-              Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(data->params[i]));
+              Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(&data->params[i]));
               outParamCount++;
           }
       }
@@ -1173,15 +1173,15 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
     //We have been requested to not create a result object
     //this means we should release the handle now and call back
     //with Nan::True()
-    
+
     SQLFreeHandle(SQL_HANDLE_STMT, data->hSTMT);
     data->hSTMT = (SQLHSTMT)NULL;
-    
+
     Local<Value> info[2];
     info[0] = Nan::Null();
     if(outParamCount) info[1] = sp_result;
     else info[1] = Nan::Null();
-    
+
     data->cb->Call(2, info);
   }
   else {
@@ -1211,16 +1211,16 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
 
     if(outParamCount) info[2] = sp_result; // Must a CALL stmt
     else info[2] = Nan::Null();
-    
+
     data->cb->Call(3, info);
   }
-  
+
   data->conn->Unref();
-  
+
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-  
+
   delete data->cb;
 
   if (data->paramCount) {
@@ -1235,7 +1235,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t* req, int status)
   FREE(data->column);
   FREE(data);
   FREE(req);
-  
+
   //scope.Close(Undefined());
   DEBUG_PRINTF("ODBCConnection::UV_AfterQuery - Exit\n");
 }
@@ -1251,7 +1251,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
   void* sql = NULL;
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   Parameter* params = NULL;
   SQLRETURN ret;
   SQLHSTMT hSTMT;
@@ -1261,7 +1261,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
   bool noResultObject = false;
   int32_t arraySize = 0;
   int len = 0;
-  
+
   //Check arguments for different variations of calling this function
   if (info.Length() == 2) {
     if ( !info[0]->IsString() ) {
@@ -1288,7 +1288,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
       Nan::Utf8String sql2(info[0]);
       len = sql2.length();
       GETCPPSTR(sql, sql2, len);
-    
+
       paramCount = 0;
     }
     else if (info[0]->IsObject()) {
@@ -1296,9 +1296,9 @@ NAN_METHOD(ODBCConnection::QuerySync)
       //rather than adding more arguments to the function signature.
       //specify options on an options object.
       //handle Query({}, function cb () {});
-      
+
       Local<Object> obj = Nan::To<v8::Object>(info[0]).ToLocalChecked();
-      
+
       Local<String> optionSqlKey = Nan::New<String>(OPTION_SQL);
       if (Nan::HasOwnProperty(obj, optionSqlKey).IsJust() && Nan::Get(obj, optionSqlKey).ToLocalChecked()->IsString()) {
         Nan::Utf8String sql3(Nan::Get(obj, optionSqlKey).ToLocalChecked());
@@ -1315,7 +1315,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
       else {
         paramCount = 0;
       }
-      
+
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);
       if (Nan::HasOwnProperty(obj, optionNoResultsKey).IsJust() && Nan::Get(obj, optionNoResultsKey).ToLocalChecked()->IsBoolean()) {
         noResultObject = Nan::To<bool>(Nan::Get(obj, optionNoResultsKey).ToLocalChecked()).FromJust();
@@ -1324,7 +1324,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
       else {
         noResultObject = false;
       }
-      
+
       Local<String> optionArraySize = Nan::New(OPTION_ARRAYSIZE);
       if (Nan::HasOwnProperty(obj, optionArraySize).IsJust() && Nan::Get(obj, optionArraySize).ToLocalChecked()->IsInt32()) {
         arraySize = Nan::To<int32_t>(Nan::Get(obj, optionArraySize).ToLocalChecked()).FromJust();
@@ -1347,8 +1347,8 @@ NAN_METHOD(ODBCConnection::QuerySync)
   //Done checking arguments
 
   //allocate a new statment handle
-  ret = SQLAllocHandle( SQL_HANDLE_STMT, 
-                  conn->m_hDBC, 
+  ret = SQLAllocHandle( SQL_HANDLE_STMT,
+                  conn->m_hDBC,
                   &hSTMT );
 
   DEBUG_PRINTF("ODBCConnection::QuerySync - hSTMT=%X, noResultObject=%i, arraySize = %d\n", hSTMT, noResultObject, arraySize);
@@ -1360,16 +1360,16 @@ NAN_METHOD(ODBCConnection::QuerySync)
     // execute the query directly
     ret = SQLExecDirect(
       hSTMT,
-      (SQLTCHAR *) sql, 
+      (SQLTCHAR *) sql,
       len);
   }
   else {
     // prepare statement, bind parameters and execute statement
     ret = SQLPrepare(
       hSTMT,
-      (SQLTCHAR *) sql, 
+      (SQLTCHAR *) sql,
       len);
-    
+
     if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
       if (arraySize > 0) { // Its array insert
           ret = SQLSetStmtAttr (hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
@@ -1383,7 +1383,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
         if (SQL_SUCCEEDED(ret)) {
           for(int i = 0; i < paramCount; i++) { // For stored Procedure CALL
             if(params[i].paramtype % 2 == 0) {
-                Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(params[i]));
+                Nan::Set(sp_result, Nan::New(outParamCount), ODBC::GetOutputParameter(&params[i]));
               outParamCount++;
             }
           }
@@ -1391,10 +1391,10 @@ NAN_METHOD(ODBCConnection::QuerySync)
       }
     }
   }
-  
+
   FREE(sql);
   FREE_PARAMS( params, paramCount ) ;
-  
+
   // Ingnore SQL_NO_DATA_FOUND warning, fix for issue 573
   if (ret == SQL_NO_DATA_FOUND) ret = SQL_SUCCESS;
 
@@ -1431,12 +1431,12 @@ NAN_METHOD(ODBCConnection::QuerySync)
   else {
     Local<Value> result[4];
     bool* canFreeHandle = new bool(true);
-    
+
     result[0] = Nan::New<External>((void*) (intptr_t) conn->m_hENV);
     result[1] = Nan::New<External>((void*) (intptr_t) conn->m_hDBC);
     result[2] = Nan::New<External>((void*) (intptr_t) hSTMT);
     result[3] = Nan::New<External>((void*)canFreeHandle);
-    
+
     Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCResult::constructor), 4, result).ToLocalChecked();
 
     if( outParamCount ) // Its a CALL stmt with OUT params.
@@ -1472,13 +1472,13 @@ NAN_METHOD(ODBCConnection::Tables)
   Local<Function> cb = Local<Function>::Cast(info[4]);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK2( work_req, errmsg ) ;
-  
+
   data = (query_work_data *) calloc(1, sizeof(query_work_data));
   MEMCHECK2( data, errmsg ) ;
-  
+
   data->sql = NULL;
   data->catalog = NULL;
   data->schema = NULL;
@@ -1491,21 +1491,21 @@ NAN_METHOD(ODBCConnection::Tables)
 
   len = schema.length();
   GETCPPSTR2(data->schema, schema, len, errmsg) ;
-  
+
   len = table.length();
   GETCPPSTR2(data->table, table, len, errmsg) ;
-  
+
   len = type.length();
   GETCPPSTR2(data->type, type, len, errmsg) ;
-  
+
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
-  
+
   uv_queue_work(
-    uv_default_loop(), 
-    work_req, 
-    UV_Tables, 
+    uv_default_loop(),
+    work_req,
+    UV_Tables,
     (uv_after_work_cb) UV_AfterQuery);
 
   conn->Ref();
@@ -1532,26 +1532,26 @@ void ODBCConnection::UV_Tables(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_Tables - Entry\n");
   query_work_data* data = (query_work_data *)(req->data);
-  
+
   SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
-  
-  SQLRETURN ret = SQLTables( 
-    data->hSTMT, 
+
+  SQLRETURN ret = SQLTables(
+    data->hSTMT,
 #ifdef __MVS__
    // ODBC on z/OS does not support three-part naming on catalog APIs.
    // For catalog APIs, the catalog qualifier (szTableQualifier) and
    // its length (cbTableQualifier) must be set to NULL and 0, respectively.
    NULL, 0,
 #else
-    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->catalog,   SQL_NTS,
 #endif
-    (SQLTCHAR *) data->schema,   SQL_NTS, 
-    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS,
+    (SQLTCHAR *) data->table,   SQL_NTS,
     (SQLTCHAR *) data->type,   SQL_NTS
   );
-  
+
   // this will be checked later in UV_AfterQuery
-  data->result = ret; 
+  data->result = ret;
   FREE(data->catalog);
   FREE(data->schema);
   FREE(data->table);
@@ -1578,14 +1578,14 @@ NAN_METHOD(ODBCConnection::Columns)
   REQ_STRO_OR_NULL_ARG(1, schema);
   REQ_STRO_OR_NULL_ARG(2, table);
   REQ_STRO_OR_NULL_ARG(3, column);
-  
+
   Local<Function> cb = Local<Function>::Cast(info[4]);
-  
+
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
+
   data = (query_work_data *) calloc(1, sizeof(query_work_data));
   MEMCHECK2( data, errmsg ) ;
 
@@ -1607,17 +1607,17 @@ NAN_METHOD(ODBCConnection::Columns)
 
   len = column.length();
   GETCPPSTR2(data->column, column, len, errmsg) ;
-  
+
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
-  
+
   uv_queue_work(
     uv_default_loop(),
-    work_req, 
-    UV_Columns, 
+    work_req,
+    UV_Columns,
     (uv_after_work_cb)UV_AfterQuery);
-  
+
   conn->Ref();
   DEBUG_PRINTF("ODBCConnection::Columns - Exit\n");
 
@@ -1641,24 +1641,24 @@ void ODBCConnection::UV_Columns(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_Columns - Entry\n");
   query_work_data* data = (query_work_data *)(req->data);
-  
+
   SQLAllocHandle(SQL_HANDLE_STMT, data->conn->m_hDBC, &data->hSTMT );
-  
-  SQLRETURN ret = SQLColumns( 
-    data->hSTMT, 
+
+  SQLRETURN ret = SQLColumns(
+    data->hSTMT,
 #ifdef __MVS__
    // ODBC on z/OS does not support three-part naming on catalog APIs.
    // For catalog APIs, the catalog qualifier (szTableQualifier) and
    // its length (cbTableQualifier) must be set to NULL and 0, respectively.
    NULL, 0,
 #else
-    (SQLTCHAR *) data->catalog,   SQL_NTS, 
+    (SQLTCHAR *) data->catalog,   SQL_NTS,
 #endif
-    (SQLTCHAR *) data->schema,   SQL_NTS, 
-    (SQLTCHAR *) data->table,   SQL_NTS, 
+    (SQLTCHAR *) data->schema,   SQL_NTS,
+    (SQLTCHAR *) data->table,   SQL_NTS,
     (SQLTCHAR *) data->column,   SQL_NTS
   );
-  
+
   // this will be checked later in UV_AfterQuery
   data->result = ret;
   FREE(data->catalog);
@@ -1670,7 +1670,7 @@ void ODBCConnection::UV_Columns(uv_work_t* req)
 
 /*
  * BeginTransactionSync
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::BeginTransactionSync)
@@ -1679,7 +1679,7 @@ NAN_METHOD(ODBCConnection::BeginTransactionSync)
   Nan::HandleScope scope;
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   SQLRETURN ret;
 
   //set the connection manual commits
@@ -1688,22 +1688,22 @@ NAN_METHOD(ODBCConnection::BeginTransactionSync)
     SQL_ATTR_AUTOCOMMIT,
     (SQLPOINTER) SQL_AUTOCOMMIT_OFF,
     SQL_NTS);
-  
+
   if (!SQL_SUCCEEDED(ret)) {
     Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
-    
+
     Nan::ThrowError(objError);
-    
+
     info.GetReturnValue().Set(Nan::False());
   }
-  
+
   info.GetReturnValue().Set(Nan::True());
   DEBUG_PRINTF("ODBCConnection::BeginTransactionSync - Exit\n");
 }
 
 /*
  * BeginTransaction
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::BeginTransaction)
@@ -1714,23 +1714,23 @@ NAN_METHOD(ODBCConnection::BeginTransaction)
   REQ_FUN_ARG(0, cb);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
-  query_work_data* data = 
+
+  query_work_data* data =
     (query_work_data *) calloc(1, sizeof(query_work_data));
   if(!data ) free(work_req); // Below MEMCHECK macro will log error and return;
   MEMCHECK( data ) ;
-  
+
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
-  
+
   uv_queue_work(
     uv_default_loop(),
-    work_req, 
-    UV_BeginTransaction, 
+    work_req,
+    UV_BeginTransaction,
     (uv_after_work_cb)UV_AfterBeginTransaction);
 
   return;
@@ -1738,15 +1738,15 @@ NAN_METHOD(ODBCConnection::BeginTransaction)
 
 /*
  * UV_BeginTransaction
- * 
+ *
  */
 
 void ODBCConnection::UV_BeginTransaction(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_BeginTransaction\n");
-  
+
   query_work_data* data = (query_work_data *)(req->data);
-  
+
   //set the connection manual commits
   data->result = SQLSetConnectAttr(
     data->conn->self()->m_hDBC,
@@ -1757,7 +1757,7 @@ void ODBCConnection::UV_BeginTransaction(uv_work_t* req)
 
 /*
  * UV_AfterBeginTransaction
- * 
+ *
  */
 
 void ODBCConnection::UV_AfterBeginTransaction(uv_work_t* req, int status)
@@ -1767,16 +1767,16 @@ void ODBCConnection::UV_AfterBeginTransaction(uv_work_t* req, int status)
 
   //TODO: Is this supposed to be of type query_work_data?
   open_connection_work_data* data = (open_connection_work_data *)(req->data);
-  
+
   Local<Value> argv[1];
-  
+
   bool err = false;
 
   if (!SQL_SUCCEEDED(data->result)) {
     err = true;
 
     Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
-    
+
     argv[0] = objError;
   }
 
@@ -1789,14 +1789,14 @@ void ODBCConnection::UV_AfterBeginTransaction(uv_work_t* req, int status)
   }
 
   delete data->cb;
-  
+
   free(data);
   free(req);
 }
 
 /*
  * EndTransactionSync
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::EndTransactionSync)
@@ -1805,37 +1805,37 @@ NAN_METHOD(ODBCConnection::EndTransactionSync)
   Nan::HandleScope scope;
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   REQ_BOOL_ARG(0, rollback);
-  
+
   Local<Value> objError;
   SQLRETURN ret;
   bool error = false;
-  SQLSMALLINT completionType = (rollback->Value()) 
+  SQLSMALLINT completionType = (rollback->Value())
     ? SQL_ROLLBACK
     : SQL_COMMIT
     ;
-  
+
   //Call SQLEndTran
   ret = SQLEndTran(
     SQL_HANDLE_DBC,
     conn->m_hDBC,
     completionType);
-  
+
   //check how the transaction went
   if (!SQL_SUCCEEDED(ret)) {
     error = true;
-    
+
     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
   }
-  
+
   //Reset the connection back to autocommit
   ret = SQLSetConnectAttr(
     conn->m_hDBC,
     SQL_ATTR_AUTOCOMMIT,
     (SQLPOINTER) SQL_AUTOCOMMIT_ON,
     SQL_NTS);
-  
+
   //check how setting the connection attr went
   //but only process the code if an error has not already
   //occurred. If an error occurred during SQLEndTran,
@@ -1844,13 +1844,13 @@ NAN_METHOD(ODBCConnection::EndTransactionSync)
     //TODO: if this also failed, we really should
     //be restarting the connection or something to deal with this state
     error = true;
-    
+
     objError = ODBC::GetSQLError(SQL_HANDLE_DBC, conn->m_hDBC);
   }
-  
+
   if (error) {
     Nan::ThrowError(objError);
-    
+
     info.GetReturnValue().Set(Nan::False());
   }
   else {
@@ -1861,7 +1861,7 @@ NAN_METHOD(ODBCConnection::EndTransactionSync)
 
 /*
  * EndTransaction
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::EndTransaction)
@@ -1873,27 +1873,27 @@ NAN_METHOD(ODBCConnection::EndTransaction)
   REQ_FUN_ARG(1, cb);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
-  query_work_data* data = 
+
+  query_work_data* data =
     (query_work_data *) calloc(1, sizeof(query_work_data));
   if( !data ) free(work_req);
   MEMCHECK( data ) ;
-  
-  data->completionType = (rollback->Value()) 
+
+  data->completionType = (rollback->Value())
     ? SQL_ROLLBACK
     : SQL_COMMIT
     ;
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   work_req->data = data;
-  
+
   uv_queue_work(
     uv_default_loop(),
-    work_req, 
-    UV_EndTransaction, 
+    work_req,
+    UV_EndTransaction,
     (uv_after_work_cb)UV_AfterEndTransaction);
 
   info.GetReturnValue().Set(Nan::Undefined());
@@ -1901,36 +1901,36 @@ NAN_METHOD(ODBCConnection::EndTransaction)
 
 /*
  * UV_EndTransaction
- * 
+ *
  */
 
 void ODBCConnection::UV_EndTransaction(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_EndTransaction\n");
-  
+
   query_work_data* data = (query_work_data *)(req->data);
-  
+
   bool err = false;
-  
+
   //Call SQLEndTran
   SQLRETURN ret = SQLEndTran(
     SQL_HANDLE_DBC,
     data->conn->m_hDBC,
     data->completionType);
-  
+
   data->result = ret;
-  
+
   if (!SQL_SUCCEEDED(ret)) {
     err = true;
   }
-  
+
   //Reset the connection back to autocommit
   ret = SQLSetConnectAttr(
     data->conn->m_hDBC,
     SQL_ATTR_AUTOCOMMIT,
     (SQLPOINTER) SQL_AUTOCOMMIT_ON,
     SQL_NTS);
-  
+
   if (!SQL_SUCCEEDED(ret) && !err) {
     //there was not an earlier error,
     //so we shall pass the return code from
@@ -1941,25 +1941,25 @@ void ODBCConnection::UV_EndTransaction(uv_work_t* req)
 
 /*
  * UV_AfterEndTransaction
- * 
+ *
  */
 
 void ODBCConnection::UV_AfterEndTransaction(uv_work_t* req, int status)
 {
   DEBUG_PRINTF("ODBCConnection::UV_AfterEndTransaction\n");
   Nan::HandleScope scope;
-  
+
   open_connection_work_data* data = (open_connection_work_data *)(req->data);
-  
+
   Local<Value> argv[1];
-  
+
   bool err = false;
 
   if (!SQL_SUCCEEDED(data->result)) {
     err = true;
 
     Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_DBC, data->conn->self()->m_hDBC);
-    
+
     argv[0] = objError;
   }
 
@@ -1972,14 +1972,14 @@ void ODBCConnection::UV_AfterEndTransaction(uv_work_t* req, int status)
   }
 
   delete data->cb;
-  
+
   free(data);
   free(req);
 }
 
 /*
  * SetIsolationLevel
- * 
+ *
  */
 
 NAN_METHOD(ODBCConnection::SetIsolationLevel)
@@ -1993,8 +1993,8 @@ NAN_METHOD(ODBCConnection::SetIsolationLevel)
   SQLRETURN ret = SQL_SUCCESS;
   bool error = false;
   SQLUINTEGER isolationLevel = SQL_TXN_READ_COMMITTED;
-  
-  if (info.Length() <= 0) { 
+
+  if (info.Length() <= 0) {
       isolationLevel = SQL_TXN_READ_COMMITTED;
   }
   else if (info[0]->IsInt32()) {
@@ -2048,7 +2048,7 @@ NAN_METHOD(ODBCConnection::GetInfoSync)
   bool error = false;
   SQLPOINTER rgbInfo = (SQLPOINTER) NULL;
   SQLSMALLINT cbInfo = 0;
-  
+
   REQ_ARGS(2);
   REQ_INT_ARG(0, infotype);
   REQ_INT_ARG(1, infolen);
@@ -2098,25 +2098,25 @@ NAN_METHOD(ODBCConnection::GetInfo)
   REQ_FUN_ARG(2, cb);
 
   ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
-  
+
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req ) ;
-  
-  getinfo_work_data* data = 
+
+  getinfo_work_data* data =
     (getinfo_work_data *) calloc(1, sizeof(getinfo_work_data));
   if( !data ) free(work_req);
   MEMCHECK( data ) ;
-  
+
   data->cb = new Nan::Callback(cb);
   data->conn = conn;
   data->infoType = infotype;
   data->buffLen = infolen;
 
   work_req->data = data;
-  
+
   uv_queue_work(
-    uv_default_loop(), 
-    work_req, 
+    uv_default_loop(),
+    work_req,
     UV_GetInfo,
     (uv_after_work_cb)UV_AfterGetInfo);
 
@@ -2129,14 +2129,14 @@ NAN_METHOD(ODBCConnection::GetInfo)
 void ODBCConnection::UV_GetInfo(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBCConnection::UV_GetInfo - Entry\n");
-  
+
   //get our work data
   getinfo_work_data* data = (getinfo_work_data *)(req->data);
   SQLSMALLINT valueLen = 0;
 
   DEBUG_PRINTF("ODBCConnection::UV_GetInfo m_hDBC=%X, infoType=%d, infoLen=%d\n",
     data->conn->m_hDBC, data->infoType, data->buffLen);
-  
+
   data->buffer = malloc(data->buffLen);
   MEMCHECK( data->buffer ) ;
 
@@ -2175,7 +2175,7 @@ void ODBCConnection::UV_AfterGetInfo(uv_work_t* req, int status)
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-  
+
   delete data->cb;
 
   free(data->buffer);
