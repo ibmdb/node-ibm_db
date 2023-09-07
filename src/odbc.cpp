@@ -763,11 +763,18 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
       break;
   }
 
+  //If buffer is NULL, can't return any data 
+  if(!prm.buffer)
+  {
+      return scope.Escape(Nan::Null());
+  }
+
   switch (prm.type)
   {
     case SQL_INTEGER :
     case SQL_SMALLINT :
     case SQL_TINYINT :
+    case SQL_BOOLEAN :
     case SQL_NUMERIC :
         if(prm.type == SQL_NUMERIC)
           DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
@@ -827,6 +834,7 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
           DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
 		}
     case SQL_FLOAT :
+    case SQL_DECFLOAT :
     case SQL_REAL :
     case SQL_DOUBLE :
       {
@@ -1197,6 +1205,28 @@ void ODBC::GetNullParam(Parameter * param, int num)
     param->c_type = param->c_type ? param->c_type : SQL_C_DEFAULT;
     param->type   = param->type ? param->type : SQL_VARCHAR;
     param->length = SQL_NULL_DATA;
+
+    //For INOUT or OUTPUT parameter of SP, allocate memory for output data
+    if(param->paramtype % 2 == 0)
+    {
+        if(param->type == SQL_BIGINT || param->type == SQL_INTEGER ||
+           param->type == SQL_BOOLEAN || param->type == SQL_SMALLINT ||
+           param->type == SQL_TINYINT)
+        {
+            param->buffer = new int64_t(0);
+        }
+        else if(param->type == SQL_DECIMAL || param->type == SQL_DOUBLE ||
+                param->type == SQL_REAL || param->type == SQL_FLOAT ||
+                param->type == SQL_NUMERIC || param->type == SQL_DECFLOAT)
+        {
+            param->buffer = new double(0);
+        }
+        else if(param->buffer_length > 0)
+        {
+            param->buffer = malloc(param->buffer_length);
+        }
+        else param->buffer = malloc(8);
+    }
 
     DEBUG_PRINTF("ODBC::GetNullParam: param%u : paramtype=%u, c_type=%i, "
                  "type=%i, size=%i, decimals=%i, buffer_length=%i, length=%i\n",

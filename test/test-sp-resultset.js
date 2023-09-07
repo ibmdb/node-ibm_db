@@ -191,24 +191,61 @@ function testDate(conn)
 function testInteger(conn)
 {
     console.log("\n==================== TEST 3 ===========================\n");
-    var proc1 = "CREATE PROCEDURE " + schema + ".TEST_PROC ( IN INPUT1 INTEGER, OUT OUTPUT1 INTEGER, OUT OUTPUT2 VARCHAR(500) ) " +
+    var proc1 = "CREATE or replace PROCEDURE " + schema + ".TEST_PROC ( IN INPUT1 INTEGER, OUT OUTPUT1 INTEGER, OUT OUTPUT2 VARCHAR(500) ) " +
                 "LANGUAGE SQL SPECIFIC " + schema + ".TEST_PROC NOT DETERMINISTIC MODIFIES SQL DATA BEGIN " +
                 "SET OUTPUT1 = INPUT1 + 300; SET OUTPUT2 = 'Hello this a returned result'; END ;";
     var params = [454548, { ParamType: 'OUTPUT', SQLType: 'INTEGER', Data: 0 },{ ParamType: 'OUTPUT', DataType: 'VARCHAR', Data: '', Length: 500 }];
     var query = "call " + schema + ".TEST_PROC(?, ?, ?)";
-    var dropProc = "drop procedure " + schema + ".TEST_PROC";
+    var dropProc = "drop procedure " + schema + ".TEST_PROC( INT, INT, VARCHAR(500) )";
+
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      dropProc = "drop procedure " + schema + ".TEST_PROC";
+      proc1 = proc1.replace(" or replace", "");
+      proc1 = proc1.replace(" BEGIN", " disable debug mode begin");
+    }
+    var err = conn.querySync(proc1);
+    if(err.length) { console.log(err); }
+
+    // Call SP Synchronously.
+    result = conn.querySync(query, params);
+    conn.querySync(dropProc);
+    console.log("Result for Sync call of test_proc ==>");
+    console.log(result);
+    assert.equal(result.length, 2);
+    assert.equal(result[0], 454848);
+    testNullBigINT(conn);
+}
+
+//==================== TEST 4  - for issue #940 =============================
+
+function testNullBigINT(conn)
+{
+    console.log("\n==================== TEST 4 ===========================\n");
+    var proc1 = "CREATE or replace PROCEDURE " + schema + ".BIGINT_SP( IN c1 INTEGER, INOUT c2 BIGINT, OUT c3 BIGINT ) " +
+                "LANGUAGE SQL SPECIFIC " + schema + ".BIGINT_SP NOT DETERMINISTIC MODIFIES SQL DATA BEGIN " +
+                "SET c3 = c1 + 300; SET c2 = 8; END ;";
+    var query = "call " + schema + ".BIGINT_SP(?, ?, ?)";
+    var dropProc = "drop procedure " + schema + ".BIGINT_SP( INT, BIGINT, BIGINT )";
+    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      dropProc = "drop procedure " + schema + ".BIGINT_SP";
+      proc1 = proc1.replace(" or replace", "");
+      proc1 = proc1.replace(" BEGIN", " disable debug mode begin");
+    }
+
+    const inparam = { ParamType: 'INPUT', DataType: 'INT', Data: 5 };
+    var mrf = null;
+    const inoutparam = { ParamType: 'INOUT', DataType: 'BIGINT', Data: mrf };
+    const outparam = { ParamType: 'OUTPUT', DataType: 'BIGINT', Data: 11, Length:8 };
 
     var err = conn.querySync(proc1);
     if(err.length) { console.log(err); }
 
     // Call SP Synchronously.
-    var result = conn.querySync(query, params);
-    conn.querySync("drop procedure " + schema + ".TEST_PROC ( INT, INT, VARCHAR(500) )");
-    console.log("Result for Sync call of test_proc ==>");
-    console.log(result);
+    result = conn.querySync(query, [inparam, inoutparam, outparam]);
+    console.log("Result = ", result);
     assert.equal(result.length, 2);
-    assert.equal(result[0], 454848);
+    conn.querySync(dropProc);
     // Close connection in last only.
-    conn.close(function (err) { console.log("done.");});
+    conn.close((err) => {console.log('Done');});
 }
 
