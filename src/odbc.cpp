@@ -57,7 +57,7 @@ NAN_MODULE_INIT(ODBC::Init)
 
   // Reserve space for one Handle<Value>
   constructor_template->InstanceTemplate()->SetInternalFieldCount(1);
-  
+
   PropertyAttribute constant_attributes = static_cast<PropertyAttribute>(ReadOnly | DontDelete);
   constructor_template->Set(Nan::New<String>("SQL_CLOSE").ToLocalChecked(), Nan::New<Number>(SQL_CLOSE), constant_attributes);
   constructor_template->Set(Nan::New<String>("SQL_DROP").ToLocalChecked(), Nan::New<Number>(SQL_DROP), constant_attributes);
@@ -66,7 +66,7 @@ NAN_MODULE_INIT(ODBC::Init)
   constructor_template->Set(Nan::New<String>("SQL_DESTROY").ToLocalChecked(), Nan::New<Number>(SQL_DESTROY), constant_attributes);
   constructor_template->Set(Nan::New<String>("FETCH_ARRAY").ToLocalChecked(), Nan::New<Number>(FETCH_ARRAY), constant_attributes);
   NODE_ODBC_DEFINE_CONSTANT(constructor_template, FETCH_OBJECT);
-  
+
   // Prototype Methods
   Nan::SetPrototypeMethod(constructor_template, "createConnection", CreateConnection);
   Nan::SetPrototypeMethod(constructor_template, "createConnectionSync", CreateConnectionSync);
@@ -75,15 +75,15 @@ NAN_MODULE_INIT(ODBC::Init)
   Local<Function> function = Nan::GetFunction(constructor_template).ToLocalChecked();
   constructor.Reset(function);
   Nan::Set(target, Nan::New<String>("ODBC").ToLocalChecked(), function);
-  
+
 #if NODE_VERSION_AT_LEAST(0, 7, 9)
   // Initialize uv_async so that we can prevent node from exiting
   //uv_async_init( uv_default_loop(),
   //               &ODBC::g_async,
   //               ODBC::WatcherCallback);
-  
+
   // Not sure if the init automatically calls uv_ref() because there is weird
-  // behavior going on. When ODBC::Init is called which initializes the 
+  // behavior going on. When ODBC::Init is called which initializes the
   // uv_async_t g_async above, there seems to be a ref which will keep it alive
   // but we only want this available so that we can uv_ref() later on when
   // we have a connection.
@@ -91,7 +91,7 @@ NAN_MODULE_INIT(ODBC::Init)
   // so that there are no references on the loop.
   //uv_unref((uv_handle_t *)&ODBC::g_async);
 #endif
-  
+
   // Initialize the cross platform mutex provided by libuv
   uv_mutex_init(&ODBC::g_odbcMutex);
 }
@@ -107,7 +107,7 @@ void ODBC::Free()
   DEBUG_PRINTF("ODBC::Free: m_hEnv = %X\n", m_hEnv);
   if (m_hEnv) {
     SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
-    m_hEnv = (SQLHENV)NULL;      
+    m_hEnv = (SQLHENV)NULL;
   }
 }
 
@@ -116,11 +116,11 @@ NAN_METHOD(ODBC::New)
   DEBUG_PRINTF("ODBC::New - Entry\n");
   Nan::HandleScope scope;
   ODBC* dbo = new ODBC();
-  
+
   dbo->Wrap(info.Holder());
 
   dbo->m_hEnv = (SQLHENV)NULL;
-  
+
   #ifdef __MVS__
     int ori_mode = __ae_thread_swapmode(__AE_EBCDIC_MODE);
   #endif
@@ -131,15 +131,15 @@ NAN_METHOD(ODBC::New)
   #endif
   if (!SQL_SUCCEEDED(ret)) {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
-    
+
     Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
-    
+
     return Nan::ThrowError(objError);
   }
-  
+
   // Use ODBC 3.x behavior
   SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, SQL_IS_UINTEGER);
-  
+
   info.GetReturnValue().Set(info.Holder());
   DEBUG_PRINTF("ODBC::New - Exit\n");
 }
@@ -161,13 +161,13 @@ NAN_METHOD(ODBC::CreateConnection)
   Local<Function> cb = Nan::To<v8::Function>(info[0]).ToLocalChecked();
 
   ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
-  
+
   //initialize work request
   uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
   MEMCHECK( work_req );
-  
+
   //initialize our data
-  create_connection_work_data* data = 
+  create_connection_work_data* data =
     (create_connection_work_data *) (calloc(1, sizeof(create_connection_work_data)));
 
   if(!data ) free(work_req); // Memcheck macro will log error and return;
@@ -177,7 +177,7 @@ NAN_METHOD(ODBC::CreateConnection)
   data->dbo = dbo;
 
   work_req->data = data;
-  
+
   uv_queue_work(uv_default_loop(), work_req, UV_CreateConnection, (uv_after_work_cb)UV_AfterCreateConnection);
 
   dbo->Ref();
@@ -189,10 +189,10 @@ NAN_METHOD(ODBC::CreateConnection)
 void ODBC::UV_CreateConnection(uv_work_t* req)
 {
   DEBUG_PRINTF("ODBC::UV_CreateConnection - Entry\n");
-  
+
   //get our work data
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
-  
+
   //allocate a new connection handle
   data->result = SQLAllocHandle(SQL_HANDLE_DBC, data->dbo->m_hEnv, &data->hDBC);
   DEBUG_PRINTF("ODBC::UV_CreateConnection - Exit: hDBC = %X\n", data->hDBC);
@@ -204,22 +204,22 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status)
   Nan::HandleScope scope;
 
   create_connection_work_data* data = (create_connection_work_data *)(req->data);
-  
+
   Nan::TryCatch try_catch;
-  
+
   if (!SQL_SUCCEEDED(data->result)) {
     Local<Value> info[1];
-    
+
     info[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
     DEBUG_PRINTF("ODBC::UV_AfterCreateConnection - Got error in connection.\n");
-    
+
     data->cb->Call(1, info);
   }
   else {
     Local<Value> info[2];
     info[0] = Nan::New<External>((void*)(intptr_t)data->dbo->m_hEnv);
     info[1] = Nan::New<External>((void*)(intptr_t)data->hDBC);
-    
+
     Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCConnection::constructor), 2, info).ToLocalChecked();
 
     info[0] = Nan::Null();
@@ -227,13 +227,13 @@ void ODBC::UV_AfterCreateConnection(uv_work_t* req, int status)
 
     data->cb->Call(2, info);
   }
-  
+
   if (try_catch.HasCaught()) {
       DEBUG_PRINTF("ODBC::UV_AfterCreateConnection - Received FatalException.\n");
       Nan::FatalException(try_catch);
   }
 
-  
+
   data->dbo->Unref();
   delete data->cb;
 
@@ -252,16 +252,16 @@ NAN_METHOD(ODBC::CreateConnectionSync)
   Nan::HandleScope scope;
 
   ODBC* dbo = Nan::ObjectWrap::Unwrap<ODBC>(info.Holder());
-   
+
   SQLHDBC hDBC;
-  
+
   //allocate a new connection handle
   SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DBC, dbo->m_hEnv, &hDBC);
-  
+
   if (!SQL_SUCCEEDED(ret)) {
     //TODO: do something!
   }
-  
+
   Local<Value> params[2];
   params[0] = Nan::New<External>((void*)(intptr_t)dbo->m_hEnv);
   params[1] = Nan::New<External>((void*)(intptr_t)hDBC);
@@ -284,15 +284,15 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
   DEBUG_PRINTF("ODBC::GetColumns - Entry\n");
 
   //always reset colCount for the current result set to 0;
-  *colCount = 0; 
+  *colCount = 0;
 
   //get the number of columns in the result set
   ret = SQLNumResultCols(hStmt, colCount);
-  
+
   if (!SQL_SUCCEEDED(ret)) {
     return new Column[0];
   }
-  
+
   Column *columns = new Column[*colCount];
   char colname[MAX_FIELD_SIZE];
 
@@ -373,10 +373,10 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
                            &columns[i].type);
 
 	columns[i].type_name = new unsigned char[(MAX_FIELD_SIZE)];
-    
+
     //set the first byte of type_name to \0 instead of memsetting the entire buffer
     columns[i].type_name[0] = '\0';
-	
+
 	ret = SQLColAttribute( hStmt,
                            columns[i].index,
                            SQL_DESC_TYPE_NAME,
@@ -414,7 +414,7 @@ void ODBC::FreeColumns(Column* columns, short* colCount)
  * GetColumnValue
  */
 
-Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column, 
+Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                                     uint16_t* buffer, size_t bufferLength)
 {
   Nan::EscapableHandleScope scope;
@@ -430,7 +430,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
   terCharLen = 2;
 #endif
 
-  DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME, 
+  DEBUG_PRINTF("Column Type : %i\t%i\t%i\t%i\n",column.type, SQL_DATETIME,
                 SQL_TIMESTAMP, SQL_TYPE_TIME);
 
   switch (column.type)
@@ -459,21 +459,21 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
   switch (column.type)
   {
-    case SQL_INTEGER : 
+    case SQL_INTEGER :
     case SQL_SMALLINT :
-    case SQL_TINYINT : 
+    case SQL_TINYINT :
       {
         SQLINTEGER value;
-        ret = SQLGetData( hStmt, 
-                          column.index, 
+        ret = SQLGetData( hStmt,
+                          column.index,
                           SQL_C_SLONG,
-                          &value, 
-                          sizeof(value), 
+                          &value,
+                          sizeof(value),
                           &len);
-        
-        DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i, val = %ld\n", 
+
+        DEBUG_PRINTF("ODBC::GetColumnValue - Integer: index=%i name=%s type=%i len=%i ret=%i, val = %ld\n",
                      column.index, column.name, column.type, len, ret, value);
-        
+
         if (len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
         }
@@ -500,19 +500,19 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       DEBUG_PRINTF("DECFLOAT DATA SELECTED\n");
     case SQL_FLOAT :
     case SQL_REAL :
-    case SQL_DOUBLE : 
+    case SQL_DOUBLE :
       {
         double value;
-        ret = SQLGetData( hStmt, 
-                          column.index, 
+        ret = SQLGetData( hStmt,
+                          column.index,
                           SQL_C_DOUBLE,
-                          &value, 
-                          sizeof(value), 
+                          &value,
+                          sizeof(value),
                           &len);
-        
-        DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n", 
+
+        DEBUG_PRINTF("ODBC::GetColumnValue - Number: index=%i name=%s type=%i len=%i ret=%i val=%f\n",
                      column.index, column.name, column.type, len, ret, value);
-        
+
         if(len == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
         }
@@ -522,13 +522,13 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       break;
     case SQL_DATETIME :
-    case SQL_TIMESTAMP : 
+    case SQL_TIMESTAMP :
       {
         SQL_TIMESTAMP_STRUCT odbcTime;
 
         #ifdef _WIN32
         struct tm timeInfo = {};
-        ret = SQLGetData(hStmt, column.index, SQL_C_CHAR, 
+        ret = SQLGetData(hStmt, column.index, SQL_C_CHAR,
                          &odbcTime, sizeof(odbcTime), &len);
         #else
           #if defined(_AIX) || defined (__MVS__)
@@ -536,7 +536,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           #else
           struct tm timeInfo = {0,0,0,0,0,0,0,0,0,0,0};
           #endif
-          ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP, 
+          ret = SQLGetData(hStmt, column.index, SQL_C_TYPE_TIMESTAMP,
                            &odbcTime, sizeof(odbcTime), &len);
         #endif
 
@@ -554,21 +554,21 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           timeInfo.tm_min = odbcTime.minute;
           timeInfo.tm_sec = odbcTime.second;
 
-          //a negative value means that mktime() should use timezone information 
-          //and system databases to attempt to determine whether DST is in effect 
+          //a negative value means that mktime() should use timezone information
+          //and system databases to attempt to determine whether DST is in effect
           //at the specified time.
           timeInfo.tm_isdst = -1;
 
           #ifdef TIMEGM
-          return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) + 
+          return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) +
                       (odbcTime.fraction / 1000000)).ToLocalChecked());
           #else
-          return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) + 
+          return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) +
                       (odbcTime.fraction / 1000000)).ToLocalChecked());
 
           #endif
         }
-      } 
+      }
       break;
 
     case SQL_BIT :
@@ -581,7 +581,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
                           4,
                           &len);
 
-        DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n", 
+        DEBUG_PRINTF("ODBC::GetColumnValue - Bit: index=%i name=%s type=%i len=%i\n",
                       column.index, column.name, column.type, len);
 
         if(len == SQL_NULL_DATA) {
@@ -688,7 +688,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
       }
       // In case of secondGetData, we already have result from first getdata
       // so return the result irrespective of ret as we already have some data.
-      else if (SQL_SUCCEEDED(ret) || secondGetData) 
+      else if (SQL_SUCCEEDED(ret) || secondGetData)
       {
           if(ctype == SQL_C_BINARY) { //Return binary data as buffer.
             //str = Nan::NewOneByteString((uint8_t *) buffer, newbufflen).ToLocalChecked();
@@ -700,7 +700,7 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
           }
           FREE(buffer);
       }
-      else 
+      else
       {
         DEBUG_PRINTF("ODBC::GetColumnValue - An error has occurred, ret = %i\n", ret);
         FREE(buffer);
@@ -736,14 +736,14 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
  * GetOutputParameter
  */
 
-Local<Value> ODBC::GetOutputParameter( Parameter prm )
+Local<Value> ODBC::GetOutputParameter( Parameter *prm )
 {
   Nan::EscapableHandleScope scope;
   Local<String> str;
   bool sqlTypeBinary = false;
 
-  DEBUG_PRINTF("SQL Type of parameter: %i\n",prm.type);
-  switch (prm.type)
+  DEBUG_PRINTF("SQL Type of parameter: %i\n",prm->type);
+  switch (prm->type)
   {
     case SQL_BLOB :
       DEBUG_PRINTF("BLOB DATA SELECTED\n");
@@ -763,74 +763,74 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
       break;
   }
 
-  //If buffer is NULL, can't return any data 
-  if(!prm.buffer)
+  //If buffer is NULL, can't return any data
+  if(!prm->buffer)
   {
       return scope.Escape(Nan::Null());
   }
 
-  switch (prm.type)
+  switch (prm->type)
   {
     case SQL_INTEGER :
     case SQL_SMALLINT :
     case SQL_TINYINT :
     case SQL_BOOLEAN :
     case SQL_NUMERIC :
-        if(prm.type == SQL_NUMERIC)
+        if(prm->type == SQL_NUMERIC)
           DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
     case SQL_BIGINT :
-        if(prm.type == SQL_BIGINT)
-          DEBUG_PRINTF("BIGINT DATA SELECTED, length = %i\n", prm.length);
+        if(prm->type == SQL_BIGINT)
+          DEBUG_PRINTF("BIGINT DATA SELECTED, length = %i\n", prm->length);
       {
-        if(prm.length == SQL_NULL_DATA)
+        if(prm->length == SQL_NULL_DATA)
         {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i val=%i\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, prm.buffer);
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, prm->buffer);
           return scope.Escape(Nan::Null());
         }
-        else if(prm.length == sizeof(int)){
+        else if(prm->length == sizeof(int)){
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i intval=%i\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(int*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(int*)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(int*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(int*)prm->buffer));
         }
-        else if(prm.length == sizeof(short)){
+        else if(prm->length == sizeof(short)){
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i shortval=%i\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(short*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(short*)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(short*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(short*)prm->buffer));
         }
-        else if(prm.length == sizeof(long)){ // long is 4 byte on windows, 8 byte on linux
+        else if(prm->length == sizeof(long)){ // long is 4 byte on windows, 8 byte on linux
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i longval=%i\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(long*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(long*)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(long*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(long*)prm->buffer));
         }
-        else if(prm.length == sizeof(long long)){ // 8 byte on all x64
+        else if(prm->length == sizeof(long long)){ // 8 byte on all x64
           // Fix for issue #816 on Windows
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i longval=%i\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(long long*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(long long*)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(long long*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(long long*)prm->buffer));
         }
         else {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i charval=%s\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(char*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(char *)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(char*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(char *)prm->buffer));
         }
       }
       break;
 
     case SQL_DECIMAL :
-        if(prm.type == SQL_DECIMAL) {
+        if(prm->type == SQL_DECIMAL) {
           DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
 		}
     case SQL_FLOAT :
@@ -838,20 +838,20 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
     case SQL_REAL :
     case SQL_DOUBLE :
       {
-        if((int)prm.length == SQL_NULL_DATA)
+        if((int)prm->length == SQL_NULL_DATA)
         {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
                        "type=%i buf_len=%i len=%i nullval=%f\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, prm.buffer);
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, prm->buffer);
           return scope.Escape(Nan::Null());
         }
         else {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
                        "type=%i buf_len=%i len=%i floatval=%f\n",
-                       prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                       prm.length, *(double*)prm.buffer);
-          return scope.Escape(Nan::New<Number>(*(double*)prm.buffer));
+                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                       prm->length, *(double*)prm->buffer);
+          return scope.Escape(Nan::New<Number>(*(double*)prm->buffer));
         }
       }
       break;
@@ -859,13 +859,13 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
     case SQL_BIT :
       {
         DEBUG_PRINTF("ODBC::GetOutputParameter - Bit: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%f\n",
-                     prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                     prm.length, prm.buffer);
-        if((int)prm.length == SQL_NULL_DATA) {
+                     prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                     prm->length, prm->buffer);
+        if((int)prm->length == SQL_NULL_DATA) {
             return scope.Escape(Nan::Null());
         }
         else {
-            return scope.Escape(Nan::New((*((char*)prm.buffer) == '0') ? false : true));
+            return scope.Escape(Nan::New((*((char*)prm->buffer) == '0') ? false : true));
         }
       }
       break;
@@ -876,29 +876,29 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
     case SQL_TYPE_TIME:
 		DEBUG_PRINTF("SQL_TIME SELECTED\n");
     case SQL_DBCLOB:
-        if((int) prm.type == SQL_DBCLOB)
+        if((int) prm->type == SQL_DBCLOB)
         {
             DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
         }
     case SQL_BLOB :
-        if((int) prm.type == SQL_BLOB)
+        if((int) prm->type == SQL_BLOB)
         {
             DEBUG_PRINTF("BLOB DATA SELECTED\n");
         }
     default :
-      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%s\n",
-                   prm.paramtype, prm.c_type, prm.type, prm.buffer_length,
-                   prm.length, prm.buffer);
-      if((int)prm.length == SQL_NULL_DATA) {
+      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%p\n",
+                   prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                   prm->length, prm->buffer);
+      if((int)prm->length == SQL_NULL_DATA) {
           return scope.Escape(Nan::Null());
       }
-      if(sqlTypeBinary || prm.c_type == SQL_C_BINARY) {
-          //str = Nan::NewOneByteString((uint8_t *) prm.buffer, prm.length).ToLocalChecked();
-          //prm.buffer will be freed by Garbage collector, no need to free here.
-          return scope.Escape(Nan::NewBuffer((char *)prm.buffer, prm.length).ToLocalChecked());
+      if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
+          //str = Nan::NewOneByteString((uint8_t *) prm->buffer, prm->length).ToLocalChecked();
+          prm->isBuffer      = true; // Dont free it in FREE_PARAMS
+          return scope.Escape(Nan::NewBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
       }
       else {
-        str = Nan::New((UNICHAR *) prm.buffer).ToLocalChecked();
+        str = Nan::New((UNICHAR *) prm->buffer).ToLocalChecked();
       }
       return scope.Escape(str);
   }
@@ -908,14 +908,14 @@ Local<Value> ODBC::GetOutputParameter( Parameter prm )
  * GetRecordTuple
  */
 
-Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns, 
+Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
                                      short* colCount, uint16_t* buffer,
                                      size_t bufferLength)
 {
   Nan::EscapableHandleScope scope;
-  
+
   Local<Object> tuple = Nan::New<Object>();
-        
+
   for(int i = 0; i < *colCount; i++) {
 #ifdef UNICODE
     Nan::Set(tuple, Nan::New((uint16_t *) columns[i].name).ToLocalChecked(),
@@ -933,14 +933,14 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
  * GetRecordArray
  */
 
-Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns, 
+Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
                                     short* colCount, uint16_t* buffer,
                                     size_t bufferLength)
 {
   Nan::EscapableHandleScope scope;
-  
+
   Local<Array> array = Nan::New<Array>();
-        
+
   for(int i = 0; i < *colCount; i++) {
     Nan::TryCatch try_catch;
     Nan::Set(array, Nan::New(i),
@@ -950,7 +950,7 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
         break;
     }
   }
-  
+
   return scope.Escape(array);
 }
 
@@ -962,7 +962,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 {
   DEBUG_PRINTF("ODBC::GetParametersFromArray\n");
   *paramCount = values->Length();
-  
+
   Parameter* params = (Parameter *) malloc(*paramCount * sizeof(Parameter));
   if(*paramCount != 0 && !params ) {
       Nan::LowMemoryNotification();
@@ -988,7 +988,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
     DEBUG_PRINTF("ODBC::GetParametersFromArray - param[%i].length = %d\n",
                  i, params[i].length);
 
-    if (value->IsArray()) 
+    if (value->IsArray())
     {
       paramArray = Local<Array>::Cast(value);
       arrlen = paramArray->Length();
@@ -999,17 +999,17 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
           return params;
       }
 
-      val =  Nan::Get(paramArray, 0).ToLocalChecked(); 
+      val =  Nan::Get(paramArray, 0).ToLocalChecked();
       if(val->IsInt32())
           params[i].paramtype = Nan::To<int32_t>(val).FromJust();
 
-      val =  Nan::Get(paramArray, 1).ToLocalChecked(); 
+      val =  Nan::Get(paramArray, 1).ToLocalChecked();
       if(val->IsInt32())
           params[i].c_type = Nan::To<int32_t>(val).FromJust();
       else
           params[i].c_type = SQL_C_CHAR;
 
-      val =  Nan::Get(paramArray, 2).ToLocalChecked(); 
+      val =  Nan::Get(paramArray, 2).ToLocalChecked();
       if(val->IsInt32())
           params[i].type = Nan::To<int32_t>(val).FromJust();
       else
@@ -1017,12 +1017,12 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
 
       if(arrlen == 5)
       {
-          val =  Nan::Get(paramArray, 4).ToLocalChecked(); 
+          val =  Nan::Get(paramArray, 4).ToLocalChecked();
           if(val->IsInt32())
               params[i].buffer_length = Nan::To<int32_t>(val).FromJust();
       }
 
-      val =  Nan::Get(paramArray, 3).ToLocalChecked(); 
+      val =  Nan::Get(paramArray, 3).ToLocalChecked();
       if (val->IsNull()) {
           GetNullParam(&params[i], i+1);
       }
@@ -1064,7 +1064,7 @@ Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
     else if (value->IsBoolean()) {
         GetBoolParam(value, &params[i], i+1);
     }
-  } 
+  }
   return params;
 }
 
@@ -1076,12 +1076,12 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     int length = string->Length();
     int bufflen = length;
     int terCharLen = 1;
-      
-    param->length        = length; 
+
+    param->length        = length;
     if(!param->c_type || (param->c_type == SQL_CHAR))
         param->c_type = SQL_C_TCHAR;
     #ifdef UNICODE
-    param->length        = SQL_NTS; // Required for unicode string. 
+    param->length        = SQL_NTS; // Required for unicode string.
     if(!param->type || (param->type == SQL_CHAR))
         param->type = (length >= 8000) ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if(param->c_type != SQL_C_BINARY)
@@ -1136,9 +1136,9 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
     {
     /*
        SQLRETURN SQLBindFileToParam (
-                 SQLHSTMT          StatementHandle,   // hstmt 
-                 SQLUSMALLINT      TargetType,        // i 
-                 SQLSMALLINT       DataType,          // type 
+                 SQLHSTMT          StatementHandle,   // hstmt
+                 SQLUSMALLINT      TargetType,        // i
+                 SQLSMALLINT       DataType,          // type
                  SQLCHAR           *FileName,         // buffer
                  SQLSMALLINT       *FileNameLength,   // NULL
                  SQLUINTEGER       *FileOptions,      // SQL_FILE_READ = 2 -> fileOption
@@ -1152,8 +1152,8 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 
     DEBUG_PRINTF("ODBC::GetStringParam: param%u : paramtype=%u, c_type=%i, "
                  "type=%i, size=%i, decimals=%i, buffer=%s, buffer_length=%i, "
-                 "length=%i\n", num, param->paramtype, param->c_type, 
-                 param->type, param->size, param->decimals, 
+                 "length=%i\n", num, param->paramtype, param->c_type,
+                 param->type, param->size, param->decimals,
                  (char *)param->buffer, param->buffer_length, param->length);
 }
 
@@ -1163,7 +1163,6 @@ void ODBC::GetBufferParam(Local<Value> value, Parameter * param, int num)
     param->buffer = (char *) Buffer::Data(value);
     param->length = Buffer::Length(value);
     int bufflen = param->length;
-    param->isBuffer      = true; // Dont free it in FREE_PARAMS
 
     if(bufflen <= param->buffer_length &&
        ((param->paramtype % 2 == 0) || (param->arraySize > 0)))
@@ -1238,11 +1237,11 @@ void ODBC::GetInt32Param(Local<Value> value, Parameter * param, int num)
 {
     int64_t  *number = new int64_t(Nan::To<int32_t>(value).FromJust());
     param->c_type = SQL_C_SBIGINT;
-    if(!param->type || (param->type == 1)) 
+    if(!param->type || (param->type == 1))
         param->type = SQL_BIGINT;
     param->buffer = number;
     param->length = sizeof(number);
-      
+
     DEBUG_PRINTF("ODBC::GetInt32Param: param%u : paramtype=%u, c_type=%i, "
                  "type=%i, size=%i, decimals=%i, buffer=%lld, buffer_length=%i, "
                  "length=%i\n",
@@ -1257,10 +1256,10 @@ void ODBC::GetNumberParam(Local<Value> value, Parameter * param, int num)
     Nan::Utf8String string(value);
     int length = string.length();
     char* ptr = strchr(*string, '.');
-      
-    if(!param->c_type || (param->c_type == SQL_C_CHAR)) 
+
+    if(!param->c_type || (param->c_type == SQL_C_CHAR))
         param->c_type    = SQL_C_DOUBLE;
-    if(!param->type || (param->type == SQL_CHAR)) 
+    if(!param->type || (param->type == SQL_CHAR))
         param->type      = SQL_DECIMAL;
     param->buffer        = number;
     param->buffer_length = sizeof(double);
@@ -1345,7 +1344,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           param->strLenArray[i] = sizeof(int64_t);
         }
         param->c_type = SQL_C_SBIGINT;
-        if(!param->type || (param->type == 1)) 
+        if(!param->type || (param->type == 1))
             param->type = SQL_BIGINT;
         param->buffer = number;
       }
@@ -1368,7 +1367,7 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter * param, int num)
           param->buffer = NULL;
           decimals = (decimals < param->decimals) ? param->decimals : decimals;
         }
-    
+
         param->decimals = decimals;
         param->buffer  = number;
       }
@@ -1453,7 +1452,7 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
     SQLRETURN ret = SQL_SUCCESS;
     Parameter prm;
 
-    for (int i = 0; i < count; i++) 
+    for (int i = 0; i < count; i++)
     {
         prm = params[i];
 
@@ -1465,14 +1464,14 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
         if(prm.paramtype == FILE_PARAM)  // FILE
         {
             ret = SQLBindFileToParam (
-                      hSTMT,               // StatementHandle, 
-                      i + 1,               // TargetType, 
-                      prm.type,            // DataType, 
-                      (SQLCHAR *)prm.buffer,          // *FileName, 
+                      hSTMT,               // StatementHandle,
+                      i + 1,               // TargetType,
+                      prm.type,            // DataType,
+                      (SQLCHAR *)prm.buffer,          // *FileName,
                       NULL,                // *FileNameLength, // NULL or SQL_NTS
                       &params[i].fileOption,     // *FileOptions,  // SQL_FILE_READ = 2
-                      prm.decimals,        // MaxFileNameLength, 
-                      &params[i].fileIndicator); // *IndicatorValue); // 0 
+                      prm.decimals,        // MaxFileNameLength,
+                      &params[i].fileIndicator); // *IndicatorValue); // 0
         }
         else if(prm.arraySize > 0)  // Bind Array Parameter
         {
@@ -1513,11 +1512,11 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
 
 Local<Value> ODBC::CallbackSQLError (
         SQLSMALLINT handleType,
-        SQLHANDLE handle, 
+        SQLHANDLE handle,
         Nan::Callback* cb)
 {
   Nan::EscapableHandleScope scope;
-  
+
   Local<Value> objError = CallbackSQLError(
     handleType,
     handle,
@@ -1532,17 +1531,17 @@ Local<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
                                       Nan::Callback* cb)
 {
   Nan::EscapableHandleScope scope;
-  
+
   Local<Value> objError = ODBC::GetSQLError(
-    handleType, 
-    handle, 
+    handleType,
+    handle,
     message
   );
-  
+
   Local<Value> info[1];
   info[0] = objError;
   cb->Call(1, info);
-  
+
   return scope.Escape(Nan::Undefined());
 }
 
@@ -1553,7 +1552,7 @@ Local<Value> ODBC::CallbackSQLError (SQLSMALLINT handleType,
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle)
 {
   Nan::EscapableHandleScope scope;
-  
+
   return scope.Escape(GetSQLError(
     handleType,
     handle,
@@ -1563,14 +1562,14 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle)
 Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* message)
 {
   Nan::EscapableHandleScope scope;
-  
+
   DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%X\n", handleType, handle);
-  
+
   Local<Object> objError = Nan::New<Object>();
 
   SQLINTEGER i = 0;
   SQLINTEGER native;
-  
+
   SQLSMALLINT len;
   SQLRETURN ret;
   char errorSQLState[14];
@@ -1579,20 +1578,20 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
   // Windows seems to define SQLINTEGER as long int, unixodbc as just int... %i should cover both
   //Local<Array> errors = Nan::New<Array>();
   //objError->Set(Nan::New("errors").ToLocalChecked(), errors);
-  
+
   do {
     DEBUG_PRINTF("ODBC::GetSQLError : calling SQLGetDiagRec; i=%i\n", i);
-    
+
     ret = SQLGetDiagRec(
-      handleType, 
+      handleType,
       handle,
-      i + 1, 
+      i + 1,
       (SQLTCHAR *) errorSQLState,
       &native,
       (SQLTCHAR *) errorMessage,
       sizeof(errorMessage),
       &len);
-    
+
     DEBUG_PRINTF("ODBC::GetSQLError : after SQLGetDiagRec; i=%i, ret=%i\n", i,ret);
 
     if (ret == -2 && i == 0)
@@ -1605,7 +1604,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
     if (SQL_SUCCEEDED(ret)) {
      if (i == 0) {
       DEBUG_TPRINTF(SQL_T("ODBC::GetSQLError : errorMessage=%s, errorSQLState=%s\n"), errorMessage, errorSQLState);
-      
+
       Nan::Set(objError, Nan::New("error").ToLocalChecked(), Nan::New(message).ToLocalChecked());
       Nan::Set(objError, Nan::New("sqlcode").ToLocalChecked(), Nan::New(native));
 #ifdef UNICODE
@@ -1624,7 +1623,7 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
     }
     i++;
   } while (ret != SQL_NO_DATA);
-  
+
   return scope.Escape(objError);
 }
 
@@ -1632,50 +1631,50 @@ Local<Value> ODBC::GetSQLError (SQLSMALLINT handleType, SQLHANDLE handle, char* 
  * GetAllRecordsSync
  */
 
-Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV, 
-                                     SQLHDBC hDBC, 
+Local<Array> ODBC::GetAllRecordsSync (SQLHENV hENV,
+                                     SQLHDBC hDBC,
                                      SQLHSTMT hSTMT,
                                      uint16_t* buffer,
                                      size_t bufferLength)
 {
   DEBUG_PRINTF("ODBC::GetAllRecordsSync\n");
-  
+
   Nan::EscapableHandleScope scope;
-  
+
   Local<Value> objError = Nan::New<Object>();
-  
+
   int count = 0;
   int errorCount = 0;
   short colCount = 0;
-  
+
   Column* columns = GetColumns(hSTMT, &colCount);
-  
+
   Local<Array> rows = Nan::New<Array>();
-  
+
   //loop through all records
   while (true) {
     SQLRETURN ret = SQLFetch(hSTMT);
-    
+
     //check to see if there was an error
     if (ret == SQL_ERROR)  {
       errorCount++;
-      
+
       objError = ODBC::GetSQLError(
-        SQL_HANDLE_STMT, 
+        SQL_HANDLE_STMT,
         hSTMT,
         (char *) "[node-ibm_db] Error in ODBC::GetAllRecordsSync"
       );
-      
+
       break;
     }
-    
+
     //check to see if we are at the end of the recordset
     if (ret == SQL_NO_DATA) {
       break;
     }
 
     Nan::Set(rows,
-      Nan::New(count), 
+      Nan::New(count),
       ODBC::GetRecordTuple(
         hSTMT,
         columns,
