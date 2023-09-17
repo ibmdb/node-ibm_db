@@ -412,6 +412,8 @@ void ODBC::FreeColumns(Column* columns, short* colCount)
 
 /*
  * GetColumnValue
+ * Function to read the value of Column field from the
+ * result of a select or CALL statement.
  */
 
 Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
@@ -734,6 +736,8 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 
 /*
  * GetOutputParameter
+ * Function to retrieve the INOUT and OUTPUT parameters of CALL statement
+ * It is called by ODBCConnection::Query and ODBCStatement::Execute APIs
  */
 
 Local<Value> ODBC::GetOutputParameter( Parameter *prm )
@@ -746,26 +750,45 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
   switch (prm->type)
   {
     case SQL_BLOB :
-      DEBUG_PRINTF("BLOB DATA SELECTED\n");
+      DEBUG_PRINTF("BLOB DATA in ResultSet\n");
       sqlTypeBinary = true;
       break;
     case SQL_BINARY :
-      DEBUG_PRINTF("BINARY DATA SELECTED\n");
+      DEBUG_PRINTF("BINARY DATA in ResultSet\n");
       sqlTypeBinary = true;
       break;
     case SQL_VARBINARY :
-      DEBUG_PRINTF("VARBINARY DATA SELECTED\n");
+      DEBUG_PRINTF("VARBINARY DATA in ResultSet\n");
       sqlTypeBinary = true;
       break;
     case SQL_LONGVARBINARY :
-      DEBUG_PRINTF("LONGVARBINARY DATA SELECTED\n");
+      DEBUG_PRINTF("LONGVARBINARY DATA in ResultSet\n");
       sqlTypeBinary = true;
+      break;
+	/*
+    case SQL_DATETIME :
+    case SQL_TIMESTAMP :
+    */
+    case SQL_TYPE_TIME:
+      DEBUG_PRINTF("SQL_TIME in ResultSet\n");
+      break;
+    case SQL_DBCLOB:
+      DEBUG_PRINTF("DBCLOB DATA in ResultSet\n");
+      break;
+    case SQL_DECIMAL :
+      DEBUG_PRINTF("DECIMAL DATA in ResultSet\n");
       break;
   }
 
+  //If length is SQL_NULL_DATA, return null
   //If buffer is NULL, can't return any data
-  if(!prm->buffer)
+  if(((int)prm->length == SQL_NULL_DATA) || !prm->buffer)
   {
+      DEBUG_PRINTF("NULL DATA in ResultSet\n");
+      DEBUG_PRINTF("ODBC::GetOutputParameter - NullData: paramtype=%i "
+                   "c_type=%i type=%i buf_len=%i len=%i val=%i\n",
+                   prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+                   prm->length, prm->buffer);
       return scope.Escape(Nan::Null());
   }
 
@@ -776,21 +799,12 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
     case SQL_TINYINT :
     case SQL_BOOLEAN :
     case SQL_NUMERIC :
-        if(prm->type == SQL_NUMERIC)
-          DEBUG_PRINTF("NUMERIC DATA SELECTED\n");
     case SQL_BIGINT :
+        if(prm->type == SQL_NUMERIC)
+          DEBUG_PRINTF("NUMERIC DATA in ResultSet\n");
         if(prm->type == SQL_BIGINT)
-          DEBUG_PRINTF("BIGINT DATA SELECTED, length = %i\n", prm->length);
-      {
-        if(prm->length == SQL_NULL_DATA)
-        {
-          DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
-                       "c_type=%i type=%i buf_len=%i len=%i val=%i\n",
-                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
-                       prm->length, prm->buffer);
-          return scope.Escape(Nan::Null());
-        }
-        else if(prm->length == sizeof(int)){
+          DEBUG_PRINTF("BIGINT DATA in ResultSet, length = %i\n", prm->length);
+        if(prm->length == sizeof(int)){
           DEBUG_PRINTF("ODBC::GetOutputParameter - Integer: paramtype=%i "
                        "c_type=%i type=%i buf_len=%i len=%i intval=%i\n",
                        prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
@@ -826,33 +840,19 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
                        prm->length, *(char*)prm->buffer);
           return scope.Escape(Nan::New<Number>(*(char *)prm->buffer));
         }
-      }
-      break;
+        break;
 
     case SQL_DECIMAL :
-        if(prm->type == SQL_DECIMAL) {
-          DEBUG_PRINTF("DECIMAL DATA SELECTED\n");
-		}
     case SQL_FLOAT :
     case SQL_DECFLOAT :
     case SQL_REAL :
     case SQL_DOUBLE :
       {
-        if((int)prm->length == SQL_NULL_DATA)
-        {
-          DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
-                       "type=%i buf_len=%i len=%i nullval=%f\n",
-                       prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
-                       prm->length, prm->buffer);
-          return scope.Escape(Nan::Null());
-        }
-        else {
           DEBUG_PRINTF("ODBC::GetOutputParameter - Number: paramtype=%i c_type=%i "
                        "type=%i buf_len=%i len=%i floatval=%f\n",
                        prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
                        prm->length, *(double*)prm->buffer);
           return scope.Escape(Nan::New<Number>(*(double*)prm->buffer));
-        }
       }
       break;
 
@@ -861,44 +861,32 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
         DEBUG_PRINTF("ODBC::GetOutputParameter - Bit: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%f\n",
                      prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
                      prm->length, prm->buffer);
-        if((int)prm->length == SQL_NULL_DATA) {
-            return scope.Escape(Nan::Null());
-        }
-        else {
-            return scope.Escape(Nan::New((*((char*)prm->buffer) == '0') ? false : true));
-        }
+        return scope.Escape(Nan::New((*((char*)prm->buffer) == '0') ? false : true));
       }
       break;
-	/*
-    case SQL_DATETIME :
-    case SQL_TIMESTAMP :
-    */
-    case SQL_TYPE_TIME:
-		DEBUG_PRINTF("SQL_TIME SELECTED\n");
-    case SQL_DBCLOB:
-        if((int) prm->type == SQL_DBCLOB)
-        {
-            DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
-        }
-    case SQL_BLOB :
-        if((int) prm->type == SQL_BLOB)
-        {
-            DEBUG_PRINTF("BLOB DATA SELECTED\n");
-        }
+
     default :
-      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i type=%i buf_len=%i len=%i val=%p\n",
-                   prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
-                   prm->length, prm->buffer);
-      if((int)prm->length == SQL_NULL_DATA) {
-          return scope.Escape(Nan::Null());
-      }
+      DEBUG_PRINTF("ODBC::GetOutputParameter - String: paramtype=%i c_type=%i \
+              type=%i buf_len=%i len=%i val=%p\n",
+              prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
+              prm->length, prm->buffer);
       if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
-          //str = Nan::NewOneByteString((uint8_t *) prm->buffer, prm->length).ToLocalChecked();
-          prm->isBuffer      = true; // Dont free it in FREE_PARAMS
-          return scope.Escape(Nan::NewBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
+          // Use CopyBuffer to create a new buffer to return to NodeJS,
+          // prm->buffer can be freed. Return Buffer for Binary OUTPUT params.
+          // Nan::CopyBuffer() is Similar to Nan::NewBuffer() except that an
+          // implicit memcpy will occur within Node. Calls node::Buffer::Copy().
+          return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
       }
       else {
-        str = Nan::New((UNICHAR *) prm->buffer).ToLocalChecked();
+        // If Buffer was passed by JS to C++ for CHAR type, return Buffer only.
+        // If String was passed by JS to C++, return OUTPUT as char*
+        // Do not free such char* as ownership is getting transferred to JS.
+        if(prm->isBuffer) { // Buffer was passed by NodeJS to C++
+          return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
+        } else {
+          prm->isBuffer = true; // Dont free it in FREE_PARAMS
+          str = Nan::New((UNICHAR *) prm->buffer).ToLocalChecked();
+        }
       }
       return scope.Escape(str);
   }
@@ -906,6 +894,8 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
 
 /*
  * GetRecordTuple
+ * Function to return the row data as JSON object
+ * It get called by ODBCResult::Fetch/FetchAll APIs
  */
 
 Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
@@ -931,6 +921,8 @@ Local<Object> ODBC::GetRecordTuple ( SQLHSTMT hStmt, Column* columns,
 
 /*
  * GetRecordArray
+ * Function to return the row data as Array
+ * It get called by ODBCResult::Fetch/FetchAll APIs
  */
 
 Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
@@ -956,6 +948,9 @@ Local<Value> ODBC::GetRecordArray ( SQLHSTMT hStmt, Column* columns,
 
 /*
  * GetParametersFromArray
+ * Function to populate Parameter from bindParameters Array
+ * It reads Bind Parameters passed to Query or Bind API.
+ * It is called by ODBCConnection::Query & ODBCStatement::Bind
  */
 
 Parameter* ODBC::GetParametersFromArray (Local<Array> values, int *paramCount)
@@ -1160,9 +1155,12 @@ void ODBC::GetStringParam(Local<Value> value, Parameter * param, int num)
 void ODBC::GetBufferParam(Local<Value> value, Parameter * param, int num)
 {
     DEBUG_PRINTF("ODBC::GetBufferParam - It's a buffer.\n");
+    // Get pointer to the underlying memory buffer of Node.js Buffer object
+    // and assign it to param->buffer. No need to allocate memory here for it.
     param->buffer = (char *) Buffer::Data(value);
     param->length = Buffer::Length(value);
     int bufflen = param->length;
+    param->isBuffer      = true; // Dont free it in FREE_PARAMS
 
     if(bufflen <= param->buffer_length &&
        ((param->paramtype % 2 == 0) || (param->arraySize > 0)))
