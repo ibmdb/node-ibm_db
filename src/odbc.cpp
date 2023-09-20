@@ -743,7 +743,6 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 Local<Value> ODBC::GetOutputParameter( Parameter *prm )
 {
   Nan::EscapableHandleScope scope;
-  Local<String> str;
   bool sqlTypeBinary = false;
 
   DEBUG_PRINTF("SQL Type of parameter: %i\n",prm->type);
@@ -870,25 +869,21 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
               type=%i buf_len=%i len=%i val=%p\n",
               prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
               prm->length, prm->buffer);
-      if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
-          // Use CopyBuffer to create a new buffer to return to NodeJS,
-          // prm->buffer can be freed. Return Buffer for Binary OUTPUT params.
-          // Nan::CopyBuffer() is Similar to Nan::NewBuffer() except that an
-          // implicit memcpy will occur within Node. Calls node::Buffer::Copy().
-          return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
+
+      // If Buffer was passed by JS to C++, return Buffer only; for any datatype.
+      // Do not free such char* as ownership is getting transferred to JS.
+      if(prm->isBuffer) { // Buffer was passed by NodeJS to C++
+        return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
+      }
+      else if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
+        // Return binary data as Buffer only for any datatype.
+        prm->isBuffer = true; // Don't free it in FREE_PARAMS
+        return scope.Escape(Nan::NewBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
       }
       else {
-        // If Buffer was passed by JS to C++ for CHAR type, return Buffer only.
         // If String was passed by JS to C++, return OUTPUT as char*
-        // Do not free such char* as ownership is getting transferred to JS.
-        if(prm->isBuffer) { // Buffer was passed by NodeJS to C++
-          return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
-        } else {
-          prm->isBuffer = true; // Dont free it in FREE_PARAMS
-          str = Nan::New((UNICHAR *) prm->buffer).ToLocalChecked();
-        }
+        return scope.Escape(Nan::New((UNICHAR *) prm->buffer).ToLocalChecked());
       }
-      return scope.Escape(str);
   }
 }
 
