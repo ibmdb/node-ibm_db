@@ -743,7 +743,6 @@ Local<Value> ODBC::GetColumnValue( SQLHSTMT hStmt, Column column,
 Local<Value> ODBC::GetOutputParameter( Parameter *prm )
 {
   Nan::EscapableHandleScope scope;
-  Local<String> str;
   bool sqlTypeBinary = false;
 
   DEBUG_PRINTF("SQL Type of parameter: %i\n",prm->type);
@@ -871,13 +870,13 @@ Local<Value> ODBC::GetOutputParameter( Parameter *prm )
               prm->paramtype, prm->c_type, prm->type, prm->buffer_length,
               prm->length, prm->buffer);
 
-      // If Buffer was passed by JS to C++ for CHAR type, return Buffer only.
+      // If Buffer was passed by JS to C++, return Buffer only; for any datatype.
       // Do not free such char* as ownership is getting transferred to JS.
       if(prm->isBuffer) { // Buffer was passed by NodeJS to C++
         return scope.Escape(Nan::CopyBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
       }
-
-      if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
+      else if(sqlTypeBinary || prm->c_type == SQL_C_BINARY) {
+        // Return binary data as Buffer only for any datatype.
         prm->isBuffer = true; // Don't free it in FREE_PARAMS
         return scope.Escape(Nan::NewBuffer((char *)prm->buffer, prm->length).ToLocalChecked());
       }
