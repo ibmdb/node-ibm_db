@@ -46,8 +46,8 @@ title: 'Bug Report'
   3. For SSL connection, do you have ssl certificate from server?
   4. If you have certificate, are you using `SSLServerCertificate` keyword in connection string or using your own keystore db?
   5. Share the connection string used for connection by masking password.
-  6. update database connection info in `ibm_db/test/config.testConnectionStrings.json` file and share complete output of below commands:
-  * cd .../ibm_db
+  6. update database connection info in `ibm_db/test/config.json` file and share complete output of below commands:
+  * cd .../node_modules/ibm_db
   * npm install
   * node test/test-basic-test.js
   7. For non-SSL connection, update connection info for `db2cli validate` command in file `ibm_db/installer/testODBCConnection.bat` for windows or `ibm_db/installer/testODBCConnection.sh` for non-Windows. Then execute `testODBCConnection.bat` from Administrator command prompt on Windows or `testODBCConnection.sh` script from terminal on non-Windows and share complete output of script along will all generated 1.* files in zip file.

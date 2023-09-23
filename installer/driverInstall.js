@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '19.1.9';
+var electron_version = '25.8.0';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -39,6 +39,16 @@ if(process.env.npm_config_loglevel == 'silent') { // -silent option
 if(downloadProgress == 0) {
   printMsg("platform = " + platform + ", arch = " + arch +
            ", node.js version = " + process.version);
+}
+if(platform == 'darwin' && arch == 'arm64') {
+    console.log('Apple Silicon Chip system with arm64 architecture is not supported. ' +
+                'Please install x64 version of node.js and gcc to install ibm_db.\n' +
+                'Check https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip for instructions.\n');
+    process.exit(1);
+} else if(arch == 'arm64') {
+    console.log('ARM64 architecture is not supported. ' +
+                'Please install x64 version of node.js and gcc to install ibm_db.\n');
+    process.exit(1);
 }
 
 var httpsAgent;
@@ -615,9 +625,9 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
                     var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.3';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
-                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.0';
+                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.16.0';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.18.0';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
@@ -837,7 +847,22 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.75){
+            if (vscodeVer >= 1.82){
+                electron_version = "25.8.0";
+            }
+            else if (vscodeVer >= 1.81){
+                electron_version = "22.3.18";
+            }
+            else if (vscodeVer >= 1.80){
+                electron_version = "22.3.14";
+            }
+            else if (vscodeVer >= 1.78){
+                electron_version = "22.4.8";
+            }
+            else if (vscodeVer >= 1.77){
+                electron_version = "19.1.11";
+            }
+            else if (vscodeVer >= 1.75){
                 electron_version = "19.1.9";
             }
             else if (vscodeVer >= 1.74){

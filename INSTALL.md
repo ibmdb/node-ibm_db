@@ -407,6 +407,11 @@ npm install
     Well Done :)
 
 ## <a name="m1chip"></a> 10. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
+>
+> **Important: We do not have clidriver/dsdriver for ARM64 architecture yet. The driver for IBM DB2 is not compatible with Apple Silicon and will have to run x86_64 version of clidriver in emulated mode.**
+> Please support [this request for an Apple Silicon version of the driver](https://ibm-data-and-ai.ideas.ibm.com/ideas/DB2CON-I-92) to show IBM that you are interested in a native solution.
+>
+
 **Warning:** If you use the ARM version of homebrew (as recommended for M1/M2 chip systems) you will get the following error message:
 ```
 $ brew install gcc-12

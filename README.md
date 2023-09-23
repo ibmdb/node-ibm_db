@@ -51,7 +51,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 20.7.0
+- The latest node.js version using which `ibm_db` is tested: **20.7.0**
 
 ## Install
 
@@ -108,6 +108,11 @@ To avoid this download, you can manually download clidriver from this location o
 > For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
 > If installation fails while downloading [clidriver](#downloadCli), follow instructions as documented [here](#downloadCliFailed).
+
+### Validate your installation
+
+- Update database connection info in `node_modules\ibm_db\test\config.json` file.
+- Run `node node_modules\ibm_db\test\test-basic-test.js` command.
 
 ### Important Environment Variables and Download Essentials 
 
@@ -300,7 +305,8 @@ ibmdb.open(connStr, function (err,conn) {
     });
   });
 });
-
+```
+```javascript
 ibmdb.open(connStr).then(
     conn => {
       conn.query("select 1 from sysibm.sysdummy1").then(data => {
@@ -313,7 +319,8 @@ ibmdb.open(connStr).then(
       console.log(err)
     }
 );
-
+```
+```javascript
 main();
 async function main() {
   try {
@@ -345,14 +352,14 @@ OR, just delete the `node_modules\ibm_db` directory manually from your system.
 
 ## <a name="sql1598n"></a>For z/OS and iSeries Connectivity and SQL1598N error
 
-- Connection to Db2 for z/OS or Db2 for i(AS400) using `ibm_db` driver from distributed platform (Linux, Unix, Windows and MacOS) is not free.
+- Connection to `Db2 for z/OS` or `Db2 for i`(AS400) Server using `ibm_db` driver from distributed platforms (Linux, Unix, Windows and MacOS) is not free.
 
-- Connection to Db2 for LUW or Informix Server using `ibm_db` driver is free.
+- Connection to `Db2 for LUW` or `Informix` Server using `ibm_db` driver is free.
 
 - `ibm_db` returns SQL1598N error in absence of a valid db2connect license. SQL1598N error is returned by the Db2 Server to client.
 To suppress this error, Db2 server must be activated with db2connectactivate utility OR a client side db2connect license file must exist.
 
-- Db2connect license can be applied on database server or client side. A db2connect license of version 11.5 is required for ibm_db.
+- Db2connect license can be applied on database server or client side. A **db2connect license of version 11.5** is required for ibm_db.
 
 - Ask your DBA to run db2connectactivate utility on Server to activate db2connect license.
 
@@ -419,8 +426,11 @@ Note: "db2cli bind" does not work with DB2 z/OS if the CLI packages (SYSSH*) wer
 
 ## Troubleshooting on z/OS
 Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2 ODBC initialization file_:
-- APPLTRACE=1
-- APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
+
+```
+ APPLTRACE=1
+ APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
+```
 
 ### Db2 z/OS: UnicodeDecodeError Exception
 - Make sure you have set `CURRENTAPPENSC=ASCII` or `UNICODE` in ODBC initialization file.
