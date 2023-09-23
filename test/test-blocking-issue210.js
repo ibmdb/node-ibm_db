@@ -2,6 +2,7 @@ var common = require("./common")
 	, ibmdb = require("../")
 	, pool = new ibmdb.Pool()
 	, connectionString = common.connectionString
+    , iszos = common.isZOS
     , assert = require("assert")
 	, connections = []
 	, connectCount = 2;
@@ -18,7 +19,7 @@ pool.open(connectionString, function( err, conn) {
           conn.querySync("drop table mtab2"); } catch(e) {};
     conn.querySync("create table mtab1(c1 varchar(30), c2 varchar(20))");
     conn.querySync("create table mtab2(c1 varchar(30), c2 varchar(20))");
-    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+    if (iszos) {
       // Db2 on z/OS does not support multi-row inserts
       conn.querySync("Insert into mtab1 values ('1', 'bimal')");
       conn.querySync("Insert into mtab1 values ('2', 'kumar')");
@@ -84,7 +85,7 @@ pool.open(connectionString, function (err, connection) {
 
 // Test case for issue #230 - ? takes long time. Found a server issue.
 var testLongTime = function(conn) {
-    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+    if (iszos) {
       // Db2 on z/OS does not support multi-row inserts
       conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910')");
       conn.querySync("insert into mtab1 values ('330107196906080910', '330107196906080910')");

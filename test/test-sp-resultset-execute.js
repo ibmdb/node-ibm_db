@@ -5,15 +5,9 @@
 var common = require("./common")
   , ibmdb = require("../")
   , assert = require("assert")
+  , isZOS = common.isZOS
   , schema = common.connectionObject.CURRENTSCHEMA;
 
-var isZOS = false;
-if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
-    isZOS = true;
-}
-
-if(schema == undefined) schema = "NEWTON";
-   
 var proc1 = "create or replace procedure " + schema + ".PROC1 ( IN v1 int, INOUT v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; set v2 = 'success'; end";
 var proc2 = "create or replace procedure " + schema + ".PROC2 ( IN v1 int, INOUT v2 varchar(30) )  language sql begin  set v2 = 'success'; end";
 var proc3 = "create or replace procedure " + schema + ".PROC3 ( IN v1 int, IN v2 varchar(30) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from " + schema + ".mytab1; declare cr2  cursor with return for select c2 from " + schema + ".mytab1; open cr1; open cr2; end";
@@ -25,15 +19,9 @@ var dropProc2 = "drop procedure " + schema + ".PROC2";
 var dropProc3 = "drop procedure " + schema + ".PROC3";
 
 if (isZOS) {
-  // - When creating an SQL native procedure on z/OS, you will need to have a WLM environment
-  // defined for your system if you want to run the procedure in debugging mode. Adding
-  // "disable debug mode" to bypass this requirement.
-  proc1 = proc1.replace(" begin", " disable debug mode begin");
-  proc2 = proc2.replace(" begin", " disable debug mode begin");
-  proc3 = proc3.replace(" begin", " disable debug mode begin");
-  proc1 = proc1.replace(" or replace", "");
-  proc2 = proc2.replace(" or replace", "");
-  proc3 = proc3.replace(" or replace", "");
+  proc1 = common.sanitizeSP(proc1);
+  proc2 = common.sanitizeSP(proc2);
+  proc3 = common.sanitizeSP(proc3);
 } else {
   dropProc1 = "drop procedure " + schema + ".PROC1 ( INT, VARCHAR(30) )";
   dropProc2 = "drop procedure " + schema + ".PROC2 ( INT, VARCHAR(30) )";
@@ -56,14 +44,8 @@ async function setupTestEnv() {
     await conn.query(dropProc3).catch((e) => {});
     try {
       conn.querySync({"sql":"create table " + schema + ".mytab1 (c1 int, c2 varchar(20))", "noResults":true});
-
-      if (isZOS) {
-        // Db2 on z/OS does not support multi-row inserts
-        conn.querySync("insert into " + schema + ".mytab1 values (2, 'bimal')");
-        conn.querySync("insert into " + schema + ".mytab1 values (3, 'kumar')");
-      } else {
-        conn.querySync("insert into " + schema + ".mytab1 values (2, 'bimal'), (3, 'kumar')");
-      }
+      conn.querySync("insert into " + schema + ".mytab1 values (2, 'bimal')");
+      conn.querySync("insert into " + schema + ".mytab1 values (3, 'kumar')");
     } catch(err) {
       console.log(err);
       process.exit(-1);

@@ -85,10 +85,10 @@ npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 npm install async bluebird moment
 ```
 
-5. Update config.testConnectionStrings.json with your credentials and run test.
+5. Update config.json with your credentials and run test.
 ```
 cd node_modules/ibm_db/test/
-vi config.testConnectionStrings.json => Update connection string in this file.
+vi config.json => Update connection string in this file.
 node run-tests.js
 ```
 
@@ -130,10 +130,10 @@ node-gyp configure build --IBM_DB_HOME=$IBM_DB_HOME  --IS_DOWNLOADED=false --ver
 ```
 
 ```
-8. Update config.testConnectionStrings.json with your credentials and run test.
+8. Update config.json with your credentials and run test.
 
 cd node-ibm_db/test/
-vi config.testConnectionStrings.json  => Update database connection info.
+vi config.json  => Update database connection info.
 node run-tests.js
 ```
 
@@ -238,10 +238,10 @@ npm install git+https://git@github.com/ibmdb/node-ibm_db.git
 npm install async bluebird moment
 ```
 
-5. Update config.testConnectionStrings.json with your credentials and run test.
+5. Update config.json with your credentials and run test.
 ```
 cd node_modules/ibm_db/test/
-vi config.testConnectionStrings.json => Update connection string in this file.
+vi config.json => Update connection string in this file.
 node run-tests.js
 ```
 
@@ -358,9 +358,9 @@ npm install
 
 ### 8.4 Running Verification Tests
 
-To run the validation tests, update `node-ibm_db/test/config.testConnectionStrings.zos.json` with your database credentials (DSN, UID, PWD).
+To run the validation tests, update `node-ibm_db/test/config.zos.json` with your database credentials (DSN, UID, PWD).
 
-Set the `IBM_DB_SERVER_TYPE` environment variable to `ZOS` if you are connecting to a z/OS Db2 database.
+Set the `IBM_DB_SERVER_TYPE` environment variable to `"ZOS"` if you are connecting to a z/OS Db2 database.
 
 ```sh
 export IBM_DB_SERVER_TYPE="ZOS"

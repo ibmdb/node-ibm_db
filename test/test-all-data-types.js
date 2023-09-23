@@ -1,6 +1,7 @@
 var common = require("./common")
     , ibmdb = require("../")
     , assert = require("assert")
+    , iszos = common.isZOS
     , cn = common.connectionString;
 
 const expectedData =
@@ -51,7 +52,7 @@ ibmdb.open(cn, function(err, conn) {
   try {
     conn.querySync("drop table mytab1");
   } catch (e) {}
-    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+    if (iszos) {
         conn.querySync("create table mytab1 (c1 int, c2 SMALLINT, c3 BIGINT, c4 INTEGER, c5 DECIMAL(4,2), c6 NUMERIC, c7 float, c8 double, c9 decfloat, c10 char(10), c11 varchar(10), c12 char for bit data, c13 clob(10),c14 dbclob(100), c15 date, c16 time, c17 timestamp, c18 blob(10)) ccsid unicode");
         conn.querySync("insert into mytab1 values (1, 2, 9007199254741997, 1234, 67.98, 5689, 56.2390, 34567890, 45.234, 'bimal', 'kumar', '\x50', 'jha123456','㐀㐁㐂㐃㐄㐅㐆','2015-09-10', '10:16:33', '2015-09-10 10:16:33.770139', BLOB(x'616263'))");
     }
@@ -64,7 +65,7 @@ ibmdb.open(cn, function(err, conn) {
       else {
         console.log("Data1 = ", data);
       }
-      if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+      if (iszos) {
             assert.deepEqual(data, zosexpectedData);
       }
       else {
@@ -73,7 +74,7 @@ ibmdb.open(cn, function(err, conn) {
      
       conn.querySync("delete from mytab1");
       var blobParam = {DataType: "BLOB", Data: Buffer.from('abc')};
-        if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+        if (iszos) {
             err = conn.querySync("insert into mytab1 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [1, 2, '9007199254741997', 1234, 67.98, 5689, 56.2390, 34567890,
                 45.234, 'bimal', 'kumar', Buffer.from('P'), 'jha123456', '㐀㐁㐂㐃㐄㐅㐆', '2015-09-10',
                 '10:16:33', '2015-09-10 10:16:33.770139', blobParam]);
@@ -87,7 +88,7 @@ ibmdb.open(cn, function(err, conn) {
         else {
              data = conn.querySync("select * from mytab1");
              console.log("Data2 = ", data);
-             if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+             if (iszos) {
                 assert.deepEqual(data, zosexpectedData);
              }
              else {

@@ -4,7 +4,7 @@ var common = require("./common")
   , schema = common.connectionObject.CURRENTSCHEMA;
 
 
-if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+if (common.isZOS) {
   // Does not support ARRAY Data Type in CALL stmt.
   return 0;
 }

@@ -19,7 +19,7 @@ pool.open(connectionString, function( err, conn) {
           conn.querySync("drop table mtab2"); } catch(e) {};
     conn.querySync("create table mtab1(c1 varchar(30), c2 varchar(20))");
     conn.querySync("create table mtab2(c1 varchar(30), c2 varchar(20))");
-    if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+    if (common.isZOS) {
       // Db2 on z/OS does not support multi-row inserts
       conn.querySync("Insert into mtab1 values ('1', 'bimal')");
       conn.querySync("Insert into mtab1 values ('2', 'kumar')");

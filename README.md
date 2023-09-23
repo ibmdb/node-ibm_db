@@ -9,7 +9,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
-- **SQL1598N** - Check [here](#sql1598n).
+- **SQL1598N Error** - It is expected in absence of valid db2connect license. Please click [here](#sql1598n) and read instructions.
 
 ## API Documentation
 
@@ -51,7 +51,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: 20.2.0
+- The latest node.js version using which `ibm_db` is tested: 20.7.0
 
 ## Install
 
@@ -107,6 +107,7 @@ To avoid this download, you can manually download clidriver from this location o
 
 > For more installation details please refer:  [INSTALLATION GUIDE](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md)
 
+> If installation fails while downloading [clidriver](#downloadCli), follow instructions as documented [here](#downloadCliFailed).
 
 ### Important Environment Variables and Download Essentials 
 
@@ -335,30 +336,65 @@ async function main() {
 ```
 
 ## Un-Install
-<a name="downloadCli"></a>
-To uninstall node-ibm_db from your system, just delete the node-ibm_db or ibm_db directory.
+
+```
+npm uninstall ibm_db
+```
+OR, just delete the `node_modules\ibm_db` directory manually from your system.
 
 
 ## <a name="sql1598n"></a>For z/OS and iSeries Connectivity and SQL1598N error
 
-For connectivity against DB2 for LUW or Informix Server using node-ibm_db, 
-no license file is required. However, if you want to use node-ibm_db 
-against DB2 for z/OS or DB2 for i(AS400) Servers, you must have db2connect 
-license of version 11.5 if server is not db2connectactivated to accept
-unlimited number of client connection. You can buy db2connect license from IBM.
-The connectivity can be enabled either on server using db2connectactivate
-utility or on client using client side license file. If you have client side
-license file, just copy it under `.../ibm_db/installer/clidriver/license` folder to be effective.
+- Connection to Db2 for z/OS or Db2 for i(AS400) using `ibm_db` driver from distributed platform (Linux, Unix, Windows and MacOS) is not free.
 
-In absense of a valid db2connect license file, `ibm_db` will throw **SQL1598N** error. Client side license file name should be `db2con*.lic`.
+- Connection to Db2 for LUW or Informix Server using `ibm_db` driver is free.
 
-If `IBM_DB_HOME` is set, you need to have same version of db2connect license as installed db2 client. Check db2 client version using `db2level` command.
+- `ibm_db` returns SQL1598N error in absence of a valid db2connect license. SQL1598N error is returned by the Db2 Server to client.
+To suppress this error, Db2 server must be activated with db2connectactivate utility OR a client side db2connect license file must exist.
 
-To know more about license and purchasing cost, please contact [IBM Customer Support](http://www-05.ibm.com/support/operations/zz/en/selectcountrylang.html).
+- Db2connect license can be applied on database server or client side. A db2connect license of version 11.5 is required for ibm_db.
+
+- Ask your DBA to run db2connectactivate utility on Server to activate db2connect license.
+
+- If database Server is enabled for db2connect, no need to apply client side db2connect license.
+
+- If Db2 Server is not db2connectactivated to accept unlimited number of client connection, you must need to apply client side db2connect license.
+
+- db2connectactivate utility and client side db2connect license both comes together from IBM in a single zip file.
+
+- Client side db2connect license is a `db2con*.lic` file that must be copied under `clidriver\license` directory.
+
+- If you have a `db2jcc_license_cisuz.jar` file, it will not work for ibm_db. `db2jcc_license_cisuz.jar` is a db2connect license file for Java Driver. For non-Java Driver, client side db2connect license comes as a file name `db2con*.lic`.
+
+- If environment variable `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is not set, `ibm_db` automatically downloads [open source driver specific clidriver](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/) from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli and save as `node_modules\ibm_db\installer\clidriver`. Ignores any other installation.
+
+- If `IBM_DB_HOME` or `IBM_DB_INSTALLER_URL` is set, you need to have same version of db2connect license as installed db2 client. Check db2 client version using `db2level` command to know version of db2connect license required. The license file should get copied under `$IBM_DB_HOME\license` directory.
+
+- If you do not have db2connect license, contact [IBM Customer Support](https://www.ibm.com/mysupport/s/?language=en_US) to buy db2connect license. Find the `db2con*.lic` file in the db2connect license shared by IBM and copy it under `.../node_modules/ibm_db/installer/clidriver/license` folder to be effective.
+
+- To know more about license and purchasing cost, please contact [IBM Customer Support](https://www.ibm.com/mysupport/s/?language=en_US).
 
 ## For AIX install issue
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
+
+## If installation fails while downloading clidriver
+<a name="downloadCliFailed"></a>
+
+- If installation of `ibm_db` fails because ibm_db fails to download *_odbc_cli.tar.gz or *_odbc_cli.zip file, it is most likely that your firewall or VPN configuration is blocking download of this file from internet. In this case, manually download the platform specific clidriver from [DOWNLOAD CLI DRIVER](https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/) or [github repo](https://github.com/ibmdb/db2drivers/tree/main/clidriver); untar/unzip it, you'll get clidriver directory.
+
+- Set a system level environment variable `IBM_DB_HOME=<full path of clidriver directory>` and then run `npm install ibm_db`.
+
+- Example for non-Windows:
+```
+export IBM_DB_HOME=/home/$USER/clidriver
+npm install ibm_db
+```
+- Example for Windows:
+```
+set IBM_DB_HOME=C:\myproject\clidriver
+npm install ibm_db
+```
 
 ## For Missing Package/Binding issue
 
@@ -383,10 +419,8 @@ Note: "db2cli bind" does not work with DB2 z/OS if the CLI packages (SYSSH*) wer
 
 ## Troubleshooting on z/OS
 Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2 ODBC initialization file_:
-    ```
-    APPLTRACE=1
-    APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
-    ```
+- APPLTRACE=1
+- APPLTRACEFILENAME=/u/<username>/odbc_trace.txt
 
 ### Db2 z/OS: UnicodeDecodeError Exception
 - Make sure you have set `CURRENTAPPENSC=ASCII` or `UNICODE` in ODBC initialization file.

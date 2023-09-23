@@ -21,7 +21,7 @@ ibmdb.open(cn, function (err,conn) {
       var errorFound = false;
      
       if (err.message) {
-        if (process.env.IBM_DB_SERVER_TYPE === "ZOS") {
+        if (common.isZOS) {
           // zOS Db2 returns SQLCode -181 and SQLState 22007 for
           // THE STRING REPRESENTATION OF A DATETIME VALUE IS NOT
           // A VALID DATETIME VALUE

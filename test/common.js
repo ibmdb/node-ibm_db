@@ -1,31 +1,36 @@
 var odbc = require("../");
 const os = require('os');
 
-//exports.connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
-exports.connectionString = "";
+//connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
+var connectionString = null;
+var connectionObject = null;
 var isZOS = false;
 if (os.type() === "OS/390") {
+    isZOS = true;
+}
+// If env var IBM_DB_SERVER_TYPE is set to ZOS means, target DB is zOS
+if(process.env.IBM_DB_SERVER_TYPE === "ZOS") {
     isZOS = true;
 }
 
 try {
   if (isZOS) {
     process.env.IBM_DB_SERVER_TYPE="ZOS";
-    exports.connectionObject = require('./config.testConnectionStrings.zos.json');
+    connectionObject = require('./config.zos.json');
   } else {
-    exports.connectionObject = require('./config.testConnectionStrings.json');
+    connectionObject = require('./config.json');
   }
 }
 catch (e) {
   if (isZOS) {
     // On z/OS, ODBC driver uses a local connection that only requires DSN, UID and PWD.
-    exports.connectionObject = {
+    connectionObject = {
        DSN : "{Db2 ODBC Driver}",
        UID : "db2admin",
        PWD : "db2admin"
     };
   } else {
-    exports.connectionObject = {
+    connectionObject = {
       DRIVER : "{DB2 ODBC Driver}",
       DATABASE : "SAMPLE",
       HOSTNAME : "localhost",
@@ -37,39 +42,35 @@ catch (e) {
   }
 }
 
-
 //checks if schema is defined
 if (process.env.IBM_DB_SCHEMA !== 'undefined') {
-    exports.connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA || exports.connectionObject.CURRENTSCHEMA;
+    connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA ||
+                                     connectionObject.CURRENTSCHEMA;
 }
-
-exports.connectionObject.UID     = process.env.IBM_DB_UID      || exports.connectionObject.UID;
-exports.connectionObject.PWD     = process.env.IBM_DB_PWD      || exports.connectionObject.PWD;
+connectionObject.UID = process.env.IBM_DB_UID || connectionObject.UID;
+connectionObject.PWD = process.env.IBM_DB_PWD || connectionObject.PWD;
 
 // Construct the connection string
 if (isZOS) {
   // On z/OS, ODBC driver uses a local connection that only requires DSN, UID and PWD.
-  exports.connectionObject.DSN = process.env.IBM_DB_DBNAME  || exports.connectionObject.DSN;
-  exports.connectionString = "DSN=" + exports.connectionObject["DSN"] + ";" +
-                             "UID=" + exports.connectionObject["UID"] + ";" +
-                             "PWD=" + exports.connectionObject["PWD"] + ";";
+  connectionObject.DSN = process.env.IBM_DB_DBNAME  || connectionObject.DSN;
+  connectionString = "DSN=" + connectionObject["DSN"] + ";" +
+                     "UID=" + connectionObject["UID"] + ";" +
+                     "PWD=" + connectionObject["PWD"] + ";";
 } else {
-  exports.connectionObject.DATABASE = process.env.IBM_DB_DBNAME  || exports.connectionObject.DATABASE;
-  exports.connectionObject.HOSTNAME = process.env.IBM_DB_HOSTNAME || exports.connectionObject.HOSTNAME;
-  exports.connectionObject.PORT    = process.env.IBM_DB_PORT     || exports.connectionObject.PORT;
-  exports.connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || exports.connectionObject.PROTOCOL;
-  for(key in exports.connectionObject) {
-    if(exports.connectionObject[key] != undefined)
-      exports.connectionString = exports.connectionString + key + "=" +
-                                 exports.connectionObject[key] + ";" ;
+  connectionObject.DATABASE = process.env.IBM_DB_DBNAME  || connectionObject.DATABASE;
+  connectionObject.HOSTNAME = process.env.IBM_DB_HOSTNAME || connectionObject.HOSTNAME;
+  connectionObject.PORT    = process.env.IBM_DB_PORT     || connectionObject.PORT;
+  connectionObject.PROTOCOL = process.env.IBM_DB_PROTOCOL || connectionObject.PROTOCOL;
+  for(key in connectionObject) {
+    if(connectionObject[key] != undefined)
+      connectionString = connectionString + key + "=" +
+                         connectionObject[key] + ";" ;
   }
 }
-//if (process.argv.length === 3) {
-//  exports.connectionString = process.argv[2];
-//}
 
 exports.testConnectionStrings = [{ title : "DB2", 
-                        connectionString : exports.connectionString }];
+                        connectionString : connectionString }];
 exports.benchConnectionStrings = exports.testConnectionStrings;
 
 if (process.argv.length === 3) {
@@ -78,12 +79,19 @@ if (process.argv.length === 3) {
   var lookup = process.argv[2];
   
   exports.testConnectionStrings.forEach(function (connectionString) {
-    if (connectionString && connectionString.title && connectionString.title == lookup) {
-      exports.connectionString = connectionString.connectionString
+    if (connectionString && connectionString.title &&
+        connectionString.title == lookup) {
+      connectionString = connectionString.connectionString
     }
   });
 }
 
+if(connectionObject.CURRENTSCHEMA == undefined) {
+    connectionObject.CURRENTSCHEMA = "NEWTON";
+}
+exports.connectionObject = connectionObject;
+exports.connectionString = connectionString;
+exports.isZOS = isZOS;
 exports.databaseName = "SAMPLE";
 exports.tableName = "NODE_ODBC_TEST_TABLE";
 
@@ -93,4 +101,19 @@ exports.dropTables = function (db, cb) {
 
 exports.createTables = function (db, cb) {
   db.query("create table " + exports.tableName + " (COLINT INTEGER, COLDATETIME TIMESTAMP, COLTEXT VARCHAR(255))", cb);
+};
+
+exports.sanitizeSP = function (proc) {
+  if(isZOS) {
+      // Update the queries for Db2 on z/OS compatiability.
+      // Db2 for z/OS does not support CREATE OR REPLACE syntax.
+      proc = proc.replace(" or replace", "");
+
+      // When creating an SQL native procedure on z/OS, you will need
+      // to have a WLM environment defined for your system if you want
+      // to run the procedure in debugging mode.
+      // Adding "disable debug mode" to bypass this requirement.
+      proc = proc.replace(" begin", " disable debug mode begin");
+  }
+  return proc;
 };
