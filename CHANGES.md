@@ -1,3 +1,31 @@
+2023-09-23, Version 3.2.2
+=========================
+
+ * update windows binary and electron binaries (Bimal Jha)
+
+ * update test files, doc files and dependency versions. (Bimal Jha)
+
+ * Fix for https://github.com/ibmdb/node-ibm_db/issues/942 (#944) (Andre Asselin)
+
+ * Fix double free of Buffer/str for OUTPUT parameter, issue #942 (Bimal Jha)
+
+ * Fix for https://github.com/ibmdb/node-ibm_db/issues/943 (#945) (Andre Asselin)
+
+ * Support null value for INOUT type parameter of SP, issue #940 (Bimal Jha)
+
+ * doc upate, correct links in api documentation (Bimal Jha)
+
+ * fix: ignore CLI0106E error for endTransaction, issue #938 (Bimal Jha)
+
+ * update test file (Bimal Jha)
+
+ * add support for outparams in await call of stmt.execute() API, issue #936 (Bimal Jha)
+
+ * Add addon binaries for electron v25 (Bimal Jha)
+
+ * update issue template (Bimal Jha)
+
+
 2023-05-21, Version 3.2.1
 =========================
 
