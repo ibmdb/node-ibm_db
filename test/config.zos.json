@@ -1,4 +1,4 @@
 { "DSN" : "SAMPLE",
-  "UID" : "newton",
-  "PWD" : "db2admin"
+  "UID" : "db2user",
+  "PWD" : "xxxxxx"
 }

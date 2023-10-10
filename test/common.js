@@ -2,8 +2,8 @@ var odbc = require("../");
 const os = require('os');
 
 //connectionString = "DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2admin;HOSTNAME=localhost;port=50000;PROTOCOL=TCPIP";
-var connectionString = null;
-var connectionObject = null;
+var connectionString = "";
+var connectionObject = "";
 var isZOS = false;
 if (os.type() === "OS/390") {
     isZOS = true;
@@ -47,8 +47,16 @@ if (process.env.IBM_DB_SCHEMA !== 'undefined') {
     connectionObject.CURRENTSCHEMA = process.env.IBM_DB_SCHEMA ||
                                      connectionObject.CURRENTSCHEMA;
 }
-connectionObject.UID = process.env.IBM_DB_UID || connectionObject.UID;
-connectionObject.PWD = process.env.IBM_DB_PWD || connectionObject.PWD;
+
+connectionObject.UID = process.env.IBM_DB_UID || process.env.DB2_USER || connectionObject.UID;
+connectionObject.PWD = process.env.IBM_DB_PWD || process.env.DB2_PASSWD || connectionObject.PWD;
+if( !process.env.IBM_DB_PWD && !process.env.DB2_PASSWD ) {
+    console.log("\n    ====================================================");
+    console.log("    Warning: Environment variable DB2_PASSWD is not set.\n" +
+                "    Please set it before running test file and avoid\n" +
+                "    hardcoded password in config.json file.");
+    console.log("    ====================================================\n");
+}
 
 // Construct the connection string
 if (isZOS) {

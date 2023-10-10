@@ -1,6 +1,6 @@
 { "DRIVER" : "{DB2 ODBC Driver}",
   "DATABASE" : "SAMPLE",
-  "UID" : "newton",
+  "UID" : "db2user",
   "PWD" : "xxxxxx",
   "HOSTNAME" : "waldevdbclnxtst06.dev.rocketsoftware.com",
   "PORT" : 60000,

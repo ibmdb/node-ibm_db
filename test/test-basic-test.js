@@ -5,6 +5,7 @@ var common = require("./common")
 var platform = require('os').platform();
 
 console.log("Trying to open a connection ... ");
+console.log("Connection String =", cn);
 ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
   if(err) console.log(err);
   assert.equal(err, null);
