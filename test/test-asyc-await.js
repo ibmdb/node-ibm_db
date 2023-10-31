@@ -45,6 +45,7 @@ async function test2() {
 
 async function test3()
 {
+    const query = 'update mytab set c2=? WHERE c1=?;'
     pool.setMaxPoolSize(2); // Max no of active connections.
     let ret = pool.init(1, cn);
     if(typeof ret === 'object') assert.equal(ret.message, undefined);
@@ -56,11 +57,18 @@ async function test3()
 
       await conn.query("drop table mytab");
       await conn.query("create table mytab(c1 int, c2 varchar(10))");
-      await conn.query("insert into mytab values (?, ?)", [3, 'rocket']);
-      let stmt = await conn.prepare("select * from mytab");
-      let result = await stmt.execute();
+      await conn.query("insert into mytab values (?, ?)", [1050, 'rocket']);
+      //Test for issue #960
+      let stmt = await conn.prepare(query)
+      let result = await stmt.executeNonQuery(['canceled', 1050])
+      console.log("No of updated row = ", result)
+      assert.equal(1, result);
+
+      stmt = await conn.prepare("select * from mytab");
+      result = await stmt.execute();
       data = await result.fetchAll();
       console.log("result = ", data);
+      assert.equal(data[0].C2, 'canceled');
       await result.close();
       await stmt.close();
       await conn.query("drop table mytab");
