@@ -81,6 +81,12 @@ using namespace node;
     params = NULL;                                                   \
     count = 0;
 
+// Define sqltypes which are not defined in SDSNC.H/SQLCLI on z/OS
+#ifndef SQL_BOOLEAN
+  #define SQL_BOOLEAN 16
+  #define SQL_ROW 19
+#endif
+
 // two macros ensures that any macro used will be expanded
 // before being stringified. #x gives string value of x.
 #define LINESTRING(x) #x
