@@ -47,8 +47,10 @@ async function test3()
 {
     const query = 'update mytab set c2=? WHERE c1=?;'
     pool.setMaxPoolSize(2); // Max no of active connections.
-    let ret = pool.init(1, cn);
-    if(typeof ret === 'object') assert.equal(ret.message, undefined);
+    await pool.initAsync(1, cn).catch((err) => {
+      console.log(err);
+      if(typeof err === 'object') assert.equal(err.message, undefined);
+    });
 
     try {
       let conn = await pool.open(cn);

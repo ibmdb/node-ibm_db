@@ -1407,7 +1407,8 @@ use Pool.open instead of [ibmdb.open](#1-openconnectionstring-options-callback).
 3.  [.close(callback)](#-3-closecallback)
 4.  [.closeSync()](#-4-closesync)
 5.  [.init(N, connStr)](#-5-initn-connstr)
-6.  [.setMaxPoolSize(N)](#-6-setmaxpoolsizen)
+6.  [.initAsync(N, connStr, callback)](#-6-initasyncn-connstr-callback)
+7.  [.setMaxPoolSize(N)](#-7-setmaxpoolsizen)
 
 ### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
 
@@ -1519,7 +1520,7 @@ console.log("All connections in the pool are closed.");
 ### <a name="initPoolApi"></a> 5) .init(N, connStr)
 
 Initialize `Pool` with N no of active connections using supplied connection string.
-It is a synchronous API. We do not need an asynchronous version of this API.
+It is a synchronous API.
 
 * **N** - No of connections to be initialized.
 * **connStr** - The connection string for your database
@@ -1535,7 +1536,34 @@ pool.open(connStr, function(err, db) { ...
 ```
 Check [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for example.
 
-### <a name="setMaxPoolSize"></a> 6) .setMaxPoolSize(N)
+
+### <a name="initAsyncApi"></a> 6) .initAsync(N, connStr, callback)
+
+Initialize `Pool` with N no of active connections using supplied connection string.
+It is an asynchronous API.
+
+* **N** - No of connections to be initialized.
+* **connStr** - The connection string for your database or a JSON Object with connection information
+* **callback** - `callback (err)`
+```
+pool.initAsync(5, connStr, function(err) {
+  if(err) {
+    console.log(err);
+    return false;
+  }
+  pool.open(connStr, function(err, db) { ... });
+});
+
+try {
+  await pool.initAsync(1, cn);
+  let conn = await pool.open(cn);
+  let data = await conn.query("select 1 from sysibm.sysdummy1");
+  console.log("data = ", data);
+} catch(err) {console.log(err);}
+```
+Check [test-asyc-await.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-asyc-await.js) for example.
+
+### <a name="setMaxPoolSize"></a> 7) .setMaxPoolSize(N)
 
 Number of maximum connection to database supported by current pool.
 
