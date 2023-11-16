@@ -627,7 +627,7 @@ var install_node_ibm_db = function(file_url) {
                     odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
                     if(electronVersion[0] < 19) {
                         console.log("No precompiled electron binary available"+
-                                    " for electron " + electronVersion + "\n");
+                                    " for electron " + electron_version + "\n");
                         process.exit(1);
                     }
                 }
@@ -675,6 +675,7 @@ var install_node_ibm_db = function(file_url) {
                 }
                 // We have correct bindings file in odbcBindingsNode for
                 // installed node version now. Extract it from build.zip file.
+                printMsg("Extracting " + odbcBindingsNode + " from build.zip");
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".

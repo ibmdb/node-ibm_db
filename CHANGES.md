@@ -1,3 +1,19 @@
+2023-11-16, Version 3.2.3
+=========================
+
+ * update precompiled binaries (Bimal Jha)
+
+ * fea: add support for pool.initAsync() API, PR #953, issue #952 (Bimal Jha)
+
+ * fix: compilation issue on z/OS, define SQL_BOOLEAN, issue #961 (Bimal Jha)
+
+ * build(deps): bump axios from 1.5.0 to 1.6.0 (#964) (dependabot[bot])
+
+ * fix promise bug of executeNonQuery api, issue #960 (Bimal Jha)
+
+ * read Db2 credential from Env var for testing (Bimal Jha)
+
+
 2023-09-23, Version 3.2.2
 =========================
 

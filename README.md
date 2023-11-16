@@ -23,7 +23,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Make sure your system has C++ compiler installed that support C++11 standard.
 
-- For non-windows platforms: gcc compiler version >= 8.4 is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
+- For non-windows platforms: gcc compiler version >= 8.4 and `make` is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
 Install a newer compiler or upgrade older one.
 
 - For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 12.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
@@ -34,7 +34,7 @@ Install a newer compiler or upgrade older one.
 
 - **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
 
-- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@8 is required.
+- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@8 and `make` is required.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
@@ -43,6 +43,8 @@ Install a newer compiler or upgrade older one.
 - On z/OS and other non-Windows platform, `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
 
 - On z/OS only certain versions of node-gyp are supported. This was tested with:<br>
+z/OS v2.4
+Db2 v12.0
 node-gyp 3.4.0<br>
 npm 3.10.10<br>
 ibm_db: 2.8.1
@@ -51,7 +53,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: **20.7.0**
+- The latest node.js version using which `ibm_db` is tested: **21.2.0**
 
 ## Install
 
@@ -79,7 +81,7 @@ export npm_config_loglevel=silent => For silent mode installation.
 For **ELECTRON** or **VSCode** Installation:
 ```
 npm install ibm_db -electron=<electron_version>
-npm install ibm_db -electron="19.0.17"
+npm install ibm_db -electron="25.9.2"
 npm install ibm_db -vscode
 ```
 To install using **specific version of clidriver** from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/:
@@ -511,6 +513,15 @@ flag `DEBUG` to the defines section of the `binding.gyp` file and then execute
 ],
 <snip>
 ```
+OR,
+```
+cd ibm_db
+npm install --debug
+```
+
+Above two method will enable debugging messages from C++ code. You can enable
+debugging messages from nodejs code by calling [ibmdb.debug(true)](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md#-38-debugvalue)
+api from your application.
 
 ### Unicode
 
@@ -566,7 +577,7 @@ define in `binding.gyp`
 
 ## Tips
 
-### Using node < v0.10 on Linux
+### Using more than 4 threads on Linux
 
 Be aware that through node v0.9 the uv_queue_work function, which is used to 
 execute the ODBC functions on a separate thread, uses libeio for its thread 

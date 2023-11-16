@@ -1561,7 +1561,7 @@ try {
   console.log("data = ", data);
 } catch(err) {console.log(err);}
 ```
-Check [test-asyc-await.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-asyc-await.js) for example.
+Check [test-asyc-await.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-asyc-await.js#L50) for example.
 
 ### <a name="setMaxPoolSize"></a> 7) .setMaxPoolSize(N)
 
