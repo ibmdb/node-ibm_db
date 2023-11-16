@@ -440,7 +440,7 @@ var install_node_ibm_db = function(file_url) {
                       printMsg('\nnode-gyp build process failed! \n\n' +
                         'Proceeding with Pre-compiled Binary Installation. \n');
                     }
-                    installPreCompiledWinBinary();
+                    installPreCompiledBinary();
                     return;
                 }    
 
@@ -463,7 +463,7 @@ var install_node_ibm_db = function(file_url) {
                         //If binding.sln file is missing then msbuild will fail.
                         console.log('\nbinding.sln file is not available! \n\n' +
                         'Proceeding with Pre-compiled Binary Installation. \n');
-                        installPreCompiledWinBinary();
+                        installPreCompiledBinary();
                         return;
                     }
 
@@ -482,7 +482,7 @@ var install_node_ibm_db = function(file_url) {
                                 console.log('\nReading failure: can not read ' +
                                 'build/odbc_bindings.vcxproj! \n' +
                                 'Proceeding with Pre-compiled Binary Installation.\n');
-                                installPreCompiledWinBinary();
+                                installPreCompiledBinary();
                                 return;
                             }
 
@@ -494,7 +494,7 @@ var install_node_ibm_db = function(file_url) {
                                 {
                                     console.log('\nWriting failure: can not write ' + 'build/odbc_bindings.vcxproj! \n' +
                                     'Proceeding with Pre-compiled Binary Installation. \n');
-                                    installPreCompiledWinBinary();
+                                    installPreCompiledBinary();
                                     return;
                                 }
                                 else printMsg("\nKernel additional dependencies removed successfully!\n");
@@ -508,7 +508,7 @@ var install_node_ibm_db = function(file_url) {
                          * THEN: "msbuild" will produce corrupt binary (NO FAILURE), so to stop this:
                          * RUN: Pre-compiled Binary Installation process.
                          */
-                        installPreCompiledWinBinary();
+                        installPreCompiledBinary();
                         return;
                     }
 
@@ -517,14 +517,13 @@ var install_node_ibm_db = function(file_url) {
 
                     var childProcess = exec(msbuildString, function (error, stdout, stderr)
                     {
-                        //if( downloadProgress == 0 ) printMsg(stdout);
                         if (error !== null)
                         {
                             // "msbuild" FAILED: RUN Pre-compiled Binary Installation process.
                             printMsg(error);
                             printMsg('\nmsbuild build process failed! \n\n' +
                             'Proceeding with Pre-compiled Binary Installation. \n');
-                            installPreCompiledWinBinary();
+                            installPreCompiledBinary();
                             return;
                         }
                         else
@@ -542,8 +541,19 @@ var install_node_ibm_db = function(file_url) {
             var childProcess = exec(buildString, function (error, stdout, stderr) {
                 if( downloadProgress == 0 ) printMsg(stdout);
                 if (error !== null) {
+                  if (vscode_build &&
+                      (platform == 'darwin' || platform == 'linux')) {
+                    // "node-gyp" FAILED: RUN Pre-compiled Binary Installation.
+                    if(!downloadProgress) {
+                      console.log(error);
+                      printMsg('\nnode-gyp build process failed! \n\n' +
+                        'Proceeding with Pre-compiled Binary Installation. \n');
+                    }
+                    return installPreCompiledBinary();
+                  } else {
                     console.log(error);
                     process.exit(1);
+                  }
                 }
 
                 if(platform == 'darwin') {
@@ -595,9 +605,9 @@ var install_node_ibm_db = function(file_url) {
         });
     }
 
-    function installPreCompiledWinBinary()
+    function installPreCompiledBinary()
     {
-        if(platform == 'win32') {
+        if(platform == 'win32' || vscode_build) {
             if(arch == 'x64') {
                 var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
                 var odbcBindingsNode;
@@ -615,6 +625,11 @@ var install_node_ibm_db = function(file_url) {
                       fileName = "_linux_" + electronVersion[0];
                     }
                     odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
+                    if(electronVersion[0] < 19) {
+                        console.log("No precompiled electron binary available"+
+                                    " for electron " + electronVersion + "\n");
+                        process.exit(1);
+                    }
                 }
                 else
                 {
@@ -627,8 +642,9 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
                     var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.18.0';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.18.2';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
+                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.9.0';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) {
@@ -654,8 +670,11 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 18.0) && ODBC_BINDINGS_V17 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
                                        ODBC_BINDINGS;
                 }
+                // We have correct bindings file in odbcBindingsNode for
+                // installed node version now. Extract it from build.zip file.
 
                 // Removing the "build" directory created by Auto Installation Process.
                 // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".
@@ -689,8 +708,8 @@ var install_node_ibm_db = function(file_url) {
                 return 1;
 
             } else {
-                console.log('Windows 32 bit not supported. Please use an ' +
-                        'x64 architecture.\n');
+                console.log('32 bit platform is not supported. Please ' +
+                        'install 64 bit NodeJS on 64 bit OS for ibm_db.\n');
                 process.exit(1);
             }
         }
