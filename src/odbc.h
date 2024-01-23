@@ -129,7 +129,7 @@ class ODBC : public Nan::ObjectWrap {
 
     static NAN_MODULE_INIT(Init);
     static Column* GetColumns(SQLHSTMT hStmt, short* colCount);
-    static void FreeColumns(Column* columns, short* colCount);
+    static void FreeColumns(Column* &columns, short* colCount);
     static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t* buffer, size_t bufferLength);
     static Local<Value> GetOutputParameter(Parameter *prm);
     static Local<Object> GetRecordTuple (SQLHSTMT hStmt, Column* columns, short* colCount, uint16_t* buffer, size_t bufferLength);
