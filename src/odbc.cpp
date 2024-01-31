@@ -393,7 +393,7 @@ Column* ODBC::GetColumns(SQLHSTMT hStmt, short* colCount)
  * FreeColumns
  */
 
-void ODBC::FreeColumns(Column* columns, short* colCount)
+void ODBC::FreeColumns(Column* &columns, short* colCount)
 {
   DEBUG_PRINTF("ODBC::FreeColumns - Entry\n");
   for(int i = 0; i < *colCount; i++) {
