@@ -130,6 +130,7 @@ struct bind_work_data {
 
 struct setattr_work_data {
   Nan::Callback* cb;
+  ODBCConnection *conn;
   ODBCStatement *stmt;
   int result;
   SQLINTEGER attr;

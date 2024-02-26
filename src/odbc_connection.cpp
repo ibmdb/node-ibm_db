@@ -87,6 +87,8 @@ NAN_MODULE_INIT(ODBCConnection::Init)
   Nan::SetPrototypeMethod(constructor_template, "getTypeInfoSync", GetTypeInfoSync);
   Nan::SetPrototypeMethod(constructor_template, "getFunctions", GetFunctions);
   Nan::SetPrototypeMethod(constructor_template, "getFunctionsSync", GetFunctionsSync);
+  Nan::SetPrototypeMethod(constructor_template, "setAttr", SetAttr);
+  Nan::SetPrototypeMethod(constructor_template, "setAttrSync", SetAttrSync);
 
   Nan::SetPrototypeMethod(constructor_template, "columns", Columns);
   Nan::SetPrototypeMethod(constructor_template, "tables", Tables);
@@ -2764,5 +2766,181 @@ void ODBCConnection::UV_AfterGetFunctions(uv_work_t* req, int status)
   free(data);
   free(req);
   DEBUG_PRINTF("ODBCConnection::UV_AfterGetFunctions - Exit\n");
+}
+
+/*
+ * SetAttrSync
+ *
+ */
+
+NAN_METHOD(ODBCConnection::SetAttrSync)
+{
+  DEBUG_PRINTF("ODBCConnection::SetAttrSync - Entry\n");
+  Nan::HandleScope scope;
+
+  REQ_ARGS(2);
+  REQ_INT_ARG(0, attr);
+  SQLPOINTER valuePtr = NULL;
+  SQLINTEGER stringLength = SQL_IS_INTEGER;
+
+  if( info[1]->IsInt32() ) {
+      valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+  } else if (info[1]->IsNull()) {
+      valuePtr = (SQLPOINTER)0;
+  } else if (info[1]->IsString()) {
+      Nan::Utf8String value(info[1]);
+      stringLength = value.length();
+      GETCPPSTR(valuePtr, value, stringLength);
+  } else {
+      return Nan::ThrowTypeError("Unsupported Connection Attribute Value.");
+  }
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+  DEBUG_PRINTF("ODBCConnection::SetAttrSync: hENV=%X, hDBC=%X, "
+    "Attribute=%d, value=%i, length=%d\n",
+    conn->m_hENV, conn->m_hDBC, attr, valuePtr, stringLength);
+
+  SQLRETURN ret = SQLSetConnectAttr(conn->m_hDBC, attr, valuePtr, stringLength);
+
+  if (stringLength != SQL_IS_INTEGER) {
+    FREE(valuePtr);
+  }
+
+  if (SQL_SUCCEEDED(ret)) {
+    info.GetReturnValue().Set(Nan::True());
+  }
+  else {
+    Nan::ThrowError(ODBC::GetSQLError(
+      SQL_HANDLE_DBC,
+      conn->m_hDBC,
+      (char *) "[node-ibm_db] Error in ODBCConnection::SetAttrSync"
+    ));
+
+    info.GetReturnValue().Set(Nan::False());
+  }
+
+  DEBUG_PRINTF("ODBCConnection::SetAttrSync - Exit\n");
+}
+
+/*
+ * SetAttr
+ *
+ */
+
+NAN_METHOD(ODBCConnection::SetAttr)
+{
+  DEBUG_PRINTF("ODBCConnection::SetAttr - Entry\n");
+
+  Nan::HandleScope scope;
+  REQ_ARGS(3);
+
+  ODBCConnection* conn = Nan::ObjectWrap::Unwrap<ODBCConnection>(info.Holder());
+
+  uv_work_t* work_req = (uv_work_t *) (calloc(1, sizeof(uv_work_t)));
+  MEMCHECK( work_req );
+
+  setattr_work_data* data =
+    (setattr_work_data *) calloc(1, sizeof(setattr_work_data));
+  if( !data ) free(work_req);
+  MEMCHECK( data );
+
+  data->conn = conn;
+
+  REQ_INT_ARG(0, attr);
+  data->attr = attr;
+  data->valuePtr = NULL;
+  data->stringLength = SQL_IS_INTEGER;
+
+  if( info[1]->IsInt32() ) {
+      data->valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+  } else if (info[1]->IsNull()) {
+      data->valuePtr = (SQLPOINTER)0;
+  } else if (info[1]->IsString()) {
+      Nan::Utf8String value(info[1]);
+      data->stringLength = value.length();
+      GETCPPSTR(data->valuePtr, value, data->stringLength);
+  } else {
+      return Nan::ThrowTypeError("Unsupported Connection Attribute Value.");
+  }
+
+  REQ_FUN_ARG(2, cb);
+
+  DEBUG_PRINTF("ODBCConnection::SetAttr: hENV=%X, hDBC=%X, "
+    "Attribute=%d, value=%i, length=%d\n",
+    data->conn->m_hENV, data->conn->m_hDBC,
+    data->attr, data->valuePtr, data->stringLength
+  );
+
+  data->cb = new Nan::Callback(cb);
+  work_req->data = data;
+
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_SetAttr,
+    (uv_after_work_cb)UV_AfterSetAttr);
+
+  conn->Ref();
+
+  info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCConnection::SetAttr - Exit\n");
+}
+
+void ODBCConnection::UV_SetAttr(uv_work_t* req)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_SetAttr - Entry\n");
+
+  setattr_work_data* data = (setattr_work_data *)(req->data);
+
+  data->result = SQLSetConnectAttr(data->conn->m_hDBC,
+                                data->attr,
+                                data->valuePtr,
+                                data->stringLength);
+
+  DEBUG_PRINTF("ODBCConnection::UV_SetAttr - Exit\n");
+}
+
+void ODBCConnection::UV_AfterSetAttr(uv_work_t* req, int status)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_AfterSetAttr - Entry\n");
+
+  setattr_work_data* data = (setattr_work_data *)(req->data);
+
+  Nan::HandleScope scope;
+
+  //an easy reference to the statment object
+  ODBCConnection* self = data->conn->self();
+
+  //Check if there were errors
+  if(data->result == SQL_ERROR) {
+    ODBC::CallbackSQLError(
+      SQL_HANDLE_DBC,
+      self->m_hDBC,
+      data->cb);
+  }
+  else {
+    Local<Value> info[2];
+
+    info[0] = Nan::Null();
+    info[1] = Nan::True();
+
+    Nan::TryCatch try_catch;
+
+    data->cb->Call( 2, info);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
+  }
+
+  self->Unref();
+  delete data->cb;
+  if (data->stringLength != SQL_IS_INTEGER) {
+      FREE(data->valuePtr);
+  }
+
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterSetAttr - Exit\n");
 }
 

@@ -52,12 +52,13 @@ async function testColumnAlias() {
 }
 
 async function testCharInsert() {
+    await conn.query("drop table test1").catch((e) => {});
     await conn.query("create table test1(c1 int, c2 char(5))");
     await conn.query("insert into test1 values (1, 'abcde')");
     await conn.query("insert into test1 values (2, 'abcd')");
     await conn.query("insert into test1 values (?, ?)", [3, 'ABCDE']);
     await conn.query("insert into test1 values (?, ?)", [4, 'ABCD']);
     await conn.query("insert into test1 values (?, ?)", [5, { ParamType: 'INPUT', SQLType: 'CHAR', Data: 'DSWC' }]);
-    console.log(conn.querySync("select * from test1"));
+    console.log("Result from testCharInsert =", conn.querySync("select * from test1"));
     await conn.query("drop table test1");
 }

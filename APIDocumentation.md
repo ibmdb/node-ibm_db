@@ -1175,8 +1175,12 @@ ibmdb.open(cn, function(err, conn){
 
 ### <a name="setAttrApi"></a> 41) .setAttr(attributeName, value, callback)
 
-Set statement level attributes asynchronously. It requires attributeName and corresponding value.
+Set connection and statement level attributes asynchronously. It requires attributeName and corresponding value.
+conn.setAttr() - sets connection level attributes post connection.
+stmt.setAttr() - sets statement level attributes post creation of statement handle.
 ```
+await conn.setAttr("SQL_ATTR_INFO_USERID", 'appuser');
+
 stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
     if(err) { console.log(err); stmt.closeSync(); }
     else { ... }
@@ -1185,8 +1189,12 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 
 ### <a name="setAttrSyncApi"></a> 42) .setAttrSync(attributeName, value)
 
-Set statement level attributes synchronously. It requires attributeName and corresponding value.
+Set connection and statement level attributes synchronously. It requires attributeName and corresponding value.
+conn.setAttrSync() - sets connection level attributes post connection.
+stmt.setAttrSync() - sets statement level attributes post creation of statement handle.
 ```
+conn.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
+
 var err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
 err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3

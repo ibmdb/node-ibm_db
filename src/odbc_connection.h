@@ -109,6 +109,10 @@ class ODBCConnection : public Nan::ObjectWrap {
     static void UV_GetFunctions(uv_work_t* work_req);
     static void UV_AfterGetFunctions(uv_work_t* work_req, int status);
 
+    static NAN_METHOD(SetAttr);
+    static void UV_SetAttr(uv_work_t* work_req);
+    static void UV_AfterSetAttr(uv_work_t* work_req, int status);
+
     //sync methods
     static NAN_METHOD(CloseSync);
     static NAN_METHOD(CreateDbSync);
@@ -123,6 +127,7 @@ class ODBCConnection : public Nan::ObjectWrap {
     static NAN_METHOD(GetTypeInfoSync);
     static NAN_METHOD(GetFunctionsSync);
     static NAN_METHOD(SetIsolationLevel);
+    static NAN_METHOD(SetAttrSync);
     
     struct Fetch_Request {
       Nan::Callback* callback;

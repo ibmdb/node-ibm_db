@@ -95,7 +95,7 @@ if (process.argv.length === 3) {
 }
 
 if(connectionObject.CURRENTSCHEMA == undefined) {
-    connectionObject.CURRENTSCHEMA = "NEWTON";
+    connectionObject.CURRENTSCHEMA = "ZURBIE";
 }
 exports.connectionObject = connectionObject;
 exports.connectionString = connectionString;
