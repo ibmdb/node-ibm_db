@@ -11,6 +11,8 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **SQL1598N Error** - It is expected in absence of valid db2connect license. Please click [here](#sql1598n) and read instructions.
 
+- **GSKit Error** - Check instructions as documented [here](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md#SSLConnection).
+
 ## API Documentation
 
 - For complete list of ibm_db APIs and example, please check [APIDocumentation.md](https://github.com/ibmdb/node-ibm_db/blob/master/APIDocumentation.md)
@@ -31,6 +33,9 @@ Install a newer compiler or upgrade older one.
 - Python version >= 3.6.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
+
+- While installing `ibm_db` under a container, if you get libcrypt error, add a line in your scrip to install `libcrypt` and `libcrypt-compat` as this library is not present in most of the container OS. f.e. add a line like below in docker script:
+  `RUN apt-get update && apt-get install gcc g++ libcrypt libcrypt-compat python3 make -y`
 
 - **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
 
@@ -372,6 +377,8 @@ To suppress this error, Db2 server must be activated with db2connectactivate uti
 - db2connectactivate utility and client side db2connect license both comes together from IBM in a single zip file.
 
 - Client side db2connect license is a `db2con*.lic` file that must be copied under `clidriver\license` directory.
+
+- User running application must have write permission for `clidriver\cfgcache` and `clidriver\license` directories as clidriver need to create binary files to store licensing info in these directories at runtime. Lack of permission to create file too causes SQL1598N error.
 
 - If you have a `db2jcc_license_cisuz.jar` file, it will not work for ibm_db. `db2jcc_license_cisuz.jar` is a db2connect license file for Java Driver. For non-Java Driver, client side db2connect license comes as a file name `db2con*.lic`.
 
