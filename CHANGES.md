@@ -1,4 +1,18 @@
-2023-11-16, Version 3.2.3
+2024-03-31, Version 3.2.4
+=========================
+
+ * doc update with SSL info for #989 (Bimal Jha)
+
+ * build(deps): bump follow-redirects from 1.15.4 to 1.15.6 (#990) (dependabot[bot])
+
+ * support for set connect attributes, #970 (Bimal Jha)
+
+ * Fix calling FreeColumns multiple times resulting in SIGABRT (#980) (Lasse Hyldahl Jensen)
+
+ * build(deps): bump follow-redirects from 1.15.3 to 1.15.4 (#976) (dependabot[bot])
+
+
+2023-11-17, Version 3.2.3
 =========================
 
  * update precompiled binaries (Bimal Jha)
