@@ -109,12 +109,16 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;Security=SSL;SSLServerC
 ```
 > Note the two extra keywords **Security** and **SSLServerCertificate** used in connection string. `SSLServerCertificate` should point to the SSL Certificate from server or an CA signed certificate. Also, `PORT` must be `SSL` port and not the TCPI/IP port. Make sure Db2 server is configured to accept connection on SSL port else `ibm_db` will throw SQL30081N error.
 
-> `ibm_db` uses IBM ODBC/CLI Driver for connectivity and it do not support a certificate generated in `jks` format.
- `ibm_db` do not work with a `keystore.jks` file or any certificate generated for Java application. `ibm_db` works
- with a certificate generate for non-Java application that can get processed by GSKit tool. If you have a `*.jks` file,
- please get a SSL Certificate meant for non-Java application. If you have downloaded `IBMCertTrustStore` from IBM site,
- ibm_db will not work with it; you need to download `Secure Connection Certificates.zip` file that comes for IBM
- DB2 Command line tool(CLP).
+> Value of `SSLServerCertificate` keyword must be full path of a certificate file generated for client authentication.
+ It normally has `*.arm` or `*.cert` or `*.pem` extension. `ibm_db` do not support `*.jks` format file as it is not a
+ certificate file but a Java KeyStore file, extract certificate from it using keytool and then use the cert file.
+
+> `ibm_db` uses IBM ODBC/CLI Driver for connectivity and it do not support a `*.jks` file as keystoredb as `keystore.jks` is meant for Java applications.
+ Note that `*.jks` file is a `Java Key Store` file and it is not an SSL Certificate file. You can extract SSL certificate from JKS file using below `keytool` command:
+ ```
+ keytool -exportcert -alias your_certificate_alias -file client_cert.cert -keystore  keystore.jks
+ ```
+ Now, you can use the generated `client_cert.cert` as the value of `SSLServerCertificate` in connection string.
 
 > `ibm_db` supports only ODBC/CLI Driver keywords in connection string: https://www.ibm.com/docs/en/db2/11.5?topic=odbc-cliodbc-configuration-keywords
 
@@ -122,22 +126,13 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;Security=SSL;SSLServerC
  ignores it. Corresponding ibm_db connection keyword for `sslConnection` is `Security` hence, use `Security=SSL;` in
  connection string instead.
 
-To connect to dashDB in IBM Cloud, use below connection string:
+* To connect to dashDB in IBM Cloud, use below connection string:
 ```
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;Security=SSL";
 ```
 > We just need to add **Security=SSL** in connection string to have a secure connection against Db2 server in IBM Cloud.
 
-To connect a Db2 Server using SSL Certificate file, you can use connection string like below:
-```
-connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd;" +
-          "Security=SSL;SSLServerCertificate=/home/user/myclientcert.arm;";
-```
-> Value of `SSLServerCertificate` keyword must be full path of a certificate generated for non-Java application on
- Db2 Server. It normally has `*.arm` or `*.cert` or `*.pem` extension. `ibm_db` do not support `jks` format
- certificate file.
-
-You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+**Note:** You can also create a KeyStore DB using GSKit command line tool and use it in connection string along with other keywords as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
 
 If you have created a KeyStore DB using GSKit using password or you have got *.kdb file with *.sth file, use
 connection string in below format:
@@ -149,7 +144,10 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbus
           "Security=SSL;SslClientKeystoredb=C:/client.kdb;SSLClientKeystoreDBPassword=kdbpasswd;";
 ```
 
-**Note:** You can also create keystoredb using GSKit and add certificate file to keystoredb to use as documented in [DB2 Infocenter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.5.0/com.ibm.db2.luw.admin.sec.doc/doc/t0053518.html).
+> If you have downloaded `IBMCertTrustStore` from IBM site, ibm_db will not work with it; you need to
+ download `Secure Connection Certificates.zip` file that comes for IBM DB2 Command line tool(CLP).
+ `Secure Connection Certificates.zip` has *.kdb and *.sth files that should be used as the value of
+ `SSLClientKeystoreDB` and `SSLClientKeystash` in connection string.
 
 ### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
 
