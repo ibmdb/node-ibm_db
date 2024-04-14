@@ -26,7 +26,7 @@
     "test": "cd test && node run-tests.js"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10",
+    "adm-zip": "0.5.10",
     "axios": "^1.6.2",
     "big-integer": "^1.6.51",
     "bindings": "^1.5.0",
