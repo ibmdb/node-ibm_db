@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '25.8.0';
+var electron_version = '28.2.8';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -625,7 +625,7 @@ var install_node_ibm_db = function(file_url) {
                       fileName = "_linux_" + electronVersion[0];
                     }
                     odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
-                    if(electronVersion[0] < 19) {
+                    if(electronVersion[0] < 22) {
                         console.log("No precompiled electron binary available"+
                                     " for electron " + electron_version + "\n");
                         process.exit(1);
@@ -642,9 +642,9 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
                     var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.18.2';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.2';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.9.0';
+                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.12.2';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) {
@@ -867,7 +867,19 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.82){
+            if (vscodeVer >= 1.88){
+                electron_version = "28.2.8";
+            }
+            else if (vscodeVer >= 1.86){
+                electron_version = "27.1.0";
+            }
+            else if (vscodeVer >= 1.84){
+                electron_version = "25.9.2";
+            }
+            else if (vscodeVer >= 1.83){
+                electron_version = "25.8.4";
+            }
+            else if (vscodeVer >= 1.82){
                 electron_version = "25.8.0";
             }
             else if (vscodeVer >= 1.81){
@@ -896,6 +908,7 @@ function findElectronVersion() {
             }
             else {// vscode version older than 1.69 not supported
                 electron_version = "18.3.5";
+                printMsg("VSCode version " + vscodeVer + " is too old!");
             }
             printMsg("Detected VSCode version" + vscodeVer +
                     ", will use Electron version " + electron_version);
