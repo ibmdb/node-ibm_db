@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '28.2.8';
+var electron_version = '30.1.2';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -867,7 +867,13 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.88){
+            if (vscodeVer >= 1.92){
+                electron_version = "30.1.2";
+            }
+            else if (vscodeVer >= 1.90){
+                electron_version = "29.4.0";
+            }
+            else if (vscodeVer >= 1.88){
                 electron_version = "28.2.8";
             }
             else if (vscodeVer >= 1.86){
@@ -885,29 +891,8 @@ function findElectronVersion() {
             else if (vscodeVer >= 1.81){
                 electron_version = "22.3.18";
             }
-            else if (vscodeVer >= 1.80){
+            else {// vscode version older than 1.80 not supported
                 electron_version = "22.3.14";
-            }
-            else if (vscodeVer >= 1.78){
-                electron_version = "22.4.8";
-            }
-            else if (vscodeVer >= 1.77){
-                electron_version = "19.1.11";
-            }
-            else if (vscodeVer >= 1.75){
-                electron_version = "19.1.9";
-            }
-            else if (vscodeVer >= 1.74){
-                electron_version = "19.1.8";
-            }
-            else if (vscodeVer >= 1.72){
-                electron_version = "19.0.17";
-            }
-            else if (vscodeVer >= 1.71){
-                electron_version = "19.0.12";
-            }
-            else {// vscode version older than 1.69 not supported
-                electron_version = "18.3.5";
                 printMsg("VSCode version " + vscodeVer + " is too old!");
             }
             printMsg("Detected VSCode version" + vscodeVer +
