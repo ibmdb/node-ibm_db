@@ -25,17 +25,21 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Make sure your system has C++ compiler installed that support C++11 standard.
 
-- For non-windows platforms: gcc compiler version >= 8.4 and `make` is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support.
-Install a newer compiler or upgrade older one.
+- **For non-windows platforms**: gcc compiler version >= 8.4, python3, nodejs and `make` is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support. Install a newer compiler or upgrade older one.
 
-- For Windows: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 12.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio 2017 is required.
+-  Other required system libraries for Linux OS are: `libcrypt, libpam, libxml2, libstdc++, libc, libgcc, libaudit, libeconf, libz, liblzma and libcap-ng`.
+ These libraries should come by default with OS. If it is not present in your system, please install it.
 
-- Python version >= 3.6.0 is required by node-gyp. On z/OS, Python 2.7.13 or higher, but lower than Python 3.0, is required.
+- UBI9 has deprecated libcrypt. You need to install libcrypt and libxcrypt-compat on UBI9 manually.
+
+- **For Windows**: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 12.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio version >= 2017 is required.
+
+- Python version >= 3.8.0 is required by node-gyp. For **z/OS**, Python 2.7.13 or higher, but lower than Python 3.0, is required.
 
 - **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
 
-- While installing `ibm_db` under a container, if you get libcrypt error, add a line in your scrip to install `libcrypt` and `libcrypt-compat` as this library is not present in most of the container OS. f.e. add a line like below in docker script:
-  `RUN apt-get update && apt-get install gcc g++ libcrypt libcrypt-compat python3 make -y`
+- While installing `ibm_db` under a container, if you get libcrypt error, add a line in your scrip to install `libcrypt` and `libxcrypt-compat` as this library is not present in most of the container OS. f.e. add a line like below in docker script:
+  `RUN apt-get update && apt-get install gcc g++ libcrypt libxcrypt-compat python3 make -y`
 
 - **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
 
@@ -43,11 +47,11 @@ Install a newer compiler or upgrade older one.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
-- On z/OS, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
+- On **z/OS**, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0.  Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR.  Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
 
-- On z/OS and other non-Windows platform, `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
+- On **z/OS** and other non-Windows platform, `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
 
-- On z/OS only certain versions of node-gyp are supported. This was tested with:<br>
+- On **z/OS** only certain versions of node-gyp are supported. This was tested with:<br>
 z/OS v2.4
 Db2 v12.0
 node-gyp 3.4.0<br>
