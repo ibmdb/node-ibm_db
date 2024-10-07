@@ -1086,7 +1086,7 @@ NAN_METHOD(ODBCResult::GetColumnMetadataSync)
     Nan::Set(col, Nan::New("index").ToLocalChecked(), Nan::New(self->columns[i].index));
     Nan::Set(col, Nan::New("SQL_DESC_NAME").ToLocalChecked(), Nan::New((const char *) self->columns[i].name).ToLocalChecked());
     Nan::Set(col, Nan::New("SQL_DESC_TYPE_NAME").ToLocalChecked(), Nan::New((const char *) self->columns[i].type_name).ToLocalChecked());
-    Nan::Set(col, Nan::New("SQL_DESC_CONSIZE_TYPE").ToLocalChecked(), Nan::New(self->columns[i].type));
+    Nan::Set(col, Nan::New("SQL_DESC_CONSIZE_TYPE").ToLocalChecked(), Nan::New((int32_t)self->columns[i].type));
     Nan::Set(col, Nan::New("SQL_DESC_DISPLAY_SIZE").ToLocalChecked(), Nan::New(self->columns[i].max_display_len));
     Nan::Set(col, Nan::New("SQL_DESC_PRECISION").ToLocalChecked(), Nan::New(self->columns[i].precision));
     Nan::Set(col, Nan::New("SQL_DESC_SCALE").ToLocalChecked(), Nan::New(self->columns[i].scale));

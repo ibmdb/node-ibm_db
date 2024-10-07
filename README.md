@@ -62,7 +62,7 @@ ibm_db: 2.8.1
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: **21.2.0**
+- The latest node.js version using which `ibm_db` is tested: **22.9.0**
 
 ## Install
 

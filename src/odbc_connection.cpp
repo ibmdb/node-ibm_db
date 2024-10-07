@@ -200,7 +200,7 @@ NAN_METHOD(ODBCConnection::Open)
   DEBUG_PRINTF("ODBCConnection::Open - Entry\n");
   Nan::HandleScope scope;
   int len = 0;
-  char *errmsg = NULL;
+  const char *errmsg = NULL;
 
   REQ_STRO_ARG(0, connection);
   REQ_FUN_ARG(1, cb);
@@ -640,7 +640,7 @@ NAN_METHOD(ODBCConnection::CreateDbSync)
    SQLRETURN ret;
    Local<Value> objError;
    bool err = false;
-   char *errmsg = NULL;
+   const char *errmsg = NULL;
 
    int dbNameLength = 0;
    int codeSetLength = 0;
@@ -953,7 +953,7 @@ NAN_METHOD(ODBCConnection::Query)
 
   Local<Function> cb;
   int len = 0;
-  char *errmsg = NULL;
+  const char *errmsg = NULL;
   uv_work_t* work_req = NULL;
   query_work_data* data = NULL;
 
@@ -1463,7 +1463,7 @@ NAN_METHOD(ODBCConnection::Tables)
   DEBUG_PRINTF("ODBCConnection::Tables - Entry\n");
   Nan::HandleScope scope;
   int len = 0;
-  char *errmsg = NULL;
+  const char *errmsg = NULL;
   uv_work_t* work_req = NULL;
   query_work_data* data = NULL;
 
@@ -1572,7 +1572,7 @@ NAN_METHOD(ODBCConnection::Columns)
   DEBUG_PRINTF("ODBCConnection::Columns - Entry\n");
   Nan::HandleScope scope;
   int len = 0;
-  char *errmsg = NULL;
+  const char *errmsg = NULL;
   uv_work_t* work_req = NULL;
   query_work_data* data = NULL;
 

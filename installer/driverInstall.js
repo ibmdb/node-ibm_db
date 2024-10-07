@@ -644,7 +644,8 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
                     var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.2';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.12.2';
+                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.18.0';
+                    var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) {
@@ -671,6 +672,7 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V21 ||
                                        ODBC_BINDINGS;
                 }
                 // We have correct bindings file in odbcBindingsNode for
