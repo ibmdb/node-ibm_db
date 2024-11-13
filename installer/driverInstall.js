@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '30.1.2';
+var electron_version = '32.2.1';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -60,7 +60,7 @@ if (process.env.npm_config_cafile) {
 /* Read specific version of clidriver specified with install command
  * npm install ibm_db -clidriver=v11.1.4
  */
-var clidriverVersion;
+var clidriverVersion="v11.5.9";
 if(process.env.npm_config_clidriver && process.env.npm_config_clidriver != true) {
     clidriverVersion = process.env.npm_config_clidriver;
 }
@@ -634,25 +634,22 @@ var install_node_ibm_db = function(file_url) {
                 else
                 {
                     //Windows node binary names should update here.
-                    var ODBC_BINDINGS_V10 = 'build\/Release\/odbc_bindings.node.10.24.1';
-                    var ODBC_BINDINGS_V11 = 'build\/Release\/odbc_bindings.node.11.15.0';
-                    var ODBC_BINDINGS_V12 = 'build\/Release\/odbc_bindings.node.12.22.12';
-                    var ODBC_BINDINGS_V13 = 'build\/Release\/odbc_bindings.node.13.14.0';
                     var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.3';
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
                     var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.2';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.5';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
                     var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.18.0';
                     var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
+                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.11.0';
 
-                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x, 7.x, 8.x and 9.x has been discontinued.
-                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 10.0) {
+                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
+                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
                         console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
                             '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 10.X. ' +
-                            'Otherwise please use the node.js version >= 10.X\n');
+                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 14.X. ' +
+                            'Otherwise please use the node.js version >= 14.X\n');
                         process.exit(1);
                     }
 
@@ -661,10 +658,6 @@ var install_node_ibm_db = function(file_url) {
                      * file name according to the node version in the system.
                      */
                     odbcBindingsNode =
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 11.0) && ODBC_BINDINGS_V10 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 12.0) && ODBC_BINDINGS_V11 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 13.0) && ODBC_BINDINGS_V12 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) && ODBC_BINDINGS_V13 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 ||
@@ -672,7 +665,8 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V21 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 22.0) && ODBC_BINDINGS_V21 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V22 ||
                                        ODBC_BINDINGS;
                 }
                 // We have correct bindings file in odbcBindingsNode for
@@ -869,7 +863,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.92){
+            if (vscodeVer >= 1.95){
+                electron_version = "32.2.1";
+            }
+            else if (vscodeVer >= 1.92){
                 electron_version = "30.1.2";
             }
             else if (vscodeVer >= 1.90){
@@ -887,14 +884,8 @@ function findElectronVersion() {
             else if (vscodeVer >= 1.83){
                 electron_version = "25.8.4";
             }
-            else if (vscodeVer >= 1.82){
+            else {// vscode version older than 1.82 not supported
                 electron_version = "25.8.0";
-            }
-            else if (vscodeVer >= 1.81){
-                electron_version = "22.3.18";
-            }
-            else {// vscode version older than 1.80 not supported
-                electron_version = "22.3.14";
                 printMsg("VSCode version " + vscodeVer + " is too old!");
             }
             printMsg("Detected VSCode version" + vscodeVer +
