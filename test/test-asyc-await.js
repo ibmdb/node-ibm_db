@@ -60,7 +60,8 @@ async function test3()
       await conn.query("drop table mytab");
       await conn.query("create table mytab(c1 int, c2 varchar(10))");
       await conn.query("insert into mytab values (?, ?)", [1050, 'rocket']);
-      //Test for issue #960
+
+      // Test for issue #960
       let stmt = await conn.prepare(query)
       let result = await stmt.executeNonQuery(['canceled', 1050])
       console.log("No of updated row = ", result)
@@ -73,6 +74,16 @@ async function test3()
       assert.equal(data[0].C2, 'canceled');
       await result.close();
       await stmt.close();
+      console.log("Test for issue #960 is done.");
+      // Test for issue #996
+      try {
+        await conn.query("insert into mytab values (?, ?)", [[1050, 'rocket']]);
+      } catch (err) { console.log("Got error, throwing it."); throw err; }
+      data = await conn.query("select * from mytab");
+      console.log("data = ", data);
+      console.log("Test for issue #996 is done.");
+
+      // Clean up
       await conn.query("drop table mytab");
       await conn.close();
     } catch(e) {
