@@ -1,3 +1,33 @@
+2024-11-21, Version 3.2.5
+=========================
+
+ * test: add test case for issue #996 (Bimal Jha)
+
+ * update adm-zip version, fix of issue #991 (Bimal Jha)
+
+ * add support for nodev23.x (Bimal Jha)
+
+ * add support for nodev22.x on Windows #1005 (Bimal Jha)
+
+ * Update README.md doc for issue #1004 (Bimal Kumar Jha)
+
+ * Axios upgrade due open vulnerability [CVE-2024-39338] (#1001) (Iván Gustavo Ortiz García)
+
+ * upd: nan version to 2.20.0 (Bimal Jha)
+
+ * fea: add binaries for electron_v31 (Bimal Jha)
+
+ * update nan version (Bimal Jha)
+
+ * update mac binaries for electron 28 (Bimal Jha)
+
+ * fix adm-zip version temporarily to fix vscode install issue (Bimal Jha)
+
+ * Add Linux and Windows binaries for electron version 28 (Bimal Jha)
+
+ * doc: update info about JKS file for SSL Connection (Bimal Jha)
+
+
 2024-03-31, Version 3.2.4
 =========================
 
