@@ -408,82 +408,9 @@ npm install
 
 ## <a name="m1chip"></a> 10. Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)
 >
-> **Important: We do not have clidriver/dsdriver for ARM64 architecture yet. The driver for IBM DB2 is not compatible with Apple Silicon and will have to run x86_64 version of clidriver in emulated mode.**
-> Please support [this request for an Apple Silicon version of the driver](https://ibm-data-and-ai.ideas.ibm.com/ideas/DB2CON-I-92) to show IBM that you are interested in a native solution.
->
+> ibm_db@3.3.0 onwards supports native installation on MacOS ARM64(M* Chip/Apple Silicon Chip) system using clidriver/dsdriver version 12.1.0.
 
-**Warning:** If you use the ARM version of homebrew (as recommended for M1/M2 chip systems) you will get the following error message:
-```
-$ brew install gcc-12
-Error: Cannot install in Homebrew on ARM processor in Intel default prefix (/usr/local)!
-Please create a new installation in /opt/homebrew using one of the
-"Alternative Installs" from:
-  https://docs.brew.sh/Installation
-You can migrate your previously installed formula list with:
-  brew bundle dump
-```
-Install `gcc@12` using homebrew `(note: the x86_64 version of homebrew is needed for this, not the recommended ARM based homebrew)`. The clearest instructions on how to install and use the `x86_64` version of `homebrew` is by following below steps:
-*	My arm64/M1 brew is installed here:
-```
-	$ which brew
-	/opt/homebrew/bin/brew
-```
-*	Step 1. Install x86_64 brew under /usr/local/bin/brew
-	`arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
-*	Step 2. Create an alias for the x86_64 brew
-	I added this to my ~/.bashrc as below:
-```
-	# brew hack for x86_64
-	alias brew64='arch -x86_64 /usr/local/bin/brew'
-```
-* Then install gcc@12 using the x86_64 homebrew:
-```
-	brew64 install gcc@12
-```
-* Now find location of `lib/gcc/12/libstdc++.6.dylib` file in your system. It should be inside `/usr/local/homebrew/lib/gcc/12` or `/usr/local/lib/gcc/12` or `/usr/local/homebrew/Cellar/gcc@12/12.2.0/lib/gcc/12` or something similar. You need to find the correct path.
-Suppose path of gcc lib is `/usr/local/homebrew/lib/gcc/12`. Then update your .bashrc/.zshrc file with below line
-```
-export DYLD_LIBRARY_PATH=/usr/local/homebrew/lib/gcc/12:$DYLD_LIBRARY_PATH
-```
+### Installation:
+    Follow same steps as documented for [Node-ibm_db Installation on MacOS](#insmac)
 
-## Steps to Install Intel Python after verifying setup
-* Open new terminal and run command `arch -x86_64 /bin/bash    or arch -x86_64 /bin/zsh`.
-*  Verify the output of  `gcc -v` command. It should show `Target: x86_64-apple-darwin21` in output.
-* Install Intel Version of Python like: https://www.python.org/ftp/python/3.9.11/python-3.9.11-macosx10.9.pkg
-* Check output of commands `python --version` , `which python` and `file /usr/local/bin/python` commands. It should show `/usr/local/bin/python: Mach-O 64-bit executable x86_64`
 
-## Steps to Install x64 version of Node.js
-* Open new terminal and run command `arch -x86_64 /bin/bash    or arch -x86_64 /bin/zsh`.
-*  Verify the output of  `gcc -v` command. It should show `Target: x86_64-apple-darwin21` in output.
-* Install x64 Version of NodeJS like: https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz
-* Check output of commands `node -v` , `which node` and `file node` commands. It should show `node: Mach-O 64-bit executable x86_64`
-
-## Install ibm_db with x86_64 version of gcc12 and node.js on M1/M2 Chip System
-
-* Open a new terminal and run below commands:
-```
-gcc -v   => Output should have x86_64
-python --version   or python3 --version
-file `which python` or file `which python3`   => Output should have x86_64
-node -v
-file `which node` => Output should have x86_64
-npm uninstall ibm_db
-npm install ibm_db
-cd node_modules/ibm_db/installer
-source ./setenv.sh
-run your test program to verify.
-```
-
-### Getting error and unable to run test file
-* If connection fails with SQL30081N error: means `ibm_db` installation is correct and you need to provide correct connection string.
-
-* If `import ibm_db` fails with `Symbol not found: ___cxa_throw_bad_array_new_length` error or `malloc` error:
-  You need to find the correct location of lib/gcc/12 directory and add it to DYLD_LIBRARY_PATH environment variable.
-  Also, execute below commands from terminal with correct location of `lib/gcc/12/libstdc++.6.dylib` library.
-  ```
-  cd node_modules/ibm_db/installer/clidriverd/lib
-  install_name_tool -change /usr/local/lib/gcc/8/libstdc++.6.dylib <full path of libstdc++.6.dylib> libdb2.dylib
-  f.e.
-  install_name_tool -change /usr/local/lib/gcc/8/libstdc++.6.dylib /usr/local/homebrew/lib/gcc/12/libstdc++.6.dylib libdb2.dylib
-  ```
-Now run your test program and verify.

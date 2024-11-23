@@ -3,11 +3,13 @@
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 Async APIs return promises if callback function is not used. Async APIs supports async-await programming style.
 
-- **Supported Platforms** - Windows64, MacOS64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
+- **Supported Platforms** - Windows64, MacOS64, MacARM64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
 
-- **MacOS with M1 Chip** - Install x64 version of node.js. ibm_db with arm64 version of node.js is not supported.
+- **MacOS with Silicon Chip** - Supported from ibm_db@3.3.0 onwards using v12.x clidriver.
 
-- **Steps to install ibm_db on MacOS M1/M2 Chip system (arm64 architecture)** - Check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
+- **MacOS with Intel Chip** - Supported using v11.x clidriver only. By default v11.5.9 clidriver will get downloaded.
+
+- ibm_db v3.2.5 is the last version to use clidriver of version 11.5.9 by default. **ibm_db@3.3.0** onwards v12.1.x clidriver get autodownloaded by default and hence v12.1 db2connect license is required. However, user can use older db2connect license when ibm_db get installed using `npm install ibm_db -clidriver="v11.5.9"` command.
 
 - **SQL1598N Error** - It is expected in absence of valid db2connect license. Please click [here](#sql1598n) and read instructions.
 
@@ -166,7 +168,8 @@ To avoid this download, you can manually download clidriver from this location o
 | :---:        |  :---:         |  :---:                  |  :---:       |
 |AIX           |  ppc           |aix32_odbc_cli.tar.gz    |  Yes         |
 |              |  others        |aix64_odbc_cli.tar.gz    |  Yes         |
-|Darwin        |  x64           |macos64_odbc_cli.tar.gz  |  Yes         |
+|Darwin        |  x64           |macos64_odbc_cli.tar.gz  |  Till v11.5.9|
+|Darwin        |  arm64         |macarm64_odbc_cli.tar.gz |  From v12.1.0|
 |Linux         |  x64           |linuxx64_odbc_cli.tar.gz |  Yes         |
 |              |  s390x         |s390x64_odbc_cli.tar.gz  |  Yes         |
 |              |  s390          |s390_odbc_cli.tar.gz     |  Yes         |
@@ -177,8 +180,6 @@ To avoid this download, you can manually download clidriver from this location o
 |Windows       |  x64           |ntx64_odbc_cli.zip       |  Yes         |
 |              |  x32           |nt32_odbc_cli.zip        |  Not supported with node-ibm_db          |
 |z/OS          |  s390x         |ODBC support from IBM Db2 for z/OS 11.0 or 12.0 | Yes  |
-
-* For MacOS M1 Chip system with arm64 architecture, install x64 version of node.js and gcc@8. ibm_db with arm64 version of node.js is not supported. For installation instruction, check [here](https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip).
 
 ### Configure ODBC driver on z/OS
 
@@ -370,7 +371,13 @@ OR, just delete the `node_modules\ibm_db` directory manually from your system.
 - `ibm_db` returns SQL1598N error in absence of a valid db2connect license. SQL1598N error is returned by the Db2 Server to client.
 To suppress this error, Db2 server must be activated with db2connectactivate utility OR a client side db2connect license file must exist.
 
-- Db2connect license can be applied on database server or client side. A **db2connect license of version 11.5** is required for ibm_db.
+- Db2connect license can be applied on database server or client side. A **db2connect license of version 12.1** is required for ibm_db.
+
+- If you have db2connect license of **Db2 V11.5**, then install ibm_db using `npm install ibm_db -clidriver=v11.5.9` command or use below commands:
+```
+npm config set clidriver=v11.5.9
+npm install ibm_db
+```
 
 - Ask your DBA to run db2connectactivate utility on Server to activate db2connect license.
 
@@ -455,6 +462,11 @@ If you are using ibm_db to develop extension for VS Code, then ibm_db has to be 
 npm install ibm_db -vscode
 ```
 ibm_db would automatically be rebuilt with Electron if your installation directory path contains 'db2connect' as a sub-string. This has the same effect as running with '-vscode' flag.
+
+If you know the electron version or get it from `Help->About` option of vscode; you can build native add-on code for specific version of electron using below command:
+```
+npm install ibm_db -electron="32.2.5"
+```
 
 ## How to verify database connectivity using ODBC and generate db2trace?
 

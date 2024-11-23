@@ -40,14 +40,9 @@ if(downloadProgress == 0) {
   printMsg("platform = " + platform + ", arch = " + arch +
            ", node.js version = " + process.version);
 }
-if(platform == 'darwin' && arch == 'arm64') {
-    console.log('Apple Silicon Chip system with arm64 architecture is not supported. ' +
-                'Please install x64 version of node.js and gcc to install ibm_db.\n' +
-                'Check https://github.com/ibmdb/node-ibm_db/blob/master/INSTALL.md#m1chip for instructions.\n');
-    process.exit(1);
-} else if(arch == 'arm64') {
-    console.log('ARM64 architecture is not supported. ' +
-                'Please install x64 version of node.js and gcc to install ibm_db.\n');
+if(platform != 'darwin' && arch == 'arm64') {
+    console.log('ARM64 processor is not supported on ' + platform + ' platform.\n' +
+                'Only MacOS with arm64 processor is supported.\n');
     process.exit(1);
 }
 
@@ -58,11 +53,22 @@ if (process.env.npm_config_cafile) {
 }
 
 /* Read specific version of clidriver specified with install command
- * npm install ibm_db -clidriver=v11.1.4
+ * npm install ibm_db -clidriver=v11.5.9
  */
-var clidriverVersion="v11.5.9";
+var clidriverVersion="v12.1.0";
 if(process.env.npm_config_clidriver && process.env.npm_config_clidriver != true) {
     clidriverVersion = process.env.npm_config_clidriver;
+}
+
+if(platform == 'darwin') {
+  if(arch == 'arm64' && clidriverVersion.startsWith("v11")) {
+    // v11 do not have arm64 clidriver, use default one.
+    clidriverVersion="";
+  }
+  else if(arch == 'x64' && clidriverVersion.startsWith("v12")) {
+    // v12 do not have x64 clidriver, use default one.
+    clidriverVersion="";
+  }
 }
 
 /* Show make version on non-windows platform, if installed. */
@@ -238,8 +244,7 @@ var install_node_ibm_db = function(file_url) {
               if(!fs.existsSync(IBM_DB_HOME + "/lib"))
                 fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
 
-              if((platform == 'linux') || (platform =='aix') ||
-                 (platform == 'darwin' && (arch == 'x64' || arch == 'arm64'))) {
+              if((platform == 'linux') || (platform =='aix') || (platform == 'darwin')) {
                   removeWinBuildArchive();
                   buildBinary(!IS_ENVIRONMENT_VAR);
               }
@@ -285,12 +290,10 @@ var install_node_ibm_db = function(file_url) {
             if(arch == 'x64') {
                 odbc_driver = 'macos64_odbc_cli.tar.gz';
             } else if(arch == 'arm64') {
-                console.log('M1 Chip system with arm64 architecture is not supported. ' +
-                            'Please install x64 version of node.js to install ibm_db.\n');
-                process.exit(1);
+                odbc_driver = 'macarm64_odbc_cli.tar.gz';
             } else {
-                console.log('Mac OS 32 bit not supported. Please use an ' +
-                            'x64 architecture.\n');
+                console.log('Mac OS 32 bit not supported. Please use ' +
+                            '64 bit MacOS system.\n');
                 process.exit(1);
             }
         } 
@@ -608,7 +611,7 @@ var install_node_ibm_db = function(file_url) {
     function installPreCompiledBinary()
     {
         if(platform == 'win32' || vscode_build) {
-            if(arch == 'x64') {
+            if(arch.indexOf("64") > 0) {
                 var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
                 var odbcBindingsNode;
                 var fileName;
@@ -618,7 +621,11 @@ var install_node_ibm_db = function(file_url) {
                 {
                     var electronVersion = (electron_version).split('.');
                     if (platform == 'darwin') {
-                      fileName = "_mac_" + electronVersion[0];
+                      if (arch == 'arm64') {
+                        fileName = "_macarm_" + electronVersion[0];
+                      } else {
+                        fileName = "_mac_" + electronVersion[0];
+                      }
                     } else if (platform == 'win32') {
                       fileName = "_win_" + electronVersion[0];
                     } else {
