@@ -1,3 +1,11 @@
+2024-12-01, Version 3.3.0
+=========================
+
+ * add electron binaries for macos arm64 system (Bimal Jha)
+
+ * fea: add support for native installation on MacOS M1 Chip system (Bimal Jha)
+
+
 2024-11-21, Version 3.2.5
 =========================
 
