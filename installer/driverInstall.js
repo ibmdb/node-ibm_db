@@ -70,6 +70,10 @@ if(platform == 'darwin') {
     clidriverVersion="";
   }
 }
+if(clidriverVersion) {
+    installerURL = installerURL + "/" + clidriverVersion;
+    githubURL = githubURL + clidriverVersion + "/";
+}
 
 /* Show make version on non-windows platform, if installed. */
 printMakeVersion();
@@ -330,9 +334,6 @@ var install_node_ibm_db = function(file_url) {
         }
 
         INSTALLER_FILE = path.resolve(DOWNLOAD_DIR, odbc_driver);
-        if(clidriverVersion) {
-            odbc_driver = clidriverVersion + "/" + odbc_driver;
-        }
         installerfileURL = installerURL + odbc_driver;
         installerfileURL2 = githubURL + odbc_driver;
 
