@@ -27,7 +27,7 @@ catch (e) {
     connectionObject = {
        DSN : "{Db2 ODBC Driver}",
        UID : "db2admin",
-       PWD : "db2admin"
+       PWD : ""
     };
   } else {
     connectionObject = {
@@ -35,7 +35,7 @@ catch (e) {
       DATABASE : "SAMPLE",
       HOSTNAME : "localhost",
       UID : "db2admin",
-      PWD : "db2admin",
+      PWD : "",
       PORT : "50000",
       PROTOCOL : "TCPIP"
     };
