@@ -14,7 +14,7 @@ var stream = db.queryStream("wrong query");
 stream.once('data', function (data) {
   throw new Error("data should not return from an erroring queryStream.");
 }).once('error', function (err) {
-  assert.equal(err.state, (os.type() === "OS/390")?'37000':'42601');
+  assert.equal(err.sqlstate, (os.type() === "OS/390")?'37000':'42601');
   db.close(function(){
       console.log("Error test for queryStream completed successfully.");
   });
