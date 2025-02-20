@@ -1,8 +1,10 @@
 // To run this test.ts file, follow below steps
 // npm install -g typescript
+// npm install --save-dev @types/node
 // update database connection info in ../test/config.json file
 // tsc test.ts --lib es2015,dom
 // node test.js
+// OR, run: tsc test.ts && node test.js && rm test.js
 
 import * as ibmdb from '../'
 import * as common from '../test/common.js'
@@ -23,4 +25,5 @@ async function  main(){
   await conn.close()
 }
 
-main()
+main();
+
