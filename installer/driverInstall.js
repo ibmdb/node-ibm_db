@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '32.2.1';
+var electron_version = '35.0.1';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -646,11 +646,11 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
                     var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.5';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.7';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.18.0';
+                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.18.3';
                     var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
-                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.11.0';
+                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.14.0';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
@@ -871,29 +871,20 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.95){
+            if (vscodeVer >= 1.98){
+                electron_version = "34.2.0";
+            }
+            else if (vscodeVer >= 1.97){
+                electron_version = "32.2.7";
+            }
+            else if (vscodeVer >= 1.96){
+                electron_version = "32.2.6";
+            }
+            else if (vscodeVer >= 1.95){
                 electron_version = "32.2.1";
             }
-            else if (vscodeVer >= 1.92){
-                electron_version = "30.1.2";
-            }
-            else if (vscodeVer >= 1.90){
-                electron_version = "29.4.0";
-            }
-            else if (vscodeVer >= 1.88){
-                electron_version = "28.2.8";
-            }
-            else if (vscodeVer >= 1.86){
-                electron_version = "27.1.0";
-            }
-            else if (vscodeVer >= 1.84){
-                electron_version = "25.9.2";
-            }
-            else if (vscodeVer >= 1.83){
-                electron_version = "25.8.4";
-            }
-            else {// vscode version older than 1.82 not supported
-                electron_version = "25.8.0";
+            else {// vscode version older than 1.95 not supported
+                electron_version = "32.2.1";
                 printMsg("VSCode version " + vscodeVer + " is too old!");
             }
             printMsg("Detected VSCode version" + vscodeVer +
