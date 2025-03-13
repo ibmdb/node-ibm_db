@@ -9,6 +9,8 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **MacOS with Intel Chip** - Supported using v11.x clidriver only. By default v11.5.9 clidriver will get downloaded.
 
+- **Electron Binaries** - From electron v32 to v35. Hence, no support for vscode older than v1.95.
+
 - ibm_db v3.2.5 is the last version to use clidriver of version 11.5.9 by default. **ibm_db@3.3.0** onwards v12.1.x clidriver get autodownloaded by default and hence v12.1 db2connect license is required. However, user can use older db2connect license when ibm_db get installed using `npm install ibm_db -clidriver="v11.5.9"` command.
 
 - **SQL1598N Error** - It is expected in absence of valid db2connect license. Please click [here](#sql1598n) and read instructions.
