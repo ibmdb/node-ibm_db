@@ -2,66 +2,83 @@
 
 ## Database APIs
 
-**APIs for creating and droping Database using node.js application**
-*  [.createDbSync(dbName, connectionString, [options])](#create-and-drop-database-apis)
-*  [.dropDBSync(dbName, connectionString)](#-dropdbsyncdbname-connectionstring)
+**APIs for creating and dropping Database using node.js application**
+* [.createDbSync(dbName, connectionString, [options])](#-ibmdb-createdbsyncdbname-connectionstring--options)
+* [.dropDBSync(dbName, connectionString)](#-ibmdb-dropdbsyncdbname-connectionstring--options)
+
+**Global (ibmdb) APIs**
+
+* [.open(connectionString [, options] [, callback])](#-1-ibmdb-openconnectionstring-options-callback)
+* [.openSync(connectionString [,options])](#-2-ibmdb-opensyncconnectionstring-options)
+* [.debug(value)](#-38-ibmdb-debugvalue)
 
 **Database APIs**
-1.  [.open(connectionString, [options,] callback)](#1-openconnectionstring-options-callback)
-2.  [.openSync(connectionString)](#-2-opensyncconnectionstring-options)
-3.  [.query(sqlQuery [, bindingParameters], callback)](#-3-querysqlquery--bindingparameters-callback)
-4.  [.querySync(sqlQuery [, bindingParameters])](#-4-querysyncsqlquery--bindingparameters)
-5.  [.queryStream(sqlQuery [, bindingParameters])](#-5-querystreamsqlquery--bindingparameters)
-6.  [.queryResult(sqlQuery [, bindingParameters], callback)](#-6-queryresultsqlquery--bindingparameters-callback)
-7.  [.queryResultSync(sqlQuery [, bindingParameters])](#-7-queryresultsyncsqlquery--bindingparameters)
-8.  [.close(callback)](#-8-closecallback)
-9.  [.closeSync()](#-9-closesync)
-10. [.prepare(sql, callback)](#-10-preparesql-callback)
-11. [.prepareSync(sql)](#-11-preparesyncsql)
-12. [.bind(bindingParameters, callback)](#-12-bindbindingparameters-callback)
-13. [.bindSync(bindingParameters)](#-13-bindsyncbindingparameters)
-14. [.execute([bindingParameters], callback)](#-14-executebindingparameters-callback)
-15. [.executeSync([bindingParameters])](#-15-executesyncbindingparameters)
-16. [.executeNonQuery([bindingParameters], callback)](#-16-executenonquerybindingparameters-callback)
-17. [.executeNonQuerySync([bindingParameters])](#-17-executenonquerysyncbindingparameters)
-18. [stmt.close(callback)](#-18-stmtclosecallback)
-19. [stmt.closeSync()](#-19-stmtclosesync)
-20. [.fetch(option, callback)](#-20-fetchoption-callback)
-21. [.fetchSync(option)](#-21-fetchsyncoption)
-22. [.fetchAll(option, callback)](#-22-fetchalloption-callback)
-23. [.fetchAllSync(option)](#-23-fetchallsyncoption)
-24. [.getData(colNum, Size, callback)](#-24-getdatacolnum-size-callback)
-25. [.getDataSync(colNum, Size)](#-25-getdatasynccolnum-size)
-26. [result.close(callback)](#-26-resultclosecallback)
-27. [result.closeSync()](#-27-resultclosesync)
-28. [.beginTransaction(callback)](#-28-begintransactioncallback)
-29. [.beginTransactionSync()](#-29-begintransactionsync)
-30. [.commitTransaction(callback)](#-30-committransactioncallback)
-31. [.commitTransactionSync()](#-31-committransactionsync)
-32. [.rollbackTransaction(callback)](#-32-rollbacktransactioncallback)
-33. [.rollbackTransactionSync()](#-33-rollbacktransactionsync)
-34. [.setIsolationLevel(isolationLevel)](#-34-setisolationlevelisolationlevel)
-35. [.getColumnNamesSync()](#-35-getcolumnnamessync)
-36. [.getColumnMetadataSync()](#-36-getcolumnmetadatasync)
-37. [.getSQLErrorSync()](#-37-getsqlerrorsync)
-38. [.debug(value)](#-38-debugvalue)
-39. [.executeFileSync(sqlFile,[delimiter],[outputFile])](#-39-executefilesyncsqlfiledelimiteroutputfile)
-40. [.executeFile(sqlFile,[delimiter],[outputFile])](#-40-executefilesqlfiledelimiteroutputfile)
-41. [.setAttr(attributeName, value, callback)](#-41-setattrattributename-value-callback)
-42. [.setAttrSync(attributeName, value)](#-42-setattrsyncattributename-value)
-43. [.getInfo(infoType, [infoLength], callback)](#-43-getinfoinfotype-infolength-callback)
-44. [.getInfoSync(infoType, [infoLength])](#-44-getinfosyncinfotype-infolength)
-45. [.getTypeInfo(dataType, callback)](#-45-gettypeinfodatatype-callback)
-46. [.getTypeInfoSync(dataType)](#-46-gettypeinfosyncdatatype)
-47. [.getFunctions(functionId, callback)](#-47-getfunctionsfunctionid-callback)
-48. [.getFunctionsSync(functionId)](#-48-getfunctionssyncfunctionid)
+* [.query(sqlQuery [, bindingParameters] [, callback])](#-3-database-querysqlquery--bindingparameters--callback)
+* [.querySync(sqlQuery [, bindingParameters])](#-4-database-querysyncsqlquery--bindingparameters)
+* [.queryStream(sqlQuery [, bindingParameters])](#-5-database-querystreamsqlquery--bindingparameters)
+* [.queryResult(sqlQuery, [, bindingParameters] [, callback])](#-6-database-queryresultsqlquery--bindingparameters--callback)
+* [.queryResultSync(sqlQuery [, bindingParameters])](#-7-database-queryresultsyncsqlquery--bindingparameters)
+* [.close([callback])](#-8-database-closecallback)
+* [.closeSync()](#-9-database-closesync)
+* [.prepare(sql [, callback])](#-10-database-preparesql--callback)
+* [.prepareSync(sql)](#-11-database-preparesyncsql)
+* [.beginTransaction([callback])](#-28-database-begintransactioncallback)
+* [.beginTransactionSync()](#-29-database-begintransactionsync)
+* [.commitTransaction([callback])](#-30-database-committransactioncallback)
+* [.commitTransactionSync()](#-31-database-committransactionsync)
+* [.rollbackTransaction([callback])](#-32-database-rollbacktransactioncallback)
+* [.rollbackTransactionSync()](#-33-database-rollbacktransactionsync)
+* [.setIsolationLevel(isolationLevel)](#-34-database-setisolationlevelisolationlevel)
+* [.executeFileSync(sqlFile, [delimiter], [outputFile])](#-39-database-executefilesyncsqlfile-delimiteroutputfile)
+* [.executeFile(sqlFile, [delimiter], [outputFile])](#-40-database-executefilesqlfile-delimiter-outputfile)
+* [.setAttr(attributeName, value [, callback])](#-41-database-setattrattributename-value--callback)
+* [.setAttrSync(attributeName, value)](#-42-database-setattrsyncattributename-value)
+* [.getInfo(infoType, [infoLength] [, callback])](#-43-database-getinfoinfotype-infolength--callback)
+* [.getInfoSync(infoType, [infoLength])](#-44-database-getinfosyncinfotype-infolength)
+* [.getTypeInfo(dataType [, callback])](#-45-database-gettypeinfodatatype--callback)
+* [.getTypeInfoSync(dataType)](#-46-database-gettypeinfosyncdatatype)
+* [.getFunctions(functionId, callback)](#-47-database-getfunctionsfunctionid-callback)
+* [.getFunctionsSync(functionId)](#-48-database-getfunctionssyncfunctionid)
 
-*   [**Connection Pooling APIs**](#connection-pooling-apis)
-*   [**bindingParameters**](#bindingparameters)
-*   [**CALL Statement**](#call-statement)
+**ODBCStatement APIs**
+* [.bind(bindingParameters [, callback])](#-12-odbcstatement-bindbindingparameters--callback)
+* [.bindSync(bindingParameters)](#-13-odbcstatement-bindsyncbindingparameters)
+* [.execute([bindingParameters] [, callback])](#-14-odbcstatement-executebindingparameters--callback)
+* [.executeSync([bindingParameters])](#-15-odbcstatement-executesyncbindingparameters)
+* [.executeNonQuery([bindingParameters] [, callback])](#-16-odbcstatement-executenonquerybindingparameters--callback)
+* [.executeNonQuerySync([bindingParameters])](#-17-odbcstatement-executenonquerysyncbindingparameters)
+* [close([closeOption] [, callback])](#-18-odbcstatement-closecloseoption--callback)
+* [closeSync([closeOption])](#-19-odbcstatement-closesynccloseoption)
+
+**ODBCResult APIs**
+* [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
+* [.fetchSync([option])](#-21-odbcresult-fetchsyncoption)
+* [.fetchAll([option] [, callback])](#-22-odbcresult-fetchalloption--callback)
+* [.fetchAllSync([option])](#-23-odbcresult-fetchallsyncoption)
+* [.getData([colNum] [, size] [, callback])](#-24-odbcresult-getdatacolnum--size--callback)
+* [.getDataSync(colNum, size)](#-25-odbcresult-getdatasynccolnum-size)
+* [.close([closeOption] [, callback])](#-26-odbcresult-closecloseoption--callback)
+* [.closeSync([closeOption])](#-27-odbcresult-closesynccloseoption)
+* [.getColumnNamesSync()](#-35-odbcresult-getcolumnnamessync)
+* [.getColumnMetadataSync()](#-36-odbcresult-getcolumnmetadatasync)
+* [.getSQLErrorSync()](#-37-odbcresult-getsqlerrorsync)
 
 
-### <a name="openApi"></a> 1) .open(connectionString, [options,] callback)
+[**Connection Pooling APIs**](#connection-pooling-apis)
+* [.open(connectionString [, callback])](#-1-pool-openconnectionstring--callback)
+* [.openSync(connectionString)](#-2-pool-opensyncconnectionstring)
+* [.close([callback])](#-3-pool-closecallback)
+* [.closeSync()](#-4-pool-closesync)
+* [.init(N, connStr)](#-5-pool-initn-connstr)
+* [.initAsync(N, connStr [, callback])](#-6-pool-initasyncn-connstr--callback)
+* [.setMaxPoolSize(N)](#-7-pool-setmaxpoolsizen)
+
+## [**bindingParameters**](#bindingparameters)
+
+## [**CALL Statement**](#call-statement)
+
+
+### <a name="openApi"></a> 1) (ibmdb) .open(connectionString [, options] [, callback])
 
 Open a connection to a database.
 
@@ -72,29 +89,29 @@ Open a connection to a database.
     The connection string is typically defined as: `DSN=dbname;UID=username;PWD=passwd`.  To
     connect to remote Db2 databases, the connectivity information will need to be set up in the
     Communications Database (CDB).  Please refer to scenario 1 in the following
-    [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html). 
-    For a complete list of supported configuration keywords, 
-    please refer to [CLI/ODBC configuration keywords](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0007964.html) 
+    [article](https://www.ibm.com/developerworks/data/library/techarticle/0310chong/0310chong.html).
+    For a complete list of supported configuration keywords,
+    please refer to [CLI/ODBC configuration keywords](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0007964.html)
     * Selecting default schema is also supported using `CURRENTSCHEMA=schemaname;` (or CurrentSchema)
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
-* **callback** - `callback (err, conn)`
+* **callback** - _OPTIONAL_ - `callback (err, database)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
 
-ibmdb.open(connStr, function (err, connection) {
+ibmdb.open(connStr, function (err, database) {
     if (err)
     {
       console.log(err);
       return;
     }
-    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+    database.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
-      connection.close(function(err2) {
+      database.close(function(err2) {
         if(err2) console.log(err2);
       });
     });
@@ -107,7 +124,7 @@ ibmdb.open(connStr, function (err, connection) {
 ```javascript
 connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;Security=SSL;SSLServerCertificate=<cert.arm_file_path>;PROTOCOL=TCPIP;UID=username;PWD=passwd;";
 ```
-> Note the two extra keywords **Security** and **SSLServerCertificate** used in connection string. `SSLServerCertificate` should point to the SSL Certificate from server or an CA signed certificate. Also, `PORT` must be `SSL` port and not the TCPI/IP port. Make sure Db2 server is configured to accept connection on SSL port else `ibm_db` will throw SQL30081N error.
+> Note the two extra keywords **Security** and **SSLServerCertificate** used in connection string. `SSLServerCertificate` should point to the SSL Certificate from server or an CA signed certificate. Also, `PORT` must be `SSL` port and not the TCP/IP port. Make sure Db2 server is configured to accept connection on SSL port else `ibm_db` will throw SQL30081N error.
 
 > Value of `SSLServerCertificate` keyword must be full path of a certificate file generated for client authentication.
  It normally has `*.arm` or `*.cert` or `*.pem` extension. `ibm_db` do not support `*.jks` format file as it is not a
@@ -122,7 +139,7 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;Security=SSL;SSLServerC
 
 > `ibm_db` supports only ODBC/CLI Driver keywords in connection string: https://www.ibm.com/docs/en/db2/11.5?topic=odbc-cliodbc-configuration-keywords
 
-> Do not use keyworkds like `sslConnection=true` in connection string as it is a JDBC connection keyword and ibm_db
+> Do not use keywords like `sslConnection=true` in connection string as it is a JDBC connection keyword and ibm_db
  ignores it. Corresponding ibm_db connection keyword for `sslConnection` is `Security` hence, use `Security=SSL;` in
  connection string instead.
 
@@ -149,7 +166,7 @@ connStr = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbus
  `Secure Connection Certificates.zip` has *.kdb and *.sth files that should be used as the value of
  `SSLClientKeystoreDB` and `SSLClientKeystash` in connection string.
 
-### <a name="openSyncApi"></a> 2) .openSync(connectionString [,options])
+### <a name="openSyncApi"></a> 2) (ibmdb) .openSync(connectionString [,options])
 
 Synchronously open a connection to a database.
 
@@ -159,26 +176,26 @@ Synchronously open a connection to a database.
     to pass connectTimeout value and systemNaming value for i5/OS server.
 
 ```javascript
-var ibmdb = require("ibm_db"),
+const ibmdb = require("ibm_db"),
 	connString = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;";
 
 try {
-      var option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
-      var conn = ibmdb.openSync(connString, option);
-      conn.query("select * from customers fetch first 10 rows only", function (err, rows) {
+      const option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
+      const database = ibmdb.openSync(connString, option);
+      database.query("select * from customers fetch first 10 rows only", function (err, rows) {
 		if (err) {
 			console.log(err);
 		} else {
 		  console.log(rows);
 		}
-		conn.close();
+		database.close();
       });
     } catch (e) {
       console.log(e.message);
     }
 ```
 
-### <a name="queryApi"></a> 3) .query(sqlQuery [, bindingParameters], callback)
+### <a name="queryApi"></a> 3) (Database) .query(sqlQuery [, bindingParameters] [, callback])
 
 Issue an asynchronous SQL query to the database which is currently open.
 
@@ -189,14 +206,14 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
 
-* **callback** - `callback (err, rows, sqlca)`
+* **callback** - _OPTIONAL_ - `callback (err, rows, sqlca)`.  If no callback is provided, query() will return a Promise.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-ibmdb.open(cn, function (err, conn) {
+ibmdb.open(cn, function (err, database) {
     if (err) {
       return console.log(err);
     }
@@ -204,7 +221,7 @@ ibmdb.open(cn, function (err, conn) {
     // we now have an open connection to the database, so lets get some data.
     // Execute multiple query and get multiple result sets.
     // In case of multiple resultset, query will return an array of result sets.
-    conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
+    database.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
                "select 3 from sysibm.sysdummy1", function (err, rows, sqlca)
     {
         if (err) {
@@ -217,30 +234,30 @@ ibmdb.open(cn, function (err, conn) {
 ```
 Example for Array Insert:
 ```javascript
-  var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
-  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
-  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
-  var namearr = ["Row 10", "Row 203456", "Row 30", "Row 40", "Last Row"];
+  const param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
+  const param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
+  const param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
+  const namearr = ["Row 10", "Row 203456", "Row 30", "Row 40", "Last Row"];
 
-  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
+  const param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
   // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
   // Default value is the length of first member of Array.
 
-  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
+  const queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)",
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
 
-  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
-  conn.query(queryOptions, function(err, result) {
+  database.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  database.query(queryOptions, function(err, result) {
     if(err) console.log(err);
     else {
-      var data = conn.querySync("select * from arrtab");
+      const data = database.querySync("select * from arrtab");
       console.log("\nSelected data for table ARRTAB =\n", data);
     }
   });
 ```
 
-### <a name="querySyncApi"></a> 4) .querySync(sqlQuery [, bindingParameters])
+### <a name="querySyncApi"></a> 4) (Database) .querySync(sqlQuery [, bindingParameters])
 
 Synchronously issue a SQL query to the database that is currently open.
 
@@ -252,40 +269,40 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
     any '?' characters in `sqlQuery`.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn){
+ibmdb.open(cn, function(err, database) {
 
   //blocks until the query is completed and all data has been acquired
-  var rows = conn.querySync("select * from customers fetch first 10 rows only");
+  const rows = database.querySync("select * from customers fetch first 10 rows only");
 
   console.log(rows);
 });
 ```
 Example for Array Insert:
 ```javascript
-  var param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
-  var param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
-  var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
-  var namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
+  const param1 = {ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]};
+  const param2 = {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]};
+  const param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,false,true,0]};
+  const namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
 
-  var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
+  const param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
   // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
   // Default value is the length of first member of Array.
 
-  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
+  const queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)",
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
 
-  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
-  conn.querySync(queryOptions);
+  database.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  database.querySync(queryOptions);
 ```
 
-### <a name="queryStreamApi"></a> 5) .queryStream(sqlQuery [, bindingParameters])
+### <a name="queryStreamApi"></a> 5) (Database) .queryStream(sqlQuery [, bindingParameters])
 
 Synchronously issue a SQL query to the database that is currently open and returns
-a Readable stream. Application can listen the events emmitted by returned stream
+a Readable stream. Application can listen for the events emitted by returned stream
 and take action.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
@@ -296,28 +313,28 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
     any '?' characters in `sqlQuery`.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, conn)
+ibmdb.open(cn, function(err, database)
 {
-    var stream = conn.queryStream("select 1 from sysibm.sysdummy1");
+    const stream = database.queryStream("select 1 from sysibm.sysdummy1");
 
     stream.once('data', function (result) {
       console.log(result);
     }).once('error', function (err) {
-      conn.closeSync();
+      database.closeSync();
       throw err;
     }).once('end', function () {
-      conn.close(function(){ console.log("done.") });
+      database.close(function(){ console.log("done.") });
     });
 });
 ```
 
-### <a name="queryResultApi"></a> 6) .queryResult(sqlQuery, [, bindingParameters], callback)
+### <a name="queryResultApi"></a> 6) (Database) .queryResult(sqlQuery, [, bindingParameters] [, callback])
 
-Issue an asynchronous SQL query to the database which is currently open and return (err, result, outparams) to callback function. `result` is ODBCResult object. Uisng `result`, call `result.fetchAllSync()` to retrieve all rows; call `result.getColumnMetadataSync()` to get meta data info or call `result.fetchSync()` to retrieve each row one by one and process. Execute `result.closeSync()` once done with the `result` object.
-`query` returns all the rows on call, but `queryResult` returns the result object and rows need to be fetched by the caller.
+Issue an asynchronous SQL query to the database which is currently open and return `(err, result, outparams)` to callback function. `result` is ODBCResult object. Using `result`, call one of the `result.fetch*` APIs to retrieve rows.  Call `result.getColumnMetadataSync()` to get meta data info. Execute `result.closeSync()` once done with the `result` object.
+`query` returns all the rows on call, but `queryResult` returns an `ODBCResult` object and rows need to be fetched by the caller.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - queryResult() will not return any result object and value of result will be null.
@@ -327,35 +344,35 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any ? characters (called parameter marker) in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
 
-* **callback** - `callback (err, result, outparams)`.
-outparams is returned only for CALL statement with OUT parameters. Any resultset expected from SP should get retrieved using result.fetch apis.
+* **callback** - _OPTIONAL_ - `callback (err, result, outparams)`.
+outparams is returned only for CALL statement with OUT parameters. Any resultset expected from SP should get retrieved using the `result.fetch*` apis.  If `callback` is not provided, queryResult() will return a Promise of `[result, outparams]`. `result` is an ODBCResult object that can be used to fetch rows.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
-ibmdb.open(cn, function (err,conn) {
+ibmdb.open(cn, function (err, database) {
     if (err) return console.log(err);
-    var query = 'select creator, name from sysibm.systables where 1 = ?';
-    conn.queryResult(query, [1], function (err, result) {
+    const query = 'select creator, name from sysibm.systables where 1 = ?';
+    database.queryResult(query, [1], function (err, result) {
         if(err) { console.log(err); }
         else {
           console.log("data = ", result.fetchAllSync());
           console.log("metadata = ", result.getColumnMetadataSync());
           result.closeSync(); // Must call in application.
-          conn.closeSync();
+          database.closeSync();
           console.log("Executed ", ++loop, " times.");
         }
     });
 });
 ```
-**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may cause invalid handle error in application or no data.
+**Note:** Once you are done with the `result` object, you must close it to avoid an error when the Javascript garbage collector frees it. Not calling `result.close()` or `result.closeSync()` may cause an invalid handle error in the application or no data.
 
-### <a name="queryResultSyncApi"></a> 7) .queryResultSync(sqlQuery [, bindingParameters])
+### <a name="queryResultSyncApi"></a> 7) (Database) .queryResultSync(sqlQuery [, bindingParameters])
 
-Synchronously issue a SQL query to the database that is currently open and return a result object to the callback function on success. In case of CALL statement with OUT parameters, it returns an array of [result, outparams]. `result` is an ODBCResult object that can be used to fetch rows.
+Synchronously issue a SQL query to the database that is currently open and return a result object to the callback function on success. In the case of CALL statement with OUT parameters, it returns an Array of `[result, outparams]`. `result` is an ODBCResult object that can be used to fetch rows.
 
-`querySync`API returns all the rows on call, but `queryResultSync` API returns the `ODBCResult` object using which application should call fetch APIs to get data.
+`querySync` returns all the rows on call, but `queryResultSync` returns an `ODBCResult` object and rows need to be fetched by the caller.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
@@ -365,113 +382,113 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
     any '?' characters in `sqlQuery`.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn){
+ibmdb.open(cn, function(err, database) {
   if (err) return console.log(err);
-  var query = 'select creator, name from sysibm.systables';
-  var result = conn.queryResultSync(query);
+  const query = 'select creator, name from sysibm.systables';
+  const result = database.queryResultSync(query);
   console.log("data = ", result.fetchAllSync());
   console.log("metadata = ", result.getColumnMetadataSync());
   result.closeSync(); // Must call to free to avoid application error.
-  conn.closeSync();
+  database.closeSync();
 });
 ```
-**Note:** Once you are done with the `result` object, must close it to avoid error when garbage collector of javascript free it. Not calling the `result.closeSync() may cause invalid handle error in application or no data.
+**Note:** Once you are done with the `result` object, you must close it to avoid an error when the Javascript garbage collector frees it. Not calling `result.close()` or `result.closeSync()` may cause an invalid handle error in the application or no data.
 
-In case of CALL statement with OUT params, check result[0] is an object or not.
+In case of a CALL statement with OUT params, check whether result[0] is an object or not.
 
-### <a name="closeApi"></a> 8) .close(callback)
+### <a name="closeApi"></a> 8) (Database) .close([callback])
 
 Close the currently opened database.
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`.  If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function (err, conn) {
+ibmdb.open(cn, function (err, database) {
 	if (err) {
 		return console.log(err);
 	}
 
 	//we now have an open connection to the database
-	conn.close(function (err) {
+	database.close(function (err) {
 		console.log("the database connection is now closed");
 	});
 });
 ```
 
-### <a name="closeSyncApi"></a> 9) .closeSync()
+### <a name="closeSyncApi"></a> 9) (Database) .closeSync()
 
 Synchronously close the currently opened database.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, conn){
+ibmdb.open(cn, function(err, database) {
   if (err) return console.log(err);
 
   //Blocks until the connection is closed
-  conn.closeSync();
+  database.closeSync();
 });
 
-var conn = ibmdb.openSync(connString, option);
-conn.closeSync();
+const database = ibmdb.openSync(connString, option);
+database.closeSync();
 ```
 
-### <a name="prepareApi"></a> 10) .prepare(sql, callback)
+### <a name="prepareApi"></a> 10) (Database) .prepare(sql [, callback])
 
 Prepare a statement for execution.
 
 * **sql** - SQL string to prepare
-* **callback** - `callback (err, stmt)`
+* **callback** - _OPTIONAL_ - `callback (err, stmt)`.  If callback is not provided, a Promise will be returned.
 
-Returns a `Statement` object via the callback
+Returns an `ODBCStatement` object.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
-    //Bind and Execute the statment asynchronously
+    //Bind and Execute the statement asynchronously
     stmt.execute(['something', 42], function (err, result) {
       if( err ) console.log(err);
       else result.closeSync();
 
       //Close the connection
-	  conn.close(function(err){});
+	  database.close(function(err){});
     });
   });
 });
 ```
 
-### <a name="prepareSyncApi"></a> 11) .prepareSync(sql)
+### <a name="prepareSyncApi"></a> 11) (Database) .prepareSync(sql)
 
 Synchronously prepare a statement for execution.
 
 * **sql** - SQL string to prepare
 
-Returns a `Statement` object
+Returns an `ODBCStatement` object.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  var stmt = conn.prepareSync("select * from employee where empid = ?");
+ibmdb.open(cn,function(err,database){
+  const stmt = database.prepareSync("select * from employee where empid = ?");
 
-  //Bind and Execute the statment asynchronously
+  //Bind and Execute the statement asynchronously
   stmt.execute([142], function (err, result) {
     data = result.fetchAllSync();
     console.log(data);
@@ -479,56 +496,54 @@ ibmdb.open(cn,function(err,conn){
     stmt.closeSync();
 
     //Close the connection
-	conn.close(function(err){});
+	  database.close(function(err){});
   });
 });
 ```
 
-### <a name="bindApi"></a> 12) .bind(bindingParameters, callback)
+### <a name="bindApi"></a> 12) (ODBCStatement) .bind(bindingParameters [, callback])
 
-Binds the parameters for prepared statement.
+Binds the parameters for the prepared statement.
 
 * **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
 * For **ARRAY INSERT** - Each value should be an array of size passed as `ArraySize` in query() APIs or equal to the value of attribute SQL_ATTR_PARAMSET_SIZE set using setAttr() APIs for prepared statement.
 
-### <a name="bindSyncApi"></a> 13) .bindSync(bindingParameters)
+### <a name="bindSyncApi"></a> 13) (ODBCStatement) .bindSync(bindingParameters)
 
-Binds the parameters for prepared statement synchronously. If `bindSync()` is used, then no need to pass `bindingParameters` to next `execute()` or `executeSync()` statement.
+Binds the parameters for the prepared statement synchronously. If `bindSync()` is used, then there is no need to pass `bindingParameters` to the next `execute()` or `executeSync()` statement.
 
-* **bindingParameters** - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - An array of values that will be bound to any '?' characters in the prepared SQL statement. Values can be an array or object. See [bindingParameters](#bindParameters) for detail.
 
 * For **ARRAY INSERT** - Each value should be an array of size passed as `ArraySize` in query() APIs or equal to the value of attribute SQL_ATTR_PARAMSET_SIZE set using setAttr() APIs for prepared statement.
 
-### <a name="executeApi"></a> 14) .execute([bindingParameters], callback)
+### <a name="executeApi"></a> 14) (ODBCStatement) .execute([bindingParameters] [, callback])
 
 Execute a prepared statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
-* **callback** - `callback (err, result, outparams)`
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be an array or object. See [bindingParameters](#bindParameters) for detail.
+* **callback** - _OPTIONAL_ - `callback (err, result, outparams)`.  If callback is not provided, a Promise will be returned.
 outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure.
 * For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
-Returns a `Statement` object via the callback
-
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table mytab (id int, photo BLOB(30K))");
-  conn.prepare("insert into mytab (id, photo) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table mytab (id int, photo BLOB(30K))");
+  database.prepare("insert into mytab (id, photo) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
     // Create params object
-    var img = {ParamType:"FILE", DataType: "BLOB", "Data": "smile.jpg"};
+    const img = {ParamType:"FILE", DataType: "BLOB", "Data": "smile.jpg"};
 
-    //Bind and Execute the statment asynchronously
+    //Bind and Execute the statement asynchronously
     stmt.execute([ 42, img ], function (err, result) {
       if( err ) console.log(err);
       else result.closeSync();
@@ -538,61 +553,61 @@ ibmdb.open(cn,function(err,conn){
         if(err){
           console.log(err)
         }
-        conn.close(function(err){});
+        database.close(function(err){});
       });
     });
   });
 });
 ```
 
-### <a name="executeSyncApi"></a> 15) .executeSync([bindingParameters])
+### <a name="executeSyncApi"></a> 15) (ODBCStatement) .executeSync([bindingParameters])
 
 Execute a prepared statement synchronously.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail. Instead of passing bindingParameters to executeSync(), parameters can also be binded using bind() or bindSync() APIs.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be an array or object. See [bindingParameters](#bindParameters) for detail. Instead of passing bindingParameters to executeSync(), parameters can also be bound using the `bind()` and `bindSync()` APIs.
 * For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
-Returns a `Statement` object. If prepared statement is a stored procedure with INOUT or OUT parameter, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of such array is an `Statement` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
+Returns an `ODBCResult` object. If the prepared statement is a stored procedure with INOUT or OUT parameters, executeSync() returns an array of two elements in the form [stmt, outparams]. The first element of the array is an `ODBCResult` object and second element is an `Array` of INOUT and OUTPUT parameters in sequence.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  var stmt = conn.prepareSync("select empname from emptable where empid = ?");
+ibmdb.open(cn,function(err, database){
+  const stmt = database.prepareSync("select empname from emptable where empid = ?");
 
   //Bind and Execute the statment asynchronously
-  var result = stmt.executeSync([142]);
-  var data = result.fetchAllSync({fetchMode:3}); // Fetch data in Array mode.
+  const result = stmt.executeSync([142]);
+  const data = result.fetchAllSync({fetchMode:3}); // Fetch data in Array mode.
   console.log(data);
   result.closeSync();
   stmt.closeSync();
 
   //Close the connection
-  conn.close(function(err){});
+  database.close(function(err){});
 });
 ```
 
-### <a name="executeNonQueryApi"></a> 16) .executeNonQuery([bindingParameters], callback)
+### <a name="executeNonQueryApi"></a> 16) (ODBCStatement) .executeNonQuery([bindingParameters] [, callback])
 
-Execute a non query prepared statement and returns the number of rows affected in a table by the statement.
+Executes a non query prepared statement and returns the number of rows affected in a table by the statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
-* **callback** - `callback (err, affectedRowCount)`
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be an array or object. See [bindingParameters](#bindParameters) for detail.
+* **callback** - _OPTIONAL_ - `callback (err, affectedRowCount)`.  If callback is not provided, a Promise will be returned.
 * For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
-It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1 via the callback function.
+It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table mytab (id int, text varchar(30))");
-  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table mytab (id int, text varchar(30))");
+  database.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
     //Bind and Execute the statment asynchronously
@@ -602,61 +617,59 @@ ibmdb.open(cn,function(err,conn){
 
       //Close the stmt and connection
       stmt.close();
-      conn.close(function(err){});
+      database.close(function(err){});
     });
   });
 });
 ```
 
-### <a name="executeNonQuerySyncApi"></a> 17) .executeNonQuerySync([bindingParameters])
+### <a name="executeNonQuerySyncApi"></a> 17) (ODBCStatement) .executeNonQuerySync([bindingParameters])
 
-Execute a non query prepared statement synchronously and returns the number of rows affected in a table by the statement.
+Executes a non query prepared statement synchronously and returns the number of rows affected in a table by the statement.
 
-* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be array or object itself. Check [bindingParameters](#bindParameters) doc for detail.
+* **bindingParameters** - OPTIONAL - An array of values that will be bound to any '?' characters in prepared sql statement. Values can be an array or object. See [bindingParameters](#bindParameters) for detail.
 * For **ARRAY INSERT** - Statement attribute SQL_ATTR_PARAMSET_SIZE must be set before calling execute() API.
 
 It returns the number of rows in a table that were affected by an UPDATE, an INSERT, a DELETE, or a MERGE statement issued against the table, or a view based on the table. If no rows are affected, it returns -1.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table mytab (id int, text varchar(30))");
-  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table mytab (id int, text varchar(30))");
+  database.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
     //Bind and Execute the statment asynchronously
-    var rowCount = stmt.executeNonQuerySync([ 42, 'hello world' ]);
+    const rowCount = stmt.executeNonQuerySync([ 42, 'hello world' ]);
     console.log("Affected rows = " + rowCount);
 
     //Close the stmt and connection
     stmt.closeSync();
-    conn.closeSync();
+    database.closeSync();
   });
 });
 ```
 
-### <a name="stmtCloseApi"></a> 18) stmt.close(callback)
+### <a name="stmtCloseApi"></a> 18) (ODBCStatement) close([closeOption] [, callback])
 
 Close the currently opened statement object and free resources.
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`.  If callback is not provided, a Promise will be returned.
 
 ```javascript
     stmt.close(function(err) {
         if(err) console.log(err);
     });
     //OR
-    stmt.close();
-    //OR
     await stmt.close();
 ```
 
-### <a name="stmtCloseSyncApi"></a> 19) stmt.closeSync()
+### <a name="stmtCloseSyncApi"></a> 19) (ODBCStatement) closeSync([closeOption])
 
 Synchronously close the currently opened statement object and free resources.
 
@@ -664,29 +677,29 @@ Synchronously close the currently opened statement object and free resources.
     stmt.closeSync();
 ```
 
-### <a name="fetchApi"></a> 20) .fetch(option, callback)
+### <a name="fetchApi"></a> 20) (ODBCResult) .fetch([option] [, callback])
 
-Fetch a row of data from ODBCResult object asynchronously.
+Fetch a row of data from an ODBCResult object asynchronously.
 
 * **option** - _OPTIONAL_ - Object type.
-    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
-    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, fetch() API do not return any result and application need to call result.getData() or result.getDataSync() API to retrieve data for a column.
+    * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, the fetch() API will not return any results, and the application needs to call the result.getData() or result.getDataSync() APIs to retrieve data for a column.
 
-* **callback** - `callback (err, row)`. When no `callback` function is passed, fetch() will return Promise.
+* **callback** - _OPTIONAL_ - `callback (err, row)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  conn.prepare("select * from hits", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  database.prepare("select * from hits", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
@@ -697,9 +710,9 @@ ibmdb.open(cn,function(err,conn){
             result.fetch({fetchMode:ibmdb.FETCH_ARRAY}).then(row => {
               console.log("Row2 = ", row);
               result.closeSync();
-              conn.querySync("drop table hits");
+              database.querySync("drop table hits");
               //Close the connection
-              conn.close(function(err){console.log("Connection Closed.");});
+              database.close(function(err){console.log("Connection Closed.");});
             }).catch(err => console.log(err));
           }
       });
@@ -708,56 +721,56 @@ ibmdb.open(cn,function(err,conn){
 });
 ```
 
-### <a name="fetchSyncApi"></a> 21) .fetchSync(option)
+### <a name="fetchSyncApi"></a> 21) (ODBCResult) .fetchSync([option])
 
-Fetch a row of data from ODBCResult object synchronously.
+Fetch a row of data from the ODBCResult object synchronously.
 
 * **option** - _OPTIONAL_ - Object type.
-    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
-    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, fetch() API do not return any result and application need to call result.getData() or result.getDataSync() API to retrieve data for a column.
+    * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+    * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, the fetch() API will not return any results, and the application needs to call the result.getData() or result.getDataSync() APIs to retrieve data for a column.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  var stmt = conn.prepareSync("select * from hits");
-  var result = stmt.executeSync();
-  var data = 0;
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  const stmt = database.prepareSync("select * from hits");
+  const result = stmt.executeSync();
+  const data = 0;
   while( data = result.fetchSync({fetchMode:3}) ) {
     console.log(data);
   }
   result.closeSync();
-  conn.querySync("drop table hits");
-  conn.closeSync();
+  database.querySync("drop table hits");
+  database.closeSync();
 });
 ```
 
-### <a name="fetchAllApi"></a> 22) .fetchAll(option, callback)
+### <a name="fetchAllApi"></a> 22) (ODBCResult) .fetchAll([option] [, callback])
 
 Fetch all rows from ODBCResult object asynchronously for the executed statement.
 
 * **option** - _OPTIONAL_ - Object type.
-    * fetchMode - Format of returned row data. By default row data get returned in object form. option = {fetchMode:3} will return rows in array form. {fetchMode:4} - return rows in object form.
+    * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
 
-* **callback** - `callback (err, data, noOfColumns)`
+* **callback** - _OPTIONAL_ - `callback (err, data, noOfColumns)`.  If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  conn.prepare("select * from hits", function (err, stmt) {
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  database.prepare("select * from hits", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
@@ -768,60 +781,60 @@ ibmdb.open(cn,function(err,conn){
             console.log("No of columns = ", colcount);
           }
           result.closeSync();
-          conn.querySync("drop table hits");
+          database.querySync("drop table hits");
           //Close the connection
-          conn.close(function(err){console.log("Connection Closed.");});
+          database.close(function(err){console.log("Connection Closed.");});
       });
     });
   });
 });
 ```
 
-### <a name="fetchAllSyncApi"></a> 23) .fetchAllSync(option)
+### <a name="fetchAllSyncApi"></a> 23) (ODBCResult) .fetchAllSync([option])
 
 Fetch all rows from ODBCResult object Synchronously for the executed statement.
 
-* **option** - Optional object to specify return type of data. By default row data get returned in object form. option = {fetchMode:3} will return row in array form.
+  * **option** - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  var stmt = conn.prepareSync("select * from hits");
-  var result = stmt.executeSync();
-  var data = result.fetchAllSync();
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  const stmt = database.prepareSync("select * from hits");
+  const result = stmt.executeSync();
+  const data = result.fetchAllSync();
   console.log("Fetched data = ", data);
   result.closeSync();
-  conn.querySync("drop table hits");
-  conn.closeSync();
+  database.querySync("drop table hits");
+  database.closeSync();
 });
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
 
-### <a name="getDataApi"></a> 24) .getData(colNum, Size, callback)
+### <a name="getDataApi"></a> 24) (ODBCResult) .getData([colNum] [, size] [, callback])
 
 Retrive data for colNum of specified size from ODBCResult object asynchronously.
 
 * **colNum** - Integer - Column Number in the resultset starting from 1.
 
-* **Size** - Integer -  Size of the data being retrieved. For fixed length data, it get ignored.
+* **size** - Integer -  Size of the data being retrieved. Ignored for fixed length data.
 
-* **callback** - `callback (err, row)`. When no `callback` function is passed, getData() will return Promise.
+* **callback** - _OPTIONAL_ - `callback (err, row)`. When no `callback` function is passed, getData() will return Promise. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  var stmt = conn.prepareSync("select * from hits");
-  var result = stmt.executeSync();
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  const stmt = database.prepareSync("select * from hits");
+  const result = stmt.executeSync();
   result.fetch({fetchMode:0})
       .then(() => {
         return result.getData(1, 4);
@@ -840,24 +853,24 @@ ibmdb.open(cn,function(err,conn){
 ```
 See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
 
-### <a name="getDataSyncApi"></a> 25) .getDataSync(colNum, Size)
+### <a name="getDataSyncApi"></a> 25) (ODBCResult) .getDataSync(colNum, size)
 
 Retrive data for colNum of specified size from ODBCResult object synchronously.
 
 * **colNum** - Integer - Column Number in the resultset starting from 1.
 
-* **Size** - Integer -  Size of the data being retrieved. For fixed length data, it get ignored.
+* **size** - Integer -  Size of the data being retrieved. Ignored for fixed length data.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,conn){
-  conn.querySync("create table hits (col1 varchar(40), col2 int)");
-  conn.querySync("insert into hits values ('something', 42)");
-  conn.querySync("insert into hits values ('für', 43)");
-  var stmt = conn.prepareSync("select * from hits");
-  var result = stmt.executeSync();
+ibmdb.open(cn,function(err, database){
+  database.querySync("create table hits (col1 varchar(40), col2 int)");
+  database.querySync("insert into hits values ('something', 42)");
+  database.querySync("insert into hits values ('für', 43)");
+  const stmt = database.prepareSync("select * from hits");
+  const result = stmt.executeSync();
   console.log(result.fetchSync({fetchMode:0}));
   console.log("First Row Data = ");
   console.log(result.getDataSync(1, 4));
@@ -871,28 +884,26 @@ ibmdb.open(cn,function(err,conn){
   console.log(result.getDataSync(2, 5));
   console.log(result.getDataSync(3, 5));
   result.closeSync();
-  conn.closeSync();
+  database.closeSync();
 }
 ```
 See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
 
-### <a name="resultCloseApi"></a> 26) result.close(callback)
+### <a name="resultCloseApi"></a> 26) (ODBCResult) close([closeOption] [, callback])
 
 Close the currently opened ODBC Result object and free resources.
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
     result.close(function(err) {
         if(err) console.log(err);
     });
     //OR
-    result.close();
-    //OR
     await result.close();
 ```
 
-### <a name="resultCloseSyncApi"></a> 27) result.closeSync()
+### <a name="resultCloseSyncApi"></a> 27) (ODBCResult) closeSync([closeOption])
 
 Synchronously close the currently opened ODBC Result object and free resources.
 
@@ -900,300 +911,297 @@ Synchronously close the currently opened ODBC Result object and free resources.
     result.closeSync();
 ```
 
-### <a name="beginTransactionApi"></a> 28) .beginTransaction(callback)
+### <a name="beginTransactionApi"></a> 28) (Database) .beginTransaction([callback])
 
 Begin a transaction
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
-### <a name="beginTransactionSyncApi"></a> 29) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 29) (Database) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 30) .commitTransaction(callback)
+### <a name="commitTransactionApi"></a> 30) (Database) .commitTransaction([callback])
 
 Commit a transaction
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`, If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err,conn) {
+ibmdb.open(cn, function(err, database) {
 
-  conn.beginTransaction(function (err) {
+  database.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
-    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    conn.commitTransaction(function (err) {
+    database.commitTransaction(function (err) {
       if (err) {
         //error during commit
         console.log(err);
-        return conn.closeSync();
+        return database.closeSync();
       }
 
-    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-     conn.closeSync();
+     database.closeSync();
     });
   });
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 31) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 31) (Database) .commitTransactionSync()
 
 Synchronously commit a transaction
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err,conn) {
+ibmdb.open(cn, function(err, database) {
 
-  conn.beginTransaction(function (err) {
+  database.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
-    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    conn.commitTransactionSync();
+    database.commitTransactionSync();
 
-    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-    conn.closeSync();
+    database.closeSync();
   });
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 32) .rollbackTransaction(callback)
+### <a name="rollbackTransactionApi"></a> 32) (Database) .rollbackTransaction([callback])
 
 Rollback a transaction
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err,conn) {
+ibmdb.open(cn, function(err, database) {
 
-  conn.beginTransaction(function (err) {
+  database.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
-    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    conn.rollbackTransaction(function (err) {
+    database.rollbackTransaction(function (err) {
       if (err) {
         //error during rollback
         console.log(err);
-        return conn.closeSync();
+        return database.closeSync();
       }
 
-    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-     conn.closeSync();
+     database.closeSync();
     });
   });
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 33) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 33) (Database) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err,conn) {
+ibmdb.open(cn, function(err, database) {
 
-  conn.beginTransaction(function (err) {
+  database.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return conn.closeSync();
+      return database.closeSync();
     }
 
-    var result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    conn.rollbackTransactionSync();
+    database.rollbackTransactionSync();
 
-    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-    conn.closeSync();
+    database.closeSync();
   });
 });
 ```
 
-### <a name="setIsolationLevelApi"></a> 34) .setIsolationLevel(isolationLevel)
+### <a name="setIsolationLevelApi"></a> 34) (Database) .setIsolationLevel(isolationLevel)
 
 Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction.
 
-* **isolationLevel:** An integer representing the isolation level to be set. Its value must be only - 1|2|4|8|32. For details check this [doc](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0008832.html).
+* **isolationLevel:** An integer representing the isolation level to be set. Its value must be one of: 1|2|4|8|32. For details, see [doc](https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0008832.html).
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err,conn) {
-  conn.setIsolationLevel(2);  // SQL_TXN_READ_COMMITTED
-  conn.setIsolationLevel(4); // SQL_TXN_REPEATABLE_READ
-  conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+ibmdb.open(cn, function(err, database) {
+  database.setIsolationLevel(2);  // SQL_TXN_READ_COMMITTED
+  database.setIsolationLevel(4); // SQL_TXN_REPEATABLE_READ
+  database.querySync("create table mytab1 (c1 int, c2 varchar(10))");
 });
 ```
 
-### <a name="getColumnNamesSyncApi"></a> 35) .getColumnNamesSync()
+### <a name="getColumnNamesSyncApi"></a> 35) (ODBCResult) .getColumnNamesSync()
 
-Synchronously retrieve the name of columns returned by the resulset. It
- operates on ODBCResult object.
+Synchronously retrieve the name of columns returned by the resulset.
+
 ```javascript
-  conn.querySync("insert into mytab1 values ( 5, 'abc')");
-  conn.prepare("select * from mytab1", function (err, stmt) {
+  database.querySync("insert into mytab1 values ( 5, 'abc')");
+  database.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Column Names = ", result.getColumnNamesSync());
-      result.closeSync(); conn.closeSync(); }); });
+      result.closeSync(); database.closeSync();
+    });
+  });
 ```
 
-### <a name="getColumnMetadataSyncApi"></a> 36) .getColumnMetadataSync()
+### <a name="getColumnMetadataSyncApi"></a> 36) (ODBCResult) .getColumnMetadataSync()
 
-Synchronously retrieve the metadata about columns returned by the resulset. It
- operates on ODBCResult object.
+Synchronously retrieve the metadata about columns returned by the resulset.
+
 ```javascript
-  conn.querySync("insert into mytab1 values ( 5, 'abc')");
-  conn.prepare("select * from mytab1", function (err, stmt) {
+  database.querySync("insert into mytab1 values ( 5, 'abc')");
+  database.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Column Names = ", result.getColumnNamesSync());
       console.log("Column Meta Data = ", result.getColumnMetadataSync());
       console.log("Fetched Data = ", result.fetchAllSync() );
       result.closeSync();
-      conn.closeSync();
+      database.closeSync();
     });
   });
 ```
 
-### <a name="getSQLErrorSyncApi"></a> 37) .getSQLErrorSync()
+### <a name="getSQLErrorSyncApi"></a> 37) (ODBCResult) .getSQLErrorSync()
 
-Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API. It operates on ODBCResult object.
+Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API.
+
 ```javascript
-  conn.querySync("insert into mytab1 values ( 5, 'abc')");
-  conn.prepare("select * from mytab1", function (err, stmt) {
+  database.querySync("insert into mytab1 values ( 5, 'abc')");
+  database.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Fetched Data = ", result.fetchAllSync() );
-      var problem = result.getSQLErrorSync();
+      const problem = result.getSQLErrorSync();
       if (problem.sqlcode < 0) { // This sqlcode is negative and is therefore an error
         console.log("SQLError = ", problem);
       } else if (problem.sqlcode > 0) { // This sqlcode is positive and is therefore a warning
         console.log("SQLWarning = ", problem);
       }
       result.closeSync();
-      conn.closeSync();
+      database.closeSync();
     });
   });
 ```
 
-### <a name="enableDebugLogs"></a> 38) .debug(value)
+### <a name="enableDebugLogs"></a> 38) (ibmdb) .debug(value)
 
 Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump bind params.
 
 * **value** - true/false/2. Any truthy value enables debug mode.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS, but do not log params. <==**
 ibmdb.debug(2);     // **==> ENABLE CONSOLE LOGS and log parameter values too if passed. <==**
 
-ibmdb.open(cn, function (err, connection) {
+ibmdb.open(cn, function (err, database) {
     if (err)
     {
         console.log(err);
         return;
     }
-    connection.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+    database.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
         if (err1) console.log(err1);
         else console.log(rows);
 
         ibmdb.debug(false);  // Disable console logs.
 
-        connection.close(function(err2) {
+        database.close(function(err2) {
             if(err2) console.log(err2);
         });
     });
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 39) .executeFileSync(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileSyncApi"></a> 39) (Database) .executeFileSync(sqlFile, [delimiter], [outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
-* **sqlFile** - sqlFile input should be Full Path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }. 
+* **sqlFile** - sqlFile input should be the full path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }.
 "sql" field is mandatory in Object.
 
-* **delimiter** - (_OPTIONAL_ only incase of default delimiter `;`) - If the sqlFile contains other delimiters it is mandatory to mention delimiter. 
-Delimiter splits mutliple query in the sqlFile.
+* **delimiter** - _OPTIONAL_ - Delimiter separates multiple queries in `sqlFile`. Defaults to `;`.
 
-
-* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries data will be copied to outputfile splitted by the delimiter. 
-If the outputfile already exists it will be overwritten. If the outputfile is not mentioned the result will be returned splitted by the delimiter.
-
+* **outputfile** - _OPTIONAL_ - Outputfile should be the full path of the file and only select queries data will be copied to outputfile split by the delimiter.
+If the outputfile already exists it will be overwritten. If the outputfile is not provided the result will be returned split by the delimiter.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn){
-    conn.executeFileSync('sample2.txt', '%','out.txt');
-    var rows = conn.executeFileSync('sample2.txt', '%');
+ibmdb.open(cn, function(err, database){
+    database.executeFileSync('sample2.txt', '%','out.txt');
+    const rows = database.executeFileSync('sample2.txt', '%');
     console.log(rows)
 });
 ```
 
-### <a name="executeFileApi"></a> 40) .executeFile(sqlFile,[delimiter],[outputFile])
+### <a name="executeFileApi"></a> 40) (Database) .executeFile(sqlFile, [delimiter], [outputFile])
 
 Asynchronously issue multiple SQL query from the file to the database that is currently open.
 
-* **sqlFile** - sqlFile input should be Full Path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }. 
+* **sqlFile** - sqlFile input should be the full path of the file. sqlFile can be an Object in the form { "sql": sqlFile, "delimiter": delimiter, "outputfile": outputfile }.
 "sql" field is mandatory in Object.
 
-* **delimiter** - (_OPTIONAL_ only incase of default delimiter `;`) - If the sqlFile contains other delimiters it is mandatory to mention delimiter. 
-Delimiter splits mutliple query in the sqlFile.
+* **delimiter** - _OPTIONAL_ - Delimiter separates multiple queries in `sqlFile`. Defaults to `;`.
 
-
-* **outputfile** - _OPTIONAL_ - Outputfile should be Full Path of the file and only select queries data will be copied to outputfile splitted by the delimiter. 
-If the outputfile already exists it will be overwritten. If the outputfile is not mentioned the result will be returned splitted by the delimiter.
-
+* **outputfile** - _OPTIONAL_ - Outputfile should be the full path of the file and only select queries data will be copied to outputfile split by the delimiter.
+If the outputfile already exists it will be overwritten. If the outputfile is not provided the result will be returned split by the delimiter.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn){
-   conn.executeFile('sample3.txt', '@', 'out.txt', function (err, rows) {
+ibmdb.open(cn, function(err, database){
+   database.executeFile('sample3.txt', '@', 'out.txt', function (err, rows) {
         if (err) {
             console.log(err);
         } else {
             console.log(rows);
         }
     });
-     conn.executeFile('sample3.txt', '@', function (err, rows) {
+    database.executeFile('sample3.txt', '@', function (err, rows) {
         if (err) {
             console.log(err);
         } else {
@@ -1203,13 +1211,14 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="setAttrApi"></a> 41) .setAttr(attributeName, value, callback)
+### <a name="setAttrApi"></a> 41) (Database) .setAttr(attributeName, value [, callback])
 
 Set connection and statement level attributes asynchronously. It requires attributeName and corresponding value.
-conn.setAttr() - sets connection level attributes post connection.
-stmt.setAttr() - sets statement level attributes post creation of statement handle.
-```
-await conn.setAttr("SQL_ATTR_INFO_USERID", 'appuser');
+`database.setAttr()` - sets connection level attributes post connection.
+`stmt.setAttr()` - sets statement level attributes post creation of statement handle.
+
+```javascript
+await database.setAttr("SQL_ATTR_INFO_USERID", 'appuser');
 
 stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
     if(err) { console.log(err); stmt.closeSync(); }
@@ -1217,98 +1226,98 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 });
 ```
 
-### <a name="setAttrSyncApi"></a> 42) .setAttrSync(attributeName, value)
+### <a name="setAttrSyncApi"></a> 42) (Database) .setAttrSync(attributeName, value)
 
 Set connection and statement level attributes synchronously. It requires attributeName and corresponding value.
-conn.setAttrSync() - sets connection level attributes post connection.
-stmt.setAttrSync() - sets statement level attributes post creation of statement handle.
-```
-conn.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
+`database.setAttrSync()` - sets connection level attributes post connection.
+`stmt.setAttrSync()` - sets statement level attributes post creation of statement handle.
 
-var err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
+```javascript
+database.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
+
+const err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
 err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
 ```
 
-### <a name="getInfoApi"></a> 43) .getInfo(infoType, [infoLength], callback)
+### <a name="getInfoApi"></a> 43) (Database) .getInfo(infoType, [infoLength] [, callback])
 
 Asynchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
 * **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
-* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
+* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes.
 
-* **callback** - `callback (error, value)`
+* **callback** - _OPTIONAL_- `callback (error, value)`. If callback is not provided, a Promise will be returned.
 
-   Depending on the type of information that is being retrieved, 2 types of information can be returned:
-
-   - String value
-   - Number value
+Depending on the type of information that is being retrieved, 2 types of information can be returned:
+  - String value
+  - Number value
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn) {
-    conn.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
+ibmdb.open(cn, function(err, database) {
+    database.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
       if(error) console.log(error);
       else console.log("SQL_DBMS_NAME(Server Type) = ", data);
-      conn.closeSync();
+      database.closeSync();
     });
 });
 ```
 
-### <a name="getInfoSyncApi"></a> 44) .getInfoSync(infoType, [infoLength])
+### <a name="getInfoSyncApi"></a> 44) (Database) .getInfoSync(infoType, [infoLength])
 
 Synchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
 * **infoType** - The type of information that is required. The possible values for this argument are described in [Information returned by SQLGetInfo()](https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0000615.html#r0000615__tbginfo). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
-* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes. 
+* **infoLength** - _OPTIONAL_ - Length of the string value to be retrieved. If not provided, getInfo() can return a string value of maximum size 255 bytes.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn)
+ibmdb.open(cn, function(err, database)
 {
-    let serverVersion = conn.getInfoSync(ibmdb.SQL_DBMS_VER);
+    let serverVersion = database.getInfoSync(ibmdb.SQL_DBMS_VER);
     console.log("SQL_DBMS_VER(Server Version) = ", serverVersion);
-    conn.closeSync();
+    database.closeSync();
 });
 ```
 
-### <a name="getTypeInfoApi"></a> 45) .getTypeInfo(dataType, callback)
+### <a name="getTypeInfoApi"></a> 45) (Database) .getTypeInfo(dataType [, callback])
 
 Asynchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
 
 * **dataType** - The SQL data type being queried. The supported values for this argument are described in [SQLGetTypeInfo function (CLI) - Get data type information](https://www.ibm.com/docs/en/db2/11.5?topic=functions-sqlgettypeinfo-function-get-data-type-information). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
-* **callback** - `callback (error, result)`
+* **callback** - _OPTIONAL_ - `callback (error, result)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn) {
-    conn.getTypeInfo(ibmdb.SQL_BLOB, function(error, result) {
+ibmdb.open(cn, function(err, database) {
+    database.getTypeInfo(ibmdb.SQL_BLOB, function(error, result) {
       if(error) console.log(error);
       else console.log("SQL_BLOB Data Type Info = ", result);
-      conn.closeSync();
+      database.closeSync();
     });
 });
 
 async function main()
 {
-    let conn = await ibmdb.open(cn);
-    let data = await conn.getTypeInfo(ibmdb.SQL_ALL_TYPES);
+    let database = await ibmdb.open(cn);
+    let data = await database.getTypeInfo(ibmdb.SQL_ALL_TYPES);
     console.log("All supported data types info = ", data);
-    await conn.close();
+    await database.close();
 }
 ```
 
-### <a name="getTypeInfoSyncApi"></a> 46) .getTypeInfoSync(dataType)
+### <a name="getTypeInfoSyncApi"></a> 46) (Database) .getTypeInfoSync(dataType)
 
 Synchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
@@ -1316,17 +1325,17 @@ If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data type
 * **dataType** - The SQL data type being queried. The supported values for this argument are described in [SQLGetTypeInfo function (CLI) - Get data type information](https://www.ibm.com/docs/en/db2/11.5?topic=functions-sqlgettypeinfo-function-get-data-type-information). The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn) {
-    let result = conn.getTypeInfoSync(ibmdb.SQL_BIGINT);
+ibmdb.open(cn, function(err, database) {
+    let result = database.getTypeInfoSync(ibmdb.SQL_BIGINT);
     console.log("SQL_BIGINT Data Type Info = ", result);
-    conn.closeSync();
+    database.closeSync();
 });
 ```
 
-### <a name="getFunctionsApi"></a> 47) .getFunctions(functionId, callback)
+### <a name="getFunctionsApi"></a> 47) (Database) .getFunctions(functionId, callback)
 
 Asynchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 
@@ -1337,39 +1346,39 @@ Asynchronously determines whether a specific CLI or ODBC function is supported. 
  - value will have only two values: true or false if a valid function id is passed. For ibmdb.ALLFUNCTIONS or 0, it returns an object of all supported functions with true/false value.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn) {
-    conn.getFunctions(ibmdb.SQLCONNECT, function(error, value) {
+ibmdb.open(cn, function(err, database) {
+    database.getFunctions(ibmdb.SQLCONNECT, function(error, value) {
       if(error) console.log(error);
       else console.log("Is SQLConnect supported : ", value);
-      conn.closeSync();
+      database.closeSync();
     });
 });
 ```
 
-### <a name="getFunctionsSyncApi"></a> 48) .getFunctionsSync(functionId)
+### <a name="getFunctionsSyncApi"></a> 48) (Database) .getFunctionsSync(functionId)
 
 Synchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 
 * **functionId** - The value for a function being queried. The value for this argument should be an integer value if macro is not defined in `ibm_db/lib/climacros.js` file.
 
 ```javascript
-var ibmdb = require("ibm_db")
+const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, conn)
+ibmdb.open(cn, function(err, database)
 {
-    let fExists = conn.getFunctionsSync(ibmdb.SQLFREECONNECT);
+    let fExists = database.getFunctionsSync(ibmdb.SQLFREECONNECT);
     console.log("Function SQLFreeConnect Exist : ", fExists);
-    conn.closeSync();
+    database.closeSync();
 });
 ```
 
 ## Create and Drop Database APIs
 
-### <a name="createDbSyncApi"></a> .createDbSync(dbName, connectionString, [options])
+### <a name="createDbSyncApi"></a> (ibmdb) .createDbSync(dbName, connectionString [, options])
 
 To create a database (dbName) through Node.js application.
 
@@ -1380,18 +1389,18 @@ To create a database (dbName) through Node.js application.
     * mode    - Database logging mode (applicable only to "IDS data servers").
 
 ```javascript
-var ibmdb = require("ibm_db");
+const ibmdb = require("ibm_db");
 // Connection string without "DATABASE" keyword and value.
-var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+const cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-var DB_NAME = "TESTDB";
+const DB_NAME = "TESTDB";
 
-var createDB = ibmdb.createDbSync(DB_NAME, cn);
+const createDB = ibmdb.createDbSync(DB_NAME, cn);
 
-if(createDB) {
+if (createDB) {
   console.log("Database created successfully.");
   // Connection string with newly created "DATABASE" name.
-	var conStr = cn + ";" + "DATABASE=" + DB_NAME;
+	const conStr = cn + ";" + "DATABASE=" + DB_NAME;
 
 	ibmdb.open(conStr, function(err, conn) {
 		if(err) console.log(err);
@@ -1403,23 +1412,26 @@ if(createDB) {
 Note: This API is not supported for Db2 on z/OS servers.  Given that connection
 to Db2 on z/OS is to a specific subsystem, this API is not applicable.
 
-### <a name="dropDbSyncApi"></a> .dropDbSync(dbName, connectionString)
+### <a name="dropDbSyncApi"></a> (ibmdb) .dropDbSync(dbName, connectionString [, options])
 
 To drop a database (dbName) through node.js application.
 
 * **dbName** - The database name.
 * **connectionString** - The connection string for your database instance.
+* **options** - _OPTIONAL_ - Object type.
+    * codeSet - Database code set information.
+    * mode    - Database logging mode (applicable only to "IDS data servers").
 
 ```javascript
-var ibmdb = require("ibm_db");
+const ibmdb = require("ibm_db");
 // Connection string without "DATABASE" keyword and value.
-var cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+const cn = "HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-var DB_NAME = "TESTDB";
+const DB_NAME = "TESTDB";
 
-var dropDB = ibmdb.dropDbSync(DB_NAME, cn);
+const dropDB = ibmdb.dropDbSync(DB_NAME, cn);
 
-if(dropDB) {
+if (dropDB) {
   console.log("Database dropped successfully.");
 }
 ```
@@ -1434,29 +1446,21 @@ The ibm_db `Pool` is a rudimentary connection pool which will attempt to have
 database connections ready and waiting for you when you call the `open` method.
 
 If you use a `Pool` instance, any connection that you close will get added to
-the list of available connections immediately. Such connection will be used
+the list of available connections immediately. These connection will be used
 the next time you call `Pool.open()` for the same connection string.
 
 For applications using multiple connections simultaneously, it is recommended to
 use Pool.open instead of [ibmdb.open](#1-openconnectionstring-options-callback).
 
-1.  [.open(connectionString, callback)](#-1-openconnectionstring-callback)
-2.  [.openSync(connectionString)](#-2-opensyncconnectionstring)
-3.  [.close(callback)](#-3-closecallback)
-4.  [.closeSync()](#-4-closesync)
-5.  [.init(N, connStr)](#-5-initn-connstr)
-6.  [.initAsync(N, connStr, callback)](#-6-initasyncn-connstr-callback)
-7.  [.setMaxPoolSize(N)](#-7-setmaxpoolsizen)
-
-### <a name="openPoolApi"></a> 1) .open(connectionString, callback)
+### <a name="openPoolApi"></a> 1) (Pool) .open(connectionString [, callback])
 
 Get a `Database` instance which is already connected to `connectionString`
 
 * **connectionString** - The connection string for your database
-* **callback** - `callback (err, db)`
+* **callback** - _OPTIONAL_ - `callback (err, db)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var Pool = require("ibm_db").Pool
+const Pool = require("ibm_db").Pool
 	, pool = new Pool()
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
@@ -1464,52 +1468,53 @@ pool.open(cn, function (err, db) {
 	if (err) {
 		return console.log(err);
 	}
-    console.log("Connection opened successfully.");
-    console.log("Data = ", conn.querySync("select 1 as c1 from sysibm.sysdummy1"));
-    conn.close(function (error) { // RETURN CONNECTION TO POOL
-        if (error) {
-          console.log("Error while closing connection,", error);
-          return;
-        }
-    });
+  console.log("Connection opened successfully.");
+  console.log("Data = ", db.querySync("select 1 as c1 from sysibm.sysdummy1"));
+  db.close(function (error) { // RETURN CONNECTION TO POOL
+      if (error) {
+        console.log("Error while closing connection,", error);
+        return;
+      }
+  });
 });
 ```
 
-### <a name="openSyncPoolApi"></a> 2) .openSync(connectionString)
+### <a name="openSyncPoolApi"></a> 2) (Pool) .openSync(connectionString)
 
 Get a `Database` connection synchronously which is already connected to `connectionString`
 
 * **connectionString** - The connection string for your database
 
-Check [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for example.
+See [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for an example.
+
 ```javascript
-var Pool = require("ibm_db").Pool
+const Pool = require("ibm_db").Pool
 	, pool = new Pool()
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 try {
-    var conn = pool.openSync(connectionString);
+    const database = pool.openSync(connectionString);
 } catch(error) {
     console.log("Unable to open connection,", error);
     return;
 }
 console.log("Connection opened successfully.");
-console.log("Data = ", conn.querySync("select 1 as c1 from sysibm.sysdummy1"));
-var err = conn.closeSync(); // RETURN DB CONNECTION TO POOL.
+console.log("Data = ", database.querySync("select 1 as c1 from sysibm.sysdummy1"));
+const err = database.closeSync(); // RETURN DB CONNECTION TO POOL.
 if (err) {
     console.log("Error while closing connection,", err);
     return;
 }
 ```
 
-### <a name="closePoolApi"></a> 3) .close(callback)
+### <a name="closePoolApi"></a> 3) (Pool) .close([callback])
 
 Close all connections in the `Pool` instance asynchronously.
 
-* **callback** - `callback (err)`
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
-var Pool = require("ibm_db").Pool
+const Pool = require("ibm_db").Pool
 	, pool = new Pool()
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
@@ -1520,7 +1525,7 @@ pool.open(cn, function (err, db) {
 
     //db is now an open database connection and can be used like normal connection.
     //but all we will do now is close the whole pool using close() API.
-    //Use conn.close() to return the connection back to pool for next use.
+    //Use db.close() to return the connection back to pool for next use.
 
     pool.close(function () {
         console.log("All connections in the pool are closed.");
@@ -1528,42 +1533,43 @@ pool.open(cn, function (err, db) {
 });
 ```
 
-### <a name="closeSyncPoolApi"></a> 4) .closeSync()
+### <a name="closeSyncPoolApi"></a> 4) (Pool) .closeSync()
 
 Close all connections in the `Pool` instance synchronously.
-Check [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for example.
+See [test-pool-close.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-pool-close.js) for an example.
 
 ```javascript
-var Pool = require("ibm_db").Pool
+const Pool = require("ibm_db").Pool
 	, pool = new Pool()
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 try {
-    var conn = pool.openSync(connectionString);
+    const database = pool.openSync(connectionString);
 } catch(error) {
     console.log("Unable to open connection,", error);
     return;
 }
 console.log("Connection opened successfully.");
 
-//conn is now an open database connection and can be used like normal connection.
+//database is now an open database connection and can be used like a normal connection.
 //but all we will do now is close the whole pool using closeSync() API.
-//Use conn.closeSync() to return the connection back to pool for next use.
+//Use database.closeSync() to return the connection back to pool for next use.
 
-var error = pool.closeSync();
+const error = pool.closeSync();
 if (error) { console.log("Error while closing pool,", error); return; }
 console.log("All connections in the pool are closed.");
 ```
 
-### <a name="initPoolApi"></a> 5) .init(N, connStr)
+### <a name="initPoolApi"></a> 5) (Pool) .init(N, connStr)
 
 Initialize `Pool` with N no of active connections using supplied connection string.
 It is a synchronous API.
 
 * **N** - No of connections to be initialized.
 * **connStr** - The connection string for your database
-```
-var ret = pool.init(5, connStr);
+
+```javascript
+const ret = pool.init(5, connStr);
 if(ret != true)
 {
     console.log(ret);
@@ -1572,18 +1578,20 @@ if(ret != true)
 
 pool.open(connStr, function(err, db) { ...
 ```
-Check [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for example.
+
+See [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for an example.
 
 
-### <a name="initAsyncApi"></a> 6) .initAsync(N, connStr, callback)
+### <a name="initAsyncApi"></a> 6) (Pool) .initAsync(N, connStr [, callback])
 
 Initialize `Pool` with N no of active connections using supplied connection string.
 It is an asynchronous API.
 
 * **N** - No of connections to be initialized.
 * **connStr** - The connection string for your database or a JSON Object with connection information
-* **callback** - `callback (err)`
-```
+* **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
+
+```javascript
 pool.initAsync(5, connStr, function(err) {
   if(err) {
     console.log(err);
@@ -1594,24 +1602,23 @@ pool.initAsync(5, connStr, function(err) {
 
 try {
   await pool.initAsync(1, cn);
-  let conn = await pool.open(cn);
-  let data = await conn.query("select 1 from sysibm.sysdummy1");
+  let database = await pool.open(cn);
+  let data = await database.query("select 1 from sysibm.sysdummy1");
   console.log("data = ", data);
 } catch(err) {console.log(err);}
 ```
-Check [test-asyc-await.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-asyc-await.js#L50) for example.
 
-### <a name="setMaxPoolSize"></a> 7) .setMaxPoolSize(N)
+See [test-asyc-await.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-asyc-await.js#L50) for an example.
 
-Number of maximum connection to database supported by current pool.
+### <a name="setMaxPoolSize"></a> 7) (Pool) .setMaxPoolSize(N)
+
+Set the maximum number of connections to the database supported by the current pool.
 
 * **N** - No of maximum connections in the pool.
-If we call pool.open() or openSync() API and **N** connections are already in use,
-subsequent connection request will be queued and wait till connection timeout,
-so that if any connection get closed before timeout, the open request will be served.
-Check [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for example.
+If we call the `pool.open()` or `openSync()` APIs and **N** connections are already in use,
+subsequent connection requests will be queued and wait until a connection a connection is closed or the maximum connection timeout.  See [test-max-pool-size.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-max-pool-size.js) for an example.
 
-```
+```javascript
 pool.setMaxPoolSize(20);
 pool.open(connStr, function(err, db) { ...
 ```
@@ -1621,7 +1628,7 @@ pool.open(connStr, function(err, db) { ...
 Bind arguments for each parameter marker(?) in SQL query.
 These parameters can be used with query(), querySync, bind(), execute() APIs.
 bindingParameters is an array of Values like: [val1, val2, ...]
-Each value in itself can be an array or Object holing multiple bind options.
+Each value in itself can be an Array or Object having multiple bind options.
 If parameters are not an integer or string, it is recomended to pass an Object with different bind options. The object can have following keys:
 
 `{"ParamType":"INOUT", CType:"BINARY", SQLType:"BLOB",DataType: "BLOB", Data:imgfile, Length:50}`
@@ -1677,9 +1684,9 @@ parmeter markers only. i.e. pass the input values using bind params.
 
 * If SP has result set to return, it will be returned in the array after out params. f.e. if SP has 2 out params and it returns 2 result set too, the result returned by query() or querySync() would be in the form [outValue1, outValue2, resultSet1, resultSet2]. Each resultset would be an array of row objects.
 
-* [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using conn.querySync().
+* [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using database.querySync().
 
-* [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using conn.query().
+* [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using database.query().
 
 * [test-sp-resultset.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset.js) - Example using Out Params and Result Set using query() and querySync() APIs.
 
