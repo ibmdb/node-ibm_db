@@ -134,7 +134,7 @@ export class Database {
     query: string | SQLQuery,
     cb: (err: Error, outputParam: SQLResults, sqlca: SQLCA) => void
   ): false;
-  query(query: string | SQLQuery, params?: any[]): Promise<SQLResults>;
+  query(query: string | SQLQuery, params?: SQLParam[]): Promise<SQLResults>;
   query(): any {}
 
   queryResult(
