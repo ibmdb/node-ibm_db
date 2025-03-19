@@ -3,6 +3,7 @@
   "description": "IBM DB2 and IBM Informix bindings for node",
   "version": "3.3.0",
   "main": "lib/odbc.js",
+  "types": "typescript/dist/index.d.ts",
   "homepage": "https://github.com/ibmdb/node-ibm_db/",
   "repository": {
     "type": "git",
@@ -23,7 +24,8 @@
   },
   "scripts": {
     "install": "node installer/driverInstall.js",
-    "test": "cd test && node run-tests.js"
+    "test": "cd test && node run-tests.js",
+    "build:types": "tsc -p typescript/tsconfig.json"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -45,9 +47,10 @@
   "author": "IBM",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.13.4",
+    "@types/node": "^22.13.10",
     "async": "^3.2.4",
     "bluebird": "^3.7.2",
-    "moment": "^2.29.4"
+    "moment": "^2.29.4",
+    "typescript": "^5.8.2"
   }
 }
