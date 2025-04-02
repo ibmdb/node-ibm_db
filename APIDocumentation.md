@@ -96,22 +96,22 @@ Open a connection to a database.
 * **options** - _OPTIONAL_ - Object type. Can be used to avoid multiple
     loading of native ODBC library for each call of `.open`. Also, can be used
     to pass connectTimeout value and systemNaming(true/false) for i5/OS server.
-* **callback** - _OPTIONAL_ - `callback (err, database)`. If callback is not provided, a Promise will be returned.
+* **callback** - _OPTIONAL_ - `callback (err, conn)`. If callback is not provided, a Promise will be returned.
 
 ```javascript
 const ibmdb = require("ibm_db")
   , connStr = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=passwd";
 
-ibmdb.open(connStr, function (err, database) {
+ibmdb.open(connStr, function (err, conn) {
     if (err)
     {
       console.log(err);
       return;
     }
-    database.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+    conn.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
       if (err1) console.log(err1);
       else console.log(rows);
-      database.close(function(err2) {
+      conn.close(function(err2) {
         if(err2) console.log(err2);
       });
     });
@@ -181,14 +181,14 @@ const ibmdb = require("ibm_db"),
 
 try {
       const option = { connectTimeout : 40, systemNaming : true };// Connection Timeout after 40 seconds.
-      const database = ibmdb.openSync(connString, option);
-      database.query("select * from customers fetch first 10 rows only", function (err, rows) {
+      const conn = ibmdb.openSync(connString, option);
+      conn.query("select * from customers fetch first 10 rows only", function (err, rows) {
 		if (err) {
 			console.log(err);
 		} else {
 		  console.log(rows);
 		}
-		database.close();
+		conn.close();
       });
     } catch (e) {
       console.log(e.message);
@@ -213,7 +213,7 @@ const ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
 
-ibmdb.open(cn, function (err, database) {
+ibmdb.open(cn, function (err, conn) {
     if (err) {
       return console.log(err);
     }
@@ -221,7 +221,7 @@ ibmdb.open(cn, function (err, database) {
     // we now have an open connection to the database, so lets get some data.
     // Execute multiple query and get multiple result sets.
     // In case of multiple resultset, query will return an array of result sets.
-    database.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
+    conn.query("select 1 from sysibm.sysdummy1;select 2 from sysibm.sysdummy1;" +
                "select 3 from sysibm.sysdummy1", function (err, rows, sqlca)
     {
         if (err) {
@@ -247,11 +247,11 @@ Example for Array Insert:
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
 
-  database.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
-  database.query(queryOptions, function(err, result) {
+  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  conn.query(queryOptions, function(err, result) {
     if(err) console.log(err);
     else {
-      const data = database.querySync("select * from arrtab");
+      const data = conn.querySync("select * from arrtab");
       console.log("\nSelected data for table ARRTAB =\n", data);
     }
   });
@@ -272,10 +272,10 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
 
   //blocks until the query is completed and all data has been acquired
-  const rows = database.querySync("select * from customers fetch first 10 rows only");
+  const rows = conn.querySync("select * from customers fetch first 10 rows only");
 
   console.log(rows);
 });
@@ -295,8 +295,8 @@ Example for Array Insert:
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
 
-  database.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
-  database.querySync(queryOptions);
+  conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
+  conn.querySync(queryOptions);
 ```
 
 ### <a name="queryStreamApi"></a> 5) (Database) .queryStream(sqlQuery [, bindingParameters])
@@ -316,17 +316,17 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database)
+ibmdb.open(cn, function(err, conn)
 {
-    const stream = database.queryStream("select 1 from sysibm.sysdummy1");
+    const stream = conn.queryStream("select 1 from sysibm.sysdummy1");
 
     stream.once('data', function (result) {
       console.log(result);
     }).once('error', function (err) {
-      database.closeSync();
+      conn.closeSync();
       throw err;
     }).once('end', function () {
-      database.close(function(){ console.log("done.") });
+      conn.close(function(){ console.log("done.") });
     });
 });
 ```
@@ -351,16 +351,16 @@ outparams is returned only for CALL statement with OUT parameters. Any resultset
 const ibmdb = require("ibm_db")
 	, cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password;"
 	;
-ibmdb.open(cn, function (err, database) {
+ibmdb.open(cn, function (err, conn) {
     if (err) return console.log(err);
     const query = 'select creator, name from sysibm.systables where 1 = ?';
-    database.queryResult(query, [1], function (err, result) {
+    conn.queryResult(query, [1], function (err, result) {
         if(err) { console.log(err); }
         else {
           console.log("data = ", result.fetchAllSync());
           console.log("metadata = ", result.getColumnMetadataSync());
           result.closeSync(); // Must call in application.
-          database.closeSync();
+          conn.closeSync();
           console.log("Executed ", ++loop, " times.");
         }
     });
@@ -385,14 +385,14 @@ For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
   if (err) return console.log(err);
   const query = 'select creator, name from sysibm.systables';
-  const result = database.queryResultSync(query);
+  const result = conn.queryResultSync(query);
   console.log("data = ", result.fetchAllSync());
   console.log("metadata = ", result.getColumnMetadataSync());
   result.closeSync(); // Must call to free to avoid application error.
-  database.closeSync();
+  conn.closeSync();
 });
 ```
 **Note:** Once you are done with the `result` object, you must close it to avoid an error when the Javascript garbage collector frees it. Not calling `result.close()` or `result.closeSync()` may cause an invalid handle error in the application or no data.
@@ -409,13 +409,13 @@ Close the currently opened database.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function (err, database) {
+ibmdb.open(cn, function (err, conn) {
 	if (err) {
 		return console.log(err);
 	}
 
-	//we now have an open connection to the database
-	database.close(function (err) {
+	//we now have an open connection to the conn
+	conn.close(function (err) {
 		console.log("the database connection is now closed");
 	});
 });
@@ -429,15 +429,15 @@ Synchronously close the currently opened database.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
   if (err) return console.log(err);
 
   //Blocks until the connection is closed
-  database.closeSync();
+  conn.closeSync();
 });
 
-const database = ibmdb.openSync(connString, option);
-database.closeSync();
+const conn = ibmdb.openSync(connString, option);
+conn.closeSync();
 ```
 
 ### <a name="prepareApi"></a> 10) (Database) .prepare(sql [, callback])
@@ -453,12 +453,12 @@ Returns an `ODBCStatement` object.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.prepare("insert into hits (col1, col2) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
     //Bind and Execute the statement asynchronously
@@ -467,7 +467,7 @@ ibmdb.open(cn,function(err, database){
       else result.closeSync();
 
       //Close the connection
-	  database.close(function(err){});
+	  conn.close(function(err){});
     });
   });
 });
@@ -485,8 +485,8 @@ Returns an `ODBCStatement` object.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err,database){
-  const stmt = database.prepareSync("select * from employee where empid = ?");
+ibmdb.open(cn,function(err,conn){
+  const stmt = conn.prepareSync("select * from employee where empid = ?");
 
   //Bind and Execute the statement asynchronously
   stmt.execute([142], function (err, result) {
@@ -496,7 +496,7 @@ ibmdb.open(cn,function(err,database){
     stmt.closeSync();
 
     //Close the connection
-	  database.close(function(err){});
+	  conn.close(function(err){});
   });
 });
 ```
@@ -531,13 +531,13 @@ outparams - will have result for INOUT and OUTPUT parameters of Stored Procedure
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table mytab (id int, photo BLOB(30K))");
-  database.prepare("insert into mytab (id, photo) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table mytab (id int, photo BLOB(30K))");
+  conn.prepare("insert into mytab (id, photo) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
     // Create params object
@@ -553,7 +553,7 @@ ibmdb.open(cn,function(err, database){
         if(err){
           console.log(err)
         }
-        database.close(function(err){});
+        conn.close(function(err){});
       });
     });
   });
@@ -573,8 +573,8 @@ Returns an `ODBCResult` object. If the prepared statement is a stored procedure 
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  const stmt = database.prepareSync("select empname from emptable where empid = ?");
+ibmdb.open(cn,function(err, conn){
+  const stmt = conn.prepareSync("select empname from emptable where empid = ?");
 
   //Bind and Execute the statment asynchronously
   const result = stmt.executeSync([142]);
@@ -584,7 +584,7 @@ ibmdb.open(cn,function(err, database){
   stmt.closeSync();
 
   //Close the connection
-  database.close(function(err){});
+  conn.close(function(err){});
 });
 ```
 
@@ -602,12 +602,12 @@ It returns the number of rows in a table that were affected by an UPDATE, an INS
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table mytab (id int, text varchar(30))");
-  database.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table mytab (id int, text varchar(30))");
+  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
     //Bind and Execute the statment asynchronously
@@ -617,7 +617,7 @@ ibmdb.open(cn,function(err, database){
 
       //Close the stmt and connection
       stmt.close();
-      database.close(function(err){});
+      conn.close(function(err){});
     });
   });
 });
@@ -636,12 +636,12 @@ It returns the number of rows in a table that were affected by an UPDATE, an INS
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table mytab (id int, text varchar(30))");
-  database.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table mytab (id int, text varchar(30))");
+  conn.prepare("insert into mytab (id, text) VALUES (?, ?)", function (err, stmt) {
     if (err) {
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
     //Bind and Execute the statment asynchronously
@@ -650,7 +650,7 @@ ibmdb.open(cn,function(err, database){
 
     //Close the stmt and connection
     stmt.closeSync();
-    database.closeSync();
+    conn.closeSync();
   });
 });
 ```
@@ -691,15 +691,15 @@ Fetch a row of data from an ODBCResult object asynchronously.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  database.prepare("select * from hits", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  conn.prepare("select * from hits", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
@@ -710,9 +710,9 @@ ibmdb.open(cn,function(err, database){
             result.fetch({fetchMode:ibmdb.FETCH_ARRAY}).then(row => {
               console.log("Row2 = ", row);
               result.closeSync();
-              database.querySync("drop table hits");
+              conn.querySync("drop table hits");
               //Close the connection
-              database.close(function(err){console.log("Connection Closed.");});
+              conn.close(function(err){console.log("Connection Closed.");});
             }).catch(err => console.log(err));
           }
       });
@@ -733,19 +733,19 @@ Fetch a row of data from the ODBCResult object synchronously.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  const stmt = database.prepareSync("select * from hits");
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  const stmt = conn.prepareSync("select * from hits");
   const result = stmt.executeSync();
   const data = 0;
   while( data = result.fetchSync({fetchMode:3}) ) {
     console.log(data);
   }
   result.closeSync();
-  database.querySync("drop table hits");
-  database.closeSync();
+  conn.querySync("drop table hits");
+  conn.closeSync();
 });
 ```
 
@@ -762,15 +762,15 @@ Fetch all rows from ODBCResult object asynchronously for the executed statement.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  database.prepare("select * from hits", function (err, stmt) {
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  conn.prepare("select * from hits", function (err, stmt) {
     if (err) {
       //could not prepare for some reason
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
     stmt.execute(function (err, result) {
       if( err ) console.log(err);
@@ -781,9 +781,9 @@ ibmdb.open(cn,function(err, database){
             console.log("No of columns = ", colcount);
           }
           result.closeSync();
-          database.querySync("drop table hits");
+          conn.querySync("drop table hits");
           //Close the connection
-          database.close(function(err){console.log("Connection Closed.");});
+          conn.close(function(err){console.log("Connection Closed.");});
       });
     });
   });
@@ -800,17 +800,17 @@ Fetch all rows from ODBCResult object Synchronously for the executed statement.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  const stmt = database.prepareSync("select * from hits");
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  const stmt = conn.prepareSync("select * from hits");
   const result = stmt.executeSync();
   const data = result.fetchAllSync();
   console.log("Fetched data = ", data);
   result.closeSync();
-  database.querySync("drop table hits");
-  database.closeSync();
+  conn.querySync("drop table hits");
+  conn.closeSync();
 });
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
@@ -829,11 +829,11 @@ Retrive data for colNum of specified size from ODBCResult object asynchronously.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  const stmt = database.prepareSync("select * from hits");
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  const stmt = conn.prepareSync("select * from hits");
   const result = stmt.executeSync();
   result.fetch({fetchMode:0})
       .then(() => {
@@ -865,11 +865,11 @@ Retrive data for colNum of specified size from ODBCResult object synchronously.
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn,function(err, database){
-  database.querySync("create table hits (col1 varchar(40), col2 int)");
-  database.querySync("insert into hits values ('something', 42)");
-  database.querySync("insert into hits values ('für', 43)");
-  const stmt = database.prepareSync("select * from hits");
+ibmdb.open(cn,function(err, conn){
+  conn.querySync("create table hits (col1 varchar(40), col2 int)");
+  conn.querySync("insert into hits values ('something', 42)");
+  conn.querySync("insert into hits values ('für', 43)");
+  const stmt = conn.prepareSync("select * from hits");
   const result = stmt.executeSync();
   console.log(result.fetchSync({fetchMode:0}));
   console.log("First Row Data = ");
@@ -884,7 +884,7 @@ ibmdb.open(cn,function(err, database){
   console.log(result.getDataSync(2, 5));
   console.log(result.getDataSync(3, 5));
   result.closeSync();
-  database.closeSync();
+  conn.closeSync();
 }
 ```
 See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
@@ -931,28 +931,28 @@ Commit a transaction
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
 
-  database.beginTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
-    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    database.commitTransaction(function (err) {
+    conn.commitTransaction(function (err) {
       if (err) {
         //error during commit
         console.log(err);
-        return database.closeSync();
+        return conn.closeSync();
       }
 
-    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-     database.closeSync();
+     conn.closeSync();
     });
   });
 });
@@ -966,23 +966,23 @@ Synchronously commit a transaction
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
 
-  database.beginTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
-    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    database.commitTransactionSync();
+    conn.commitTransactionSync();
 
-    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-    database.closeSync();
+    conn.closeSync();
   });
 });
 ```
@@ -997,28 +997,28 @@ Rollback a transaction
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
 
-  database.beginTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
-    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    database.rollbackTransaction(function (err) {
+    conn.rollbackTransaction(function (err) {
       if (err) {
         //error during rollback
         console.log(err);
-        return database.closeSync();
+        return conn.closeSync();
       }
 
-    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-     database.closeSync();
+     conn.closeSync();
     });
   });
 });
@@ -1032,23 +1032,23 @@ Synchronously rollback a transaction
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
+ibmdb.open(cn, function(err, conn) {
 
-  database.beginTransaction(function (err) {
+  conn.beginTransaction(function (err) {
     if (err) {
       //could not begin a transaction for some reason.
       console.log(err);
-      return database.closeSync();
+      return conn.closeSync();
     }
 
-    const result = database.querySync("insert into customer (customerCode) values ('stevedave')");
+    const result = conn.querySync("insert into customer (customerCode) values ('stevedave')");
 
-    database.rollbackTransactionSync();
+    conn.rollbackTransactionSync();
 
-    console.log(database.querySync("select * from customer where customerCode = 'stevedave'"));
+    console.log(conn.querySync("select * from customer where customerCode = 'stevedave'"));
 
      //Close the connection
-    database.closeSync();
+    conn.closeSync();
   });
 });
 ```
@@ -1063,10 +1063,10 @@ Synchronously sets the default isolation level passed as argument. It is only ap
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
-ibmdb.open(cn, function(err, database) {
-  database.setIsolationLevel(2);  // SQL_TXN_READ_COMMITTED
-  database.setIsolationLevel(4); // SQL_TXN_REPEATABLE_READ
-  database.querySync("create table mytab1 (c1 int, c2 varchar(10))");
+ibmdb.open(cn, function(err, conn) {
+  conn.setIsolationLevel(2);  // SQL_TXN_READ_COMMITTED
+  conn.setIsolationLevel(4); // SQL_TXN_REPEATABLE_READ
+  conn.querySync("create table mytab1 (c1 int, c2 varchar(10))");
 });
 ```
 
@@ -1075,11 +1075,11 @@ ibmdb.open(cn, function(err, database) {
 Synchronously retrieve the name of columns returned by the resulset.
 
 ```javascript
-  database.querySync("insert into mytab1 values ( 5, 'abc')");
-  database.prepare("select * from mytab1", function (err, stmt) {
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Column Names = ", result.getColumnNamesSync());
-      result.closeSync(); database.closeSync();
+      result.closeSync(); conn.closeSync();
     });
   });
 ```
@@ -1089,14 +1089,14 @@ Synchronously retrieve the name of columns returned by the resulset.
 Synchronously retrieve the metadata about columns returned by the resulset.
 
 ```javascript
-  database.querySync("insert into mytab1 values ( 5, 'abc')");
-  database.prepare("select * from mytab1", function (err, stmt) {
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Column Names = ", result.getColumnNamesSync());
       console.log("Column Meta Data = ", result.getColumnMetadataSync());
       console.log("Fetched Data = ", result.fetchAllSync() );
       result.closeSync();
-      database.closeSync();
+      conn.closeSync();
     });
   });
 ```
@@ -1106,8 +1106,8 @@ Synchronously retrieve the metadata about columns returned by the resulset.
 Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API.
 
 ```javascript
-  database.querySync("insert into mytab1 values ( 5, 'abc')");
-  database.prepare("select * from mytab1", function (err, stmt) {
+  conn.querySync("insert into mytab1 values ( 5, 'abc')");
+  conn.prepare("select * from mytab1", function (err, stmt) {
     stmt.execute(function(err, result) {
       console.log("Fetched Data = ", result.fetchAllSync() );
       const problem = result.getSQLErrorSync();
@@ -1117,7 +1117,7 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
         console.log("SQLWarning = ", problem);
       }
       result.closeSync();
-      database.closeSync();
+      conn.closeSync();
     });
   });
 ```
@@ -1135,19 +1135,19 @@ const ibmdb = require("ibm_db")
 ibmdb.debug(true);  // **==> ENABLE CONSOLE LOGS, but do not log params. <==**
 ibmdb.debug(2);     // **==> ENABLE CONSOLE LOGS and log parameter values too if passed. <==**
 
-ibmdb.open(cn, function (err, database) {
+ibmdb.open(cn, function (err, conn) {
     if (err)
     {
         console.log(err);
         return;
     }
-    database.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
+    conn.query("select 1 from sysibm.sysdummy1", function (err1, rows) {
         if (err1) console.log(err1);
         else console.log(rows);
 
         ibmdb.debug(false);  // Disable console logs.
 
-        database.close(function(err2) {
+        conn.close(function(err2) {
             if(err2) console.log(err2);
         });
     });
@@ -1170,9 +1170,9 @@ If the outputfile already exists it will be overwritten. If the outputfile is no
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database){
-    database.executeFileSync('sample2.txt', '%','out.txt');
-    const rows = database.executeFileSync('sample2.txt', '%');
+ibmdb.open(cn, function(err, conn){
+    conn.executeFileSync('sample2.txt', '%','out.txt');
+    const rows = conn.executeFileSync('sample2.txt', '%');
     console.log(rows)
 });
 ```
@@ -1193,15 +1193,15 @@ If the outputfile already exists it will be overwritten. If the outputfile is no
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database){
-   database.executeFile('sample3.txt', '@', 'out.txt', function (err, rows) {
+ibmdb.open(cn, function(err, conn){
+   conn.executeFile('sample3.txt', '@', 'out.txt', function (err, rows) {
         if (err) {
             console.log(err);
         } else {
             console.log(rows);
         }
     });
-    database.executeFile('sample3.txt', '@', function (err, rows) {
+    conn.executeFile('sample3.txt', '@', function (err, rows) {
         if (err) {
             console.log(err);
         } else {
@@ -1214,11 +1214,11 @@ ibmdb.open(cn, function(err, database){
 ### <a name="setAttrApi"></a> 41) (Database) .setAttr(attributeName, value [, callback])
 
 Set connection and statement level attributes asynchronously. It requires attributeName and corresponding value.
-`database.setAttr()` - sets connection level attributes post connection.
+`conn.setAttr()` - sets connection level attributes post connection.
 `stmt.setAttr()` - sets statement level attributes post creation of statement handle.
 
 ```javascript
-await database.setAttr("SQL_ATTR_INFO_USERID", 'appuser');
+await conn.setAttr("SQL_ATTR_INFO_USERID", 'appuser');
 
 stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
     if(err) { console.log(err); stmt.closeSync(); }
@@ -1229,11 +1229,11 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 ### <a name="setAttrSyncApi"></a> 42) (Database) .setAttrSync(attributeName, value)
 
 Set connection and statement level attributes synchronously. It requires attributeName and corresponding value.
-`database.setAttrSync()` - sets connection level attributes post connection.
+`conn.setAttrSync()` - sets connection level attributes post connection.
 `stmt.setAttrSync()` - sets statement level attributes post creation of statement handle.
 
 ```javascript
-database.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
+conn.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
 
 const err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
@@ -1258,11 +1258,11 @@ Depending on the type of information that is being retrieved, 2 types of informa
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
-    database.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
+ibmdb.open(cn, function(err, conn) {
+    conn.getInfo(ibmdb.SQL_DBMS_NAME, function(error, data) {
       if(error) console.log(error);
       else console.log("SQL_DBMS_NAME(Server Type) = ", data);
-      database.closeSync();
+      conn.closeSync();
     });
 });
 ```
@@ -1279,11 +1279,11 @@ Synchronously retrieve the general information about the database management sys
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database)
+ibmdb.open(cn, function(err, conn)
 {
-    let serverVersion = database.getInfoSync(ibmdb.SQL_DBMS_VER);
+    let serverVersion = conn.getInfoSync(ibmdb.SQL_DBMS_VER);
     console.log("SQL_DBMS_VER(Server Version) = ", serverVersion);
-    database.closeSync();
+    conn.closeSync();
 });
 ```
 
@@ -1300,20 +1300,20 @@ If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data type
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
-    database.getTypeInfo(ibmdb.SQL_BLOB, function(error, result) {
+ibmdb.open(cn, function(err, conn) {
+    conn.getTypeInfo(ibmdb.SQL_BLOB, function(error, result) {
       if(error) console.log(error);
       else console.log("SQL_BLOB Data Type Info = ", result);
-      database.closeSync();
+      conn.closeSync();
     });
 });
 
 async function main()
 {
-    let database = await ibmdb.open(cn);
-    let data = await database.getTypeInfo(ibmdb.SQL_ALL_TYPES);
+    let conn = await ibmdb.open(cn);
+    let data = await conn.getTypeInfo(ibmdb.SQL_ALL_TYPES);
     console.log("All supported data types info = ", data);
-    await database.close();
+    await conn.close();
 }
 ```
 
@@ -1328,10 +1328,10 @@ If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data type
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
-    let result = database.getTypeInfoSync(ibmdb.SQL_BIGINT);
+ibmdb.open(cn, function(err, conn) {
+    let result = conn.getTypeInfoSync(ibmdb.SQL_BIGINT);
     console.log("SQL_BIGINT Data Type Info = ", result);
-    database.closeSync();
+    conn.closeSync();
 });
 ```
 
@@ -1349,11 +1349,11 @@ Asynchronously determines whether a specific CLI or ODBC function is supported. 
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database) {
-    database.getFunctions(ibmdb.SQLCONNECT, function(error, value) {
+ibmdb.open(cn, function(err, conn) {
+    conn.getFunctions(ibmdb.SQLCONNECT, function(error, value) {
       if(error) console.log(error);
       else console.log("Is SQLConnect supported : ", value);
-      database.closeSync();
+      conn.closeSync();
     });
 });
 ```
@@ -1368,11 +1368,11 @@ Synchronously determines whether a specific CLI or ODBC function is supported. T
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
 
-ibmdb.open(cn, function(err, database)
+ibmdb.open(cn, function(err, conn)
 {
-    let fExists = database.getFunctionsSync(ibmdb.SQLFREECONNECT);
+    let fExists = conn.getFunctionsSync(ibmdb.SQLFREECONNECT);
     console.log("Function SQLFreeConnect Exist : ", fExists);
-    database.closeSync();
+    conn.closeSync();
 });
 ```
 
@@ -1493,14 +1493,14 @@ const Pool = require("ibm_db").Pool
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 try {
-    const database = pool.openSync(connectionString);
+    const conn = pool.openSync(connectionString);
 } catch(error) {
     console.log("Unable to open connection,", error);
     return;
 }
 console.log("Connection opened successfully.");
-console.log("Data = ", database.querySync("select 1 as c1 from sysibm.sysdummy1"));
-const err = database.closeSync(); // RETURN DB CONNECTION TO POOL.
+console.log("Data = ", conn.querySync("select 1 as c1 from sysibm.sysdummy1"));
+const err = conn.closeSync(); // RETURN DB CONNECTION TO POOL.
 if (err) {
     console.log("Error while closing connection,", err);
     return;
@@ -1544,16 +1544,16 @@ const Pool = require("ibm_db").Pool
     , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
 
 try {
-    const database = pool.openSync(connectionString);
+    const conn = pool.openSync(connectionString);
 } catch(error) {
     console.log("Unable to open connection,", error);
     return;
 }
 console.log("Connection opened successfully.");
 
-//database is now an open database connection and can be used like a normal connection.
+//conn is now an open database connection and can be used like a normal connection.
 //but all we will do now is close the whole pool using closeSync() API.
-//Use database.closeSync() to return the connection back to pool for next use.
+//Use conn.closeSync() to return the connection back to pool for next use.
 
 const error = pool.closeSync();
 if (error) { console.log("Error while closing pool,", error); return; }
@@ -1602,8 +1602,8 @@ pool.initAsync(5, connStr, function(err) {
 
 try {
   await pool.initAsync(1, cn);
-  let database = await pool.open(cn);
-  let data = await database.query("select 1 from sysibm.sysdummy1");
+  let conn = await pool.open(cn);
+  let data = await conn.query("select 1 from sysibm.sysdummy1");
   console.log("data = ", data);
 } catch(err) {console.log(err);}
 ```
@@ -1684,9 +1684,9 @@ parmeter markers only. i.e. pass the input values using bind params.
 
 * If SP has result set to return, it will be returned in the array after out params. f.e. if SP has 2 out params and it returns 2 result set too, the result returned by query() or querySync() would be in the form [outValue1, outValue2, resultSet1, resultSet2]. Each resultset would be an array of row objects.
 
-* [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using database.querySync().
+* [test-call-stmt.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-stmt.js) - Example using conn.querySync().
 
-* [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using database.query().
+* [test-call-async.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-call-async.js) - Example using conn.query().
 
 * [test-sp-resultset.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-sp-resultset.js) - Example using Out Params and Result Set using query() and querySync() APIs.
 
