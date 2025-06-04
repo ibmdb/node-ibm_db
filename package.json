@@ -1,7 +1,7 @@
 {
   "name": "ibm_db",
   "description": "IBM DB2 and IBM Informix bindings for node",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "main": "lib/odbc.js",
   "types": "typescript/dist/index.d.ts",
   "homepage": "https://github.com/ibmdb/node-ibm_db/",
