@@ -1,3 +1,33 @@
+2025-06-04, Version 3.3.1
+=========================
+
+ * build(deps): bump tar-fs from 1.16.4 to 1.16.5 (#1034) (dependabot[bot])
+
+ * remove lodash from devDependency (Bimal Jha)
+
+ * add build.zip file, issue #1025 (Bimal Jha)
+
+ * Add typescript types, update API doc (#1022) (Andre Asselin)
+
+ * build(deps): bump tar-fs from 1.16.3 to 1.16.4 (#1024) (dependabot[bot])
+
+ * add ibmdb binaries for electron v35.x (Bimal Jha)
+
+ * build(deps): bump axios from 1.7.4 to 1.8.2 (#1020) (dependabot[bot])
+
+ * fea: add support for vscode 1.98.x (Bimal Jha)
+
+ * test: add more example for typescript, issue #1018 (Bimal Jha)
+
+ * fix: return consistent db2 error with sqlcode, issue #1016 (Bimal Jha)
+
+ * update code format and syntax (Bimal Jha)
+
+ * fix: resource leak issues reported by code scan (Bimal Jha)
+
+ * fix: issue with offline installation directory path #1012 (Bimal Jha)
+
+
 2024-12-01, Version 3.3.0
 =========================
 
