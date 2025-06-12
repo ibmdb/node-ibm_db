@@ -35,7 +35,7 @@
         [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")',
           { 'conditions' : [
               [ 'IS_DOWNLOADED == "true" ',
-                { 'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)' " ], }
+                { 'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)',-rpath,'$$ORIGIN:$$ORIGIN/../../installer/clidriver/lib' " ], }
               ]
             ],    
             'libraries' : ['-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ','-ldb2' ],
