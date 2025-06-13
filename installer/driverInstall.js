@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '35.0.1';
+var electron_version = '36.4.0';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -646,11 +646,12 @@ var install_node_ibm_db = function(file_url) {
                     var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
                     var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
                     var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.7';
+                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.8';
                     var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.18.3';
+                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.2';
                     var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
-                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.14.0';
+                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.16.0';
+                    var ODBC_BINDINGS_V23 = 'build\/Release\/odbc_bindings.node.23.11.1';
 
                     // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
                     if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
@@ -675,6 +676,7 @@ var install_node_ibm_db = function(file_url) {
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 22.0) && ODBC_BINDINGS_V21 ||
                                        (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V22 ||
+                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V23 ||
                                        ODBC_BINDINGS;
                 }
                 // We have correct bindings file in odbcBindingsNode for
@@ -871,7 +873,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.98){
+            if (vscodeVer >= 1.100){
+                electron_version = "34.5.1";
+            }
+            else if (vscodeVer >= 1.98){
                 electron_version = "34.2.0";
             }
             else if (vscodeVer >= 1.97){
