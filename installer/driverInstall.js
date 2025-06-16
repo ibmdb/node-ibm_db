@@ -542,10 +542,11 @@ var install_node_ibm_db = function(file_url) {
         else
         {
             var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
+            var nodever = parseInt(process.versions.node.split('.')[0], 10);
             var childProcess = exec(buildString, function (error, stdout, stderr) {
                 if( downloadProgress == 0 ) printMsg(stdout);
                 if (error !== null) {
-                  if (vscode_build &&
+                  if ((vscode_build || nodever > 15) &&
                       (platform == 'darwin' || platform == 'linux')) {
                     // "node-gyp" FAILED: RUN Pre-compiled Binary Installation.
                     if(!downloadProgress) {
@@ -611,114 +612,184 @@ var install_node_ibm_db = function(file_url) {
 
     function installPreCompiledBinary()
     {
-        if(platform == 'win32' || vscode_build) {
-            if(arch.indexOf("64") > 0) {
-                var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-                var odbcBindingsNode;
-                var fileName;
-                var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+        if(arch.indexOf("32") > 0) {
+            console.log('32 bit platform is not supported. Please ' +
+                    'install 64 bit NodeJS on 64 bit OS for ibm_db.\n');
+            process.exit(1);
+        } else if(arch.indexOf("ppc") > 0 || arch.indexOf("s390") > 0) {
+            console.log('There is no precompiled binary for platform = ' +
+                platform + ', architecture = ' + arch + '\n');
 
-                if(vscode_build)
-                {
-                    var electronVersion = (electron_version).split('.');
-                    if (platform == 'darwin') {
-                      if (arch == 'arm64') {
-                        fileName = "_macarm_" + electronVersion[0];
-                      } else {
-                        fileName = "_mac_" + electronVersion[0];
-                      }
-                    } else if (platform == 'win32') {
-                      fileName = "_win_" + electronVersion[0];
-                    } else {
-                      fileName = "_linux_" + electronVersion[0];
-                    }
-                    odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
-                    if(electronVersion[0] < 22) {
-                        console.log("No precompiled electron binary available"+
-                                    " for electron " + electron_version + "\n");
-                        process.exit(1);
-                    }
+        } else if(platform == 'win32' || vscode_build) {
+            var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
+            var odbcBindingsNode;
+            var fileName;
+            var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+
+            if(vscode_build)
+            {
+                var electronVersion = (electron_version).split('.');
+                if (platform == 'darwin') {
+                  if (arch == 'arm64') {
+                    fileName = "_macarm_" + electronVersion[0];
+                  } else {
+                    fileName = "_mac_" + electronVersion[0];
+                  }
+                } else if (platform == 'win32') {
+                  fileName = "_win_" + electronVersion[0];
+                } else {
+                  fileName = "_linux_" + electronVersion[0];
                 }
-                else
-                {
-                    //Windows node binary names should update here.
-                    var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.3';
-                    var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
-                    var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
-                    var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
-                    var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.8';
-                    var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                    var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.2';
-                    var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
-                    var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.16.0';
-                    var ODBC_BINDINGS_V23 = 'build\/Release\/odbc_bindings.node.23.11.1';
-
-                    // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
-                    if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
-                        console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
-                            '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                    ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 14.X. ' +
-                            'Otherwise please use the node.js version >= 14.X\n');
-                        process.exit(1);
-                    }
-
-                    /*
-                     * odbcBindingsNode will consist of the node binary-
-                     * file name according to the node version in the system.
-                     */
-                    odbcBindingsNode =
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 18.0) && ODBC_BINDINGS_V17 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 22.0) && ODBC_BINDINGS_V21 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V22 ||
-                                       (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V23 ||
-                                       ODBC_BINDINGS;
+                odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
+                if(electronVersion[0] < 22) {
+                    console.log("No precompiled electron binary available"+
+                                " for electron " + electron_version + "\n");
+                    process.exit(1);
                 }
-                // We have correct bindings file in odbcBindingsNode for
-                // installed node version now. Extract it from build.zip file.
-                printMsg("Extracting " + odbcBindingsNode + " from build.zip");
+            }
+            else
+            {
+                //Windows node binary names should update here.
+                var ODBC_BINDINGS_V14 = 'build\/Release\/odbc_bindings.node.14.21.3';
+                var ODBC_BINDINGS_V15 = 'build\/Release\/odbc_bindings.node.15.14.0';
+                var ODBC_BINDINGS_V16 = 'build\/Release\/odbc_bindings.node.16.20.2';
+                var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
+                var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.8';
+                var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
+                var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.2';
+                var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
+                var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.16.0';
+                var ODBC_BINDINGS_V23 = 'build\/Release\/odbc_bindings.node.23.11.1';
 
-                // Removing the "build" directory created by Auto Installation Process.
-                // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".
-                removeDir('build');
-                var zip = new AdmZip(BUILD_FILE);
+                // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
+                if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
+                    console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
+                        '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
+                ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < 14.X. ' +
+                        'Otherwise please use the node.js version >= 14.X\n');
+                    process.exit(1);
+                }
 
                 /*
-                 * adm-zip will parse the build.zip file content and
-                 * then it will check for the odbcBindingsNode
-                 * (node Binary), when it gets that binary file,
-                 * zip.extractEntryTo will write the same node binary
-                 * but the name will be odbc_bindings.node, and the other
-                 * binary files and build.zip will be discarded.
+                 * odbcBindingsNode will consist of the node binary-
+                 * file name according to the node version in the system.
                  */
-                zip.forEach(function(entry) {
-                    if (entry.entryName === odbcBindingsNode) {
-                        try {
-                            zip.extractEntryTo(entry, CURRENT_DIR, true, false, false, ODBC_BINDINGS);
-                        } catch (e) {
-                            console.log('Installation Failed! \n',e);
-                            process.exit(1);
-                        }
-
-                        printMsg("\n" +
-                        "===================================\n"+
-                        "ibm_db installed successfully.\n"+
-                        "===================================\n");
-                    }
-                });
-
-                return 1;
-
-            } else {
-                console.log('32 bit platform is not supported. Please ' +
-                        'install 64 bit NodeJS on 64 bit OS for ibm_db.\n');
-                process.exit(1);
+                odbcBindingsNode =
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 15.0) && ODBC_BINDINGS_V14 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 16.0) && ODBC_BINDINGS_V15 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 17.0) && ODBC_BINDINGS_V16 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 18.0) && ODBC_BINDINGS_V17 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 19.0) && ODBC_BINDINGS_V18 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 20.0) && ODBC_BINDINGS_V19 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 21.0) && ODBC_BINDINGS_V20 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 22.0) && ODBC_BINDINGS_V21 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V22 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 24.0) && ODBC_BINDINGS_V23 ||
+                                   ODBC_BINDINGS;
             }
+            // We have correct bindings file in odbcBindingsNode for
+            // installed node version now. Extract it from build.zip file.
+            printMsg("Extracting " + odbcBindingsNode + " from build.zip");
+
+            // Removing the "build" directory created by Auto Installation Process.
+            // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".
+            removeDir('build');
+            var zip = new AdmZip(BUILD_FILE);
+
+            /*
+             * adm-zip will parse the build.zip file content and
+             * then it will check for the odbcBindingsNode
+             * (node Binary), when it gets that binary file,
+             * zip.extractEntryTo will write the same node binary
+             * but the name will be odbc_bindings.node, and the other
+             * binary files and build.zip will be discarded.
+             */
+            zip.forEach(function(entry) {
+                if (entry.entryName === odbcBindingsNode) {
+                    try {
+                        zip.extractEntryTo(entry, CURRENT_DIR, true, false, false, ODBC_BINDINGS);
+                    } catch (e) {
+                        installationFailed(e);
+                    }
+
+                    printMsg("\n" +
+                    "===================================\n"+
+                    "ibm_db installed successfully.\n"+
+                    "===================================\n");
+                }
+            });
+
+            return 1;
+        } else if(platform == 'linux' || platform == 'darwin') {
+            // let binaryUrl = 'https://github.com/ibmdb/ibmdb-binaries/raw/refs/heads/main/odbc_bindings';
+            let binaryUrl = 'https://raw.githubusercontent.com/ibmdb/ibmdb-binaries/refs/heads/main/odbc_bindings';
+            let osName;
+            const nodeVersion = process.versions.node.split('.')[0];
+            const ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
+            const outputFile = path.resolve(CURRENT_DIR, ODBC_BINDINGS);
+
+            if (platform == 'darwin') {
+                if (arch == 'arm64') {
+                    osName = "_macarm";
+                } else {
+                    osName = "_mac";
+                }
+            } else {
+                osName = "_linux";
+            }
+            binaryUrl = binaryUrl + osName + '.node.' + nodeVersion;
+
+            // Parse URL to use with https.request
+            const { hostname, pathname } = new URL(binaryUrl);
+
+            const options = {
+              hostname,
+              path: pathname,
+              method: 'GET',
+              agent: httpsAgent,
+              headers: {
+                'User-Agent': 'Node.js HTTPS Client'
+              }
+            };
+
+            const req = https.request(options, (res) => {
+              if (res.statusCode !== 200) {
+                console.error(`Download failed: HTTP ${res.statusCode}`);
+                res.resume();
+                installationFailed();
+              }
+
+              const total_bytes = parseInt(res.headers['content-length'], 10);
+              const outStream = fs.createWriteStream(outputFile);
+              let received_bytes = 0;
+
+              res.on('data', (chunk) => {
+                  received_bytes += chunk.length;
+                  showDownloadingProgress(received_bytes, total_bytes);
+              });
+
+              res.pipe(outStream);
+
+              outStream.on('finish', () => {
+                  printMsg('\n✅ Download complete:' + outputFile);
+                  printMsg("\n" +
+                  "===================================\n"+
+                  "ibm_db installed successfully.\n"+
+                  "===================================\n");
+              });
+
+              outStream.on('error', (err) => {
+                  console.error('\n❌ File write error:', err.message);
+                  installationFailed();
+              });
+            });
+
+            req.on('error', (err) => {
+                console.error('\n❌ HTTPS request error:', err.message);
+                installationFailed();
+            });
+
+            req.end();
         }
     }
 
@@ -830,6 +901,12 @@ function printMakeVersion() {
       printMsg("Unable to find 'make' in PATH. Installation may fail!");
     }
   }
+}
+
+function installationFailed(msg) {
+    console.log('Installation Failed!');
+    if (msg) console.log(msg);
+    process.exit(1);
 }
 
 /* Detect electron version to compile ibm_db by checking version of installed

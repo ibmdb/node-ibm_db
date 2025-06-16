@@ -9,3 +9,6 @@ installer/clidriver
 .blackduck
 .synopsys
 .vs
+.vscode
+ibmdb-binaries
+
