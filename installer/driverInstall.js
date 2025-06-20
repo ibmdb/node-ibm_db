@@ -721,8 +721,8 @@ var install_node_ibm_db = function(file_url) {
 
             return 1;
         } else if(platform == 'linux' || platform == 'darwin') {
-            // let binaryUrl = 'https://github.com/ibmdb/ibmdb-binaries/raw/refs/heads/main/odbc_bindings';
-            let binaryUrl = 'https://raw.githubusercontent.com/ibmdb/ibmdb-binaries/refs/heads/main/odbc_bindings';
+            // let binaryUrl = 'https://github.com/ibmdb/ibmdb-binaries/raw/refs/heads/main/';
+            let binaryUrl = 'https://raw.githubusercontent.com/ibmdb/ibmdb-binaries/refs/heads/main/';
             let osName;
             const nodeVersion = process.versions.node.split('.')[0];
             const ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
@@ -730,14 +730,14 @@ var install_node_ibm_db = function(file_url) {
 
             if (platform == 'darwin') {
                 if (arch == 'arm64') {
-                    osName = "_macarm";
+                    osName = "macarm64";
                 } else {
-                    osName = "_mac";
+                    osName = "macx64";
                 }
             } else {
-                osName = "_linux";
+                osName = "linuxx64";
             }
-            binaryUrl = binaryUrl + osName + '.node.' + nodeVersion;
+            binaryUrl = binaryUrl + osName + '/odbc_bindings.node.' + nodeVersion;
 
             // Parse URL to use with https.request
             const { hostname, pathname } = new URL(binaryUrl);
