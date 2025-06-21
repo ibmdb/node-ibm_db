@@ -19,13 +19,28 @@
     "example": "examples",
     "test": "test"
   },
+  "files": [
+    "examples/",
+    "installer/",
+    "lib/",
+    "src/",
+    "test/",
+    "APIDocumentation.md",
+    "LICENSE",
+    "README.md",
+    "binding.gyp",
+    "build.zip",
+    "package.json",
+    "typescript/dist/"
+  ],
   "engines": {
     "node": ">=6.0"
   },
   "scripts": {
     "install": "node installer/driverInstall.js",
     "test": "cd test && node run-tests.js",
-    "build:types": "tsc -p typescript/tsconfig.json"
+    "build:types": "tsc -p typescript/tsconfig.json",
+    "prepare": "npm run build:types"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -47,7 +62,7 @@
   "author": "IBM",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.15.32",
+    "@types/node": "^24.0.3",
     "async": "^3.2.4",
     "bluebird": "^3.7.2",
     "moment": "^2.29.4",
