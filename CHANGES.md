@@ -1,5 +1,21 @@
-2025-06-04, Version 3.3.1
+2025-06-22, Version 3.3.2
 =========================
+
+ * fea: read clidriver, electron, cafile from package.json. #1027 (Bimal Jha)
+
+ * fix: unhandledRejection error, issue #996 (Bimal Jha)
+
+ * update package.json to fix typescript issue #1036 (Bimal Jha)
+
+ * add test case for typescript testing #1036 (Bimal Jha)
+
+ * Add support for linux and macos binaries (Bimal Jha)
+
+ * Update Linux binaries for vscode (Bimal Jha)
+
+ * Add binaries for electron 36.x (Bimal Jha)
+
+ * update rpath in binding.gyp for Linux platform (Bimal Jha)
 
  * build(deps): bump tar-fs from 1.16.4 to 1.16.5 (#1034) (dependabot[bot])
 
@@ -8,6 +24,10 @@
  * add build.zip file, issue #1025 (Bimal Jha)
 
  * Add typescript types, update API doc (#1022) (Andre Asselin)
+
+
+2025-06-04, Version 3.3.1
+=========================
 
  * build(deps): bump tar-fs from 1.16.3 to 1.16.4 (#1024) (dependabot[bot])
 
