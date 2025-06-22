@@ -29,6 +29,10 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Make sure your system has C++ compiler installed that support C++11 standard.
 
+- **For Linuxx64, MacARM64, Mac-x64 and Windows-x64 platforms**: If a compiler or required dependency is missing, ibm_db automatically falls back to a precompiled binary (for Node.js v16.x and above), ensuring successful installation without native compilation. Note that compilation of native code is attempted first.
+
+- Below prerequisite is applicable only if you need to compile the native C++ code of ibm_db or download of precompiled binary fail.
+
 - **For non-windows platforms**: gcc compiler version >= 8.4, python3, nodejs and `make` is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support. Install a newer compiler or upgrade older one.
 
 - Other required system libraries for Linux OS are: `libcrypt, libpam, libxml2, libstdc++, libc, libgcc, libaudit, libeconf, libz, liblzma and libcap-ng`.
@@ -38,7 +42,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **For Windows**: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 14.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio version >= 2017 is required.
 
-- Python version >= 3.8.0 is required by node-gyp. For **z/OS**, Python 2.7.13 or higher, but lower than Python 3.0, is required.
+- Python version >= 3.8.0 is required by node-gyp.
 
 - **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
 
@@ -66,7 +70,9 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
 
-- The latest node.js version using which `ibm_db` is tested: **23.9.0**
+- ⚠️ **For Node.js v24.x :** native C++ code compilation fails due to an error in the nan package. However, installation succeeds by downloading a precompiled binary.
+
+- The latest node.js version using which `ibm_db` is tested: **24.2.0**
 
 ## Install
 
@@ -111,6 +117,25 @@ To install using **specific version of clidriver** from https://public.dhe.ibm.c
 npm install ibm_db -clidriver=<version>
 npm install ibm_db -clidriver=v11.1.4
 npm install ibm_db -clidriver=v11.5.6
+```
+
+You can set the version of "clidriver", "electron", IBM_DB_DOWNLOAD_URL or "cafile" in config section of your package.json file.
+In that case, no need to pass these options with `npm install` command or no need to set in .npmrc to avoid warning message with npm v11.x
+```
+package.json:
+{
+  "name": "foo",
+  "config": {
+    "clidriver": "v11.5.9",
+    "electron": "36.4.0"
+  }
+}
+```
+
+You can also set system level environment variable `CLIDRIVER_DOWNLOAD_VERSION` to instruct ibm_db to download that version of clidriver.
+```
+export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
+npm install ibm_db
 ```
 
 For **Docker Linux Container**, use below commands:
@@ -174,6 +199,15 @@ npm install --unsafe-perm ibm_db
 
 - HOW:
   - On distributed platforms, Set **DOWNLOAD_CLIDRIVER** environment variable to `true` to force downloading of clidriver from IBM hosted URL. Never set DOWNLOAD_CLIDRIVER on z/OS system.
+
+`CLIDRIVER_DOWNLOAD_VERSION :`
+
+- USE:
+
+  - Set this environment variable for downloading of specific version of odbc/clidriver at install time if clidriver do not exist under `ibm_db/installer` directory or not pointed by environment variable IBM_DB_HOME. If clidriver is already present, existing clidriver will not get deleted unless `DOWNLOAD_CLIDIVER` is set.
+
+- HOW:
+  - On distributed platforms, Set **DOWNLOAD_CLIDRIVER** environment variable to `true` and set environment variable **CLIDRIVER_DOWNLOAD_VERSION** to force downloading of clidriver from IBM hosted URL. Never set CLIDRIVER_DOWNLOAD_VERSION on z/OS system.
 
 ### <a name="downloadCli"></a> Download clidriver ([based on your platform & architecture](#systemDetails)) from the below IBM Hosted URL:
 

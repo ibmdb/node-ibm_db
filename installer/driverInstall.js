@@ -37,11 +37,11 @@ if(process.env.npm_config_loglevel == 'silent') { // -silent option
     silentInstallation = true;
 }
 if(downloadProgress == 0) {
-  printMsg("platform = " + platform + ", arch = " + arch +
+  printMsg("INFO: platform = " + platform + ", arch = " + arch +
            ", node.js version = " + process.version);
 }
 if(platform != 'darwin' && arch == 'arm64') {
-    console.log('ARM64 processor is not supported on ' + platform + ' platform.\n' +
+    console.log('ERROR: ARM64 processor is not supported on ' + platform + ' platform.\n' +
                 'Only MacOS with arm64 processor is supported.\n');
     process.exit(1);
 }
@@ -51,6 +51,10 @@ if (process.env.npm_config_cafile) {
     const ca = fs.readFileSync(process.env.npm_config_cafile);
     httpsAgent = new https.Agent({ ca });
 }
+else if (process.env.npm_package_config_cafile) {
+    const ca = fs.readFileSync(process.env.npm_package_config_cafile);
+    httpsAgent = new https.Agent({ ca });
+}
 
 /* Read specific version of clidriver specified with install command
  * npm install ibm_db -clidriver=v11.5.9
@@ -58,6 +62,26 @@ if (process.env.npm_config_cafile) {
 var clidriverVersion="v12.1.0";
 if(process.env.npm_config_clidriver && process.env.npm_config_clidriver != true) {
     clidriverVersion = process.env.npm_config_clidriver;
+}
+
+/* Read specific version of clidriver specified in config of package.json file
+ * npm v11.x has deprecated npm_config_clidriver and throwing warning
+ * "config" : { "clidriver" : "v11.5.0" }
+ */
+else if(process.env.npm_package_config_clidriver && process.env.npm_package_config_clidriver != true) {
+    clidriverVersion = process.env.npm_package_config_clidriver;
+}
+
+/* User can specify version of clidriver to be downloaded using
+ * export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
+ */
+else if(process.env.CLIDRIVER_DOWNLOAD_VERSION) {
+    clidriverVersion = process.env.CLIDRIVER_DOWNLOAD_VERSION;
+}
+
+if(clidriverVersion && !clidriverVersion.startsWith("v1")) {
+    printMsg("WARNING: Ignoring invalid clidriver version " + clidriverVersion);
+    clidriverVersion = "";
 }
 
 if(platform == 'darwin') {
@@ -89,6 +113,7 @@ findElectronVersion();
  *      You can add IBM_DB_INSTALLER_URL in .npmrc file too.
  */
 installerURL = process.env.npm_config_IBM_DB_INSTALLER_URL ||
+               process.env.npm_package_config_IBM_DB_INSTALLER_URL ||
                process.env.IBM_DB_INSTALLER_URL || installerURL;
 installerURL = installerURL + "/";
 
@@ -130,7 +155,7 @@ var install_node_ibm_db = function(file_url) {
     //If environment variable DOWNLOAD_CLIDRIVER is set to true, then ignore setting of IBM_DB_HOME
     if(process.env.DOWNLOAD_CLIDRIVER == "true"){
         process.env.IBM_DB_HOME = '';
-        printMsg('DOWNLOAD_CLIDRIVER environment variable is set, ' +
+        printMsg('INFO: DOWNLOAD_CLIDRIVER environment variable is set, ' +
                  'proceeding to download clidriver.\n');
     }
 
@@ -236,12 +261,12 @@ var install_node_ibm_db = function(file_url) {
           buildBinary(!IS_ENVIRONMENT_VAR);
         } else {
             if(IS_ENVIRONMENT_VAR) {
-              printMsg('IBM_DB_HOME environment variable have already ' +
-                  'set to -> ' + IBM_DB_HOME +
-                  '\n\nDownloading of clidriver skipped - build is in progress...\n');
+              printMsg('INFO: IBM_DB_HOME environment variable have already ' +
+                  'set to -> ' + IBM_DB_HOME);
+              printMsg('INFO: Downloading of clidriver skipped - build is in progress...\n');
             } else {
-              printMsg('Rebuild Process: Found clidriver at -> ' + IBM_DB_HOME +
-                '\n\nDownloading of clidriver skipped - build is in progress...\n');
+              printMsg('INFO: Rebuild Process: Found clidriver at -> ' + IBM_DB_HOME);
+              printMsg('INFO: Downloading of clidriver skipped - build is in progress...\n');
             }
 
             if( platform != 'win32') {
@@ -339,7 +364,7 @@ var install_node_ibm_db = function(file_url) {
 
         license_agreement += path.resolve(DOWNLOAD_DIR, 'clidriver') + license_agreement2;
         printMsg(license_agreement);
-        printMsg('Downloading DB2 ODBC CLI Driver from ' +
+        printMsg('INFO: Downloading DB2 ODBC CLI Driver from ' +
                  installerfileURL + ' ...\n');
 
         fs.stat(installerfileURL, function (err, stats) {
@@ -896,7 +921,7 @@ function printMakeVersion() {
     try {
       var makeVersion = execSync('make -v').toString();
       makeVersion = makeVersion.split('\n')[0];
-      if( downloadProgress == 0 ) printMsg("make version =" + makeVersion);
+      if( downloadProgress == 0 ) printMsg("INFO: make version = " + makeVersion);
     } catch (e) {
       printMsg("Unable to find 'make' in PATH. Installation may fail!");
     }
@@ -904,7 +929,7 @@ function printMakeVersion() {
 }
 
 function installationFailed(msg) {
-    console.log('Installation Failed!');
+    console.log('ERROR: Installation Failed!');
     if (msg) console.log(msg);
     process.exit(1);
 }
@@ -914,7 +939,9 @@ function installationFailed(msg) {
  */
 function findElectronVersion() {
   if ((process.env.npm_config_vscode) || (process.env.npm_config_electron) ||
-     (__dirname.toLowerCase().indexOf('db2connect') != -1))
+      (process.env.npm_package_config_vscode) ||
+      (process.env.npm_package_config_electron) ||
+      (__dirname.toLowerCase().indexOf('db2connect') != -1))
   {
     printMsg('\nProceeding to build IBM_DB for Electron framework...\n');
     vscode_build = true;
@@ -923,6 +950,10 @@ function findElectronVersion() {
     try {
         if(process.env.npm_config_electron && process.env.npm_config_electron != true) {
           electronVer = process.env.npm_config_electron;
+        }
+        else if(process.env.npm_package_config_electron &&
+                process.env.npm_package_config_electron != true) {
+          electronVer = process.env.npm_package_config_electron;
         }
         else if(process.versions.electron) {
           electronVer = process.versions.electron;
