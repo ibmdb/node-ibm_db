@@ -1064,6 +1064,8 @@ NAN_METHOD(ODBCConnection::Query)
         GETCPPSTR2(data->sql, sql3, len, errmsg);
       }
 
+      Nan::TryCatch try_catch;
+
       Local<String> optionParamsKey = Nan::New(OPTION_PARAMS);
       if (Nan::HasOwnProperty(obj, optionParamsKey).IsJust() && Nan::Get(obj, optionParamsKey).ToLocalChecked()->IsArray())
       {
@@ -1074,6 +1076,13 @@ NAN_METHOD(ODBCConnection::Query)
       else
       {
         data->paramCount = 0;
+      }
+
+      if (try_catch.HasCaught())
+      {
+        free(data);
+        try_catch.ReThrow();
+        return;
       }
 
       Local<String> optionNoResultsKey = Nan::New(OPTION_NORESULTS);

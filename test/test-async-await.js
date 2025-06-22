@@ -5,6 +5,10 @@ var common = require("./common")
   , cn = common.connectionString
   ;
 
+process.on('unhandledRejection', async (reason, p) => {
+    console.debug('Unhandled Error: ', reason, p)
+});
+
 main();
 async function main() {
     await test1();
