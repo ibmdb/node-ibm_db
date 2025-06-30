@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '36.4.0';
+var electron_version = '37.1.0';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -666,7 +666,7 @@ var install_node_ibm_db = function(file_url) {
                   fileName = "_linux_" + electronVersion[0];
                 }
                 odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
-                if(electronVersion[0] < 22) {
+                if(electronVersion[0] < 32) {
                     console.log("No precompiled electron binary available"+
                                 " for electron " + electron_version + "\n");
                     process.exit(1);
@@ -941,6 +941,7 @@ function findElectronVersion() {
   if ((process.env.npm_config_vscode) || (process.env.npm_config_electron) ||
       (process.env.npm_package_config_vscode) ||
       (process.env.npm_package_config_electron) ||
+      (process.env.ELECTRON) ||
       (__dirname.toLowerCase().indexOf('db2connect') != -1))
   {
     printMsg('\nProceeding to build IBM_DB for Electron framework...\n');
@@ -972,6 +973,9 @@ function findElectronVersion() {
     } catch (e) {
         printMsg("Unable to detect electon installation.");
     }
+    if (process.env.ELECTRON && process.env.ELECTRON != "true") {
+        electronVer = process.env.ELECTRON;
+    }
     if (electronVer != null) {
         electron_version = electronVer;
         printMsg("Found electron version, will use Electron version " +
@@ -981,7 +985,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.100){
+            if (vscodeVer >= 1.101){
+                electron_version = "35.5.1";
+            }
+            else if (vscodeVer >= 1.100){
                 electron_version = "34.5.1";
             }
             else if (vscodeVer >= 1.98){

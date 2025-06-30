@@ -107,8 +107,15 @@ For **ELECTRON** or **VSCode** Installation:
 
 ```
 npm install ibm_db -electron=<electron_version>
-npm install ibm_db -electron="25.9.2"
+npm install ibm_db -electron="35.5.1"
 npm install ibm_db -vscode
+ELECTRON=37.1.0 npm install ibm_db
+```
+
+You can also set environment variable `ELECTRON` to instruct ibm_db to install it for that version of electron for electron applications like vscode.
+```
+export ELECTRON=37.1.0
+npm install ibm_db
 ```
 
 To install using **specific version of clidriver** from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/:
@@ -117,6 +124,12 @@ To install using **specific version of clidriver** from https://public.dhe.ibm.c
 npm install ibm_db -clidriver=<version>
 npm install ibm_db -clidriver=v11.1.4
 npm install ibm_db -clidriver=v11.5.6
+```
+
+You can also set system level environment variable `CLIDRIVER_DOWNLOAD_VERSION` to instruct ibm_db to download that version of clidriver.
+```
+export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
+npm install ibm_db
 ```
 
 You can set the version of "clidriver", "electron", IBM_DB_DOWNLOAD_URL or "cafile" in config section of your package.json file.
@@ -130,12 +143,6 @@ package.json:
     "electron": "36.4.0"
   }
 }
-```
-
-You can also set system level environment variable `CLIDRIVER_DOWNLOAD_VERSION` to instruct ibm_db to download that version of clidriver.
-```
-export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
-npm install ibm_db
 ```
 
 For **Docker Linux Container**, use below commands:
