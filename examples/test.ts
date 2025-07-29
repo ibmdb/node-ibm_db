@@ -13,15 +13,29 @@ let cn = common.connectionString
   , pool = new ibmdb.Pool();
 
 async function  main(){
-  const query = `SELECT * FROM employee WHERE phoneno = ?;`
-
   await pool.initAsync(1, cn)
   const conn = await pool.open(cn)
-  const stmt = await conn.prepare(query)
-  const result = await stmt.execute([3978])
 
-  const fetched = await result.fetchAll()
-  console.log(fetched);
+  // Create table and insert data
+  try {
+    await conn.query("drop table employee");
+  } catch (e) {};
+  await conn.query("CREATE TABLE employee ( name VARCHAR(20), department VARCHAR(20), phoneno int)");
+  await conn.query("INSERT INTO employee (name, department, phoneno) VALUES ('John Doe', 'Sales', 3978)");
+
+  const query = `SELECT * FROM employee WHERE phoneno = ?;`
+  const stmt = await conn.prepare(query);
+  let result = await stmt.execute([3978]);
+  if(Array.isArray(result)) {
+      result = result[0];
+  }
+
+  let data = await result.fetchAll()
+  console.log(data);
+  if(data[0] && !Array.isArray(data[0])) {
+      const rows = data as {NAME:string, DEPARTMENT:string, PHONENO:number}[];
+      console.log(rows[0]?.PHONENO);
+  }
   await conn.close()
 }
 

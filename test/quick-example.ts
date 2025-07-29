@@ -42,11 +42,20 @@ async function main(): Promise<void> {
 
     // Prepare and execute statement
     const stmt = await conn.prepare("select * from mytab");
-    const result = await stmt.execute();
-    const data: { C1: number; C2: string }[] = await result.fetchAll();
+    let result = await stmt.execute();
+    if(Array.isArray(result)) {
+        result = result[0];
+    }
+    const rows = await result.fetchAll();
+    type RowData = { C1: number; C2: string };
+    let data: RowData[] = [];
+    if( rows[0] && !(Array.isArray(rows[0])) ) {
+      data = rows as RowData[];
+    }
 
     // Log results
     console.log("result = ", data);
+    console.log("C2 =", data[0]?.C2);
     assert.deepEqual(data, [{ C1: 3, C2: 'ibm' }]);
 
     // Close resources
