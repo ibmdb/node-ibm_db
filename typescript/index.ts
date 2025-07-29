@@ -27,11 +27,11 @@ export function debug(): any {}
 export function open(
   connStr: string | ConnStr,
   options: Options | null,
-  cb?: (err: Error, db: Database) => void
+  cb: (err: Error, db: Database) => void
 ): void;
 export function open(
   connStr: string | ConnStr,
-  cb?: (err: Error, db: Database) => void
+  cb: (err: Error, db: Database) => void
 ): void;
 export function open(
   connStr: string | ConnStr,
