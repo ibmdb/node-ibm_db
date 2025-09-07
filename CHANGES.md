@@ -1,3 +1,27 @@
+2025-09-07, Version 3.3.3
+=========================
+
+ * add binaries for electron v38.x (Bimal Jha)
+
+ * update validate command in testconnection scripts (Bimal Jha)
+
+ * test: read ssl server key from env var, fix for audit scan issue #1040 (Bimal Jha)
+
+ * update: typescript tests for issue #1037 (Bimal Jha)
+
+ * Fix callback typing for `ibm_db.open` (#1041) (Guilherme G. M.)
+
+ * update: form-data and axios versions to fix security issue (Bimal Jha)
+
+ * build(deps): bump form-data from 4.0.1 to 4.0.4 (#1039) (dependabot[bot])
+
+ * add support for electron 37.x (Bimal Jha)
+
+ * update nan version to support nodejs v24.x (Bimal Jha)
+
+ * add support for env var ELECTRON for electron installation (Bimal Jha)
+
+
 2025-06-22, Version 3.3.2
 =========================
 
@@ -24,10 +48,6 @@
  * add build.zip file, issue #1025 (Bimal Jha)
 
  * Add typescript types, update API doc (#1022) (Andre Asselin)
-
-
-2025-06-04, Version 3.3.1
-=========================
 
  * build(deps): bump tar-fs from 1.16.3 to 1.16.4 (#1024) (dependabot[bot])
 
