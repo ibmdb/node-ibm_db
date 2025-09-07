@@ -51,7 +51,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
 
-- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@8 and `make` is required.
+- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@12 and `make` is required.
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
@@ -66,13 +66,9 @@ Async APIs return promises if callback function is not used. Async APIs supports
   npm 3.10.10<br>
   ibm_db: 2.8.1
 
-- Recommended version of node.js is >= V16.X. For node.js version < 14.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
+- Recommended version of node.js is >= V16.X. For node.js version < 16.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
-- For Node.js >= V15.x on RHEL and RHEL 8.x, GCC v8.2.1 is required.
-
-- ⚠️ **For Node.js v24.x :** native C++ code compilation fails due to an error in the nan package. However, installation succeeds by downloading a precompiled binary.
-
-- The latest node.js version using which `ibm_db` is tested: **24.2.0**
+- The latest node.js version using which `ibm_db` is tested: **24.7.0**
 
 ## Install
 
