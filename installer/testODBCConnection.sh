@@ -26,7 +26,11 @@ else
 fi
 sleep 5
 
-db2cli validate -database "sample:hotel.torolab.ibm.com:21169" -connect -user newton -passwd serverpass
+# Use below command if your clidriver version is older than 11.5.9
+# db2cli validate -database "sample:hotel.torolab.ibm.com:21169" -connect -user newton -passwd serverpass
+# From clidriver version db2 v11.5.9 onwards, use below command
+db2cli validate -connstring "database=DBNAME;host=HOSTNAME;port=DBPORT;uid=USERID;pwd=DBPASSWD" -connect
+
 # You can use either above db2cli command or below node command to run .js file.
 # Keep only one and comment other. Better to use above validate command first.
 #node ../defect/t.js
