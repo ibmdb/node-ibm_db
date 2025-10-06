@@ -1,3 +1,17 @@
+2025-10-06, Version 3.3.4
+=========================
+
+ * update: windows and electron binaries (Bimal Jha)
+
+ * update: dependency versions in package.json files (Bimal Jha)
+
+ * test: update comment in test file (Bimal Jha)
+
+ * build(deps): bump tar-fs from 1.16.5 to 1.16.6 (#1049) (dependabot[bot])
+
+ * Upgrade to axios@1.12.0 (#1046) (Sebastian Wilczek)
+
+
 2025-09-07, Version 3.3.3
 =========================
 
