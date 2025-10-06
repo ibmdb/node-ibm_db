@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '37.2.3';
+var electron_version = '37.3.1';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -683,7 +683,7 @@ var install_node_ibm_db = function(file_url) {
                 var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
                 var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.5';
                 var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
-                var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.19.0';
+                var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.20.0';
                 var ODBC_BINDINGS_V23 = 'build\/Release\/odbc_bindings.node.23.11.1';
 
                 // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
@@ -985,7 +985,10 @@ function findElectronVersion() {
           var codeOut = execSync('code --version').toString();
           vscodeVer = parseFloat(codeOut.split('\n')[0]);
           if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.103){
+            if (vscodeVer >= 1.104){
+                electron_version = "37.3.1";
+            }
+            else if (vscodeVer >= 1.103){
                 electron_version = "37.2.3";
             }
             else if (vscodeVer >= 1.101){

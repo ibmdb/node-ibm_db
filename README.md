@@ -9,7 +9,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **MacOS with Intel Chip** - Supported using v11.x clidriver only. By default v11.5.9 clidriver will get downloaded.
 
-- **Electron Binaries** - From electron v32 to v35. Hence, no support for vscode older than v1.95.
+- **Electron Binaries** - From electron v34 to v38. Hence, no support for vscode older than v1.98.
 
 - ibm_db v3.2.5 is the last version to use clidriver of version 11.5.9 by default. **ibm_db@3.3.0** onwards v12.1.x clidriver get autodownloaded by default and hence v12.1 db2connect license is required. However, user can use older db2connect license when ibm_db get installed using `npm install ibm_db -clidriver="v11.5.9"` command.
 
@@ -68,7 +68,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Recommended version of node.js is >= V16.X. For node.js version < 16.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
 
-- The latest node.js version using which `ibm_db` is tested: **24.7.0**
+- The latest node.js version using which `ibm_db` is tested: **24.9.0**
 
 ## Install
 
@@ -109,6 +109,7 @@ ELECTRON=37.1.0 npm install ibm_db
 ```
 
 You can also set environment variable `ELECTRON` to instruct ibm_db to install it for that version of electron for electron applications like vscode.
+
 ```
 export ELECTRON=37.1.0
 npm install ibm_db
@@ -123,6 +124,7 @@ npm install ibm_db -clidriver=v11.5.6
 ```
 
 You can also set system level environment variable `CLIDRIVER_DOWNLOAD_VERSION` to instruct ibm_db to download that version of clidriver.
+
 ```
 export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
 npm install ibm_db
@@ -130,6 +132,7 @@ npm install ibm_db
 
 You can set the version of "clidriver", "electron", IBM_DB_DOWNLOAD_URL or "cafile" in config section of your package.json file.
 In that case, no need to pass these options with `npm install` command or no need to set in .npmrc to avoid warning message with npm v11.x
+
 ```
 package.json:
 {
