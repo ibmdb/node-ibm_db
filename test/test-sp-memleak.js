@@ -5,6 +5,7 @@ var common = require("./common")
   , schema = common.connectionObject.CURRENTSCHEMA;
 
 var singleTestMode = false;
+console.log("=> Run this script using \"node --expose-gc test-sp-memleak.js\" command.");
 console.log("==================== TEST 1 =============================\n");
 
 var proc1 = `create or replace procedure "${schema}".PROC1 ( IN v1 BLOB(200), IN v2 varchar(200), IN v3 BLOB(200), IN v4 varchar(200), INOUT V5 BLOB(200), INOUT v6 varchar(200), INOUT V7 BLOB(200), INOUT v8 varchar(200), OUT V9 BLOB(200), OUT v10 varchar(200), OUT V11 BLOB(200), OUT v12 varchar(200) )  dynamic result sets 2 language sql begin  declare cr1  cursor with return for select c1, c2 from ${schema}.mytab1; declare cr2  cursor with return for select c2 from ${schema}.mytab1; open cr1; open cr2; set v5 = BLOB(x'64656667'); set v6 = 'successs10'; set v7 = BLOB(x'68697071'); set v8 = 'successss11'; set v9 = BLOB(x'64656667'); set v10 = 'successs10'; set v11 = BLOB(x'68697071'); set v12 = 'successss11'; end`;
