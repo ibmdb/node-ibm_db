@@ -59,7 +59,7 @@ else if (process.env.npm_package_config_cafile) {
 /* Read specific version of clidriver specified with install command
  * npm install ibm_db -clidriver=v11.5.9
  */
-var clidriverVersion="v12.1.0";
+var clidriverVersion=""; //"v12.1.2";
 if(process.env.npm_config_clidriver && process.env.npm_config_clidriver != true) {
     clidriverVersion = process.env.npm_config_clidriver;
 }
