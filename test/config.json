@@ -1,5 +1,4 @@
-{ "DRIVER" : "{DB2 ODBC Driver}",
-  "DATABASE" : "SAMPLE",
+{ "DATABASE" : "SAMPLE",
   "UID" : "db2user",
   "PWD" : "xxxxxx",
   "HOSTNAME" : "waldevdbclnxtst06.dev.rocketsoftware.com",

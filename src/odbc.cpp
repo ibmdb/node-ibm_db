@@ -140,7 +140,19 @@ NAN_METHOD(ODBC::New)
   }
 
   // Use ODBC 3.x behavior
-  SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, SQL_IS_UINTEGER);
+  ret = SQLSetEnvAttr(dbo->m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, SQL_IS_UINTEGER);
+
+  if (!SQL_SUCCEEDED(ret))
+  {
+    DEBUG_PRINTF("ODBC::New - ERROR SETTING ODBC VERSION!!\n");
+
+    Local<Value> objError = ODBC::GetSQLError(SQL_HANDLE_ENV, dbo->m_hEnv);
+
+    SQLFreeHandle(SQL_HANDLE_ENV, dbo->m_hEnv);
+    dbo->m_hEnv = (SQLHENV)NULL;
+
+    return Nan::ThrowError(objError);
+  }
 
   info.GetReturnValue().Set(info.Holder());
   DEBUG_PRINTF("ODBC::New - Exit\n");

@@ -25,7 +25,7 @@ var platform = os.platform();
 var arch = os.arch();
 
 var vscode_build = false;
-var electron_version = '37.3.1';
+var electron_version = '39.2.7';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -235,11 +235,11 @@ var install_node_ibm_db = function(file_url) {
           // SDSNC.H, and the sidedeck definition from SDSNMACS(DSNAO64C)
           var buildDir = CURRENT_DIR + '/build';
           if (!fs.existsSync(buildDir)) {
-             fs.mkdirSync(buildDir, 0744);
+             fs.mkdirSync(buildDir, 0o744);
           }
           var includeDir = buildDir + '/include';
           if (!fs.existsSync(includeDir)) {
-             fs.mkdirSync(includeDir, 0744);
+             fs.mkdirSync(includeDir, 0o744);
           }
           // Copy the header files from SDSNC.H
           execSync("cp \"//'" + IBM_DB_HOME + ".SDSNC.H'\" " + includeDir);
@@ -516,8 +516,17 @@ var install_node_ibm_db = function(file_url) {
                             }
 
                             //Removing kernel dependencies from the file.
-                            var result = data.replace(/kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib/g, '');
+                            // More flexible pattern to handle variations in formatting
+                            var kernelLibsPattern = /kernel32\.lib[;\s]*user32\.lib[;\s]*gdi32\.lib[;\s]*winspool\.lib[;\s]*comdlg32\.lib[;\s]*advapi32\.lib[;\s]*shell32\.lib[;\s]*ole32\.lib[;\s]*oleaut32\.lib[;\s]*uuid\.lib[;\s]*odbc32\.lib[;\s]*DelayImp\.lib[;\s]*/gi;
+                            var result = data.replace(kernelLibsPattern, '');
                             
+                            // Check if replacement was successful
+                            if (data !== result) {
+                                printMsg("Successfully updated file build/odbc_bindings.vcxproj");
+                            } else {
+                                printMsg("Warning: Kernel dependencies pattern not found in build/odbc_bindings.vcxproj - file may have different format");
+                            }
+
                             fs.writeFile(ODBC_BINDINGS_VCXPROJ_FILE, result, 'utf8', function (err) {
                                 if (err)
                                 {
@@ -681,10 +690,11 @@ var install_node_ibm_db = function(file_url) {
                 var ODBC_BINDINGS_V17 = 'build\/Release\/odbc_bindings.node.17.9.1';
                 var ODBC_BINDINGS_V18 = 'build\/Release\/odbc_bindings.node.18.20.8';
                 var ODBC_BINDINGS_V19 = 'build\/Release\/odbc_bindings.node.19.9.0';
-                var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.5';
+                var ODBC_BINDINGS_V20 = 'build\/Release\/odbc_bindings.node.20.19.6';
                 var ODBC_BINDINGS_V21 = 'build\/Release\/odbc_bindings.node.21.7.3';
-                var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.20.0';
+                var ODBC_BINDINGS_V22 = 'build\/Release\/odbc_bindings.node.22.21.1';
                 var ODBC_BINDINGS_V23 = 'build\/Release\/odbc_bindings.node.23.11.1';
+                var ODBC_BINDINGS_V24 = 'build\/Release\/odbc_bindings.node.24.12.0';
 
                 // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
                 if(Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 14.0) {
@@ -710,6 +720,7 @@ var install_node_ibm_db = function(file_url) {
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 22.0) && ODBC_BINDINGS_V21 ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 23.0) && ODBC_BINDINGS_V22 ||
                                    (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 24.0) && ODBC_BINDINGS_V23 ||
+                                   (Number(process.version.match(/^v(\d+\.\d+)/)[1]) < 25.0) && ODBC_BINDINGS_V24 ||
                                    ODBC_BINDINGS;
             }
             // We have correct bindings file in odbcBindingsNode for
@@ -883,7 +894,7 @@ var install_node_ibm_db = function(file_url) {
     }
 
     function printProgress(percentage, received, total) {
-        process.stdout.write((platform == 'win32') ? "\033[0G": "\r");
+        process.stdout.write((platform == 'win32') ? "\x1b[0G": "\r");
         process.stdout.write(percentage + "% | " + received + " bytes downloaded out of " + total + " bytes.");
     }
 
