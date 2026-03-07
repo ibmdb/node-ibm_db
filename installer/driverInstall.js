@@ -439,7 +439,7 @@ var install_node_ibm_db = function(file_url) {
         //Build triggered from the VSCode extension
         if(vscode_build){
             buildString = buildString + " --target=" + electron_version + " --arch=" + arch +
-            " --dist-url=https://electronjs.org/headers/";
+            " --dist-url=https://electronjs.org/headers/ --runtime=electron";
         }
 
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.

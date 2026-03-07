@@ -1154,7 +1154,12 @@ void ODBC::GetStringParam(Local<Value> value, Parameter *param, int num)
     param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
   if (param->c_type != SQL_C_BINARY)
   {
-    bufflen = string->Utf8Length(ISOLATE) + 1;
+    // On newer V8 (Node 25 / Electron 40), use Utf8LengthV2()
+    #if V8_MAJOR_VERSION >= 14
+      bufflen = string->Utf8LengthV2(ISOLATE) + 1;
+    #else
+      bufflen = string->Utf8Length(ISOLATE) + 1;
+    #endif
     param->length = bufflen - 1;
   }
 #endif
@@ -1175,18 +1180,33 @@ void ODBC::GetStringParam(Local<Value> value, Parameter *param, int num)
 
   if (param->paramtype == FILE_PARAM)
   {
-    string->WriteUtf8(ISOLATECOMMA(char *) param->buffer);
+    // On newer V8 (Node 25 / Electron 40), use WriteUtf8V2()
+    #if V8_MAJOR_VERSION >= 14
+      string->WriteUtf8V2(ISOLATECOMMA(char *) param->buffer, param->buffer_length);
+    #else
+      string->WriteUtf8(ISOLATECOMMA(char *) param->buffer);
+    #endif
   }
   else if (param->c_type == SQL_C_BINARY)
   {
-    string->WriteOneByte(ISOLATECOMMA(uint8_t *) param->buffer);
+    // On newer V8 (Node 25 / Electron 40), use WriteOneByteV2()
+    #if V8_MAJOR_VERSION >= 14
+      string->WriteOneByteV2(ISOLATE, 0, param->buffer_length, (uint8_t *) param->buffer);
+    #else
+      string->WriteOneByte(ISOLATECOMMA(uint8_t *) param->buffer);
+    #endif
   }
   else
   {
 #ifdef UNICODE
     string->Write(ISOLATECOMMA(uint16_t *) param->buffer);
 #else
-    string->WriteUtf8(ISOLATECOMMA(char *) param->buffer);
+    // On newer V8 (Node 25 / Electron 40), use WriteUtf8V2()
+    #if V8_MAJOR_VERSION >= 14
+      string->WriteUtf8V2(ISOLATECOMMA(char *) param->buffer, param->buffer_length);
+    #else
+      string->WriteUtf8(ISOLATECOMMA(char *) param->buffer);
+    #endif
 #endif
   }
 #ifdef UNICODE
