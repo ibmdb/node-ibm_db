@@ -206,6 +206,14 @@ extract the file.
 
 Follow the same steps mentioned in [Node-ibm_db Installation on Linux](#inslnx).
 
+### 6.3 To compile node-ibm_db source code on MacOS with Intel Chip:
+brew install llvm
+export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+export CXX="/usr/local/opt/llvm/bin/clang++"
+export CXXFLAGS="-std=gnu++20 -stdlib=libc++ -isysroot $SDKROOT"
+export CPPFLAGS="-isysroot $SDKROOT"
+export LDFLAGS="-Wl,-syslibroot,$SDKROOT -stdlib=libc++"
+npm install ibm_db
 
 ## <a name="inswin"></a> 7. Node-ibm_db Installation on Windows.
 
@@ -412,5 +420,10 @@ npm install
 
 ### Installation:
     Follow same steps as documented for [Node-ibm_db Installation on MacOS](#insmac)
+
+### To compile node-ibm_db source code on MacOS with Silicon Chip (ARM64):
+brew install llvm
+export CXX="/opt/homebrew/opt/llvm/bin/clang++"
+npm install ibm_db
 
 

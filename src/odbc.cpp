@@ -631,18 +631,21 @@ Local<Value> ODBC::GetColumnValue(SQLHSTMT hStmt, Column column,
   break;
   case SQL_TYPE_TIME:
     DEBUG_PRINTF("SQL_TIME SELECTED\n");
+    /* fall through */
   case SQL_BIGINT:
     if (column.type == SQL_BIGINT)
     {
       ctype = SQL_C_CHAR;
       DEBUG_PRINTF("BIGINT DATA SELECTED\n");
     }
+    /* fall through */
   case SQL_DBCLOB:
     if (column.type == SQL_DBCLOB)
     {
       ctype = SQL_C_CHAR;
       DEBUG_PRINTF("DBCLOB DATA SELECTED\n");
     }
+    /* fall through */
   default:
     uint16_t *tmp_out_ptr = NULL;
     uint32_t bufferSize = 0;
@@ -1773,7 +1776,6 @@ Local<Array> ODBC::GetAllRecordsSync(SQLHENV hENV,
   Local<Value> objError = Nan::New<Object>();
 
   int count = 0;
-  int errorCount = 0;
   short colCount = 0;
 
   Column *columns = GetColumns(hSTMT, &colCount);
@@ -1788,8 +1790,6 @@ Local<Array> ODBC::GetAllRecordsSync(SQLHENV hENV,
     // check to see if there was an error
     if (ret == SQL_ERROR)
     {
-      errorCount++;
-
       objError = ODBC::GetSQLError(
           SQL_HANDLE_STMT,
           hSTMT,

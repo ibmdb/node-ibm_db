@@ -66,9 +66,11 @@ Async APIs return promises if callback function is not used. Async APIs supports
   npm 3.10.10<br>
   ibm_db: 2.8.1
 
-- Recommended version of node.js is >= V16.X. For node.js version < 16.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows.
+- Recommended version of node.js is >= V16.X. For node.js version < 16.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows. Use Developer Command Prompt for VS2022 on Windows.
 
-- The latest node.js version using which `ibm_db` is tested: **24.9.0**
+- Node.js v24.x onwards uses `C++20` standards. To compile source code on MacOS, install `llvm` and use it.
+
+- The latest node.js version using which `ibm_db` is tested: **25.8.0**
 
 ## Install
 
