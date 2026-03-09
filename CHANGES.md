@@ -1,3 +1,25 @@
+2026-03-09, Version 3.3.5
+=========================
+
+ * add windows binaries for NodeJs25.x and Electron40.x (Bimal Jha)
+
+ * add support for Node25.x and electron 40.x (Bimal Jha)
+
+ * update nan version to latest (Bimal Jha)
+
+ * build(deps): bump axios from 1.12.0 to 1.13.5 (#1058) (dependabot[bot])
+
+ * build(deps): bump lodash from 4.17.21 to 4.17.23 (#1055) (dependabot[bot])
+
+ * update testodbcconnection scripts (Bimal Jha)
+
+ * Add ODBC bindings for Electron 39.x #1054 (Bimal Jha)
+
+ * upgrade node-types version (Bimal Jha)
+
+ * upgrade nan version to support electron v39.x (Bimal Jha)
+
+
 2025-10-06, Version 3.3.4
 =========================
 
