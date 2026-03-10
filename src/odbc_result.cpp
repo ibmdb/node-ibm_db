@@ -305,7 +305,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t *work_req, int status)
 
     Nan::TryCatch try_catch;
 
-    data->cb->Call(2, info);
+    CallNanCallback(data->cb, 2, info);
     delete data->cb;
 
     if (try_catch.HasCaught())
@@ -337,7 +337,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t *work_req, int status)
 
     Nan::TryCatch try_catch;
 
-    data->cb->Call(2, info);
+    CallNanCallback(data->cb, 2, info);
     delete data->cb;
 
     if (try_catch.HasCaught())
@@ -659,7 +659,7 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t *work_req, int status)
     info[2] = Nan::New(self->colCount);
     Nan::TryCatch try_catch;
 
-    data->cb->Call(3, info);
+    CallNanCallback(data->cb, 3, info);
     ODBC::FreeColumns(self->columns, &self->colCount);
     FREE(self->buffer);
     delete data->cb;
@@ -879,7 +879,7 @@ void ODBCResult::UV_AfterGetData(uv_work_t *work_req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(2, info);
+  CallNanCallback(data->cb, 2, info);
   delete data->cb;
 
   if (try_catch.HasCaught())
@@ -1048,7 +1048,7 @@ void ODBCResult::UV_AfterClose(uv_work_t *req, int status)
 
     info[0] = Nan::Null();
     Nan::TryCatch try_catch;
-    data->cb->Call(1, info);
+    CallNanCallback(data->cb, 1, info);
 
     if (try_catch.HasCaught())
     {

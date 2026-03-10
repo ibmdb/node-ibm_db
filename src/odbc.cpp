@@ -229,7 +229,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t *req, int status)
     info[0] = ODBC::GetSQLError(SQL_HANDLE_ENV, data->dbo->m_hEnv);
     DEBUG_PRINTF("ODBC::UV_AfterCreateConnection - Got error in connection.\n");
 
-    data->cb->Call(1, info);
+    CallNanCallback(data->cb, 1, info);
   }
   else
   {
@@ -242,7 +242,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t *req, int status)
     info[0] = Nan::Null();
     info[1] = js_result;
 
-    data->cb->Call(2, info);
+    CallNanCallback(data->cb, 2, info);
   }
 
   if (try_catch.HasCaught())
@@ -759,23 +759,24 @@ Local<Value> ODBC::GetColumnValue(SQLHSTMT hStmt, Column column,
       // If we have an invalid handle, then stuff is way bad and we should abort
       // immediately. Memory errors are bound to follow as we must be in an
       // inconsisant state.
-      if (ret == SQL_INVALID_HANDLE)
-      {
-#ifdef __MVS__
+            if (ret == SQL_INVALID_HANDLE)
+            {
+        uintptr_t hstmt_value = reinterpret_cast<uintptr_t>(hStmt);
+        unsigned long hstmt_hi = static_cast<unsigned long>((hstmt_value >> 16) & 0x0000ffff);
+        unsigned long hstmt_lo = static_cast<unsigned long>(hstmt_value & 0x0000ffff);
+      #ifdef __MVS__
         // Workaround(zOS): The ascii conversion tool has issues with %i in the following
         // fprintf string.  Forcing it to __fprintf_a and setting _AE_BIMODAL
         __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
-                            ", columnType = %i, index = %i\n",
-                    ret, (long)(hStmt) >> 16 & 0x0000ffff,
-                    (long)(hStmt) & 0x0000ffff, (int)column.type, column.index);
-#else
+                ", columnType = %i, index = %i\n",
+              ret, hstmt_hi, hstmt_lo, (int)column.type, column.index);
+      #else
         fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
-                        ", columnType = %i, index = %i\n",
-                ret, (long)(hStmt) >> 16 & 0x0000ffff,
-                (long)(hStmt) & 0x0000ffff, (int)column.type, column.index);
-#endif
+            ", columnType = %i, index = %i\n",
+          ret, hstmt_hi, hstmt_lo, (int)column.type, column.index);
+      #endif
         assert(ret != SQL_INVALID_HANDLE);
-      }
+            }
       Nan::ThrowError(ODBC::GetSQLError(SQL_HANDLE_STMT, hStmt, errmsg));
       return scope.Escape(Nan::Undefined());
       break;
@@ -1664,7 +1665,7 @@ Local<Value> ODBC::CallbackSQLError(SQLSMALLINT handleType,
 
   Local<Value> info[1];
   info[0] = objError;
-  cb->Call(1, info);
+  CallNanCallback(cb, 1, info);
 
   return scope.Escape(Nan::Undefined());
 }

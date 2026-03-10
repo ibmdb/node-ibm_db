@@ -24,6 +24,7 @@
 #include <wchar.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <sqlcli1.h>
 
 using namespace v8;
@@ -53,6 +54,18 @@ using namespace node;
 #ifndef SQL_SUCCEEDED
 #define SQL_SUCCEEDED(rc) (((rc) & (~1)) == 0)
 #endif
+
+inline void CallNanCallback(Nan::Callback *cb, int argc, v8::Local<v8::Value> argv[])
+{
+  Nan::AsyncResource async_resource("ibm_db:callback");
+  cb->Call(argc, argv, &async_resource);
+}
+
+inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int argc, v8::Local<v8::Value> argv[])
+{
+  Nan::AsyncResource async_resource("ibm_db:callback");
+  cb->Call(target, argc, argv, &async_resource);
+}
 
 // Free Bind Parameters
 #define FREE_PARAMS(params, count)                              \

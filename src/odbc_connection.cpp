@@ -327,7 +327,7 @@ void ODBCConnection::UV_AfterOpen(uv_work_t *req, int status)
   Nan::TryCatch try_catch;
 
   data->conn->Unref();
-  data->cb->Call(err ? 1 : 0, argv);
+  CallNanCallback(data->cb, err ? 1 : 0, argv);
 
   if (try_catch.HasCaught())
   {
@@ -561,7 +561,7 @@ void ODBCConnection::UV_AfterClose(uv_work_t *req, int status)
   Nan::TryCatch try_catch;
 
   data->conn->Unref();
-  data->cb->Call(err ? 1 : 0, argv);
+  CallNanCallback(data->cb, err ? 1 : 0, argv);
 
   if (try_catch.HasCaught())
   {
@@ -959,7 +959,7 @@ void ODBCConnection::UV_AfterCreateStatement(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(2, info);
+  CallNanCallback(data->cb, 2, info);
 
   if (try_catch.HasCaught())
   {
@@ -1195,7 +1195,7 @@ void ODBCConnection::UV_Query(uv_work_t *req)
         ret = SQLSetStmtAttr(data->hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
                              SQL_PARAM_BIND_BY_COLUMN, 0);
         ret = SQLSetStmtAttr(data->hSTMT, SQL_ATTR_PARAMSET_SIZE,
-                             (SQLPOINTER)data->arraySize, 0);
+                 reinterpret_cast<SQLPOINTER>(static_cast<intptr_t>(data->arraySize)), 0);
       }
 
       ret = ODBC::BindParameters(data->hSTMT, data->params, data->paramCount);
@@ -1256,7 +1256,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t *req, int status)
     else
       info[1] = Nan::Null();
 
-    data->cb->Call(2, info);
+    CallNanCallback(data->cb, 2, info);
   }
   else
   {
@@ -1293,7 +1293,7 @@ void ODBCConnection::UV_AfterQuery(uv_work_t *req, int status)
     else
       info[2] = Nan::Null();
 
-    data->cb->Call(3, info);
+    CallNanCallback(data->cb, 3, info);
   }
 
   data->conn->Unref();
@@ -1478,7 +1478,7 @@ NAN_METHOD(ODBCConnection::QuerySync)
         ret = SQLSetStmtAttr(hSTMT, SQL_ATTR_PARAM_BIND_TYPE,
                              SQL_PARAM_BIND_BY_COLUMN, 0);
         ret = SQLSetStmtAttr(hSTMT, SQL_ATTR_PARAMSET_SIZE,
-                             (SQLPOINTER)arraySize, 0);
+                 reinterpret_cast<SQLPOINTER>(static_cast<intptr_t>(arraySize)), 0);
       }
       ret = ODBC::BindParameters(hSTMT, params, paramCount);
       if (SQL_SUCCEEDED(ret))
@@ -1899,7 +1899,7 @@ void ODBCConnection::UV_AfterBeginTransaction(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(err ? 1 : 0, argv);
+  CallNanCallback(data->cb, err ? 1 : 0, argv);
 
   if (try_catch.HasCaught())
   {
@@ -2089,7 +2089,7 @@ void ODBCConnection::UV_AfterEndTransaction(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(err ? 1 : 0, argv);
+  CallNanCallback(data->cb, err ? 1 : 0, argv);
 
   if (try_catch.HasCaught())
   {
@@ -2308,7 +2308,7 @@ void ODBCConnection::UV_AfterGetInfo(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(2, info);
+  CallNanCallback(data->cb, 2, info);
 
   if (try_catch.HasCaught())
   {
@@ -2735,7 +2735,7 @@ void ODBCConnection::UV_AfterGetTypeInfo(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(2, info);
+  CallNanCallback(data->cb, 2, info);
 
   data->conn->Unref();
 
@@ -2914,7 +2914,7 @@ void ODBCConnection::UV_AfterGetFunctions(uv_work_t *req, int status)
 
   Nan::TryCatch try_catch;
 
-  data->cb->Call(2, info);
+  CallNanCallback(data->cb, 2, info);
 
   if (try_catch.HasCaught())
   {
@@ -2945,7 +2945,7 @@ NAN_METHOD(ODBCConnection::SetAttrSync)
 
   if (info[1]->IsInt32())
   {
-    valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+    valuePtr = reinterpret_cast<SQLPOINTER>(static_cast<intptr_t>(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value()));
   }
   else if (info[1]->IsNull())
   {
@@ -3009,7 +3009,7 @@ NAN_METHOD(ODBCConnection::SetAttr)
 
   if (info[1]->IsInt32())
   {
-    valuePtr = (SQLPOINTER)(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value());
+    valuePtr = reinterpret_cast<SQLPOINTER>(static_cast<intptr_t>(Nan::To<v8::Int32>(info[1]).ToLocalChecked()->Value()));
   }
   else if (info[1]->IsNull())
   {
@@ -3104,7 +3104,7 @@ void ODBCConnection::UV_AfterSetAttr(uv_work_t *req, int status)
 
     Nan::TryCatch try_catch;
 
-    data->cb->Call(2, info);
+    CallNanCallback(data->cb, 2, info);
 
     if (try_catch.HasCaught())
     {

@@ -11,6 +11,7 @@
       'include_dirs': [
         "<!(node -e \"require('nan')\")"
       ],
+      'msvs_disabled_warnings': [ 4996, 4018 ],
       'conditions' : [
         [ 'OS != "zos"',
           { 'defines' : [ 'UNICODE'], }
