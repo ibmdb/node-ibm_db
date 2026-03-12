@@ -201,7 +201,8 @@ Issue an asynchronous SQL query to the database which is currently open.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}. noResults accepts only true or false values.
 If true - query() will not return any result. "sql" field is mandatory in Object, others are _OPTIONAL_.
-For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Column-wise Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Row-wise Array Insert**, pass `rows` (array of row arrays) instead of `params` and `ArraySize`. Optionally pass `columns` for type metadata. Check [test-row-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-row-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
@@ -256,6 +257,43 @@ Example for Array Insert:
     }
   });
 ```
+Example for Row-wise Array Insert:
+```javascript
+  // Row-wise array insert: pass data as rows instead of column-wise arrays.
+  // Each element of the "rows" array is one row of values.
+  // The driver automatically transposes rows to column-wise ARRAY parameters.
+  conn.querySync("create table rowtab (c1 int, c2 double, c3 varchar(10))");
+
+  const rowOptions = {sql: "insert into rowtab values (?, ?, ?)",
+                      rows: [
+                        [1, 10.5, "Row 1"],
+                        [2, 20.3, "Row 2"],
+                        [3, 30.7, "Row 3"]
+                      ]};
+
+  conn.query(rowOptions, function(err, result) {
+    if(err) console.log(err);
+    else {
+      const data = conn.querySync("select * from rowtab");
+      console.log("\nSelected data for table ROWTAB =\n", data);
+    }
+  });
+
+  // Row-wise insert with columns metadata for type hints:
+  const rowOptions2 = {sql: "insert into rowtab values (?, ?, ?)",
+                       columns: [
+                         {DataType: "INTEGER"},
+                         {DataType: "DOUBLE"},
+                         {DataType: "VARCHAR", Length: 10}
+                       ],
+                       rows: [
+                         [4, 40.1, "Row 4"],
+                         [5, 50.2, "Row 5"]
+                       ]};
+  conn.query(rowOptions2, function(err, result) {
+    if(err) console.log(err);
+  });
+```
 
 ### <a name="querySyncApi"></a> 4) (Database) .querySync(sqlQuery [, bindingParameters])
 
@@ -263,7 +301,8 @@ Synchronously issue a SQL query to the database that is currently open.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}. noResults accepts only true or false values.
 If true - query() will not return any result. If noResults is true for CALL statement, querySync returns only OutParams. "sql" field is mandatory in Object, others are optional.
-For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Column-wise Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Row-wise Array Insert**, pass `rows` (array of row arrays) instead of `params` and `ArraySize`. Optionally pass `columns` for type metadata. Check [test-row-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-row-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -298,6 +337,48 @@ Example for Array Insert:
   conn.querySync("create table arrtab (c1 int, c2 double, c3 boolean, c4 varchar(10))");
   conn.querySync(queryOptions);
 ```
+Example for Row-wise Array Insert:
+```javascript
+  // Row-wise array insert: pass data as rows instead of column-wise arrays.
+  conn.querySync("create table rowtab (c1 int, c2 double, c3 varchar(10))");
+
+  const rowOptions = {sql: "insert into rowtab values (?, ?, ?)",
+                      rows: [
+                        [1, 10.5, "Row 1"],
+                        [2, 20.3, "Row 2"],
+                        [3, 30.7, "Row 3"]
+                      ]};
+  conn.querySync(rowOptions);
+  const data = conn.querySync("select * from rowtab");
+  console.log(data);
+
+  // With columns metadata:
+  const rowOptions2 = {sql: "insert into rowtab values (?, ?, ?)",
+                       columns: [
+                         {DataType: "INTEGER"},
+                         {DataType: "DOUBLE"},
+                         {DataType: "VARCHAR", Length: 10}
+                       ],
+                       rows: [
+                         [4, 40.1, "Row 4"],
+                         [5, 50.2, "Row 5"]
+                       ]};
+  conn.querySync(rowOptions2);
+```
+
+Row-wise array insert using `ibmdb.convertRowsToColumns` with prepare/bind/execute:
+```javascript
+  // For prepare/bind/execute pattern, use ibmdb.convertRowsToColumns()
+  // to convert rows to column-wise ARRAY params manually.
+  const converted = ibmdb.convertRowsToColumns(
+    [[10, "ten"], [20, "twenty"], [30, "thirty"]]
+  );
+  const stmt = conn.prepareSync("insert into mytab values (?, ?)");
+  stmt.bindSync(converted.params);
+  stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, converted.ArraySize);
+  stmt.executeSync();
+  stmt.closeSync();
+```
 
 ### <a name="queryStreamApi"></a> 5) (Database) .queryStream(sqlQuery [, bindingParameters])
 
@@ -307,7 +388,8 @@ and take action.
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - query() will not return any result. "sql" field is mandatory in Object, others are optional.
-For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Column-wise Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Row-wise Array Insert**, pass `rows` instead of `params` and `ArraySize`. Check [test-row-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-row-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.
@@ -339,7 +421,8 @@ Issue an asynchronous SQL query to the database which is currently open and retu
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - queryResult() will not return any result object and value of result will be null.
 "sql" field is mandatory in Object, others are _OPTIONAL_.
-For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Column-wise Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Row-wise Array Insert**, pass `rows` instead of `params` and `ArraySize`. Check [test-row-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-row-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any ? characters (called parameter marker) in `sqlQuery`. bindingParameters in sqlQuery Object takes precedence over it.
@@ -376,7 +459,8 @@ Synchronously issue a SQL query to the database that is currently open and retur
 
 * **sqlQuery** - The SQL query to be executed or an Object in the form {"sql": sqlQuery, "params":bindingParameters, "noResults": noResultValue, "ArraySize": n}.
 noResults accepts only true or false values. If true - the value of `result` will be null. "sql" field is mandatory in Object, others are optional.
-For **Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Column-wise Array Insert**, `ArraySize` must be passed and sqlQuery must be an object. Check [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
+For **Row-wise Array Insert**, pass `rows` instead of `params` and `ArraySize`. Check [test-row-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-row-array-insert.js) for example.
 
 * **bindingParameters** - _OPTIONAL_ - An array of values that will be bound to
     any '?' characters in `sqlQuery`.

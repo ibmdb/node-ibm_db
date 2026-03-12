@@ -1528,7 +1528,17 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter *param, int num)
       SQLPOINTER *buff = (SQLPOINTER *)NULL;
       SQLULEN bufflen = 0;
       SQLULEN cbValueMax = 0;
-      // char **buff = (char **) new int64_t[arrlen];
+
+      // Two-phase approach: first find the max element length across
+      // all array values, then allocate and copy. This prevents
+      // truncation when later elements are longer than the first.
+
+      // Phase 1: Process all elements, save their buffers and lengths
+      SQLPOINTER *elemBufs = new SQLPOINTER[arrlen]();
+      SQLULEN *elemLens = new SQLULEN[arrlen]();
+      SQLLEN *elemDataLens = new SQLLEN[arrlen]();
+      bool *elemIsBuf = new bool[arrlen]();
+
       for (int i = j; i < arrlen; i++)
       {
         if (i != j)
@@ -1554,26 +1564,41 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter *param, int num)
           param->buffer_length -= 1;
 #endif
         }
-        if (i == j)
-        {
-          cbValueMax = param->buffer_length; // Length of each element of array
-          bufflen = arrlen * cbValueMax;
-          buff = (SQLPOINTER *)realloc(buff, bufflen);
-          DEBUG_PRINTF("ODBC::GetArrayParam Function: param%u : bufflen=%i, "
-                       "cbValueMax=%i\n",
-                       num, bufflen, cbValueMax);
-        }
-        bufflen = cbValueMax; // Length of max data to be copied.
-        if (bufflen > (SQLUINTEGER)param->length)
-        {
-          bufflen = param->length;
-        }
-        memcpy((char *)buff + i * cbValueMax, param->buffer, bufflen);
-        param->strLenArray[i] = bufflen;
-        // Free the memory param->buffer as data is already copied
-        if (param->isBuffer != true)
-          FREE(param->buffer);
+        elemBufs[i] = param->buffer;
+        elemLens[i] = param->buffer_length;
+        elemDataLens[i] = param->length;
+        elemIsBuf[i] = param->isBuffer;
+        param->buffer = NULL;
+
+        if (param->buffer_length > cbValueMax)
+          cbValueMax = param->buffer_length;
       }
+
+      // Phase 2: Allocate final contiguous buffer and copy element data
+      bufflen = (SQLULEN)arrlen * cbValueMax;
+      buff = (SQLPOINTER *)malloc(bufflen);
+      memset(buff, 0, bufflen);
+      DEBUG_PRINTF("ODBC::GetArrayParam Function: param%u : bufflen=%lu, "
+                   "cbValueMax=%lu\n",
+                   num, (unsigned long)bufflen, (unsigned long)cbValueMax);
+
+      for (int i = j; i < arrlen; i++)
+      {
+        if (elemBufs[i] == NULL) continue; // null element
+        SQLULEN copyLen = cbValueMax;
+        if (copyLen > (SQLULEN)elemDataLens[i])
+          copyLen = (SQLULEN)elemDataLens[i];
+        memcpy((char *)buff + (SQLULEN)i * cbValueMax, elemBufs[i], copyLen);
+        param->strLenArray[i] = (SQLINTEGER)copyLen;
+        if (!elemIsBuf[i])
+          FREE(elemBufs[i]);
+      }
+
+      delete[] elemBufs;
+      delete[] elemLens;
+      delete[] elemDataLens;
+      delete[] elemIsBuf;
+
       param->buffer = buff;
       param->buffer_length = cbValueMax;
       param->size = cbValueMax;
