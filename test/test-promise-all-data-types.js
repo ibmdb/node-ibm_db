@@ -4,7 +4,6 @@ var common = require("./common")
     , cn = common.connectionString;
 
     ibmdb.open(cn).then(function(conn) {
-      //conn.querySync("drop table mytab1");
       return conn;
     }, function(err) {
       console.log(err)
@@ -29,12 +28,12 @@ var common = require("./common")
             C9: '45.234',
             C10: 'bimal     ',
             C11: 'kumar',
-            C12: '50',
+            C12: Buffer.from([0x50]),
             C13: 'jha123456',
             C14: '2015-09-10',
             C15: '10:16:33',
             C16: '2015-09-10 10:16:33.770139',
-            C17: 'abc' } ]);
+            C17: Buffer.from([0x61, 0x62, 0x63]) } ]);
 
       }, function(err) {
         console.log(err);

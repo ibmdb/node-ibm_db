@@ -4,7 +4,7 @@ var common = require("./common")
   , assert = require("assert");
 
 db.query("select * from " + common.tableName).then(null, function (err) {
-  assert.deepEqual(err, { message: 'Connection not open.' });
+  assert.deepEqual(err, { message: 'Connection not open.', sqlstate: '08001', sqlcode: -30081 });
   assert.equal(db.connected, false);
 });
 
@@ -24,11 +24,10 @@ db.open(common.connectionString).then(function(res) {
 
       db.query("select * from " + common.tableName).then(null, function (err) {
 	    if(err) console.log(err);
-        assert.deepEqual(err, { message: 'Connection not open.' });
+        assert.deepEqual(err, { message: 'Connection not open.', sqlstate: '08001', sqlcode: -30081 });
         assert.equal(db.connected, false);
       });
     });
   });
 })
-.catch(function(err){console.log(err);})
-.done();
+.catch(function(err){console.log(err);});
