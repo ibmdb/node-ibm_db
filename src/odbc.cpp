@@ -20,6 +20,8 @@
 #endif
 
 #include <string.h>
+#include <stdint.h>
+#include <type_traits>
 #include <v8.h>
 #include <node.h>
 #include <node_version.h>
@@ -39,6 +41,26 @@
 
 using namespace v8;
 using namespace node;
+
+namespace {
+template <typename HandleType>
+unsigned long long HandleToLogValueImpl(HandleType handle, std::true_type)
+{
+  return static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(handle));
+}
+
+template <typename HandleType>
+unsigned long long HandleToLogValueImpl(HandleType handle, std::false_type)
+{
+  return static_cast<unsigned long long>(handle);
+}
+
+template <typename HandleType>
+unsigned long long HandleToLogValue(HandleType handle)
+{
+  return HandleToLogValueImpl(handle, typename std::is_pointer<HandleType>::type());
+}
+}
 
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
@@ -104,7 +126,7 @@ ODBC::~ODBC()
 
 void ODBC::Free()
 {
-  DEBUG_PRINTF("ODBC::Free: m_hEnv = %X\n", m_hEnv);
+  DEBUG_PRINTF("ODBC::Free: m_hEnv = 0x%llx\n", HandleToLogValue(m_hEnv));
   if (m_hEnv)
   {
     SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
@@ -210,7 +232,7 @@ void ODBC::UV_CreateConnection(uv_work_t *req)
 
   // allocate a new connection handle
   data->result = SQLAllocHandle(SQL_HANDLE_DBC, data->dbo->m_hEnv, &data->hDBC);
-  DEBUG_PRINTF("ODBC::UV_CreateConnection - Exit: hDBC = %X\n", data->hDBC);
+  DEBUG_PRINTF("ODBC::UV_CreateConnection - Exit: hDBC = 0x%llx\n", HandleToLogValue(data->hDBC));
 }
 
 void ODBC::UV_AfterCreateConnection(uv_work_t *req, int status)
@@ -286,7 +308,7 @@ NAN_METHOD(ODBC::CreateConnectionSync)
 
   Local<Object> js_result = Nan::NewInstance(Nan::New(ODBCConnection::constructor), 2, params).ToLocalChecked();
 
-  DEBUG_PRINTF("ODBC::CreateConnectionSync - Exit: hDBC = %X\n", hDBC);
+  DEBUG_PRINTF("ODBC::CreateConnectionSync - Exit: hDBC = 0x%llx\n", HandleToLogValue(hDBC));
   info.GetReturnValue().Set(js_result);
 }
 
@@ -761,19 +783,17 @@ Local<Value> ODBC::GetColumnValue(SQLHSTMT hStmt, Column column,
       // inconsisant state.
             if (ret == SQL_INVALID_HANDLE)
             {
-        uintptr_t hstmt_value = reinterpret_cast<uintptr_t>(hStmt);
-        unsigned long hstmt_hi = static_cast<unsigned long>((hstmt_value >> 16) & 0x0000ffff);
-        unsigned long hstmt_lo = static_cast<unsigned long>(hstmt_value & 0x0000ffff);
+        unsigned long long hstmt_value = HandleToLogValue(hStmt);
       #ifdef __MVS__
         // Workaround(zOS): The ascii conversion tool has issues with %i in the following
         // fprintf string.  Forcing it to __fprintf_a and setting _AE_BIMODAL
-        __fprintf_a(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
+        __fprintf_a(stdout, "Invalid Handle: SQLGetData return code = %i, stmt handle = 0x%llx"
                 ", columnType = %i, index = %i\n",
-              ret, hstmt_hi, hstmt_lo, (int)column.type, column.index);
+              ret, hstmt_value, (int)column.type, column.index);
       #else
-        fprintf(stdout, "Invalid Handle: SQLGetData retrun code = %i, stmt handle = %ld:%ld"
+        fprintf(stdout, "Invalid Handle: SQLGetData return code = %i, stmt handle = 0x%llx"
             ", columnType = %i, index = %i\n",
-          ret, hstmt_hi, hstmt_lo, (int)column.type, column.index);
+          ret, hstmt_value, (int)column.type, column.index);
       #endif
         assert(ret != SQL_INVALID_HANDLE);
             }
@@ -1688,7 +1708,7 @@ Local<Value> ODBC::GetSQLError(SQLSMALLINT handleType, SQLHANDLE handle, char *m
 {
   Nan::EscapableHandleScope scope;
 
-  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=%X\n", handleType, handle);
+  DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=0x%llx\n", handleType, HandleToLogValue(handle));
 
   Local<Object> objError = Nan::New<Object>();
 
