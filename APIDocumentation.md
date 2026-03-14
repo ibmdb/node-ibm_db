@@ -55,6 +55,8 @@
 * [.fetchSync([option])](#-21-odbcresult-fetchsyncoption)
 * [.fetchAll([option] [, callback])](#-22-odbcresult-fetchalloption--callback)
 * [.fetchAllSync([option])](#-23-odbcresult-fetchallsyncoption)
+* [.fetchN(count [, option] [, callback])](#fetchNApi)
+* [.fetchNSync(count [, option])](#fetchNSyncApi)
 * [.getData([colNum] [, size] [, callback])](#-24-odbcresult-getdatacolnum--size--callback)
 * [.getDataSync(colNum, size)](#-25-odbcresult-getdatasynccolnum-size)
 * [.close([closeOption] [, callback])](#-26-odbcresult-closecloseoption--callback)
@@ -241,8 +243,8 @@ Example for Array Insert:
   const namearr = ["Row 10", "Row 203456", "Row 30", "Row 40", "Last Row"];
 
   const param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
-  // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
-  // Default value is the length of first member of Array.
+  // *** "Length" is optional. Default value is the max length among all
+  // members of the Array. Use "Length: <customLen>" to override if needed.
 
   const queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)",
                       params: [param1, param2, param3, param4],
@@ -327,8 +329,8 @@ Example for Array Insert:
   const namearr = ["Row 10", "Row 20", "Row 30", "Row 40", "Last Row"];
 
   const param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:8};
-  // *** Use "Length: <maxDataLen>" in param Object for unequal size of data.
-  // Default value is the length of first member of Array.
+  // *** "Length" is optional. Default value is the max length among all
+  // members of the Array. Use "Length: <customLen>" to override if needed.
 
   const queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)",
                       params: [param1, param2, param3, param4],
@@ -898,6 +900,76 @@ ibmdb.open(cn,function(err, conn){
 });
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
+
+### <a name="fetchNApi"></a> (ODBCResult) .fetchN(count [, option] [, callback])
+
+Fetch up to `count` rows from ODBCResult object asynchronously. Returns an array of rows. If fewer than `count` rows remain, only the available rows are returned. Returns an empty array when no more rows are available. Unlike `fetchAll()`, this method does not close the cursor or free columns after fetching, so you can call it repeatedly to process a large result set in batches.
+
+* **count** - _REQUIRED_ - Number - Maximum number of rows to fetch in this batch. Must be a positive integer.
+
+* **option** - _OPTIONAL_ - Object type.
+    * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+
+* **callback** - _OPTIONAL_ - `callback (err, data)`. If callback is not provided, a Promise will be returned.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, async function(err, conn) {
+  conn.querySync("create table mytable (col1 varchar(40), col2 int)");
+  for (let i = 1; i <= 100; i++) {
+    conn.querySync(`insert into mytable values ('row${i}', ${i})`);
+  }
+  const stmt = conn.prepareSync("select * from mytable");
+  const result = stmt.executeSync();
+
+  // Fetch rows in batches of 10 using Promises
+  let batch;
+  while ((batch = await result.fetchN(10)).length > 0) {
+    console.log("Fetched batch of", batch.length, "rows");
+    // Process the batch...
+  }
+
+  result.closeSync();
+  conn.querySync("drop table mytable");
+  conn.close(function(err) { console.log("Connection Closed."); });
+});
+```
+
+### <a name="fetchNSyncApi"></a> (ODBCResult) .fetchNSync(count [, option])
+
+Fetch up to `count` rows from ODBCResult object synchronously. Returns an array of rows. If fewer than `count` rows remain, only the available rows are returned. Returns an empty array when no more rows are available. Unlike `fetchAllSync()`, this method does not close the cursor or free columns after fetching, so you can call it repeatedly to process a large result set in batches.
+
+* **count** - _REQUIRED_ - Number - Maximum number of rows to fetch in this batch. Must be a positive integer.
+
+* **option** - _OPTIONAL_ - Object type.
+    * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, conn) {
+  conn.querySync("create table mytable (col1 varchar(40), col2 int)");
+  for (let i = 1; i <= 100; i++) {
+    conn.querySync(`insert into mytable values ('row${i}', ${i})`);
+  }
+  const stmt = conn.prepareSync("select * from mytable");
+  const result = stmt.executeSync();
+
+  // Fetch rows in batches of 25
+  let batch;
+  while ((batch = result.fetchNSync(25)).length > 0) {
+    console.log("Fetched batch of", batch.length, "rows");
+    // Process the batch...
+  }
+
+  result.closeSync();
+  conn.querySync("drop table mytable");
+  conn.closeSync();
+});
+```
 
 ### <a name="getDataApi"></a> 24) (ODBCResult) .getData([colNum] [, size] [, callback])
 
@@ -1727,8 +1799,8 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
    f.e. `{ParamType: "FILE", DataType: "BLOB", Data: "mypic.jpg"}`
  - ARRAY - It tells the Data is an Array of same type and size. It must be used for Array Insert i.e. to insert data for multiple rows using single execute.
    If one parameter is of type ARRAY, all parameters passed to an API must be of type ARRAY and of equal size. Check [test/test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) for example.
-    Use "Length: <maxDataLen>" in param Object for unequal size of data.
-    Default value is the length of first member of Array.
+    "Length" is optional. Default value is the max length among all members of the Array.
+    Use "Length: <customLen>" to override if needed.
 
 * **CType**: C Data type of the parameter to be bound. Default value is CHAR.
 * **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR

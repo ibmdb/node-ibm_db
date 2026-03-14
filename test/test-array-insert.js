@@ -36,16 +36,18 @@ ibmdb.open(common.connectionString, function(err, conn) {
   var namearr = ["Row 10", "Row 2000", "Row 30", "Last Row"];
   var param6 = {ParamType:"ARRAY", DataType:1, Data:namearr};
 
-  //Note: param4 uses "Length" key, but param6 do not use Length key
+  //Note: param4 uses "Length" key, but param6 do not use Length key.
+  //With two-phase buffer allocation, strings are no longer truncated
+  //to the first element's length - max element length is used instead.
   var tab2data =  [
         { C1: 10, C2: 'Row 10' },
-        { C1: 20, C2: 'Row 20' },
+        { C1: 20, C2: 'Row 2000' },
         { C1: 30, C2: 'Row 30' },
-        { C1: 40, C2: 'Last R' },
+        { C1: 40, C2: 'Last Row' },
         { C1: 10, C2: 'Row 10' },
-        { C1: 20, C2: 'Row 20' },
+        { C1: 20, C2: 'Row 2000' },
         { C1: 30, C2: 'Row 30' },
-        { C1: 40, C2: 'Last R' }
+        { C1: 40, C2: 'Last Row' }
       ];
 
   var stmt = conn.prepareSync("insert into arrtab2 values (?, ?)");

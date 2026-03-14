@@ -51,6 +51,10 @@ protected:
   static void UV_FetchAll(uv_work_t *work_req);
   static void UV_AfterFetchAll(uv_work_t *work_req, int status);
 
+  static NAN_METHOD(FetchN);
+  static void UV_FetchN(uv_work_t *work_req);
+  static void UV_AfterFetchN(uv_work_t *work_req, int status);
+
   static NAN_METHOD(GetData);
   static void UV_GetData(uv_work_t *work_req);
   static void UV_AfterGetData(uv_work_t *work_req, int status);
@@ -64,6 +68,7 @@ protected:
   static NAN_METHOD(MoreResultsSync);
   static NAN_METHOD(FetchSync);
   static NAN_METHOD(FetchAllSync);
+  static NAN_METHOD(FetchNSync);
   static NAN_METHOD(GetColumnNamesSync);
   static NAN_METHOD(GetColumnMetadataSync);
   static NAN_METHOD(GetSQLErrorSync);
@@ -82,6 +87,7 @@ protected:
 
     uint16_t fetchMode;
     int count;
+    int maxCount;
     int errorCount;
     Nan::Persistent<Array> rows;
     Nan::Persistent<Value> objError;

@@ -56,6 +56,8 @@ NAN_MODULE_INIT(ODBCResult::Init)
   Nan::SetPrototypeMethod(constructor_template, "closeSync", CloseSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchSync", FetchSync);
   Nan::SetPrototypeMethod(constructor_template, "fetchAllSync", FetchAllSync);
+  Nan::SetPrototypeMethod(constructor_template, "fetchN", FetchN);
+  Nan::SetPrototypeMethod(constructor_template, "fetchNSync", FetchNSync);
   Nan::SetPrototypeMethod(constructor_template, "getDataSync", GetDataSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnNamesSync", GetColumnNamesSync);
   Nan::SetPrototypeMethod(constructor_template, "getColumnMetadataSync", GetColumnMetadataSync);
@@ -779,6 +781,303 @@ NAN_METHOD(ODBCResult::FetchAllSync)
 
   info.GetReturnValue().Set(rows);
   DEBUG_PRINTF("ODBCResult::FetchAllSync() -Exit\n");
+}
+
+/*
+ * FetchN - Fetch up to N rows asynchronously from the result set.
+ * Arguments: count (int), [option (object)], callback (function)
+ * Returns array of up to count rows. Does not free columns/close cursor.
+ */
+
+NAN_METHOD(ODBCResult::FetchN)
+{
+  DEBUG_PRINTF("ODBCResult::FetchN - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCResult *objODBCResult = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  uv_work_t *work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK(work_req);
+
+  fetch_work_data *data = (fetch_work_data *)calloc(1, sizeof(fetch_work_data));
+  if (!data)
+    free(work_req);
+  MEMCHECK(data);
+
+  Local<Function> cb;
+  data->fetchMode = objODBCResult->m_fetchMode;
+
+  if (info.Length() == 2 && info[0]->IsInt32() && info[1]->IsFunction())
+  {
+    data->maxCount = Nan::To<int32_t>(info[0]).FromJust();
+    cb = Local<Function>::Cast(info[1]);
+  }
+  else if (info.Length() == 3 && info[0]->IsInt32() && info[1]->IsObject() && info[2]->IsFunction())
+  {
+    data->maxCount = Nan::To<int32_t>(info[0]).FromJust();
+    cb = Local<Function>::Cast(info[2]);
+
+    Local<Object> obj = Nan::To<v8::Object>(info[1]).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32())
+    {
+      data->fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
+    }
+  }
+  else
+  {
+    free(data);
+    free(work_req);
+    return Nan::ThrowTypeError("ODBCResult::FetchN(): Arguments must be (count, [option], callback).");
+  }
+
+  if (data->maxCount <= 0)
+  {
+    free(data);
+    free(work_req);
+    return Nan::ThrowRangeError("ODBCResult::FetchN(): count must be a positive integer.");
+  }
+
+  data->rows.Reset(Nan::New<Array>());
+  data->errorCount = 0;
+  data->count = 0;
+  data->objError.Reset(Nan::New<Object>());
+
+  data->cb = new Nan::Callback(cb);
+  data->objResult = objODBCResult;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(),
+                work_req,
+                UV_FetchN,
+                (uv_after_work_cb)UV_AfterFetchN);
+
+  data->objResult->Ref();
+  info.GetReturnValue().Set(Nan::Undefined());
+  DEBUG_PRINTF("ODBCResult::FetchN - Exit\n");
+}
+
+void ODBCResult::UV_FetchN(uv_work_t *work_req)
+{
+  DEBUG_PRINTF("ODBCResult::UV_FetchN\n");
+  fetch_work_data *data = (fetch_work_data *)(work_req->data);
+  data->result = SQLFetch(data->objResult->m_hSTMT);
+}
+
+void ODBCResult::UV_AfterFetchN(uv_work_t *work_req, int status)
+{
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchN - Entry\n");
+  Nan::HandleScope scope;
+
+  fetch_work_data *data = (fetch_work_data *)(work_req->data);
+  ODBCResult *self = data->objResult->self();
+
+  bool doMoreWork = true;
+
+  if (data->result == SQL_ERROR)
+  {
+    data->errorCount++;
+    data->objError.Reset(ODBC::GetSQLError(
+        SQL_HANDLE_STMT,
+        self->m_hSTMT,
+        (char *)"[node-odbc] Error in ODBCResult::UV_AfterFetchN"));
+  }
+
+  if (self->colCount == 0)
+  {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+
+  if (self->colCount == 0)
+  {
+    doMoreWork = false;
+  }
+  else if (data->result == SQL_NO_DATA)
+  {
+    doMoreWork = false;
+  }
+  else if (data->result == SQL_ERROR)
+  {
+    doMoreWork = false;
+  }
+  else
+  {
+    Local<Array> rows = Nan::New(data->rows);
+    if (data->fetchMode == FETCH_ARRAY)
+    {
+      Nan::Set(rows,
+               Nan::New(data->count),
+               ODBC::GetRecordArray(
+                   self->m_hSTMT,
+                   self->columns,
+                   &self->colCount,
+                   self->buffer,
+                   self->bufferLength));
+    }
+    else
+    {
+      Nan::Set(rows,
+               Nan::New(data->count),
+               ODBC::GetRecordTuple(
+                   self->m_hSTMT,
+                   self->columns,
+                   &self->colCount,
+                   self->buffer,
+                   self->bufferLength));
+    }
+    data->count++;
+
+    // Stop if we've reached the requested batch size
+    if (data->count >= data->maxCount)
+    {
+      doMoreWork = false;
+    }
+  }
+
+  if (doMoreWork)
+  {
+    uv_queue_work(uv_default_loop(),
+                  work_req,
+                  UV_FetchN,
+                  (uv_after_work_cb)UV_AfterFetchN);
+  }
+  else
+  {
+    DEBUG_PRINTF("ODBCResult::UV_AfterFetchN Done for stmt %X, count=%d\n",
+                 data->objResult->m_hSTMT, data->count);
+
+    Local<Value> info[2];
+
+    if (data->errorCount > 0 && self->colCount > 0)
+    {
+      info[0] = Nan::New(data->objError);
+    }
+    else
+    {
+      info[0] = Nan::Null();
+    }
+
+    info[1] = Nan::New(data->rows);
+
+    Nan::TryCatch try_catch;
+    CallNanCallback(data->cb, 2, info);
+    delete data->cb;
+    data->rows.Reset();
+    data->objError.Reset();
+
+    if (try_catch.HasCaught())
+    {
+      FatalException(try_catch);
+    }
+
+    free(data);
+    free(work_req);
+    self->Unref();
+  }
+  DEBUG_PRINTF("ODBCResult::UV_AfterFetchN - Exit\n");
+}
+
+/*
+ * FetchNSync - Synchronously fetch up to N rows from the result set.
+ * Arguments: count (int), [option (object)]
+ * Returns array of up to count rows. Does not free columns/close cursor.
+ */
+
+NAN_METHOD(ODBCResult::FetchNSync)
+{
+  DEBUG_PRINTF("ODBCResult::FetchNSync - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCResult *self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  if (!info[0]->IsInt32())
+  {
+    return Nan::ThrowTypeError("ODBCResult::FetchNSync(): First argument must be an integer count.");
+  }
+
+  int maxCount = Nan::To<int32_t>(info[0]).FromJust();
+  if (maxCount <= 0)
+  {
+    return Nan::ThrowRangeError("ODBCResult::FetchNSync(): count must be a positive integer.");
+  }
+
+  Local<Value> objError = Nan::New<Object>();
+  SQLRETURN ret;
+  int count = 0;
+  int errorCount = 0;
+  int fetchMode = self->m_fetchMode;
+
+  if (info.Length() >= 2 && info[1]->IsObject())
+  {
+    Local<Object> obj = Nan::To<v8::Object>(info[1]).ToLocalChecked();
+    Local<String> fetchModeKey = Nan::New<String>(OPTION_FETCH_MODE);
+    if (Nan::HasOwnProperty(obj, fetchModeKey).IsJust() && Nan::Get(obj, fetchModeKey).ToLocalChecked()->IsInt32())
+    {
+      fetchMode = Nan::To<Uint32>(Nan::Get(obj, fetchModeKey).ToLocalChecked()).ToLocalChecked()->Value();
+    }
+  }
+
+  if (self->colCount == 0)
+  {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+
+  Local<Array> rows = Nan::New<Array>();
+
+  if (self->colCount > 0)
+  {
+    while (count < maxCount)
+    {
+      ret = SQLFetch(self->m_hSTMT);
+
+      if (ret == SQL_ERROR)
+      {
+        errorCount++;
+        objError = ODBC::GetSQLError(
+            SQL_HANDLE_STMT,
+            self->m_hSTMT,
+            (char *)"[node-odbc] Error in ODBCResult::FetchNSync");
+        break;
+      }
+
+      if (ret == SQL_NO_DATA)
+      {
+        break;
+      }
+
+      if (fetchMode == FETCH_ARRAY)
+      {
+        Nan::Set(rows,
+                 Nan::New(count),
+                 ODBC::GetRecordArray(
+                     self->m_hSTMT,
+                     self->columns,
+                     &self->colCount,
+                     self->buffer,
+                     self->bufferLength));
+      }
+      else
+      {
+        Nan::Set(rows,
+                 Nan::New(count),
+                 ODBC::GetRecordTuple(
+                     self->m_hSTMT,
+                     self->columns,
+                     &self->colCount,
+                     self->buffer,
+                     self->bufferLength));
+      }
+      count++;
+    }
+  }
+
+  if (errorCount > 0)
+  {
+    Nan::ThrowError(objError);
+  }
+
+  info.GetReturnValue().Set(rows);
+  DEBUG_PRINTF("ODBCResult::FetchNSync - Exit, count=%d\n", count);
 }
 
 /*
