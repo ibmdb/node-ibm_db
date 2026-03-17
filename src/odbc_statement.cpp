@@ -192,6 +192,11 @@ void ODBCStatement::UV_Execute(uv_work_t *req)
   SQLRETURN ret;
 
   ret = SQLExecute(data->stmt->m_hSTMT);
+  if (ret == SQL_NEED_DATA)
+  {
+    ret = ODBC::PutDataLoop(data->stmt->m_hSTMT,
+                            data->stmt->params, data->stmt->paramCount);
+  }
 
   data->result = ret;
   DEBUG_PRINTF("ODBCStatement::UV_Execute - Exit\n");
@@ -289,6 +294,10 @@ NAN_METHOD(ODBCStatement::ExecuteSync)
   Local<Array> sp_result = Nan::New<Array>();
 
   SQLRETURN ret = SQLExecute(stmt->m_hSTMT);
+  if (ret == SQL_NEED_DATA)
+  {
+    ret = ODBC::PutDataLoop(stmt->m_hSTMT, stmt->params, stmt->paramCount);
+  }
 
   if (SQL_SUCCEEDED(ret))
   {
@@ -389,6 +398,11 @@ void ODBCStatement::UV_ExecuteNonQuery(uv_work_t *req)
   SQLRETURN ret;
 
   ret = SQLExecute(data->stmt->m_hSTMT);
+  if (ret == SQL_NEED_DATA)
+  {
+    ret = ODBC::PutDataLoop(data->stmt->m_hSTMT,
+                            data->stmt->params, data->stmt->paramCount);
+  }
 
   data->result = ret;
   DEBUG_PRINTF("ODBCStatement::UV_ExecuteNonQuery - Exit\n");
@@ -481,6 +495,10 @@ NAN_METHOD(ODBCStatement::ExecuteNonQuerySync)
   ODBCStatement *stmt = Nan::ObjectWrap::Unwrap<ODBCStatement>(info.Holder());
 
   ret = SQLExecute(stmt->m_hSTMT);
+  if (ret == SQL_NEED_DATA)
+  {
+    ret = ODBC::PutDataLoop(stmt->m_hSTMT, stmt->params, stmt->paramCount);
+  }
 
   if ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO))
   {

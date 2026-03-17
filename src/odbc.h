@@ -102,6 +102,14 @@ inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int
         prm.strLenArray = NULL;                                 \
         prm.arraySize = 0;                                      \
       }                                                         \
+      if (prm.chunkCount > 0)                                   \
+      {                                                         \
+        free(prm.chunks);                                       \
+        prm.chunks = NULL;                                      \
+        free(prm.chunkLens);                                    \
+        prm.chunkLens = NULL;                                   \
+        prm.chunkCount = 0;                                     \
+      }                                                         \
     }                                                           \
     free(params);                                               \
   }                                                             \
@@ -112,6 +120,18 @@ inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int
 #ifndef SQL_BOOLEAN
 #define SQL_BOOLEAN 16
 #define SQL_ROW 19
+#endif
+
+// Workaround(zOS): Guard data-at-execution macros in case
+// they are missing from Db2 supplied headers on z/OS.
+#ifndef SQL_NEED_DATA
+#define SQL_NEED_DATA 99
+#endif
+#ifndef SQL_LEN_DATA_AT_EXEC_OFFSET
+#define SQL_LEN_DATA_AT_EXEC_OFFSET (-100)
+#endif
+#ifndef SQL_LEN_DATA_AT_EXEC
+#define SQL_LEN_DATA_AT_EXEC(length) (-(length) + SQL_LEN_DATA_AT_EXEC_OFFSET)
 #endif
 
 // two macros ensures that any macro used will be expanded
@@ -149,6 +169,9 @@ typedef struct
   int arraySize;            // For Array Insert
   SQLINTEGER *strLenArray;  // For Array Insert
   bool isBuffer;
+  void **chunks;            // For DATA_AT_EXEC: array of chunk data pointers
+  SQLLEN *chunkLens;        // For DATA_AT_EXEC: array of chunk lengths
+  int chunkCount;           // For DATA_AT_EXEC: number of chunks
 } Parameter;
 
 class ODBC : public Nan::ObjectWrap
@@ -172,6 +195,7 @@ public:
   static Local<Array> GetAllRecordsSync(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t *buffer, size_t bufferLength);
   static Parameter *GetParametersFromArray(Local<Array> values, int *paramCount);
   static SQLRETURN BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
+  static SQLRETURN PutDataLoop(SQLHSTMT hSTMT, Parameter params[], int count);
 
   void Free();
 
@@ -187,6 +211,7 @@ protected:
   static void GetBoolParam(Local<Value> value, Parameter *param, int num);
   static void GetArrayParam(Local<Value> value, Parameter *param, int num);
   static void GetBufferParam(Local<Value> value, Parameter *param, int num);
+  static void GetDataAtExecParam(Local<Value> value, Parameter *param, int num);
 
   static NAN_METHOD(New);
 

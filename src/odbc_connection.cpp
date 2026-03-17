@@ -1203,6 +1203,10 @@ void ODBCConnection::UV_Query(uv_work_t *req)
       if (SQL_SUCCEEDED(ret))
       {
         ret = SQLExecute(data->hSTMT);
+        if (ret == SQL_NEED_DATA)
+        {
+          ret = ODBC::PutDataLoop(data->hSTMT, data->params, data->paramCount);
+        }
       }
     }
   }
@@ -1484,6 +1488,10 @@ NAN_METHOD(ODBCConnection::QuerySync)
       if (SQL_SUCCEEDED(ret))
       {
         ret = SQLExecute(hSTMT);
+        if (ret == SQL_NEED_DATA)
+        {
+          ret = ODBC::PutDataLoop(hSTMT, params, paramCount);
+        }
         if (SQL_SUCCEEDED(ret))
         {
           for (int i = 0; i < paramCount; i++)

@@ -1943,8 +1943,8 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 * **CType**: C Data type of the parameter to be bound. Default value is CHAR.
 * **SQLType**: Data type of the parameter on Server. It is actually the column Type of the parameter. Default value is CHAR
 * **DataType**: Same as SQLType. Use either SQLType or DataType. Added for simple name. Default Value is CHAR.
-* **Data**: Its value is actuall data for the parameter. For binary data, it should represent the full buffer containing binary data. For ParamType:"FILE", it must have the filename on disc that contains data. It is mandatory key in the data Object.
-* **Length**: It denotes the buffer length in byte to store the OUT Pamameter value when ParamType is INOUT or OUTPUT in a Stored Procedure call..
+* **Data**: Its value is actuall data for the parameter. For binary data, it should represent the full buffer containing binary data. For ParamType:"FILE", it must have the filename on disc that contains data. For chunked LOB insert, Data can be an Array of Buffers (sync and async) or a Readable stream (async only). It is mandatory key in the data Object.
+* **Length**: It denotes the buffer length in byte to store the OUT Pamameter value when ParamType is INOUT or OUTPUT in a Stored Procedure call. For chunked LOB insert with Readable stream, Length is optional but recommended for server-side optimization.
 
 * Few example of bidningParameters that we can use in node.js program:
 ```
@@ -1960,6 +1960,8 @@ Either SQLType or DataType must be used. If SQLType is used, DataType will be ig
 [38, {ParamType:"INPUT", DataType: "CLOB", "Data": var1}] - here var1 contains full CLOB data to be inserted.
 [38, {ParamType:"FILE", DataType: "CLOB", "Data": filename}] - here filename is the name of file which has large character data.
 [{ParamType:"ARRAY", DataType:1, Data:[4,5,6,7,8]}, {ParamType:"ARRAY", DataType:"DOUBLE", Data:[4.1,5.3,6.14,7,8.3]}] - for Array insert.
+[1, {DataType:"BLOB", Data:[chunk1, chunk2, chunk3]}] - chunked LOB insert using array of Buffers.
+[1, {DataType:"BLOB", Data:readableStream, Length:totalSize}] - chunked LOB insert using Readable stream (async only).
 ```
 The values in array parameters used in above example is not recommened to use as it is dificult to understand. These values are macro values from ODBC specification and we can directly use those values. To understand it, see the [SQLBindParameter](http://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.cli.doc/doc/r0002218.html) documentation for DB2.
 
@@ -1968,6 +1970,40 @@ Pass bind parameters as Object if you want to insert an Array or BLOB or CLOB da
  - [test-blob-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-insert.js) - To insert a BLOB and CLOB data using memory buffer. Application need to read the file contents and then use as bind parameter.
  - [test-blob-file.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-file.js) - To insert an image file and large text file directly to database without reading it by application.
  - [test-array-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-array-insert.js) - For Array Insert.
+ - [test-blob-stream-insert.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-blob-stream-insert.js) - To insert BLOB data using array of Buffers (chunks) or Readable stream. Uses SQLPutData internally to send data to the server in chunks.
+
+### Chunked LOB Insert (Array of Buffers or Readable Stream)
+
+For large BLOB/CLOB data, you can pass the data as an **array of Buffers** (works with both sync and async APIs) or as a **Readable stream** (async APIs only). Internally, this uses the ODBC `SQLPutData` API to send LOB data to the server in chunks, which avoids requiring the CLI driver to buffer the entire LOB in a single contiguous allocation.
+
+**Array of Buffers (sync and async):**
+```javascript
+const fs = require('fs');
+const ibmdb = require('ibm_db');
+// Read file and split into chunks
+const data = fs.readFileSync('large-image.jpg');
+const chunkSize = 65536;
+const chunks = [];
+for (let off = 0; off < data.length; off += chunkSize) {
+  chunks.push(data.slice(off, Math.min(off + chunkSize, data.length)));
+}
+// Insert using querySync (or query, execute, etc.)
+conn.querySync("INSERT INTO mytab (ID, PHOTO) VALUES (?, ?)",
+  [1, { DataType: "BLOB", Data: chunks }]);
+```
+
+**Readable Stream (async only):**
+```javascript
+const fs = require('fs');
+const ibmdb = require('ibm_db');
+const stream = fs.createReadStream('large-image.jpg', { highWaterMark: 65536 });
+conn.query("INSERT INTO mytab (ID, PHOTO) VALUES (?, ?)",
+  [1, { DataType: "BLOB", Data: stream, Length: fileSize }],
+  function(err) {
+    if (err) console.log(err);
+    else console.log("Inserted successfully");
+  });
+```
 
 ## <a name="callStmt"></a>CALL Statement
 

@@ -38,6 +38,7 @@
 #endif
 
 #define FILE_PARAM 3
+#define DATA_AT_EXEC_PARAM 5
 
 using namespace v8;
 using namespace node;
@@ -1104,7 +1105,11 @@ Parameter *ODBC::GetParametersFromArray(Local<Array> values, int *paramCount)
       }
 
       val = Nan::Get(paramArray, 3).ToLocalChecked();
-      if (val->IsNull())
+      if (params[i].paramtype == DATA_AT_EXEC_PARAM && val->IsArray())
+      {
+        GetDataAtExecParam(val, &params[i], i + 1);
+      }
+      else if (val->IsNull())
       {
         GetNullParam(&params[i], i + 1);
       }
@@ -1315,6 +1320,63 @@ void ODBC::GetBufferParam(Local<Value> value, Parameter *param, int num)
                num, param->paramtype, param->c_type,
                param->type, param->size, param->decimals,
                (char *)param->buffer, param->buffer_length, param->length);
+}
+
+void ODBC::GetDataAtExecParam(Local<Value> value, Parameter *param, int num)
+{
+  DEBUG_PRINTF("ODBC::GetDataAtExecParam - param %u\n", num);
+
+  Local<Array> chunkArray = Local<Array>::Cast(value);
+  int numChunks = chunkArray->Length();
+
+  if (numChunks == 0)
+  {
+    Nan::ThrowError("DATA_AT_EXEC: Data array must not be empty");
+    return;
+  }
+
+  param->chunks = (void **)calloc(numChunks, sizeof(void *));
+  param->chunkLens = (SQLLEN *)calloc(numChunks, sizeof(SQLLEN));
+  if (!param->chunks || !param->chunkLens)
+  {
+    Nan::ThrowError("Failed to allocate chunk arrays for DATA_AT_EXEC");
+    return;
+  }
+  param->chunkCount = numChunks;
+
+  SQLLEN totalSize = 0;
+  for (int j = 0; j < numChunks; j++)
+  {
+    Local<Value> chunk = Nan::Get(chunkArray, j).ToLocalChecked();
+    if (!Buffer::HasInstance(chunk))
+    {
+      Nan::ThrowError("DATA_AT_EXEC: each element in Data array must be a Buffer");
+      return;
+    }
+    param->chunks[j] = Buffer::Data(chunk);
+    param->chunkLens[j] = (SQLLEN)Buffer::Length(chunk);
+    totalSize += param->chunkLens[j];
+  }
+
+  // Use user-specified Length if provided, otherwise calculate from chunks
+  if (param->buffer_length > 0)
+  {
+    param->size = param->buffer_length;
+  }
+  else
+  {
+    param->size = totalSize;
+  }
+
+  param->buffer = NULL;
+  param->buffer_length = 0;
+  param->length = SQL_LEN_DATA_AT_EXEC((SQLLEN)param->size);
+  param->isBuffer = true; // Don't free buffer in FREE_PARAMS
+
+  DEBUG_PRINTF("ODBC::GetDataAtExecParam: param%u : c_type=%i, type=%i, "
+               "size=%llu, chunkCount=%d, length=%lld\n",
+               num, param->c_type, param->type,
+               (unsigned long long)param->size, numChunks, (long long)param->length);
 }
 
 void ODBC::GetNullParam(Parameter *param, int num)
@@ -1648,6 +1710,20 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
           prm.decimals,              // MaxFileNameLength,
           &params[i].fileIndicator); // *IndicatorValue); // 0
     }
+    else if (prm.paramtype == DATA_AT_EXEC_PARAM) // Chunked LOB via SQLPutData
+    {
+      ret = SQLBindParameter(
+          hSTMT,
+          i + 1,                                    // ParameterNumber
+          SQL_PARAM_INPUT,                           // InputOutputType
+          prm.c_type,                                // ValueType
+          prm.type,                                  // ParameterType
+          prm.size,                                  // ColumnSize
+          0,                                         // DecimalDigits
+          (SQLPOINTER)(intptr_t)(i + 1),             // ParameterValuePtr (token)
+          0,                                         // BufferLength
+          &params[i].length);                        // SQL_LEN_DATA_AT_EXEC
+    }
     else if (prm.arraySize > 0) // Bind Array Parameter
     {
       ret = SQLBindParameter(
@@ -1681,6 +1757,53 @@ SQLRETURN ODBC::BindParameters(SQLHSTMT hSTMT, Parameter params[], int count)
       break;
     }
   }
+  return ret;
+}
+
+/*
+ * PutDataLoop
+ * Drive the SQLParamData/SQLPutData loop for data-at-execution parameters.
+ * Called after SQLExecute returns SQL_NEED_DATA.
+ * Sends chunk data for each data-at-exec parameter via SQLPutData.
+ */
+SQLRETURN ODBC::PutDataLoop(SQLHSTMT hSTMT, Parameter params[], int count)
+{
+  SQLRETURN ret;
+  SQLPOINTER token;
+
+  DEBUG_PRINTF("ODBC::PutDataLoop - Entry\n");
+
+  while ((ret = SQLParamData(hSTMT, &token)) == SQL_NEED_DATA)
+  {
+    int paramIdx = (int)(intptr_t)token - 1; // Convert 1-based token to 0-based
+
+    DEBUG_PRINTF("ODBC::PutDataLoop - SQLParamData requested param %d\n",
+                 paramIdx + 1);
+
+    if (paramIdx < 0 || paramIdx >= count ||
+        params[paramIdx].chunks == NULL || params[paramIdx].chunkCount == 0)
+    {
+      DEBUG_PRINTF("ODBC::PutDataLoop - Invalid param index or no chunks\n");
+      return SQL_ERROR;
+    }
+
+    for (int j = 0; j < params[paramIdx].chunkCount; j++)
+    {
+      DEBUG_PRINTF("ODBC::PutDataLoop - SQLPutData chunk %d/%d, size=%lld\n",
+                   j + 1, params[paramIdx].chunkCount,
+                   (long long)params[paramIdx].chunkLens[j]);
+
+      ret = SQLPutData(hSTMT, params[paramIdx].chunks[j],
+                        params[paramIdx].chunkLens[j]);
+      if (!SQL_SUCCEEDED(ret))
+      {
+        DEBUG_PRINTF("ODBC::PutDataLoop - SQLPutData failed, ret=%d\n", ret);
+        return ret;
+      }
+    }
+  }
+
+  DEBUG_PRINTF("ODBC::PutDataLoop - Exit, ret=%d\n", ret);
   return ret;
 }
 
