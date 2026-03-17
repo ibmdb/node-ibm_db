@@ -18,6 +18,15 @@
 #define _SRC_ODBC_RESULT_H
 
 #include <nan.h>
+#include <sqlext.h>
+
+// Block fetch (SQL_ATTR_ROW_ARRAY_SIZE > 1) column buffer
+typedef struct {
+  SQLPOINTER   data;         // Array buffer: N * element_size
+  SQLLEN      *indicators;   // Array of N SQLLEN indicator values
+  SQLSMALLINT  cType;        // C type used for SQLBindCol
+  SQLLEN       elementSize;  // Size of each element in the data buffer
+} BoundColumn;
 
 class ODBCResult : public Nan::ObjectWrap
 {
@@ -35,7 +44,14 @@ protected:
                                                                                         m_hENV(hENV),
                                                                                         m_hDBC(hDBC),
                                                                                         m_hSTMT(hSTMT),
-                                                                                        m_canFreeHandle(canFreeHandle) {};
+                                                                                        m_canFreeHandle(canFreeHandle),
+                                                                                        m_rowArraySize(0),
+                                                                                        m_rowsFetched(0),
+                                                                                        m_currentRowInBlock(0),
+                                                                                        m_rowStatusArray(NULL),
+                                                                                        m_boundCols(NULL),
+                                                                                        m_blockFetchInitialized(false),
+                                                                                        m_blockExhausted(false) {};
 
   ~ODBCResult();
 
@@ -91,6 +107,10 @@ protected:
     int errorCount;
     Nan::Persistent<Array> rows;
     Nan::Persistent<Value> objError;
+
+    // Block fetch support
+    bool useBlockFetch;
+    SQLULEN blockRowIndex; // Row index within the block for single-row fetch
   };
 
   struct getdata_work_data
@@ -112,6 +132,13 @@ protected:
 
   ODBCResult *self(void) { return this; }
 
+  // Block fetch (SQL_ATTR_ROW_ARRAY_SIZE > 1) support
+  bool InitBlockFetch();             // Detect and set up block fetch if needed
+  void FreeBlockFetchBuffers();      // Free bound column buffers
+  bool BindColumnsForBlockFetch();   // SQLBindCol for all columns
+  Local<Value> GetBoundColumnValue(int colIndex, SQLULEN rowIndex); // Read value from bound buffer
+  SQLRETURN BlockFetchNextRow(SQLULEN *outRowIndex); // Advance to next valid row in block, fetch new block if needed
+
 protected:
   SQLHENV m_hENV;
   SQLHDBC m_hDBC;
@@ -123,6 +150,15 @@ protected:
   size_t bufferLength;
   Column *columns;
   short colCount;
+
+  // Block fetch state
+  SQLULEN      m_rowArraySize;        // Value of SQL_ATTR_ROW_ARRAY_SIZE (0 or 1 = normal)
+  SQLULEN      m_rowsFetched;         // Actual rows fetched by last SQLFetch
+  SQLULEN      m_currentRowInBlock;   // Current position within the fetched block
+  SQLUSMALLINT *m_rowStatusArray;     // Per-row status from SQLFetch
+  BoundColumn  *m_boundCols;          // Array of bound column buffers
+  bool         m_blockFetchInitialized; // Whether block fetch setup has been done
+  bool         m_blockExhausted;      // True when block fetch has reached SQL_NO_DATA
 };
 
 #endif

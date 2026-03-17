@@ -773,6 +773,8 @@ Fetch a row of data from an ODBCResult object asynchronously.
 
 * **callback** - _OPTIONAL_ - `callback (err, row)`. If callback is not provided, a Promise will be returned.
 
+**Note:** When `SQL_ATTR_ROW_ARRAY_SIZE` is set to a value greater than 1, `fetch()` returns an **array of rows** (up to ROW_ARRAY_SIZE rows) per call instead of a single row object. When all rows are exhausted, it returns `null`. See [Block Fetch using SQL_ATTR_ROW_ARRAY_SIZE](#block-fetch-using-sql_attr_row_array_size) for details.
+
 ```javascript
 const ibmdb = require("ibm_db")
   , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
@@ -814,6 +816,8 @@ Fetch a row of data from the ODBCResult object synchronously.
 * **option** - _OPTIONAL_ - Object type.
     * fetchMode - Format of the returned row data. By default, the row data will be returned in object form. option = {fetchMode:3} or option = {fetchMode: ibmdb.FETCH_ARRAY} will return row data in array form. Default value of fetchMode is ibmdb.FETCH_OBJECT.
     * When option = {fetchMode : 0} or {fetchMode: ibmdb.FETCH_NODATA} is used, the fetch() API will not return any results, and the application needs to call the result.getData() or result.getDataSync() APIs to retrieve data for a column.
+
+**Note:** When `SQL_ATTR_ROW_ARRAY_SIZE` is set to a value greater than 1, `fetchSync()` returns an **array of rows** (up to ROW_ARRAY_SIZE rows) per call instead of a single row object. When all rows are exhausted, it returns `null`. See [Block Fetch using SQL_ATTR_ROW_ARRAY_SIZE](#block-fetch-using-sql_attr_row_array_size) for details.
 
 ```javascript
 const ibmdb = require("ibm_db")
@@ -970,6 +974,71 @@ ibmdb.open(cn, function(err, conn) {
   conn.closeSync();
 });
 ```
+
+### Block Fetch using SQL_ATTR_ROW_ARRAY_SIZE
+
+When `SQL_ATTR_ROW_ARRAY_SIZE` is set to a value greater than 1 on a prepared statement, ibm_db uses **SQLBindCol-based block fetching** to retrieve multiple rows per `SQLFetch()` call. This improves performance by reducing the number of CLI round-trips for large result sets.
+
+All fetch APIs (`fetch`, `fetchSync`, `fetchAll`, `fetchAllSync`, `fetchN`, `fetchNSync`) automatically detect and honor `SQL_ATTR_ROW_ARRAY_SIZE`. If the attribute is set to 1 (default), the normal single-row `SQLGetData` path is used.
+
+**API behavior when `SQL_ATTR_ROW_ARRAY_SIZE > 1`:**
+
+| API | Return value |
+|-----|-------------|
+| `fetchSync()` | Array of up to N row objects (or arrays if FETCH_ARRAY). Returns `null` when done. |
+| `fetch()` | Same as fetchSync, via callback `(err, rows)` or Promise. Returns `null` when done. |
+| `fetchAllSync()` | Flat array of all rows (unchanged). |
+| `fetchAll()` | Flat array of all rows (unchanged). |
+| `fetchNSync(count)` | Flat array of `count` rows (unchanged). |
+| `fetchN(count)` | Flat array of `count` rows (unchanged). |
+
+**Example using fetchSync with block fetch:**
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, conn) {
+  conn.querySync("create table mytable (id int, name varchar(20))");
+  for (let i = 1; i <= 100; i++) {
+    conn.querySync(`insert into mytable values (${i}, 'Row${i}')`);
+  }
+
+  // Set SQL_ATTR_ROW_ARRAY_SIZE to fetch 10 rows per SQLFetch() call
+  const stmt = conn.prepareSync("select * from mytable order by id");
+  stmt.setAttrSync(ibmdb.SQL_ATTR_ROW_ARRAY_SIZE, 10);
+  const result = stmt.executeSync();
+
+  // fetchSync returns an array of up to 10 rows per call
+  let block;
+  let totalRows = 0;
+  while ((block = result.fetchSync()) !== null) {
+    console.log(`Block of ${block.length} rows:`, block);
+    totalRows += block.length;
+  }
+  console.log("Total fetched:", totalRows, "rows"); // 100
+  result.closeSync();
+  stmt.closeSync();
+
+  conn.querySync("drop table mytable");
+  conn.closeSync();
+});
+```
+
+**Example using fetchAllSync with block fetch:**
+
+```javascript
+  // fetchAllSync returns a flat array of all rows (block fetch is internal)
+  const stmt2 = conn.prepareSync("select * from mytable order by id");
+  stmt2.setAttrSync(ibmdb.SQL_ATTR_ROW_ARRAY_SIZE, 10);
+  const result2 = stmt2.executeSync();
+  const data = result2.fetchAllSync();
+  console.log("Fetched", data.length, "rows"); // 100
+  result2.closeSync();
+  stmt2.closeSync();
+```
+
+**Note:** Block fetch uses `SQLBindCol` to pre-allocate array buffers for each column. For columns with very large declared sizes (e.g., CLOB/BLOB), the buffer size per element is capped at 64KB. If you need to retrieve larger LOB values, use the default single-row fetch (do not set `SQL_ATTR_ROW_ARRAY_SIZE`).
 
 ### <a name="getDataApi"></a> 24) (ODBCResult) .getData([colNum] [, size] [, callback])
 
@@ -1394,6 +1463,9 @@ conn.setAttrSync(ibmdb.SQL_ATTR_INFO_APPLNAME, 'mynodeApp');
 const err = stmt.setAttrSync(ibmdb.SQL_ATTR_PARAMSET_SIZE, 5);
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_QUERY_TIMEOUT, 50);
 err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
+
+// Set SQL_ATTR_ROW_ARRAY_SIZE for block fetch (fetches 10 rows per SQLFetch call)
+err = stmt.setAttrSync(ibmdb.SQL_ATTR_ROW_ARRAY_SIZE, 10);
 ```
 
 ### <a name="getInfoApi"></a> 43) (Database) .getInfo(infoType, [infoLength] [, callback])

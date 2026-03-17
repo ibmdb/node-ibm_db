@@ -82,6 +82,8 @@ ODBCResult::~ODBCResult()
 
 void ODBCResult::Free()
 {
+  FreeBlockFetchBuffers();
+
   if (m_hSTMT && m_canFreeHandle)
   {
     SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
@@ -137,6 +139,15 @@ NAN_METHOD(ODBCResult::New)
 
   // default fetchMode to FETCH_OBJECT
   objODBCResult->m_fetchMode = FETCH_OBJECT;
+
+  // initialize block fetch fields
+  objODBCResult->m_rowArraySize = 0;
+  objODBCResult->m_rowsFetched = 0;
+  objODBCResult->m_currentRowInBlock = 0;
+  objODBCResult->m_rowStatusArray = NULL;
+  objODBCResult->m_boundCols = NULL;
+  objODBCResult->m_blockFetchInitialized = false;
+  objODBCResult->m_blockExhausted = false;
 
   objODBCResult->Wrap(info.Holder());
 
@@ -215,6 +226,8 @@ NAN_METHOD(ODBCResult::Fetch)
   data->cb = new Nan::Callback(cb);
 
   data->objResult = objODBCResult;
+  data->useBlockFetch = false;
+  data->blockRowIndex = 0;
   work_req->data = data;
 
   uv_queue_work(
@@ -234,7 +247,31 @@ void ODBCResult::UV_Fetch(uv_work_t *work_req)
 
   fetch_work_data *data = (fetch_work_data *)(work_req->data);
 
-  data->result = SQLFetch(data->objResult->m_hSTMT);
+  // InitBlockFetch is safe on worker thread (no V8 calls)
+  bool useBlockFetch = data->objResult->InitBlockFetch();
+  data->useBlockFetch = useBlockFetch;
+
+  if (useBlockFetch)
+  {
+    // Block fetch: fetch entire block at once
+    ODBCResult *self = data->objResult;
+    if (self->m_blockExhausted)
+    {
+      data->result = SQL_NO_DATA;
+    }
+    else
+    {
+      self->m_rowsFetched = 0;
+      self->m_currentRowInBlock = 0;
+      data->result = SQLFetch(self->m_hSTMT);
+      if (data->result == SQL_NO_DATA)
+        self->m_blockExhausted = true;
+    }
+  }
+  else
+  {
+    data->result = SQLFetch(data->objResult->m_hSTMT);
+  }
 }
 
 void ODBCResult::UV_AfterFetch(uv_work_t *work_req, int status)
@@ -286,7 +323,50 @@ void ODBCResult::UV_AfterFetch(uv_work_t *work_req, int status)
     Local<Value> info[2];
 
     info[0] = Nan::Null();
-    if (data->fetchMode == FETCH_ARRAY)
+
+    if (data->useBlockFetch)
+    {
+      // Return an array of all valid rows in this block
+      ODBCResult *self = data->objResult->self();
+      Local<Array> blockArray = Nan::New<Array>();
+      int validCount = 0;
+
+      for (SQLULEN r = 0; r < self->m_rowsFetched; r++)
+      {
+        SQLUSMALLINT status = self->m_rowStatusArray[r];
+        if (status == SQL_ROW_SUCCESS || status == SQL_ROW_SUCCESS_WITH_INFO)
+        {
+          if (data->fetchMode == FETCH_ARRAY)
+          {
+            Local<Array> array = Nan::New<Array>();
+            for (int c = 0; c < self->colCount; c++)
+            {
+              Nan::Set(array, Nan::New(c), self->GetBoundColumnValue(c, r));
+            }
+            Nan::Set(blockArray, Nan::New(validCount++), array);
+          }
+          else
+          {
+            Local<Object> tuple = Nan::New<Object>();
+            for (int c = 0; c < self->colCount; c++)
+            {
+#ifdef UNICODE
+              Nan::Set(tuple,
+                       Nan::New((uint16_t *)self->columns[c].name).ToLocalChecked(),
+                       self->GetBoundColumnValue(c, r));
+#else
+              Nan::Set(tuple,
+                       Nan::New((const char *)self->columns[c].name).ToLocalChecked(),
+                       self->GetBoundColumnValue(c, r));
+#endif
+            }
+            Nan::Set(blockArray, Nan::New(validCount++), tuple);
+          }
+        }
+      }
+      info[1] = blockArray;
+    }
+    else if (data->fetchMode == FETCH_ARRAY)
     {
       info[1] = ODBC::GetRecordArray(
           data->objResult->m_hSTMT,
@@ -384,13 +464,36 @@ NAN_METHOD(ODBCResult::FetchSync)
     }
   }
 
-  SQLRETURN ret = SQLFetch(objResult->m_hSTMT);
-
   if (objResult->colCount == 0)
   {
     objResult->columns = ODBC::GetColumns(
         objResult->m_hSTMT,
         &objResult->colCount);
+  }
+
+  // Check if block fetch mode is active
+  bool useBlockFetch = objResult->InitBlockFetch();
+
+  SQLRETURN ret;
+  SQLULEN rowIdx = 0;
+
+  if (useBlockFetch)
+  {
+    // Block fetch: fetch entire block and return array of rows
+    if (objResult->m_blockExhausted)
+    {
+      ret = SQL_NO_DATA;
+    }
+    else
+    {
+      objResult->m_rowsFetched = 0;
+      objResult->m_currentRowInBlock = 0;
+      ret = SQLFetch(objResult->m_hSTMT);
+    }
+  }
+  else
+  {
+    ret = SQLFetch(objResult->m_hSTMT);
   }
 
   // check to see if there was an error
@@ -407,6 +510,8 @@ NAN_METHOD(ODBCResult::FetchSync)
   // check to see if we are at the end of the recordset
   else if (ret == SQL_NO_DATA)
   {
+    if (useBlockFetch)
+      objResult->m_blockExhausted = true;
     moreWork = false;
   }
   // check to see if the result has no columns
@@ -423,7 +528,48 @@ NAN_METHOD(ODBCResult::FetchSync)
   {
     Local<Value> data;
 
-    if (fetchMode == FETCH_ARRAY)
+    if (useBlockFetch)
+    {
+      // Return an array of all valid rows in this block
+      Local<Array> blockArray = Nan::New<Array>();
+      int validCount = 0;
+
+      for (SQLULEN r = 0; r < objResult->m_rowsFetched; r++)
+      {
+        SQLUSMALLINT status = objResult->m_rowStatusArray[r];
+        if (status == SQL_ROW_SUCCESS || status == SQL_ROW_SUCCESS_WITH_INFO)
+        {
+          if (fetchMode == FETCH_ARRAY)
+          {
+            Local<Array> array = Nan::New<Array>();
+            for (int c = 0; c < objResult->colCount; c++)
+            {
+              Nan::Set(array, Nan::New(c), objResult->GetBoundColumnValue(c, r));
+            }
+            Nan::Set(blockArray, Nan::New(validCount++), array);
+          }
+          else
+          {
+            Local<Object> tuple = Nan::New<Object>();
+            for (int c = 0; c < objResult->colCount; c++)
+            {
+#ifdef UNICODE
+              Nan::Set(tuple,
+                       Nan::New((uint16_t *)objResult->columns[c].name).ToLocalChecked(),
+                       objResult->GetBoundColumnValue(c, r));
+#else
+              Nan::Set(tuple,
+                       Nan::New((const char *)objResult->columns[c].name).ToLocalChecked(),
+                       objResult->GetBoundColumnValue(c, r));
+#endif
+            }
+            Nan::Set(blockArray, Nan::New(validCount++), tuple);
+          }
+        }
+      }
+      data = blockArray;
+    }
+    else if (fetchMode == FETCH_ARRAY)
     {
       data = ODBC::GetRecordArray(
           objResult->m_hSTMT,
@@ -517,6 +663,8 @@ NAN_METHOD(ODBCResult::FetchAll)
 
   data->cb = new Nan::Callback(cb);
   data->objResult = objODBCResult;
+  data->useBlockFetch = false;
+  data->blockRowIndex = 0;
 
   work_req->data = data;
 
@@ -537,7 +685,20 @@ void ODBCResult::UV_FetchAll(uv_work_t *work_req)
 
   fetch_work_data *data = (fetch_work_data *)(work_req->data);
 
-  data->result = SQLFetch(data->objResult->m_hSTMT);
+  // InitBlockFetch is safe on worker thread (no V8 calls)
+  bool useBlockFetch = data->objResult->InitBlockFetch();
+  data->useBlockFetch = useBlockFetch;
+
+  if (useBlockFetch)
+  {
+    SQLULEN rowIdx = 0;
+    data->result = data->objResult->BlockFetchNextRow(&rowIdx);
+    data->blockRowIndex = rowIdx;
+  }
+  else
+  {
+    data->result = SQLFetch(data->objResult->m_hSTMT);
+  }
   DEBUG_PRINTF("ODBCResult::UV_FetchAll - Exit, return code = %d for stmt %X\n", data->result, data->objResult->m_hSTMT);
 }
 
@@ -602,7 +763,38 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t *work_req, int status)
   else
   {
     Local<Array> rows = Nan::New(data->rows);
-    if (data->fetchMode == FETCH_ARRAY)
+
+    if (data->useBlockFetch)
+    {
+      SQLULEN rowIdx = data->blockRowIndex;
+      if (data->fetchMode == FETCH_ARRAY)
+      {
+        Local<Array> array = Nan::New<Array>();
+        for (int c = 0; c < self->colCount; c++)
+        {
+          Nan::Set(array, Nan::New(c), self->GetBoundColumnValue(c, rowIdx));
+        }
+        Nan::Set(rows, Nan::New(data->count), array);
+      }
+      else
+      {
+        Local<Object> tuple = Nan::New<Object>();
+        for (int c = 0; c < self->colCount; c++)
+        {
+#ifdef UNICODE
+          Nan::Set(tuple,
+                   Nan::New((uint16_t *)self->columns[c].name).ToLocalChecked(),
+                   self->GetBoundColumnValue(c, rowIdx));
+#else
+          Nan::Set(tuple,
+                   Nan::New((const char *)self->columns[c].name).ToLocalChecked(),
+                   self->GetBoundColumnValue(c, rowIdx));
+#endif
+        }
+        Nan::Set(rows, Nan::New(data->count), tuple);
+      }
+    }
+    else if (data->fetchMode == FETCH_ARRAY)
     {
       Nan::Set(rows,
                Nan::New(data->count),
@@ -722,52 +914,122 @@ NAN_METHOD(ODBCResult::FetchAllSync)
   // Only loop through the recordset if there are columns
   if (self->colCount > 0)
   {
-    // loop through all records
-    while (true)
+    // Check if block fetch (SQL_ATTR_ROW_ARRAY_SIZE > 1) should be used
+    bool useBlockFetch = self->InitBlockFetch();
+
+    if (useBlockFetch)
     {
-      ret = SQLFetch(self->m_hSTMT);
+      // Block fetch path: SQLBindCol-based, fetches N rows per SQLFetch call
+      while (true)
+      {
+        self->m_rowsFetched = 0;
+        ret = SQLFetch(self->m_hSTMT);
 
-      // check to see if there was an error
-      if (ret == SQL_ERROR)
-      {
-        errorCount++;
-        objError = ODBC::GetSQLError(
-            SQL_HANDLE_STMT,
-            self->m_hSTMT,
-            (char *)"[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
-                    " your query did not have a result set.");
-        break;
-      }
+        if (ret == SQL_ERROR)
+        {
+          errorCount++;
+          objError = ODBC::GetSQLError(
+              SQL_HANDLE_STMT,
+              self->m_hSTMT,
+              (char *)"[node-odbc] Error in ODBCResult::FetchAllSync (block fetch)");
+          break;
+        }
 
-      // check to see if we are at the end of the recordset
-      if (ret == SQL_NO_DATA)
-      {
-        break;
-      }
+        if (ret == SQL_NO_DATA)
+        {
+          break;
+        }
 
-      if (fetchMode == FETCH_ARRAY)
-      {
-        Nan::Set(rows,
-                 Nan::New(count),
-                 ODBC::GetRecordArray(
-                     self->m_hSTMT,
-                     self->columns,
-                     &self->colCount,
-                     self->buffer,
-                     self->bufferLength));
+        DEBUG_PRINTF("ODBCResult::FetchAllSync block fetch: rowsFetched=%lu\n",
+                     (unsigned long)self->m_rowsFetched);
+
+        // Process all rows returned by this SQLFetch call
+        for (SQLULEN r = 0; r < self->m_rowsFetched; r++)
+        {
+          // Skip rows with error or no-row status
+          if (self->m_rowStatusArray[r] == SQL_ROW_ERROR ||
+              self->m_rowStatusArray[r] == SQL_ROW_NOROW)
+          {
+            continue;
+          }
+
+          if (fetchMode == FETCH_ARRAY)
+          {
+            Local<Array> array = Nan::New<Array>();
+            for (int c = 0; c < self->colCount; c++)
+            {
+              Nan::Set(array, Nan::New(c), self->GetBoundColumnValue(c, r));
+            }
+            Nan::Set(rows, Nan::New(count), array);
+          }
+          else
+          {
+            Local<Object> tuple = Nan::New<Object>();
+            for (int c = 0; c < self->colCount; c++)
+            {
+#ifdef UNICODE
+              Nan::Set(tuple,
+                       Nan::New((uint16_t *)self->columns[c].name).ToLocalChecked(),
+                       self->GetBoundColumnValue(c, r));
+#else
+              Nan::Set(tuple,
+                       Nan::New((const char *)self->columns[c].name).ToLocalChecked(),
+                       self->GetBoundColumnValue(c, r));
+#endif
+            }
+            Nan::Set(rows, Nan::New(count), tuple);
+          }
+          count++;
+        }
       }
-      else
+    }
+    else
+    {
+      // Normal single-row fetch path (original code)
+      while (true)
       {
-        Nan::Set(rows,
-                 Nan::New(count),
-                 ODBC::GetRecordTuple(
-                     self->m_hSTMT,
-                     self->columns,
-                     &self->colCount,
-                     self->buffer,
-                     self->bufferLength));
+        ret = SQLFetch(self->m_hSTMT);
+
+        if (ret == SQL_ERROR)
+        {
+          errorCount++;
+          objError = ODBC::GetSQLError(
+              SQL_HANDLE_STMT,
+              self->m_hSTMT,
+              (char *)"[node-odbc] Error in ODBCResult::UV_AfterFetchAll; probably"
+                      " your query did not have a result set.");
+          break;
+        }
+
+        if (ret == SQL_NO_DATA)
+        {
+          break;
+        }
+
+        if (fetchMode == FETCH_ARRAY)
+        {
+          Nan::Set(rows,
+                   Nan::New(count),
+                   ODBC::GetRecordArray(
+                       self->m_hSTMT,
+                       self->columns,
+                       &self->colCount,
+                       self->buffer,
+                       self->bufferLength));
+        }
+        else
+        {
+          Nan::Set(rows,
+                   Nan::New(count),
+                   ODBC::GetRecordTuple(
+                       self->m_hSTMT,
+                       self->columns,
+                       &self->colCount,
+                       self->buffer,
+                       self->bufferLength));
+        }
+        count++;
       }
-      count++;
     }
   }
   ODBC::FreeColumns(self->columns, &self->colCount);
@@ -845,6 +1107,8 @@ NAN_METHOD(ODBCResult::FetchN)
 
   data->cb = new Nan::Callback(cb);
   data->objResult = objODBCResult;
+  data->useBlockFetch = false;
+  data->blockRowIndex = 0;
   work_req->data = data;
 
   uv_queue_work(uv_default_loop(),
@@ -861,7 +1125,20 @@ void ODBCResult::UV_FetchN(uv_work_t *work_req)
 {
   DEBUG_PRINTF("ODBCResult::UV_FetchN\n");
   fetch_work_data *data = (fetch_work_data *)(work_req->data);
-  data->result = SQLFetch(data->objResult->m_hSTMT);
+
+  bool useBlockFetch = data->objResult->InitBlockFetch();
+  data->useBlockFetch = useBlockFetch;
+
+  if (useBlockFetch)
+  {
+    SQLULEN rowIdx = 0;
+    data->result = data->objResult->BlockFetchNextRow(&rowIdx);
+    data->blockRowIndex = rowIdx;
+  }
+  else
+  {
+    data->result = SQLFetch(data->objResult->m_hSTMT);
+  }
 }
 
 void ODBCResult::UV_AfterFetchN(uv_work_t *work_req, int status)
@@ -903,7 +1180,38 @@ void ODBCResult::UV_AfterFetchN(uv_work_t *work_req, int status)
   else
   {
     Local<Array> rows = Nan::New(data->rows);
-    if (data->fetchMode == FETCH_ARRAY)
+
+    if (data->useBlockFetch)
+    {
+      SQLULEN rowIdx = data->blockRowIndex;
+      if (data->fetchMode == FETCH_ARRAY)
+      {
+        Local<Array> array = Nan::New<Array>();
+        for (int c = 0; c < self->colCount; c++)
+        {
+          Nan::Set(array, Nan::New(c), self->GetBoundColumnValue(c, rowIdx));
+        }
+        Nan::Set(rows, Nan::New(data->count), array);
+      }
+      else
+      {
+        Local<Object> tuple = Nan::New<Object>();
+        for (int c = 0; c < self->colCount; c++)
+        {
+#ifdef UNICODE
+          Nan::Set(tuple,
+                   Nan::New((uint16_t *)self->columns[c].name).ToLocalChecked(),
+                   self->GetBoundColumnValue(c, rowIdx));
+#else
+          Nan::Set(tuple,
+                   Nan::New((const char *)self->columns[c].name).ToLocalChecked(),
+                   self->GetBoundColumnValue(c, rowIdx));
+#endif
+        }
+        Nan::Set(rows, Nan::New(data->count), tuple);
+      }
+    }
+    else if (data->fetchMode == FETCH_ARRAY)
     {
       Nan::Set(rows,
                Nan::New(data->count),
@@ -1026,48 +1334,104 @@ NAN_METHOD(ODBCResult::FetchNSync)
 
   if (self->colCount > 0)
   {
-    while (count < maxCount)
+    bool useBlockFetch = self->InitBlockFetch();
+
+    if (useBlockFetch)
     {
-      ret = SQLFetch(self->m_hSTMT);
+      SQLULEN rowIdx;
+      while (count < maxCount)
+      {
+        ret = self->BlockFetchNextRow(&rowIdx);
 
-      if (ret == SQL_ERROR)
-      {
-        errorCount++;
-        objError = ODBC::GetSQLError(
-            SQL_HANDLE_STMT,
-            self->m_hSTMT,
-            (char *)"[node-odbc] Error in ODBCResult::FetchNSync");
-        break;
-      }
+        if (ret == SQL_ERROR)
+        {
+          errorCount++;
+          objError = ODBC::GetSQLError(
+              SQL_HANDLE_STMT,
+              self->m_hSTMT,
+              (char *)"[node-odbc] Error in ODBCResult::FetchNSync (block fetch)");
+          break;
+        }
 
-      if (ret == SQL_NO_DATA)
-      {
-        break;
-      }
+        if (ret == SQL_NO_DATA)
+        {
+          break;
+        }
 
-      if (fetchMode == FETCH_ARRAY)
-      {
-        Nan::Set(rows,
-                 Nan::New(count),
-                 ODBC::GetRecordArray(
-                     self->m_hSTMT,
-                     self->columns,
-                     &self->colCount,
-                     self->buffer,
-                     self->bufferLength));
+        if (fetchMode == FETCH_ARRAY)
+        {
+          Local<Array> array = Nan::New<Array>();
+          for (int c = 0; c < self->colCount; c++)
+          {
+            Nan::Set(array, Nan::New(c), self->GetBoundColumnValue(c, rowIdx));
+          }
+          Nan::Set(rows, Nan::New(count), array);
+        }
+        else
+        {
+          Local<Object> tuple = Nan::New<Object>();
+          for (int c = 0; c < self->colCount; c++)
+          {
+#ifdef UNICODE
+            Nan::Set(tuple,
+                     Nan::New((uint16_t *)self->columns[c].name).ToLocalChecked(),
+                     self->GetBoundColumnValue(c, rowIdx));
+#else
+            Nan::Set(tuple,
+                     Nan::New((const char *)self->columns[c].name).ToLocalChecked(),
+                     self->GetBoundColumnValue(c, rowIdx));
+#endif
+          }
+          Nan::Set(rows, Nan::New(count), tuple);
+        }
+        count++;
       }
-      else
+    }
+    else
+    {
+      while (count < maxCount)
       {
-        Nan::Set(rows,
-                 Nan::New(count),
-                 ODBC::GetRecordTuple(
-                     self->m_hSTMT,
-                     self->columns,
-                     &self->colCount,
-                     self->buffer,
-                     self->bufferLength));
+        ret = SQLFetch(self->m_hSTMT);
+
+        if (ret == SQL_ERROR)
+        {
+          errorCount++;
+          objError = ODBC::GetSQLError(
+              SQL_HANDLE_STMT,
+              self->m_hSTMT,
+              (char *)"[node-odbc] Error in ODBCResult::FetchNSync");
+          break;
+        }
+
+        if (ret == SQL_NO_DATA)
+        {
+          break;
+        }
+
+        if (fetchMode == FETCH_ARRAY)
+        {
+          Nan::Set(rows,
+                   Nan::New(count),
+                   ODBC::GetRecordArray(
+                       self->m_hSTMT,
+                       self->columns,
+                       &self->colCount,
+                       self->buffer,
+                       self->bufferLength));
+        }
+        else
+        {
+          Nan::Set(rows,
+                   Nan::New(count),
+                   ODBC::GetRecordTuple(
+                       self->m_hSTMT,
+                       self->columns,
+                       &self->colCount,
+                       self->buffer,
+                       self->bufferLength));
+        }
+        count++;
       }
-      count++;
     }
   }
 
@@ -1520,4 +1884,390 @@ NAN_METHOD(ODBCResult::GetAffectedRowsSync)
 
   info.GetReturnValue().Set(Nan::New<Number>(rowCount));
   DEBUG_PRINTF("ODBCResult::GetAffectedRowsSync - Exit\n");
+}
+
+/*
+ * Block Fetch Support
+ * When SQL_ATTR_ROW_ARRAY_SIZE > 1, use SQLBindCol to fetch N rows at once.
+ */
+
+// Maximum buffer size per element for string/binary columns (cap for LOBs)
+#define BLOCK_FETCH_MAX_COL_SIZE 65536
+
+/*
+ * InitBlockFetch
+ * Called once before the first fetch. Queries SQL_ATTR_ROW_ARRAY_SIZE.
+ * If > 1, sets up column binding for block fetch.
+ * Returns true if block fetch mode is active, false for normal single-row fetch.
+ */
+bool ODBCResult::InitBlockFetch()
+{
+  if (m_blockFetchInitialized) {
+    return (m_rowArraySize > 1);
+  }
+  m_blockFetchInitialized = true;
+
+  // Query the current SQL_ATTR_ROW_ARRAY_SIZE from the statement
+  SQLULEN rowArraySize = 0;
+  SQLRETURN ret = SQLGetStmtAttr(m_hSTMT, SQL_ATTR_ROW_ARRAY_SIZE,
+                                 &rowArraySize, SQL_IS_UINTEGER, NULL);
+  if (!SQL_SUCCEEDED(ret) || rowArraySize <= 1) {
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  m_rowArraySize = rowArraySize;
+  DEBUG_PRINTF("ODBCResult::InitBlockFetch: SQL_ATTR_ROW_ARRAY_SIZE = %lu\n",
+               (unsigned long)m_rowArraySize);
+
+  // Get columns if not already retrieved
+  if (colCount == 0) {
+    columns = ODBC::GetColumns(m_hSTMT, &colCount);
+  }
+  if (colCount == 0) {
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  // Set up SQL_ATTR_ROW_STATUS_PTR and SQL_ATTR_ROWS_FETCHED_PTR
+  m_rowStatusArray = (SQLUSMALLINT *)calloc(m_rowArraySize, sizeof(SQLUSMALLINT));
+  if (!m_rowStatusArray) {
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  ret = SQLSetStmtAttr(m_hSTMT, SQL_ATTR_ROW_STATUS_PTR,
+                        m_rowStatusArray, 0);
+  if (!SQL_SUCCEEDED(ret)) {
+    DEBUG_PRINTF("ODBCResult::InitBlockFetch: Failed to set SQL_ATTR_ROW_STATUS_PTR\n");
+    free(m_rowStatusArray);
+    m_rowStatusArray = NULL;
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  ret = SQLSetStmtAttr(m_hSTMT, SQL_ATTR_ROWS_FETCHED_PTR,
+                        &m_rowsFetched, 0);
+  if (!SQL_SUCCEEDED(ret)) {
+    DEBUG_PRINTF("ODBCResult::InitBlockFetch: Failed to set SQL_ATTR_ROWS_FETCHED_PTR\n");
+    free(m_rowStatusArray);
+    m_rowStatusArray = NULL;
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  // Bind columns
+  if (!BindColumnsForBlockFetch()) {
+    FreeBlockFetchBuffers();
+    m_rowArraySize = 1;
+    return false;
+  }
+
+  return true;
+}
+
+/*
+ * BindColumnsForBlockFetch
+ * Allocates array buffers for each column and calls SQLBindCol.
+ */
+bool ODBCResult::BindColumnsForBlockFetch()
+{
+  DEBUG_PRINTF("ODBCResult::BindColumnsForBlockFetch: colCount=%d, rowArraySize=%lu\n",
+               colCount, (unsigned long)m_rowArraySize);
+
+  m_boundCols = (BoundColumn *)calloc(colCount, sizeof(BoundColumn));
+  if (!m_boundCols) return false;
+
+  for (int i = 0; i < colCount; i++) {
+    SQLSMALLINT cType;
+    SQLLEN elemSize;
+
+    switch (columns[i].type) {
+      case SQL_INTEGER:
+      case SQL_SMALLINT:
+      case SQL_TINYINT:
+        cType = SQL_C_SLONG;
+        elemSize = sizeof(SQLINTEGER);
+        break;
+
+      case SQL_BIGINT:
+        cType = SQL_C_CHAR;
+        // BIGINT as string: max 20 digits + sign + null
+        elemSize = 22;
+        break;
+
+      case SQL_FLOAT:
+      case SQL_REAL:
+      case SQL_DOUBLE:
+      case SQL_NUMERIC:
+      case SQL_DECIMAL:
+      case SQL_DECFLOAT:
+        cType = SQL_C_DOUBLE;
+        elemSize = sizeof(double);
+        break;
+
+      case SQL_BIT:
+        cType = SQL_C_CHAR;
+        elemSize = 4;
+        break;
+
+      case SQL_DATETIME:
+      case SQL_TIMESTAMP:
+      case SQL_TYPE_TIMESTAMP:
+#ifdef _WIN32
+        cType = SQL_C_CHAR;
+        elemSize = sizeof(SQL_TIMESTAMP_STRUCT);
+#else
+        cType = SQL_C_TYPE_TIMESTAMP;
+        elemSize = sizeof(SQL_TIMESTAMP_STRUCT);
+#endif
+        break;
+
+      case SQL_BLOB:
+      case SQL_BINARY:
+      case SQL_VARBINARY:
+      case SQL_LONGVARBINARY:
+        cType = SQL_C_BINARY;
+        {
+          SQLLEN colSize = columns[i].field_len;
+          if (colSize <= 0 || colSize > BLOCK_FETCH_MAX_COL_SIZE)
+            colSize = BLOCK_FETCH_MAX_COL_SIZE;
+          elemSize = colSize;
+        }
+        break;
+
+      default:
+        // Treat as string (VARCHAR, CHAR, CLOB, etc.)
+        cType = SQL_C_CHAR;
+#ifdef UNICODE
+        cType = SQL_C_WCHAR;
+#endif
+        {
+          SQLLEN colSize = columns[i].field_len;
+          if (colSize <= 0 || colSize > BLOCK_FETCH_MAX_COL_SIZE)
+            colSize = BLOCK_FETCH_MAX_COL_SIZE;
+#ifdef UNICODE
+          elemSize = (colSize + 1) * sizeof(uint16_t);
+#else
+          elemSize = colSize + 1;  // +1 for null terminator
+#endif
+        }
+        break;
+    }
+
+    m_boundCols[i].cType = cType;
+    m_boundCols[i].elementSize = elemSize;
+
+    // Allocate array buffer for N rows
+    m_boundCols[i].data = calloc(m_rowArraySize, elemSize);
+    if (!m_boundCols[i].data) {
+      DEBUG_PRINTF("ODBCResult::BindColumnsForBlockFetch: Failed to allocate data buffer for col %d\n", i);
+      return false;
+    }
+
+    // Allocate indicator array for N rows
+    m_boundCols[i].indicators = (SQLLEN *)calloc(m_rowArraySize, sizeof(SQLLEN));
+    if (!m_boundCols[i].indicators) {
+      DEBUG_PRINTF("ODBCResult::BindColumnsForBlockFetch: Failed to allocate indicator buffer for col %d\n", i);
+      return false;
+    }
+
+    SQLRETURN ret = SQLBindCol(m_hSTMT,
+                               (SQLUSMALLINT)(i + 1),
+                               cType,
+                               m_boundCols[i].data,
+                               elemSize,
+                               m_boundCols[i].indicators);
+    if (!SQL_SUCCEEDED(ret)) {
+      DEBUG_PRINTF("ODBCResult::BindColumnsForBlockFetch: SQLBindCol failed for col %d, ret=%d\n", i, ret);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/*
+ * FreeBlockFetchBuffers
+ * Frees all memory allocated for block fetch.
+ */
+void ODBCResult::FreeBlockFetchBuffers()
+{
+  if (m_boundCols) {
+    for (int i = 0; i < colCount; i++) {
+      if (m_boundCols[i].data) {
+        free(m_boundCols[i].data);
+        m_boundCols[i].data = NULL;
+      }
+      if (m_boundCols[i].indicators) {
+        free(m_boundCols[i].indicators);
+        m_boundCols[i].indicators = NULL;
+      }
+    }
+    free(m_boundCols);
+    m_boundCols = NULL;
+  }
+  if (m_rowStatusArray) {
+    free(m_rowStatusArray);
+    m_rowStatusArray = NULL;
+  }
+  m_blockFetchInitialized = false;
+  m_rowArraySize = 0;
+}
+
+/*
+ * GetBoundColumnValue
+ * Read value from bound buffer for a specific column and row.
+ */
+Local<Value> ODBCResult::GetBoundColumnValue(int colIndex, SQLULEN rowIndex)
+{
+  Nan::EscapableHandleScope scope;
+
+  BoundColumn *bc = &m_boundCols[colIndex];
+  SQLLEN indicator = bc->indicators[rowIndex];
+
+  // NULL check
+  if (indicator == SQL_NULL_DATA) {
+    return scope.Escape(Nan::Null());
+  }
+
+  char *rowData = (char *)bc->data + (rowIndex * bc->elementSize);
+
+  switch (columns[colIndex].type) {
+    case SQL_INTEGER:
+    case SQL_SMALLINT:
+    case SQL_TINYINT:
+    {
+      SQLINTEGER value = *(SQLINTEGER *)rowData;
+      return scope.Escape(Nan::New<Number>((int)value));
+    }
+
+    case SQL_BIGINT:
+    {
+      // BIGINT was fetched as string
+      return scope.Escape(Nan::New((const char *)rowData).ToLocalChecked());
+    }
+
+    case SQL_FLOAT:
+    case SQL_REAL:
+    case SQL_DOUBLE:
+    case SQL_NUMERIC:
+    case SQL_DECIMAL:
+    case SQL_DECFLOAT:
+    {
+      double value = *(double *)rowData;
+      return scope.Escape(Nan::New<Number>(value));
+    }
+
+    case SQL_BIT:
+    {
+      return scope.Escape(Nan::New((*rowData == '0') ? false : true));
+    }
+
+    case SQL_DATETIME:
+    case SQL_TIMESTAMP:
+    case SQL_TYPE_TIMESTAMP:
+    {
+      SQL_TIMESTAMP_STRUCT *ts = (SQL_TIMESTAMP_STRUCT *)rowData;
+#ifdef _WIN32
+      struct tm timeInfo = {};
+#elif defined(_AIX) || defined(__MVS__)
+      struct tm timeInfo = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+#else
+      struct tm timeInfo = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#endif
+      timeInfo.tm_year = ts->year - 1900;
+      timeInfo.tm_mon = ts->month - 1;
+      timeInfo.tm_mday = ts->day;
+      timeInfo.tm_hour = ts->hour;
+      timeInfo.tm_min = ts->minute;
+      timeInfo.tm_sec = ts->second;
+      timeInfo.tm_isdst = -1;
+
+#ifdef TIMEGM
+      return scope.Escape(Nan::New<Date>((double(timegm(&timeInfo)) * 1000) +
+                                         (ts->fraction / 1000000))
+                              .ToLocalChecked());
+#else
+      return scope.Escape(Nan::New<Date>((double(mktime(&timeInfo)) * 1000) +
+                                         (ts->fraction / 1000000))
+                              .ToLocalChecked());
+#endif
+    }
+
+    case SQL_BLOB:
+    case SQL_BINARY:
+    case SQL_VARBINARY:
+    case SQL_LONGVARBINARY:
+    {
+      SQLLEN dataLen = indicator;
+      if (dataLen > bc->elementSize) dataLen = bc->elementSize;
+      return scope.Escape(Nan::CopyBuffer(rowData, (uint32_t)dataLen).ToLocalChecked());
+    }
+
+    default:
+    {
+      // String data
+#ifdef UNICODE
+      return scope.Escape(Nan::New((uint16_t *)rowData).ToLocalChecked());
+#else
+      return scope.Escape(Nan::New((const char *)rowData).ToLocalChecked());
+#endif
+    }
+  }
+}
+
+/*
+ * BlockFetchNextRow
+ * Advances to the next valid row in the current block.
+ * If the current block is exhausted, fetches a new block.
+ * Sets *outRowIndex to the row index within the block.
+ * Returns SQL_SUCCESS if a row is available, SQL_NO_DATA if done, SQL_ERROR on error.
+ */
+SQLRETURN ODBCResult::BlockFetchNextRow(SQLULEN *outRowIndex)
+{
+  if (m_blockExhausted) {
+    return SQL_NO_DATA;
+  }
+
+  // Try to find the next valid row in the current block
+  while (m_currentRowInBlock < m_rowsFetched) {
+    SQLUSMALLINT status = m_rowStatusArray[m_currentRowInBlock];
+    if (status == SQL_ROW_SUCCESS || status == SQL_ROW_SUCCESS_WITH_INFO) {
+      *outRowIndex = m_currentRowInBlock;
+      m_currentRowInBlock++;
+      return SQL_SUCCESS;
+    }
+    m_currentRowInBlock++;
+  }
+
+  // Current block exhausted, fetch a new one
+  m_rowsFetched = 0;
+  m_currentRowInBlock = 0;
+  SQLRETURN ret = SQLFetch(m_hSTMT);
+
+  if (ret == SQL_NO_DATA) {
+    m_blockExhausted = true;
+    return SQL_NO_DATA;
+  }
+  if (ret == SQL_ERROR) {
+    return SQL_ERROR;
+  }
+
+  DEBUG_PRINTF("ODBCResult::BlockFetchNextRow: fetched %lu rows\n",
+               (unsigned long)m_rowsFetched);
+
+  // Find the first valid row in the new block
+  while (m_currentRowInBlock < m_rowsFetched) {
+    SQLUSMALLINT status = m_rowStatusArray[m_currentRowInBlock];
+    if (status == SQL_ROW_SUCCESS || status == SQL_ROW_SUCCESS_WITH_INFO) {
+      *outRowIndex = m_currentRowInBlock;
+      m_currentRowInBlock++;
+      return SQL_SUCCESS;
+    }
+    m_currentRowInBlock++;
+  }
+
+  // All rows in this block were error/norow - try next block recursively
+  return BlockFetchNextRow(outRowIndex);
 }
