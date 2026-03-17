@@ -64,6 +64,8 @@
 * [.getColumnNamesSync()](#-35-odbcresult-getcolumnnamessync)
 * [.getColumnMetadataSync()](#-36-odbcresult-getcolumnmetadatasync)
 * [.getSQLErrorSync()](#-37-odbcresult-getsqlerrorsync)
+* [.bindFileToCol(colNum, filePath [, fileOption] [, callback])](#bindFileToColApi)
+* [.bindFileToColSync(colNum, filePath [, fileOption])](#bindFileToColSyncApi)
 
 
 [**Connection Pooling APIs**](#connection-pooling-apis)
@@ -1347,7 +1349,71 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
   });
 ```
 
-### <a name="enableDebugLogs"></a> 38) (ibmdb) .debug(value)
+### <a name="bindFileToColApi"></a> 38) (ODBCResult) .bindFileToCol(colNum, filePath [, fileOption] [, callback])
+
+Asynchronously bind a result set column to a file so that LOB data (BLOB, CLOB, DBCLOB) is written directly to the file during fetch. Uses the ODBC `SQLBindFileToCol` API internally. Must be called **after** execute and **before** fetch.
+
+Returns a Promise if no callback is supplied.
+
+* **colNum** - 1-based column number in the result set.
+* **filePath** - Path of the output file where LOB data will be written.
+* **fileOption** - _OPTIONAL_ - One of `ibmdb.SQL_FILE_CREATE` (8), `ibmdb.SQL_FILE_OVERWRITE` (16, default), or `ibmdb.SQL_FILE_APPEND` (32).
+* **callback** - _OPTIONAL_ - `callback(err)`. If omitted, a Promise is returned.
+
+```javascript
+const ibmdb = require("ibm_db");
+
+ibmdb.open(cn, function(err, conn) {
+  conn.prepare("SELECT BLOB_COL FROM mytab WHERE ID = 1", function(err, stmt) {
+    stmt.execute(function(err, result) {
+      // Callback style
+      result.bindFileToCol(1, "output.bin", ibmdb.SQL_FILE_OVERWRITE, function(err) {
+        if (err) throw err;
+        var row = result.fetchSync();
+        console.log(row); // { BLOB_COL: 'output.bin' }
+        result.closeSync();
+      });
+    });
+  });
+
+  // Promise / async-await style
+  const stmt = conn.prepareSync("SELECT BLOB_COL FROM mytab WHERE ID = 1");
+  const result = stmt.executeSync();
+  await result.bindFileToCol(1, "output.bin");
+  var row = result.fetchSync();
+  console.log(row); // { BLOB_COL: 'output.bin' }
+  result.closeSync();
+});
+```
+
+### <a name="bindFileToColSyncApi"></a> 39) (ODBCResult) .bindFileToColSync(colNum, filePath [, fileOption])
+
+Synchronously bind a result set column to a file so that LOB data (BLOB, CLOB, DBCLOB) is written directly to the file during fetch. Uses the ODBC `SQLBindFileToCol` API internally. Must be called **after** execute and **before** fetch.
+
+* **colNum** - 1-based column number in the result set.
+* **filePath** - Path of the output file where LOB data will be written.
+* **fileOption** - _OPTIONAL_ - One of `ibmdb.SQL_FILE_CREATE` (8), `ibmdb.SQL_FILE_OVERWRITE` (16, default), or `ibmdb.SQL_FILE_APPEND` (32).
+
+```javascript
+const ibmdb = require("ibm_db");
+
+ibmdb.open(cn, function(err, conn) {
+  const stmt = conn.prepareSync("SELECT BLOB_COL, CLOB_COL FROM mytab WHERE ID = 1");
+  const result = stmt.executeSync();
+
+  result.bindFileToColSync(1, "blob_output.bin", ibmdb.SQL_FILE_OVERWRITE);
+  result.bindFileToColSync(2, "clob_output.txt", ibmdb.SQL_FILE_OVERWRITE);
+
+  var rows = result.fetchAllSync();
+  console.log(rows);
+  // [ { BLOB_COL: 'blob_output.bin', CLOB_COL: 'clob_output.txt' } ]
+
+  result.closeSync();
+  conn.closeSync();
+});
+```
+
+### <a name="enableDebugLogs"></a> 40) (ibmdb) .debug(value)
 
 Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump bind params.
 
@@ -1379,7 +1445,7 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 39) (Database) .executeFileSync(sqlFile, [delimiter], [outputFile])
+### <a name="executeFileSyncApi"></a> 41) (Database) .executeFileSync(sqlFile, [delimiter], [outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -1402,7 +1468,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="executeFileApi"></a> 40) (Database) .executeFile(sqlFile, [delimiter], [outputFile])
+### <a name="executeFileApi"></a> 42) (Database) .executeFile(sqlFile, [delimiter], [outputFile])
 
 Asynchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -1436,7 +1502,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="setAttrApi"></a> 41) (Database) .setAttr(attributeName, value [, callback])
+### <a name="setAttrApi"></a> 43) (Database) .setAttr(attributeName, value [, callback])
 
 Set connection and statement level attributes asynchronously. It requires attributeName and corresponding value.
 `conn.setAttr()` - sets connection level attributes post connection.
@@ -1451,7 +1517,7 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 });
 ```
 
-### <a name="setAttrSyncApi"></a> 42) (Database) .setAttrSync(attributeName, value)
+### <a name="setAttrSyncApi"></a> 44) (Database) .setAttrSync(attributeName, value)
 
 Set connection and statement level attributes synchronously. It requires attributeName and corresponding value.
 `conn.setAttrSync()` - sets connection level attributes post connection.
@@ -1468,7 +1534,7 @@ err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_ROW_ARRAY_SIZE, 10);
 ```
 
-### <a name="getInfoApi"></a> 43) (Database) .getInfo(infoType, [infoLength] [, callback])
+### <a name="getInfoApi"></a> 45) (Database) .getInfo(infoType, [infoLength] [, callback])
 
 Asynchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
@@ -1495,7 +1561,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getInfoSyncApi"></a> 44) (Database) .getInfoSync(infoType, [infoLength])
+### <a name="getInfoSyncApi"></a> 46) (Database) .getInfoSync(infoType, [infoLength])
 
 Synchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
@@ -1515,7 +1581,7 @@ ibmdb.open(cn, function(err, conn)
 });
 ```
 
-### <a name="getTypeInfoApi"></a> 45) (Database) .getTypeInfo(dataType [, callback])
+### <a name="getTypeInfoApi"></a> 47) (Database) .getTypeInfo(dataType [, callback])
 
 Asynchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
@@ -1545,7 +1611,7 @@ async function main()
 }
 ```
 
-### <a name="getTypeInfoSyncApi"></a> 46) (Database) .getTypeInfoSync(dataType)
+### <a name="getTypeInfoSyncApi"></a> 48) (Database) .getTypeInfoSync(dataType)
 
 Synchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
@@ -1563,7 +1629,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getFunctionsApi"></a> 47) (Database) .getFunctions(functionId, callback)
+### <a name="getFunctionsApi"></a> 49) (Database) .getFunctions(functionId, callback)
 
 Asynchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 
@@ -1586,7 +1652,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getFunctionsSyncApi"></a> 48) (Database) .getFunctionsSync(functionId)
+### <a name="getFunctionsSyncApi"></a> 50) (Database) .getFunctionsSync(functionId)
 
 Synchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 

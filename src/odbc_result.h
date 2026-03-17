@@ -28,6 +28,17 @@ typedef struct {
   SQLLEN       elementSize;  // Size of each element in the data buffer
 } BoundColumn;
 
+// Per-column file binding for SQLBindFileToCol
+#define FILE_COL_MAX_PATH 1024
+typedef struct {
+  bool          bound;           // true if this column is file-bound
+  char          fileName[FILE_COL_MAX_PATH]; // file path buffer
+  SQLSMALLINT   fileNameLength;  // actual file name length (set by driver)
+  SQLUINTEGER   fileOption;      // SQL_FILE_CREATE, SQL_FILE_OVERWRITE, SQL_FILE_APPEND
+  SQLINTEGER    stringLength;    // data length written (set by driver)
+  SQLINTEGER    indicator;       // null indicator (set by driver)
+} FileColumnBinding;
+
 class ODBCResult : public Nan::ObjectWrap
 {
 public:
@@ -51,7 +62,9 @@ protected:
                                                                                         m_rowStatusArray(NULL),
                                                                                         m_boundCols(NULL),
                                                                                         m_blockFetchInitialized(false),
-                                                                                        m_blockExhausted(false) {};
+                                                                                        m_blockExhausted(false),
+                                                                                        m_fileColBindings(NULL),
+                                                                                        m_fileColCount(0) {};
 
   ~ODBCResult();
 
@@ -90,6 +103,10 @@ protected:
   static NAN_METHOD(GetSQLErrorSync);
   static NAN_METHOD(GetAffectedRowsSync);
   static NAN_METHOD(GetDataSync);
+
+  // SQLBindFileToCol support
+  static NAN_METHOD(BindFileToColSync);
+  void OverrideFileColumns(Local<Value> row, int fetchMode);
 
   // property getter/setters
   static NAN_GETTER(FetchModeGetter);
@@ -159,6 +176,10 @@ protected:
   BoundColumn  *m_boundCols;          // Array of bound column buffers
   bool         m_blockFetchInitialized; // Whether block fetch setup has been done
   bool         m_blockExhausted;      // True when block fetch has reached SQL_NO_DATA
+
+  // File column binding state (SQLBindFileToCol)
+  FileColumnBinding *m_fileColBindings; // Array of colCount entries, or NULL
+  int          m_fileColCount;         // Number of columns allocated in m_fileColBindings
 };
 
 #endif

@@ -342,6 +342,7 @@ Column *ODBC::GetColumns(SQLHSTMT hStmt, short *colCount)
     // save the index number of this column
     columns[i].index = i + 1;
     columns[i].getData = false;
+    columns[i].isFileBound = false;
     colname[0] = '\0';
     buflen = 0;
 
@@ -463,6 +464,12 @@ Local<Value> ODBC::GetColumnValue(SQLHSTMT hStmt, Column column,
                                   uint16_t *buffer, size_t bufferLength)
 {
   Nan::EscapableHandleScope scope;
+
+  // Skip SQLGetData for file-bound columns — data was written to file by driver
+  if (column.isFileBound) {
+    return scope.Escape(Nan::Null());
+  }
+
   SQLLEN len = 0; // To be used as last argument of SQLGetData. It can be -ve.
   SQLLEN maxBuffSize = 0;
   unsigned short terCharLen = 1;

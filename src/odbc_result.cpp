@@ -63,6 +63,7 @@ NAN_MODULE_INIT(ODBCResult::Init)
   Nan::SetPrototypeMethod(constructor_template, "getColumnMetadataSync", GetColumnMetadataSync);
   Nan::SetPrototypeMethod(constructor_template, "getSQLErrorSync", GetSQLErrorSync);
   Nan::SetPrototypeMethod(constructor_template, "getAffectedRowsSync", GetAffectedRowsSync);
+  Nan::SetPrototypeMethod(constructor_template, "bindFileToColSync", BindFileToColSync);
 
   // Properties
   OPTION_FETCH_MODE.Reset(Nan::New("fetchMode").ToLocalChecked());
@@ -83,6 +84,13 @@ ODBCResult::~ODBCResult()
 void ODBCResult::Free()
 {
   FreeBlockFetchBuffers();
+
+  if (m_fileColBindings)
+  {
+    free(m_fileColBindings);
+    m_fileColBindings = NULL;
+    m_fileColCount = 0;
+  }
 
   if (m_hSTMT && m_canFreeHandle)
   {
@@ -384,6 +392,7 @@ void ODBCResult::UV_AfterFetch(uv_work_t *work_req, int status)
           data->objResult->buffer,
           data->objResult->bufferLength);
     }
+    data->objResult->OverrideFileColumns(info[1], data->fetchMode);
 
     Nan::TryCatch try_catch;
 
@@ -587,6 +596,7 @@ NAN_METHOD(ODBCResult::FetchSync)
           objResult->buffer,
           objResult->bufferLength);
     }
+    objResult->OverrideFileColumns(data, fetchMode);
 
     info.GetReturnValue().Set(data);
   }
@@ -796,25 +806,25 @@ void ODBCResult::UV_AfterFetchAll(uv_work_t *work_req, int status)
     }
     else if (data->fetchMode == FETCH_ARRAY)
     {
-      Nan::Set(rows,
-               Nan::New(data->count),
-               ODBC::GetRecordArray(
+      Local<Value> rowVal = ODBC::GetRecordArray(
                    self->m_hSTMT,
                    self->columns,
                    &self->colCount,
                    self->buffer,
-                   self->bufferLength));
+                   self->bufferLength);
+      self->OverrideFileColumns(rowVal, data->fetchMode);
+      Nan::Set(rows, Nan::New(data->count), rowVal);
     }
     else
     {
-      Nan::Set(rows,
-               Nan::New(data->count),
-               ODBC::GetRecordTuple(
+      Local<Value> rowVal = ODBC::GetRecordTuple(
                    self->m_hSTMT,
                    self->columns,
                    &self->colCount,
                    self->buffer,
-                   self->bufferLength));
+                   self->bufferLength);
+      self->OverrideFileColumns(rowVal, data->fetchMode);
+      Nan::Set(rows, Nan::New(data->count), rowVal);
     }
     data->count++;
   }
@@ -1008,25 +1018,25 @@ NAN_METHOD(ODBCResult::FetchAllSync)
 
         if (fetchMode == FETCH_ARRAY)
         {
-          Nan::Set(rows,
-                   Nan::New(count),
-                   ODBC::GetRecordArray(
+          Local<Value> rowVal = ODBC::GetRecordArray(
                        self->m_hSTMT,
                        self->columns,
                        &self->colCount,
                        self->buffer,
-                       self->bufferLength));
+                       self->bufferLength);
+          self->OverrideFileColumns(rowVal, fetchMode);
+          Nan::Set(rows, Nan::New(count), rowVal);
         }
         else
         {
-          Nan::Set(rows,
-                   Nan::New(count),
-                   ODBC::GetRecordTuple(
+          Local<Value> rowVal = ODBC::GetRecordTuple(
                        self->m_hSTMT,
                        self->columns,
                        &self->colCount,
                        self->buffer,
-                       self->bufferLength));
+                       self->bufferLength);
+          self->OverrideFileColumns(rowVal, fetchMode);
+          Nan::Set(rows, Nan::New(count), rowVal);
         }
         count++;
       }
@@ -1213,25 +1223,25 @@ void ODBCResult::UV_AfterFetchN(uv_work_t *work_req, int status)
     }
     else if (data->fetchMode == FETCH_ARRAY)
     {
-      Nan::Set(rows,
-               Nan::New(data->count),
-               ODBC::GetRecordArray(
+      Local<Value> rowVal = ODBC::GetRecordArray(
                    self->m_hSTMT,
                    self->columns,
                    &self->colCount,
                    self->buffer,
-                   self->bufferLength));
+                   self->bufferLength);
+      self->OverrideFileColumns(rowVal, data->fetchMode);
+      Nan::Set(rows, Nan::New(data->count), rowVal);
     }
     else
     {
-      Nan::Set(rows,
-               Nan::New(data->count),
-               ODBC::GetRecordTuple(
+      Local<Value> rowVal = ODBC::GetRecordTuple(
                    self->m_hSTMT,
                    self->columns,
                    &self->colCount,
                    self->buffer,
-                   self->bufferLength));
+                   self->bufferLength);
+      self->OverrideFileColumns(rowVal, data->fetchMode);
+      Nan::Set(rows, Nan::New(data->count), rowVal);
     }
     data->count++;
 
@@ -1410,25 +1420,25 @@ NAN_METHOD(ODBCResult::FetchNSync)
 
         if (fetchMode == FETCH_ARRAY)
         {
-          Nan::Set(rows,
-                   Nan::New(count),
-                   ODBC::GetRecordArray(
+          Local<Value> rowVal = ODBC::GetRecordArray(
                        self->m_hSTMT,
                        self->columns,
                        &self->colCount,
                        self->buffer,
-                       self->bufferLength));
+                       self->bufferLength);
+          self->OverrideFileColumns(rowVal, fetchMode);
+          Nan::Set(rows, Nan::New(count), rowVal);
         }
         else
         {
-          Nan::Set(rows,
-                   Nan::New(count),
-                   ODBC::GetRecordTuple(
+          Local<Value> rowVal = ODBC::GetRecordTuple(
                        self->m_hSTMT,
                        self->columns,
                        &self->colCount,
                        self->buffer,
-                       self->bufferLength));
+                       self->bufferLength);
+          self->OverrideFileColumns(rowVal, fetchMode);
+          Nan::Set(rows, Nan::New(count), rowVal);
         }
         count++;
       }
@@ -2123,6 +2133,16 @@ Local<Value> ODBCResult::GetBoundColumnValue(int colIndex, SQLULEN rowIndex)
 {
   Nan::EscapableHandleScope scope;
 
+  // Check if this column is file-bound
+  if (m_fileColBindings && colIndex < m_fileColCount &&
+      m_fileColBindings[colIndex].bound)
+  {
+    FileColumnBinding *fcb = &m_fileColBindings[colIndex];
+    if (fcb->indicator == SQL_NULL_DATA)
+      return scope.Escape(Nan::Null());
+    return scope.Escape(Nan::New<String>(fcb->fileName).ToLocalChecked());
+  }
+
   BoundColumn *bc = &m_boundCols[colIndex];
   SQLLEN indicator = bc->indicators[rowIndex];
 
@@ -2270,4 +2290,159 @@ SQLRETURN ODBCResult::BlockFetchNextRow(SQLULEN *outRowIndex)
 
   // All rows in this block were error/norow - try next block recursively
   return BlockFetchNextRow(outRowIndex);
+}
+
+/*
+ * BindFileToColSync
+ * Bind a LOB column to a file for direct file I/O during fetch.
+ * Usage: result.bindFileToColSync(colNum, filePath, fileOption)
+ *   colNum     - 1-based column number
+ *   filePath   - output file path string
+ *   fileOption - SQL_FILE_CREATE(8), SQL_FILE_OVERWRITE(16), SQL_FILE_APPEND(32)
+ *                (optional, defaults to SQL_FILE_OVERWRITE)
+ */
+NAN_METHOD(ODBCResult::BindFileToColSync)
+{
+  DEBUG_PRINTF("ODBCResult::BindFileToColSync - Entry\n");
+  Nan::HandleScope scope;
+
+  ODBCResult *self = Nan::ObjectWrap::Unwrap<ODBCResult>(info.Holder());
+
+  if (info.Length() < 2 || !info[0]->IsInt32() || !info[1]->IsString())
+  {
+    return Nan::ThrowTypeError(
+        "bindFileToColSync(colNum, filePath[, fileOption]): "
+        "colNum (integer) and filePath (string) are required.");
+  }
+
+  int colNum = Nan::To<int32_t>(info[0]).FromJust();
+  Nan::Utf8String filePathVal(info[1]);
+  const char *filePath = *filePathVal;
+  int filePathLen = filePathVal.length();
+
+  if (colNum < 1)
+  {
+    return Nan::ThrowRangeError("colNum must be >= 1");
+  }
+  if (filePathLen <= 0 || filePathLen >= FILE_COL_MAX_PATH)
+  {
+    return Nan::ThrowRangeError("filePath is empty or exceeds max path length");
+  }
+
+  SQLUINTEGER fileOption = SQL_FILE_OVERWRITE; // default
+  if (info.Length() >= 3 && info[2]->IsInt32())
+  {
+    fileOption = Nan::To<uint32_t>(info[2]).FromJust();
+  }
+
+  // Ensure columns are populated
+  if (self->colCount == 0)
+  {
+    self->columns = ODBC::GetColumns(self->m_hSTMT, &self->colCount);
+  }
+  if (colNum > self->colCount)
+  {
+    return Nan::ThrowRangeError("colNum exceeds the number of columns in the result set");
+  }
+
+  // Allocate file binding array if needed
+  if (!self->m_fileColBindings)
+  {
+    self->m_fileColBindings = (FileColumnBinding *)calloc(
+        self->colCount, sizeof(FileColumnBinding));
+    if (!self->m_fileColBindings)
+    {
+      return Nan::ThrowError("Failed to allocate memory for file column bindings");
+    }
+    self->m_fileColCount = self->colCount;
+  }
+
+  // Set up the binding record (0-based index)
+  FileColumnBinding *fcb = &self->m_fileColBindings[colNum - 1];
+  memset(fcb, 0, sizeof(FileColumnBinding));
+  strncpy(fcb->fileName, filePath, FILE_COL_MAX_PATH - 1);
+  fcb->fileName[FILE_COL_MAX_PATH - 1] = '\0';
+  fcb->fileNameLength = (SQLSMALLINT)filePathLen;
+  fcb->fileOption = fileOption;
+  fcb->stringLength = 0;
+  fcb->indicator = 0;
+
+  // Call SQLBindFileToCol
+  SQLRETURN ret = SQLBindFileToCol(
+      self->m_hSTMT,
+      (SQLUSMALLINT)colNum,       // 1-based column number
+      (SQLCHAR *)fcb->fileName,   // file name buffer
+      &fcb->fileNameLength,       // file name length pointer
+      &fcb->fileOption,           // file options pointer
+      (SQLSMALLINT)FILE_COL_MAX_PATH, // max file name length
+      &fcb->stringLength,         // string length output
+      &fcb->indicator);           // indicator output
+
+  if (!SQL_SUCCEEDED(ret))
+  {
+    Local<Value> err = ODBC::GetSQLError(SQL_HANDLE_STMT, self->m_hSTMT,
+        (char *)"Error in ODBCResult::BindFileToColSync");
+    Nan::ThrowError(err);
+    return;
+  }
+
+  fcb->bound = true;
+
+  // Mark the column so GetColumnValue skips SQLGetData for it
+  self->columns[colNum - 1].isFileBound = true;
+
+  DEBUG_PRINTF("ODBCResult::BindFileToColSync - col %d bound to file '%s' "
+               "option=%u, ret=%d\n",
+               colNum, fcb->fileName, fcb->fileOption, ret);
+
+  info.GetReturnValue().Set(Nan::True());
+}
+
+/*
+ * OverrideFileColumns
+ * For file-bound columns, replace the column value in the row object/array
+ * with the file path (or null if the column is NULL).
+ * This should be called after GetRecordTuple/GetRecordArray for non-block-fetch paths.
+ *
+ * For FETCH_OBJECT (tuple): replaces by column name key
+ * For FETCH_ARRAY: replaces by column index
+ */
+void ODBCResult::OverrideFileColumns(Local<Value> row, int fetchMode)
+{
+  if (!m_fileColBindings || !row->IsObject() || row->IsNull())
+    return;
+
+  Local<Object> obj = Nan::To<v8::Object>(row).ToLocalChecked();
+
+  for (int i = 0; i < m_fileColCount && i < colCount; i++)
+  {
+    FileColumnBinding *fcb = &m_fileColBindings[i];
+    if (!fcb->bound)
+      continue;
+
+    Local<Value> val;
+    if (fcb->indicator == SQL_NULL_DATA)
+    {
+      val = Nan::Null();
+    }
+    else
+    {
+      val = Nan::New<String>(fcb->fileName).ToLocalChecked();
+    }
+
+    if (fetchMode == FETCH_ARRAY)
+    {
+      Nan::Set(obj, Nan::New(i), val);
+    }
+    else
+    {
+#ifdef UNICODE
+      Nan::Set(obj,
+               Nan::New((uint16_t *)columns[i].name).ToLocalChecked(), val);
+#else
+      Nan::Set(obj,
+               Nan::New((const char *)columns[i].name).ToLocalChecked(), val);
+#endif
+    }
+  }
 }

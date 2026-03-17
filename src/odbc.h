@@ -131,6 +131,7 @@ typedef struct
   SQLLEN type;
   SQLUSMALLINT index;
   bool getData;
+  bool isFileBound;  // True if column is bound to file via SQLBindFileToCol
 } Column;
 
 typedef struct
