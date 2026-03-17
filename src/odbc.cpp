@@ -1639,8 +1639,8 @@ void ODBC::GetArrayParam(Local<Value> value, Parameter *param, int num)
         elemIsBuf[i] = param->isBuffer;
         param->buffer = NULL;
 
-        if (param->buffer_length > cbValueMax)
-          cbValueMax = param->buffer_length;
+        if ((SQLULEN)param->buffer_length > cbValueMax)
+          cbValueMax = (SQLULEN)param->buffer_length;
       }
 
       // Phase 2: Allocate final contiguous buffer and copy element data
