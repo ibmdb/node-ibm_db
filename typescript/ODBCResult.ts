@@ -3,6 +3,8 @@ import { CloseOption } from './Database';
 import { DB2Error } from './DB2Error';
 import { ColumnValue, RecordArray, RecordTuple } from './ODBC';
 
+export type FileOption = 8 | 16 | 32; // SQL_FILE_CREATE | SQL_FILE_OVERWRITE | SQL_FILE_APPEND
+
 export type RecordTupleOrArray = RecordArray | RecordTuple;
 
 export type SQLResults = Array<RecordTupleOrArray>;
@@ -62,6 +64,46 @@ export class ODBCResult {
 
   fetchAllSync(options?: FetchOptions): SQLResults;
   fetchAllSync(): any {}
+
+  fetchN(
+    count: number,
+    options: FetchOptions,
+    cb: (err: DB2Error | null, data: SQLResults | null) => void
+  ): void;
+  fetchN(
+    count: number,
+    cb: (err: DB2Error | null, data: SQLResults | null) => void
+  ): void;
+  fetchN(count: number, options?: FetchOptions): Promise<SQLResults>;
+  fetchN(): any {}
+
+  fetchNSync(count: number, options?: FetchOptions): SQLResults;
+  fetchNSync(): any {}
+
+  bindFileToCol(
+    colNum: number,
+    filePath: string,
+    fileOption: FileOption,
+    cb: (err: DB2Error | null) => void
+  ): void;
+  bindFileToCol(
+    colNum: number,
+    filePath: string,
+    cb: (err: DB2Error | null) => void
+  ): void;
+  bindFileToCol(
+    colNum: number,
+    filePath: string,
+    fileOption?: FileOption
+  ): Promise<true>;
+  bindFileToCol(): any {}
+
+  bindFileToColSync(
+    colNum: number,
+    filePath: string,
+    fileOption?: FileOption
+  ): true;
+  bindFileToColSync(): any {}
 
   getData(
     colNum: number,

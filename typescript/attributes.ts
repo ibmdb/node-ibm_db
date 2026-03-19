@@ -86,6 +86,12 @@ export let FETCH_ARRAY: FetchMode;
 export let FETCH_OBJECT: FetchMode;
 export let FETCH_NODATA: FetchMode;
 
+// File options for bindFileToCol / bindFileToParam
+export let SQL_FILE_READ: number;
+export let SQL_FILE_CREATE: number;
+export let SQL_FILE_OVERWRITE: number;
+export let SQL_FILE_APPEND: number;
+
 // InfoType for SQLGetTypeInfo i.e. ibmdb.getTypeInfo()
 // Defined in sqlcli1.h and sqlext.h
 export let ALLTYPES: number;

@@ -64,8 +64,8 @@ export interface SQLParamObject {
     | -96 // Same as 'VARGRAPHIC'
     | -97; // Same as 'LONGGRAPHIC'
   DataType?: number | string;
-  Data: number | '' | Buffer;
-  Length: number;
+  Data: number | '' | Buffer | Buffer[] | Readable;
+  Length?: number;
 }
 
 export type SQLParam = string | number | null | SQLParamObject;
