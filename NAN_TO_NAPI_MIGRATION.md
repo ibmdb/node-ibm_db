@@ -1,7 +1,7 @@
 # NAN to Node-API Migration — Complete Documentation
 
 **Project:** ibm_db (Node.js native addon for IBM Db2)  
-**Migration Date:** March 20–22, 2026  
+**Migration Date:** March 24–25, 2026  
 **Environment:** Windows 11, Node.js v24.14.0 (Node-API v10), VS 2022 Build Tools  
 **Workspace:** `c:\nodework\master\ibm_db`  
 **IBM CLI Driver:** `C:\nodework\clidriver` (DB2 v12.1.2000.229, 64-bit)

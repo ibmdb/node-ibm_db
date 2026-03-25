@@ -70,7 +70,9 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Node.js v24.x onwards uses `C++20` standards. To compile source code on MacOS, install `llvm` and use it.
 
-- The latest node.js version using which `ibm_db` is tested: **25.8.0**
+- ibm_db driver migrated to use node-addon-api package instead of nan package. Hence, no need to install ibm_db on node.js version change.
+
+- The latest node.js version using which `ibm_db` is tested: **25.8.2**
 
 ## Install
 
