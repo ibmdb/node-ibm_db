@@ -9,8 +9,9 @@
         'src/odbc_result.cpp',
       ],
       'include_dirs': [
-        "<!(node -e \"require('nan')\")"
+        "<!@(node -p \"require('node-addon-api').include\")"
       ],
+      'defines': [ 'NAPI_DISABLE_CPP_EXCEPTIONS' ],
       'msvs_disabled_warnings': [ 4996, 4018 ],
       'conditions' : [
         [ 'OS != "zos"',

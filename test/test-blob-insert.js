@@ -6,9 +6,10 @@ var common = require("./common"),
     ibmdb = require("../"),
     assert = require("assert"),
     fs = require('fs'),
+    path = require('path'),
     connString = common.connectionString,
-    inputfile1 = 'data/phool.jpg',
-    inputfile2 = 'data/trc.fmt',
+    inputfile1 = path.join(__dirname, 'data', 'phool.jpg'),
+    inputfile2 = path.join(__dirname, 'data', 'trc.fmt'),
     outputfile1 = 'phool2.jpg',
     outputfile2 = 'trc2.fmt';
 
