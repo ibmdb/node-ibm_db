@@ -1380,28 +1380,14 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
 // which crashes with SIGILL (jump to 0x0) because libdb2's __cxa_atexit
 // handlers become invalid. We install a SIGILL handler during shutdown
 // to catch this crash and exit cleanly instead. (#439, #1045)
-static int g_exitCode = 0;
-
 static void AIX_SigillHandler(int sig)
 {
-  _exit(g_exitCode);
+  _exit(0);
 }
 
-static void EnvironmentCleanupHook(void* arg)
+static void EnvironmentCleanupHook(void* /*arg*/)
 {
   g_shuttingDown = true;
-
-  // Try to read process.exitCode before the environment is torn down.
-  napi_env env = (napi_env)arg;
-  napi_value global, process, exitCode;
-  if (napi_get_global(env, &global) == napi_ok &&
-      napi_get_named_property(env, global, "process", &process) == napi_ok &&
-      napi_get_named_property(env, process, "exitCode", &exitCode) == napi_ok) {
-    int32_t code = 0;
-    if (napi_get_value_int32(env, exitCode, &code) == napi_ok) {
-      g_exitCode = code;
-    }
-  }
 
   // Install SIGILL handler to catch __cxa_finalize crash during exit.
   struct sigaction sa;
@@ -1434,13 +1420,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCStatement::Init(env, exports);
 
   // On AIX, pass the napi_env so the cleanup hook can read process.exitCode.
-  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook,
-#ifdef _AIX
-    (void*)(napi_env)env
-#else
-    nullptr
-#endif
-  );
+  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
   atexit(AtExitCleanupHandler);
 
   return exports;
