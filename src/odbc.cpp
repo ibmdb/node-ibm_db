@@ -24,6 +24,7 @@
 #include <type_traits>
 #include <time.h>
 #include <cassert>
+#include <cstdlib>
 #include <uv.h>
 
 #include "odbc.h"
@@ -1365,6 +1366,13 @@ static void EnvironmentCleanupHook(void* /*arg*/)
   g_shuttingDown = true;
 }
 
+// atexit handler: belt-and-suspenders to ensure g_shuttingDown is set
+// before __cxa_finalize runs static destructors during process exit.
+static void AtExitCleanupHandler()
+{
+  g_shuttingDown = true;
+}
+
 // Module initialization
 Napi::Object InitAll(Napi::Env env, Napi::Object exports)
 {
@@ -1374,6 +1382,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCStatement::Init(env, exports);
 
   napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
+  atexit(AtExitCleanupHandler);
 
   return exports;
 }
