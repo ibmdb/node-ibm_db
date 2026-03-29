@@ -9,8 +9,6 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - **MacOS with Intel Chip** - Supported using v11.x clidriver only. By default v11.5.9 clidriver will get downloaded.
 
-- **Electron Binaries** - From electron v34 to v38. Hence, no support for vscode older than v1.98.
-
 - ibm_db v3.2.5 is the last version to use clidriver of version 11.5.9 by default. **ibm_db@3.3.0** onwards v12.1.x clidriver get autodownloaded by default and hence v12.1 db2connect license is required. However, user can use older db2connect license when ibm_db get installed using `npm install ibm_db -clidriver="v11.5.9"` command.
 
 - **SQL1598N Error** - It is expected in absence of valid db2connect license. Please click [here](#sql1598n) and read instructions.
@@ -70,8 +68,6 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Node.js v24.x onwards uses `C++20` standards. To compile source code on MacOS, install `llvm` and use it.
 
-- ibm_db driver migrated to use node-addon-api package instead of nan package. Hence, no need to install ibm_db on node.js version change.
-
 - The latest node.js version using which `ibm_db` is tested: **25.8.2**
 
 ## Install
@@ -103,22 +99,6 @@ export npm_config_loglevel=warn   => For quiet mode installation.
 export npm_config_loglevel=silent => For silent mode installation.
 ```
 
-For **ELECTRON** or **VSCode** Installation:
-
-```
-npm install ibm_db -electron=<electron_version>
-npm install ibm_db -electron="35.5.1"
-npm install ibm_db -vscode
-ELECTRON=37.1.0 npm install ibm_db
-```
-
-You can also set environment variable `ELECTRON` to instruct ibm_db to install it for that version of electron for electron applications like vscode.
-
-```
-export ELECTRON=37.1.0
-npm install ibm_db
-```
-
 To install using **specific version of clidriver** from https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/:
 
 ```
@@ -134,7 +114,7 @@ export CLIDRIVER_DOWNLOAD_VERSION=v11.5.9
 npm install ibm_db
 ```
 
-You can set the version of "clidriver", "electron", IBM_DB_DOWNLOAD_URL or "cafile" in config section of your package.json file.
+You can set the version of "clidriver", IBM_DB_DOWNLOAD_URL or "cafile" in config section of your package.json file.
 In that case, no need to pass these options with `npm install` command or no need to set in .npmrc to avoid warning message with npm v11.x
 
 ```
@@ -142,8 +122,7 @@ package.json:
 {
   "name": "foo",
   "config": {
-    "clidriver": "v11.5.9",
-    "electron": "36.4.0"
+    "clidriver": "v11.5.9"
   }
 }
 ```
@@ -537,18 +516,10 @@ Some errors on z/OS are incomplete, so, to debug, add the following to your _Db2
 
 ## Usage within VS Code
 
-If you are using ibm_db to develop extension for VS Code, then ibm_db has to be rebuilt with Electron libraries. This can be achieved by running:
+With NAPI, the same ibm_db binary works across all Node.js and Electron versions. No special flags are needed for VS Code extension development — just install normally:
 
 ```
-npm install ibm_db -vscode
-```
-
-ibm_db would automatically be rebuilt with Electron if your installation directory path contains 'db2connect' as a sub-string. This has the same effect as running with '-vscode' flag.
-
-If you know the electron version or get it from `Help->About` option of vscode; you can build native add-on code for specific version of electron using below command:
-
-```
-npm install ibm_db -electron="32.2.5"
+npm install ibm_db
 ```
 
 ## How to verify database connectivity using ODBC and generate db2trace?

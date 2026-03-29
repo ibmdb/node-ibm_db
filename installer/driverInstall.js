@@ -24,8 +24,6 @@ var deleteInstallerFile = false;
 var platform = os.platform();
 var arch = os.arch();
 
-var vscode_build = false;
-var electron_version = '39.2.7';
 var downloadProgress = 0;
 var silentInstallation = false;
 
@@ -102,9 +100,6 @@ if(clidriverVersion) {
 /* Show make version on non-windows platform, if installed. */
 printMakeVersion();
 
-/* Find electron version to use if ibm_db requires electron headers. */
-findElectronVersion();
-
 /*
  * "process.env.IBM_DB_INSTALLER_URL"
  * USE: to by-pass the IBM provided URL for downloading clidriver.
@@ -145,9 +140,8 @@ var install_node_ibm_db = function(file_url) {
      * 
      */
 
-    //If building for supporting VSCode Extn, then remove Clidriver folder and get it freshly
     //If environment variable DOWNLOAD_CLIDRIVER is set to true, then remove Clidriver folder and get it freshly
-    if((vscode_build || process.env.DOWNLOAD_CLIDRIVER == "true") &&
+    if((process.env.DOWNLOAD_CLIDRIVER == "true") &&
        fs.existsSync(path.join(DOWNLOAD_DIR,'clidriver'))){
         deleteFolderRecursive(path.join(DOWNLOAD_DIR,'clidriver'));
     }
@@ -436,12 +430,6 @@ var install_node_ibm_db = function(file_url) {
             removeDir('build');
         }
 
-        //Build triggered from the VSCode extension
-        if(vscode_build){
-            buildString = buildString + " --target=" + electron_version + " --arch=" + arch +
-            " --dist-url=https://electronjs.org/headers/ --runtime=electron";
-        }
-
         // Windows : Auto Installation Process -> 1) node-gyp then 2) msbuild.
         if( platform == 'win32' && arch == 'x64')
         {
@@ -576,12 +564,10 @@ var install_node_ibm_db = function(file_url) {
         else
         {
             var buildString = buildString + " --IBM_DB_HOME=\"$IBM_DB_HOME\"";
-            var nodever = parseInt(process.versions.node.split('.')[0], 10);
             var childProcess = exec(buildString, function (error, stdout, stderr) {
                 if( downloadProgress == 0 ) printMsg(stdout);
                 if (error !== null) {
-                  if ((vscode_build || nodever > 15) &&
-                      (platform == 'darwin' || platform == 'linux')) {
+                  if (platform == 'darwin' || platform == 'linux') {
                     // "node-gyp" FAILED: RUN Pre-compiled Binary Installation.
                     if(!downloadProgress) {
                       console.log(error);
@@ -602,7 +588,7 @@ var install_node_ibm_db = function(file_url) {
                       addonBinary = "./build/Debug/odbc_bindings.node";
                     }
                     var nameToolCommand = "install_name_tool -change libdb2.dylib \"$IBM_DB_HOME/lib/libdb2.dylib\" " + addonBinary;
-                    if( isDownloaded || vscode_build) // For issue #329
+                    if( isDownloaded ) // For issue #329
                     {
                       nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib " + addonBinary;
                     }
@@ -654,86 +640,34 @@ var install_node_ibm_db = function(file_url) {
             console.log('There is no precompiled binary for platform = ' +
                 platform + ', architecture = ' + arch + '\n');
 
-        } else if((platform == 'win32' && arch == 'x64') || vscode_build) {
+        } else if((platform == 'win32' && arch == 'x64') ||
+                  platform == 'linux' || platform == 'darwin') {
             var BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
             var odbcBindingsNode;
-            var fileName;
             var ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
 
-            if(vscode_build)
-            {
-                var electronVersion = ((electron_version).split('.'))[0];
-
-                if(electronVersion < 32) {
-                    console.log("No precompiled electron binary available"+
-                                " for electron " + electron_version + "\n");
-                    process.exit(1);
-                }
-                if(electronVersion < 37) {
-                    downloadBinaryFromGitHub();
-                    return;
-                }
-
-                // Get odbcBindingsNode name according to the electron version and platform/arch.
-                if (platform == 'darwin') {
-                  if (arch == 'arm64') {
-                    fileName = "_macarm_" + electronVersion;
-                  } else {
-                    fileName = "_mac_" + electronVersion;
-                  }
-                } else if (platform == 'win32') {
-                  fileName = "_win_" + electronVersion;
-                } else {
-                  fileName = "_linux_" + electronVersion;
-                }
-                odbcBindingsNode = 'build\/Release\/odbc_bindings' + fileName + '.node';
+            /*
+             * With NAPI, a single binary per platform/arch works across all
+             * Node.js versions. build.zip contains 4 binaries:
+             *   odbc_bindings_win.node
+             *   odbc_bindings_linux.node
+             *   odbc_bindings_mac.node
+             *   odbc_bindings_macarm.node
+             */
+            if (platform == 'darwin') {
+              if (arch == 'arm64') {
+                odbcBindingsNode = 'build\/Release\/odbc_bindings_macarm.node';
+              } else {
+                odbcBindingsNode = 'build\/Release\/odbc_bindings_mac.node';
+              }
+            } else if (platform == 'win32') {
+              odbcBindingsNode = 'build\/Release\/odbc_bindings_win.node';
+            } else if (arch == 's390x') {
+              odbcBindingsNode = 'build\/Release\/odbc_bindings_zlinux.node';
+            } else {
+              odbcBindingsNode = 'build\/Release\/odbc_bindings_linux.node';
             }
-            else
-            {
-                const nodeMajorVersion = Number(process.versions.node.split('.')[0]);
-                const maxSupportedNodeVersion = 25;
-                const minSupportedNodeVersion = 14;
-                // Windows add-on binary for node.js v0.10.x, v0.12.7, 4.x, 6.x to 14.x has been discontinued.
-                const minVersionInZipFile = 20;
 
-                if (nodeMajorVersion > maxSupportedNodeVersion) {
-                    console.log('No precompiled binary available for node.js version ' + process.version +
-                                ' on Windows platform.\nPlease use node.js version <= ' + maxSupportedNodeVersion + '.x\n');
-                    process.exit(1);
-                }
-
-                if(nodeMajorVersion < minSupportedNodeVersion) {
-                    console.log('\nERROR: Did not find precompiled add-on binary for node.js version ' + process.version + ':' +
-                        '\nibm_db does not provide precompiled add-on binary for node.js version ' + process.version +
-                        ' on Windows platform. Visual Studio is required to compile ibm_db with node.js versions < ' +
-                        minSupportedNodeVersion + '.X. Otherwise please use the node.js version >= ' +
-                        minSupportedNodeVersion + '.X\n');
-                    process.exit(1);
-                }
-
-                if(nodeMajorVersion < minVersionInZipFile) {
-                    downloadBinaryFromGitHub();
-                    return;
-                }
-
-                /*
-                 * odbcBindingsNode will consist of the node binary file name according
-                 * to the node version in the system. For example, if node version is
-                 * v22.x then the node binary file name will be odbc_bindings.node.22 and
-                 * if node version is v24.x then the node binary file name will be
-                 * odbc_bindings.node.24 and so on.
-                 * Note: For node.js versions >= 14.x and <= 25.x, we are providing precompiled
-                 * add-on binaries on Windows platform.
-                 * The node binary file name will be odbc_bindings.node.<node_major_version>.
-                 *
-                 * To know the exact version of node.js used to generate the pre-compiled binary,
-                 * refer to file https://github.com/ibmdb/ibmdb-binaries/blob/main/binaryVersions.txt.
-                 */
-
-                odbcBindingsNode = 'build\/Release\/odbc_bindings.node.' + nodeMajorVersion;
-            }
-            // We have correct bindings file in odbcBindingsNode for
-            // installed node version now. Extract it from build.zip file.
             printMsg("Extracting " + odbcBindingsNode + " from build.zip");
 
             // Removing the "build" directory created by Auto Installation Process.
@@ -765,110 +699,10 @@ var install_node_ibm_db = function(file_url) {
             });
 
             return 1;
-        } else if(platform == 'linux' || platform == 'darwin') {
-            downloadBinaryFromGitHub();
         } else {
             console.log('There is no precompiled binary for platform = ' +
                 platform + ', architecture = ' + arch + '\n');
         }
-    }
-
-    // Function to download precompiled node add-on binary from github repository.
-    function downloadBinaryFromGitHub() {
-        // let binaryUrl = 'https://github.com/ibmdb/ibmdb-binaries/raw/refs/heads/main/';
-        let binaryUrl = 'https://raw.githubusercontent.com/ibmdb/ibmdb-binaries/refs/heads/main/';
-        let osName;
-        const nodeMajorVersion = Number(process.versions.node.split('.')[0]);
-        const ODBC_BINDINGS = 'build\/Release\/odbc_bindings.node';
-        const outputFile = path.resolve(CURRENT_DIR, ODBC_BINDINGS);
-        const releaseDir = path.resolve(CURRENT_DIR, 'build\/Release');
-
-        if (!fs.existsSync(releaseDir)) {
-            fs.mkdirSync(releaseDir, 0o744);
-        }
-
-        if (platform == 'darwin') {
-            if (arch == 'arm64') {
-                osName = "macarm64";
-            } else {
-                osName = "macx64";
-            }
-        } else if (platform == 'win32') {
-            osName = "ntx64";
-        } else {
-            osName = "linuxx64";
-        }
-
-        if(vscode_build)
-        {
-            var electronVersion = ((electron_version).split('.'))[0];
-            if (platform == 'darwin') {
-                if (arch == 'arm64') {
-                fileName = "_macarm_" + electronVersion;
-                } else {
-                fileName = "_mac_" + electronVersion;
-                }
-            } else if (platform == 'win32') {
-                fileName = "_win_" + electronVersion;
-            } else {
-                fileName = "_linux_" + electronVersion;
-            }
-            binaryUrl = binaryUrl + osName + '/odbc_bindings' + fileName + '.node';
-        } else {
-            binaryUrl = binaryUrl + osName + '/odbc_bindings.node.' + nodeMajorVersion;
-        }
-
-        // Parse URL to use with https.request
-        const { hostname, pathname } = new URL(binaryUrl);
-
-        const options = {
-            hostname,
-            path: pathname,
-            method: 'GET',
-            agent: httpsAgent,
-            headers: {
-            'User-Agent': 'Node.js HTTPS Client'
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            if (res.statusCode !== 200) {
-                console.error(`Download failed: HTTP ${res.statusCode}`);
-                res.resume();
-                installationFailed(`Download failed: HTTP ${res.statusCode}`);
-            }
-
-            const total_bytes = parseInt(res.headers['content-length'], 10);
-            const outStream = fs.createWriteStream(outputFile);
-            let received_bytes = 0;
-
-            res.on('data', (chunk) => {
-                received_bytes += chunk.length;
-                showDownloadingProgress(received_bytes, total_bytes);
-            });
-
-            res.pipe(outStream);
-
-            outStream.on('finish', () => {
-                printMsg('\n✅ Download complete => ' + outputFile);
-                printMsg("\n" +
-                "===================================\n"+
-                "ibm_db installed successfully.\n"+
-                "===================================\n");
-            });
-
-            outStream.on('error', (err) => {
-                console.error('\n❌ File write error:', err.message);
-                installationFailed(err.message);
-            });
-        });
-
-        req.on('error', (err) => {
-            console.error('\n❌ HTTPS request error:', err.message);
-            installationFailed(err.message);
-        });
-
-        req.end();
     }
 
     // Function to download clidriver file using axios module.
@@ -985,90 +819,6 @@ function installationFailed(msg) {
     console.log('ERROR: Installation Failed!');
     if (msg) console.log(msg);
     process.exit(1);
-}
-
-/* Detect electron version to compile ibm_db by checking version of installed
-   electron package, or version of installed VSCode in the system.
- */
-function findElectronVersion() {
-  if ((process.env.npm_config_vscode) || (process.env.npm_config_electron) ||
-      (process.env.npm_package_config_vscode) ||
-      (process.env.npm_package_config_electron) ||
-      (process.env.ELECTRON) ||
-      (__dirname.toLowerCase().indexOf('db2connect') != -1))
-  {
-    printMsg('\nProceeding to build IBM_DB for Electron framework...\n');
-    vscode_build = true;
-    var electronVer = null;
-
-    try {
-        if(process.env.npm_config_electron && process.env.npm_config_electron != true) {
-          electronVer = process.env.npm_config_electron;
-        }
-        else if(process.env.npm_package_config_electron &&
-                process.env.npm_package_config_electron != true) {
-          electronVer = process.env.npm_package_config_electron;
-        }
-        else if(process.versions.electron) {
-          electronVer = process.versions.electron;
-        } else {
-          var npmOut = execSync('npm ls electron').toString();
-          if (npmOut != null) {
-            npmOut = npmOut.split('\n');
-            for (var i = 0; i < npmOut.length; i++) {
-              if (npmOut[i].indexOf('-- electron@') >= 0) {
-                electronVer = npmOut[i].split('@')[1];
-                break;
-              }
-            }
-          }
-        }
-    } catch (e) {
-        printMsg("Unable to detect electon installation.");
-    }
-    if (process.env.ELECTRON && process.env.ELECTRON != "true") {
-        electronVer = process.env.ELECTRON;
-    }
-    if (electronVer != null) {
-        electron_version = electronVer;
-        printMsg("Found electron version, will use Electron version " +
-                 electron_version + " to install ibm_db.");
-    } else {
-        try {
-          var codeOut = execSync('code --version').toString();
-          vscodeVer = parseFloat(codeOut.split('\n')[0]);
-          if(!isNaN(vscodeVer)) {
-            if (vscodeVer >= 1.104){
-                electron_version = "37.3.1";
-            }
-            else if (vscodeVer >= 1.103){
-                electron_version = "37.2.3";
-            }
-            else if (vscodeVer >= 1.101){
-                electron_version = "35.6.0";
-            }
-            else if (vscodeVer >= 1.100){
-                electron_version = "34.5.1";
-            }
-            else {// vscode version older than 1.100 not supported
-                electron_version = "34.5.1";
-                printMsg("VSCode version " + vscodeVer + " is too old!");
-            }
-            printMsg("Detected VSCode version" + vscodeVer +
-                    ", will use Electron version " + electron_version);
-          }
-		  else {
-            printMsg("Unable to detect VSCode version," +
-                    "will use Electron version " + electron_version);
-          }
-        }
-        catch(e){
-            printMsg("Unable to find VSCode version," +
-                    "will use Electron version " + electron_version);
-        }
-    }
-    printMsg("");
-  }
 }
 
 function printMsg(msg) {
