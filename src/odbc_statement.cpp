@@ -23,7 +23,7 @@
 #include "odbc_result.h"
 #include "odbc_statement.h"
 
-Napi::FunctionReference ODBCStatement::constructor;
+Napi::FunctionReference* ODBCStatement::constructor = nullptr;
 
 Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
 {
@@ -46,8 +46,9 @@ Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("closeSync", &ODBCStatement::CloseSync, NAPI_METHOD_ATTR),
   });
 
-  constructor = Napi::Persistent(func);
-  constructor.SuppressDestruct();
+  constructor = new Napi::FunctionReference();
+  *constructor = Napi::Persistent(func);
+  constructor->SuppressDestruct();
   exports.Set("ODBCStatement", func);
   return exports;
 }
@@ -171,7 +172,7 @@ void ODBCStatement::UV_AfterExecute(uv_work_t *req, int status)
       Napi::External<void>::New(env, (void *)(intptr_t)stmt->m_hSTMT),
       Napi::External<void>::New(env, (void *)canFreeHandle)
     };
-    Napi::Object js_result = ODBCResult::constructor.New({args[0], args[1], args[2], args[3]});
+    Napi::Object js_result = ODBCResult::constructor->New({args[0], args[1], args[2], args[3]});
     data->cb->Call({env.Null(), js_result, outParamCount ? (Napi::Value)sp_result : env.Null()});
   }
 
@@ -224,7 +225,7 @@ Napi::Value ODBCStatement::ExecuteSync(const Napi::CallbackInfo &info)
       Napi::External<void>::New(env, (void *)(intptr_t)m_hSTMT),
       Napi::External<void>::New(env, (void *)canFreeHandle)
     };
-    Napi::Object js_result = ODBCResult::constructor.New({result[0], result[1], result[2], result[3]});
+    Napi::Object js_result = ODBCResult::constructor->New({result[0], result[1], result[2], result[3]});
 
     if (outParamCount)
     {
@@ -413,7 +414,7 @@ void ODBCStatement::UV_AfterExecuteDirect(uv_work_t *req, int status)
       Napi::External<void>::New(env, (void *)(intptr_t)self->m_hSTMT),
       Napi::External<void>::New(env, (void *)canFreeHandle)
     };
-    Napi::Object js_result = ODBCResult::constructor.New({args[0], args[1], args[2], args[3]});
+    Napi::Object js_result = ODBCResult::constructor->New({args[0], args[1], args[2], args[3]});
     data->cb->Call({env.Null(), js_result});
   }
 
@@ -455,7 +456,7 @@ Napi::Value ODBCStatement::ExecuteDirectSync(const Napi::CallbackInfo &info)
     Napi::External<void>::New(env, (void *)(intptr_t)m_hSTMT),
     Napi::External<void>::New(env, (void *)canFreeHandle)
   };
-  return ODBCResult::constructor.New({result[0], result[1], result[2], result[3]});
+  return ODBCResult::constructor->New({result[0], result[1], result[2], result[3]});
 }
 
 /*

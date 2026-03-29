@@ -64,7 +64,7 @@ bool g_shuttingDown = false;
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
-Napi::FunctionReference ODBC::constructor;
+Napi::FunctionReference* ODBC::constructor = nullptr;
 
 Napi::Object ODBC::Init(Napi::Env env, Napi::Object exports)
 {
@@ -82,8 +82,9 @@ Napi::Object ODBC::Init(Napi::Env env, Napi::Object exports)
     StaticValue("FETCH_OBJECT", Napi::Number::New(env, FETCH_OBJECT), napi_enumerable),
   });
 
-  constructor = Napi::Persistent(func);
-  constructor.SuppressDestruct();
+  constructor = new Napi::FunctionReference();
+  *constructor = Napi::Persistent(func);
+  constructor->SuppressDestruct();
   exports.Set("ODBC", func);
 
   // Initialize the cross platform mutex provided by libuv
@@ -205,7 +206,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t *req, int status)
       Napi::External<void>::New(env, (void *)(intptr_t)data->dbo->m_hEnv),
       Napi::External<void>::New(env, (void *)(intptr_t)data->hDBC)
     };
-    Napi::Object js_result = ODBCConnection::constructor.New({args[0], args[1]});
+    Napi::Object js_result = ODBCConnection::constructor->New({args[0], args[1]});
     data->cb->Call({env.Null(), js_result});
   }
   PropagateCallbackException(env);
@@ -237,7 +238,7 @@ Napi::Value ODBC::CreateConnectionSync(const Napi::CallbackInfo &info)
     Napi::External<void>::New(env, (void *)(intptr_t)m_hEnv),
     Napi::External<void>::New(env, (void *)(intptr_t)hDBC)
   };
-  Napi::Object js_result = ODBCConnection::constructor.New({params[0], params[1]});
+  Napi::Object js_result = ODBCConnection::constructor->New({params[0], params[1]});
 
   DEBUG_PRINTF("ODBC::CreateConnectionSync - Exit: hDBC = 0x%llx\n", HandleToLogValue(hDBC));
   return js_result;

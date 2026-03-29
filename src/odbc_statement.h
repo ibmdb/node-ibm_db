@@ -22,7 +22,7 @@
 class ODBCStatement : public Napi::ObjectWrap<ODBCStatement>
 {
 public:
-  static Napi::FunctionReference constructor;
+  static Napi::FunctionReference* constructor;
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
   ODBCStatement(const Napi::CallbackInfo &info);
