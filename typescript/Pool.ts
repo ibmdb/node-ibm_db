@@ -5,13 +5,13 @@ import { ODBC } from './ODBC';
 import { PoolOptions } from './PoolOptions';
 
 export class Pool {
-  options: PoolOptions;
-  maxPoolSize: number;
-  index: number;
-  availablePool: object;
-  usedPool: object;
-  poolSize: number;
-  odbc: ODBC;
+  options!: PoolOptions;
+  maxPoolSize!: number;
+  index!: number;
+  availablePool!: object;
+  usedPool!: object;
+  poolSize!: number;
+  odbc!: ODBC;
 
   constructor(options?: PoolOptions);
   constructor() {}

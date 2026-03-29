@@ -4,10 +4,10 @@ import { ODBCResult, SQLResults } from './ODBCResult';
 import { ODBCStatement } from './ODBCStatement';
 
 export class ODBCConnection {
-  loginTimeout: number;
-  connectTimeout: number;
-  connected: boolean;
-  systemNaming: boolean;
+  loginTimeout!: number;
+  connectTimeout!: number;
+  connected!: boolean;
+  systemNaming!: boolean;
 
   private constructor() {
     // internal only

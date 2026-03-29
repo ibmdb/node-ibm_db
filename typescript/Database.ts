@@ -86,24 +86,24 @@ export interface SQLExecuteFileParam {
 export type CloseOption = number & { __TYPE__: 'CloseOption' };
 
 export class Database {
-  odbc: ODBC;
-  fetchMode: FetchMode | null;
-  connected: boolean;
-  connectTimeout: number | null;
+  odbc!: ODBC;
+  fetchMode!: FetchMode | null;
+  connected!: boolean;
+  connectTimeout!: number | null;
   systemNaming?: boolean;
-  codeSet: string | null;
-  mode: string | null;
-  pool: Pool | null;
-  connStr: string | null;
+  codeSet!: string | null;
+  mode!: string | null;
+  pool!: Pool | null;
+  connStr!: string | null;
   conn?: ODBCConnection;
 
-  SQL_CLOSE: CloseOption;
-  SQL_DROP: CloseOption;
-  SQL_UNBIND: CloseOption;
-  SQL_RESET_PARAMS: CloseOption;
-  SQL_DESTROY: CloseOption;
-  FETCH_ARRAY: FetchMode;
-  FETCH_OBJECT: FetchMode;
+  SQL_CLOSE!: CloseOption;
+  SQL_DROP!: CloseOption;
+  SQL_UNBIND!: CloseOption;
+  SQL_RESET_PARAMS!: CloseOption;
+  SQL_DESTROY!: CloseOption;
+  FETCH_ARRAY!: FetchMode;
+  FETCH_OBJECT!: FetchMode;
 
   constructor(options?: Options);
   constructor() {}

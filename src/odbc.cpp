@@ -1369,23 +1369,14 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
 #ifdef _AIX
 // On AIX, GCC's _GLOBAL__FD_node calls __cxa_finalize(NULL) during exit()
 // which crashes with SIGILL (jump to 0x0) because libdb2's __cxa_atexit
-// handlers become invalid. We register an atexit handler that installs a
-// SIGILL handler just before the bad handlers are reached. (#439, #1045)
-// Using atexit (instead of napi_add_env_cleanup_hook) ensures coverage
-// even when process.exit() is called, which skips env cleanup hooks.
+// handlers become invalid. We install a SIGILL handler at module load time
+// so it is in place before any exit path runs module finalization.
+// Note: atexit() runs AFTER __modfini64 on AIX, and env cleanup hooks
+// are skipped by process.exit(), so neither approach works alone.
+// Installing at load time covers all exit paths. (#439, #1045)
 static void AIX_SigillHandler(int sig)
 {
   _exit(0);
-}
-
-static void AIX_AtExitInstallSigillHandler()
-{
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = AIX_SigillHandler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  sigaction(SIGILL, &sa, NULL);
 }
 #endif
 
@@ -1398,7 +1389,14 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCStatement::Init(env, exports);
 
 #ifdef _AIX
-  atexit(AIX_AtExitInstallSigillHandler);
+  // Install SIGILL handler early — must be in place before exit() triggers
+  // __modfini64 → _GLOBAL__FD_node → __cxa_finalize(NULL) crash.
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = AIX_SigillHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGILL, &sa, NULL);
 #endif
 
   return exports;

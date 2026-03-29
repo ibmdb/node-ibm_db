@@ -29,7 +29,7 @@ export class ODBCResult {
     // Internal only
   }
 
-  fetchMode: number; // Defaults to FETCH_OBJECT
+  fetchMode!: number; // Defaults to FETCH_OBJECT
 
   fetch(
     options: FetchOptions,
