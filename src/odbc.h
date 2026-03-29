@@ -18,20 +18,21 @@
 #ifndef _SRC_ODBC_H
 #define _SRC_ODBC_H
 
-#include <v8.h>
-#include <node.h>
-#include <nan.h>
+#include <napi.h>
+#include <uv.h>
 #include <wchar.h>
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <string>
 #include <sqlcli1.h>
-
-using namespace v8;
-using namespace node;
 
 #define MAX_FIELD_SIZE 1024
 #define MAX_VALUE_SIZE 1022
+
+// Property attributes matching NAN behavior: writable + configurable
+#define NAPI_METHOD_ATTR static_cast<napi_property_attributes>(napi_writable | napi_configurable)
 
 #define MODE_COLLECT_AND_CALLBACK 1
 #define MODE_CALLBACK_FOR_EACH 2
@@ -40,32 +41,14 @@ using namespace node;
 #define FETCH_NODATA 0
 #define SQL_DESTROY SQL_DROP
 
-#if (NODE_MAJOR_VERSION >= 10)
-#define ISOLATE v8::Isolate::GetCurrent()
-#define ISOLATECOMMA v8::Isolate::GetCurrent(),
-#define TOSTRING ToString(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::String>())
-#else
-#define ISOLATE
-#define ISOLATECOMMA
-#define TOSTRING ToString()
-#endif
-
 // Workaround(zOS): Db2 supplied headers do not define SQL_SUCCEEDED
 #ifndef SQL_SUCCEEDED
 #define SQL_SUCCEEDED(rc) (((rc) & (~1)) == 0)
 #endif
 
-inline void CallNanCallback(Nan::Callback *cb, int argc, v8::Local<v8::Value> argv[])
-{
-  Nan::AsyncResource async_resource("ibm_db:callback");
-  cb->Call(argc, argv, &async_resource);
-}
-
-inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int argc, v8::Local<v8::Value> argv[])
-{
-  Nan::AsyncResource async_resource("ibm_db:callback");
-  cb->Call(target, argc, argv, &async_resource);
-}
+#ifndef FREE
+#define FREE(x) do { if(x) { free(x); x = NULL; } } while(0)
+#endif
 
 // Free Bind Parameters
 #define FREE_PARAMS(params, count)                              \
@@ -122,8 +105,7 @@ inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int
 #define SQL_ROW 19
 #endif
 
-// Workaround(zOS): Guard data-at-execution macros in case
-// they are missing from Db2 supplied headers on z/OS.
+// Workaround(zOS): Guard data-at-execution macros
 #ifndef SQL_NEED_DATA
 #define SQL_NEED_DATA 99
 #endif
@@ -135,7 +117,7 @@ inline void CallNanCallback(Nan::Callback *cb, v8::Local<v8::Object> target, int
 #endif
 
 // two macros ensures that any macro used will be expanded
-// before being stringified. #x gives string value of x.
+// before being stringified
 #define LINESTRING(x) #x
 #define LINENO(x) LINESTRING(x)
 
@@ -151,7 +133,7 @@ typedef struct
   SQLLEN type;
   SQLUSMALLINT index;
   bool getData;
-  bool isFileBound;  // True if column is bound to file via SQLBindFileToCol
+  bool isFileBound;
 } Column;
 
 typedef struct
@@ -164,76 +146,78 @@ typedef struct
   SQLPOINTER buffer;
   SQLLEN buffer_length;
   SQLLEN length;
-  SQLUINTEGER fileOption;   // For BindFileToParam
-  SQLINTEGER fileIndicator; // For BindFileToParam
-  int arraySize;            // For Array Insert
-  SQLINTEGER *strLenArray;  // For Array Insert
+  SQLUINTEGER fileOption;
+  SQLINTEGER fileIndicator;
+  int arraySize;
+  SQLINTEGER *strLenArray;
   bool isBuffer;
-  void **chunks;            // For DATA_AT_EXEC: array of chunk data pointers
-  SQLLEN *chunkLens;        // For DATA_AT_EXEC: array of chunk lengths
-  int chunkCount;           // For DATA_AT_EXEC: number of chunks
+  void **chunks;
+  SQLLEN *chunkLens;
+  int chunkCount;
 } Parameter;
 
-class ODBC : public Nan::ObjectWrap
+// Propagate exceptions from UV callbacks (NAPI equivalent of NAN's FatalException)
+static inline void PropagateCallbackException(Napi::Env env) {
+  if (env.IsExceptionPending()) {
+    Napi::Error err = env.GetAndClearPendingException();
+    napi_fatal_exception(env, err.Value());
+  }
+}
+
+class ODBC : public Napi::ObjectWrap<ODBC>
 {
 public:
-  static Nan::Persistent<Function> constructor;
+  static Napi::FunctionReference constructor;
   static uv_mutex_t g_odbcMutex;
   static uv_async_t g_async;
 
-  static NAN_MODULE_INIT(Init);
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+  ODBC(const Napi::CallbackInfo &info);
+  ~ODBC();
+
   static Column *GetColumns(SQLHSTMT hStmt, short *colCount);
   static void FreeColumns(Column *&columns, short *colCount);
-  static v8::Local<Value> GetColumnValue(SQLHSTMT hStmt, Column column, uint16_t *buffer, size_t bufferLength);
-  static Local<Value> GetOutputParameter(Parameter *prm);
-  static Local<Object> GetRecordTuple(SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
-  static Local<Value> GetRecordArray(SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
-  static Local<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, Nan::Callback *cb);
-  static Local<Value> CallbackSQLError(SQLSMALLINT handleType, SQLHANDLE handle, char *message, Nan::Callback *cb);
-  static Local<Value> GetSQLError(SQLSMALLINT handleType, SQLHANDLE handle);
-  static Local<Value> GetSQLError(SQLSMALLINT handleType, SQLHANDLE handle, char *message);
-  static Local<Array> GetAllRecordsSync(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t *buffer, size_t bufferLength);
-  static Parameter *GetParametersFromArray(Local<Array> values, int *paramCount);
+  static Napi::Value GetColumnValue(Napi::Env env, SQLHSTMT hStmt, Column column, uint16_t *buffer, size_t bufferLength);
+  static Napi::Value GetOutputParameter(Napi::Env env, Parameter *prm);
+  static Napi::Object GetRecordTuple(Napi::Env env, SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
+  static Napi::Value GetRecordArray(Napi::Env env, SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
+  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, Napi::FunctionReference *cb);
+  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, char *message, Napi::FunctionReference *cb);
+  static Napi::Value GetSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle);
+  static Napi::Value GetSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, char *message);
+  static Napi::Array GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t *buffer, size_t bufferLength);
+  static Parameter *GetParametersFromArray(Napi::Env env, Napi::Array values, int *paramCount);
   static SQLRETURN BindParameters(SQLHSTMT hSTMT, Parameter params[], int count);
   static SQLRETURN PutDataLoop(SQLHSTMT hSTMT, Parameter params[], int count);
 
   void Free();
 
-protected:
-  ODBC() { m_hEnv = (SQLHENV)NULL; }
-
-  ~ODBC();
-
-  static void GetStringParam(Local<Value> value, Parameter *param, int num);
-  static void GetNullParam(Parameter *param, int num);
-  static void GetInt32Param(Local<Value> value, Parameter *param, int num);
-  static void GetNumberParam(Local<Value> value, Parameter *param, int num);
-  static void GetBoolParam(Local<Value> value, Parameter *param, int num);
-  static void GetArrayParam(Local<Value> value, Parameter *param, int num);
-  static void GetBufferParam(Local<Value> value, Parameter *param, int num);
-  static void GetDataAtExecParam(Local<Value> value, Parameter *param, int num);
-
-  static NAN_METHOD(New);
-
-  // async methods
-  static NAN_METHOD(CreateConnection);
-  static void UV_CreateConnection(uv_work_t *work_req);
-  static void UV_AfterCreateConnection(uv_work_t *work_req, int status);
-
-  static void WatcherCallback(uv_async_t *w, int revents);
-
-  // sync methods
-  static NAN_METHOD(CreateConnectionSync);
-
-  ODBC *self(void) { return this; }
+  // Instance methods exposed to JS
+  Napi::Value CreateConnection(const Napi::CallbackInfo &info);
+  Napi::Value CreateConnectionSync(const Napi::CallbackInfo &info);
 
 protected:
   SQLHENV m_hEnv;
+
+  static void GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, int num);
+  static void GetNullParam(Parameter *param, int num);
+  static void GetInt32Param(Napi::Env env, Napi::Value value, Parameter *param, int num);
+  static void GetNumberParam(Napi::Env env, Napi::Value value, Parameter *param, int num);
+  static void GetBoolParam(Napi::Env env, Napi::Value value, Parameter *param, int num);
+  static void GetArrayParam(Napi::Env env, Napi::Value value, Parameter *param, int num);
+  static void GetBufferParam(Napi::Value value, Parameter *param, int num);
+  static void GetDataAtExecParam(Napi::Env env, Napi::Value value, Parameter *param, int num);
+
+  // UV async callbacks
+  static void UV_CreateConnection(uv_work_t *work_req);
+  static void UV_AfterCreateConnection(uv_work_t *work_req, int status);
 };
 
 struct create_connection_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBC *dbo;
   SQLHDBC hDBC;
   int result;
@@ -241,7 +225,7 @@ struct create_connection_work_data
 
 struct open_request
 {
-  Nan::Persistent<Function> cb;
+  Napi::FunctionReference *cb;
   ODBC *dbo;
   int result;
   char connection[1];
@@ -249,14 +233,14 @@ struct open_request
 
 struct close_request
 {
-  Nan::Persistent<Function> cb;
+  Napi::FunctionReference *cb;
   ODBC *dbo;
   int result;
 };
 
 struct query_request
 {
-  Nan::Persistent<Function> cb;
+  Napi::FunctionReference *cb;
   ODBC *dbo;
   SQLHSTMT hSTMT;
   int affectedRows;
@@ -291,148 +275,165 @@ struct query_request
 #define DEBUG_TPRINTF(...) (void)0
 #endif
 
-#define REQ_ARGS(N)        \
-  if (info.Length() < (N)) \
-    return Nan::ThrowTypeError("Expected " #N "arguments");
-
-// Require String Argument; Save String as Utf8
-#define REQ_STR_ARG(I, VAR)                                         \
-  if (info.Length() <= (I) || !info[I]->IsString())                 \
-    return Nan::ThrowTypeError("Argument " #I " must be a string"); \
-  Nan::Utf8String VAR(info[I]);
-
-// Require String Argument; Save String as Wide String (UCS2)
-#define REQ_WSTR_ARG(I, VAR)                                        \
-  if (info.Length() <= (I) || !info[I]->IsString())                 \
-    return Nan::ThrowTypeError("Argument " #I " must be a string"); \
-  Nan::Utf8String VAR(info[I]);
-
-// Require String Argument; Save String as Object
-#define REQ_STRO_ARG(I, VAR)                                        \
-  if (info.Length() <= (I) || !info[I]->IsString())                 \
-    return Nan::ThrowTypeError("Argument " #I " must be a string"); \
-  Nan::Utf8String VAR(info[I]);
-
-// Require String or Null Argument; Save String as Utf8
-#define REQ_STR_OR_NULL_ARG(I, VAR)                                         \
-  if (info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull())) \
-    return Nan::ThrowTypeError("Argument " #I " must be a string or null"); \
-  String::Utf8Value VAR(info[I]->ToString());
-
-// Require String or Null Argument; Save String as Wide String (UCS2)
-#define REQ_WSTR_OR_NULL_ARG(I, VAR)                                        \
-  if (info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull())) \
-    return Nan::ThrowTypeError("Argument " #I " must be a string or null"); \
-  String::Value VAR(info[I]->ToString());
-
-// Require String or Null Argument; save String as String Object
-#define REQ_STRO_OR_NULL_ARG(I, VAR)                                        \
-  if (info.Length() <= (I) || (!info[I]->IsString() && !info[I]->IsNull())) \
-  {                                                                         \
-    Nan::ThrowTypeError("Argument " #I " must be a string or null");        \
-    return;                                                                 \
-  }                                                                         \
-  Nan::Utf8String VAR(info[I]);
-
-#define REQ_FUN_ARG(I, VAR)                                           \
-  if (info.Length() <= (I) || !info[I]->IsFunction())                 \
-    return Nan::ThrowTypeError("Argument " #I " must be a function"); \
-  Local<Function> VAR = Local<Function>::Cast(info[I]);
-
-#define REQ_BOOL_ARG(I, VAR)                                         \
-  if (info.Length() <= (I) || !info[I]->IsBoolean())                 \
-    return Nan::ThrowTypeError("Argument " #I " must be a boolean"); \
-  Local<Boolean> VAR = Nan::To<v8::Boolean>(info[I]).ToLocalChecked();
-
-#define REQ_EXT_ARG(I, VAR)                                \
-  if (info.Length() <= (I) || !info[I]->IsExternal())      \
-    return Nan::ThrowTypeError("Argument " #I " invalid"); \
-  Local<External> VAR = Local<External>::Cast(info[I]);
-
-#define REQ_UINT_ARG(I, VAR)                               \
-  if (info.Length() <= (I) || !info[I]->IsUint32())        \
-    return Nan::ThrowTypeError("Argument " #I " invalid"); \
-  SQLUINTEGER VAR = (Nan::To<v8::Uint32>(info[I]).ToLocalChecked()->Value());
-
-#define REQ_INT_ARG(I, VAR)                                \
-  if (info.Length() <= (I) || !info[I]->IsInt32())         \
-    return Nan::ThrowTypeError("Argument " #I " invalid"); \
-  SQLINTEGER VAR = (Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value());
-
-#define OPT_INT_ARG(I, VAR, DEFAULT)                                  \
-  SQLUSMALLINT VAR;                                                   \
-  if (info.Length() <= (I))                                           \
-  {                                                                   \
-    VAR = (DEFAULT);                                                  \
-  }                                                                   \
-  else if (info[I]->IsInt32())                                        \
-  {                                                                   \
-    VAR = Nan::To<v8::Int32>(info[I]).ToLocalChecked()->Value();      \
-  }                                                                   \
-  else                                                                \
-  {                                                                   \
-    return Nan::ThrowTypeError("Argument " #I " must be an integer"); \
+#define REQ_ARGS(N)                                                              \
+  if (info.Length() < (N))                                                       \
+  {                                                                              \
+    Napi::TypeError::New(env, "Expected " #N " arguments").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                      \
   }
 
-// Check memory allocated successfully or not.
-#define MEMCHECK(buffer)                                          \
-  if (!buffer)                                                    \
-  {                                                               \
-    Nan::LowMemoryNotification();                                 \
-    Nan::ThrowError("Could not allocate enough memory in ibm_db " \
-                    "file " __FILE__ ":" LINENO(__LINE__));       \
-    return;                                                       \
+#define REQ_STR_ARG(I, VAR)                                                                 \
+  if (info.Length() <= (I) || !info[I].IsString())                                          \
+  {                                                                                         \
+    Napi::TypeError::New(env, "Argument " #I " must be a string").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                                 \
+  }                                                                                         \
+  std::string VAR = info[I].As<Napi::String>().Utf8Value();
+
+#define REQ_WSTR_ARG(I, VAR)                                                                \
+  if (info.Length() <= (I) || !info[I].IsString())                                          \
+  {                                                                                         \
+    Napi::TypeError::New(env, "Argument " #I " must be a string").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                                 \
+  }                                                                                         \
+  std::string VAR = info[I].As<Napi::String>().Utf8Value();
+
+#define REQ_STRO_ARG(I, VAR)                                                                \
+  if (info.Length() <= (I) || !info[I].IsString())                                          \
+  {                                                                                         \
+    Napi::TypeError::New(env, "Argument " #I " must be a string").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                                 \
+  }                                                                                         \
+  std::string VAR = info[I].As<Napi::String>().Utf8Value();
+
+#define REQ_STR_OR_NULL_ARG(I, VAR)                                                                       \
+  if (info.Length() <= (I) || (!info[I].IsString() && !info[I].IsNull()))                                 \
+  {                                                                                                       \
+    Napi::TypeError::New(env, "Argument " #I " must be a string or null").ThrowAsJavaScriptException();   \
+    return env.Undefined();                                                                               \
+  }                                                                                                       \
+  std::string VAR = info[I].IsNull() ? std::string("null") : info[I].As<Napi::String>().Utf8Value();
+
+#define REQ_STRO_OR_NULL_ARG(I, VAR)                                                                      \
+  if (info.Length() <= (I) || (!info[I].IsString() && !info[I].IsNull()))                                 \
+  {                                                                                                       \
+    Napi::TypeError::New(env, "Argument " #I " must be a string or null").ThrowAsJavaScriptException();   \
+    return env.Undefined();                                                                               \
+  }                                                                                                       \
+  std::string VAR = info[I].IsNull() ? std::string("null") : info[I].As<Napi::String>().Utf8Value();
+
+#define REQ_FUN_ARG(I, VAR)                                                                   \
+  if (info.Length() <= (I) || !info[I].IsFunction())                                          \
+  {                                                                                           \
+    Napi::TypeError::New(env, "Argument " #I " must be a function").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                                   \
+  }                                                                                           \
+  Napi::Function VAR = info[I].As<Napi::Function>();
+
+#define REQ_BOOL_ARG(I, VAR)                                                                  \
+  if (info.Length() <= (I) || !info[I].IsBoolean())                                           \
+  {                                                                                           \
+    Napi::TypeError::New(env, "Argument " #I " must be a boolean").ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                                   \
+  }                                                                                           \
+  bool VAR = info[I].As<Napi::Boolean>().Value();
+
+#define REQ_EXT_ARG(I, VAR)                                                                \
+  if (info.Length() <= (I) || !info[I].IsExternal())                                       \
+  {                                                                                        \
+    Napi::TypeError::New(env, "Argument " #I " invalid").ThrowAsJavaScriptException();     \
+    return env.Undefined();                                                                \
+  }                                                                                        \
+  Napi::External<void> VAR = info[I].As<Napi::External<void>>();
+
+#define REQ_UINT_ARG(I, VAR)                                                                 \
+  if (info.Length() <= (I) || !info[I].IsNumber())                                           \
+  {                                                                                          \
+    Napi::TypeError::New(env, "Argument " #I " invalid").ThrowAsJavaScriptException();       \
+    return env.Undefined();                                                                  \
+  }                                                                                          \
+  SQLUINTEGER VAR = info[I].As<Napi::Number>().Uint32Value();
+
+#define REQ_INT_ARG(I, VAR)                                                                  \
+  if (info.Length() <= (I) || !info[I].IsNumber())                                           \
+  {                                                                                          \
+    Napi::TypeError::New(env, "Argument " #I " invalid").ThrowAsJavaScriptException();       \
+    return env.Undefined();                                                                  \
+  }                                                                                          \
+  SQLINTEGER VAR = info[I].As<Napi::Number>().Int32Value();
+
+#define OPT_INT_ARG(I, VAR, DEFAULT)                                                             \
+  SQLUSMALLINT VAR;                                                                              \
+  if (info.Length() <= (I))                                                                      \
+  {                                                                                              \
+    VAR = (DEFAULT);                                                                             \
+  }                                                                                              \
+  else if (info[I].IsNumber())                                                                   \
+  {                                                                                              \
+    VAR = info[I].As<Napi::Number>().Int32Value();                                               \
+  }                                                                                              \
+  else                                                                                           \
+  {                                                                                              \
+    Napi::TypeError::New(env, "Argument " #I " must be an integer").ThrowAsJavaScriptException();\
+    return env.Undefined();                                                                      \
   }
 
-// Macro to get c++ string from Utf8String(JS string)
+// Check memory allocated successfully or not (for methods returning Napi::Value)
+#define MEMCHECK(buffer)                                                            \
+  if (!buffer)                                                                      \
+  {                                                                                 \
+    Napi::Error::New(env, "Could not allocate enough memory in ibm_db "             \
+                          "file " __FILE__ ":" LINENO(__LINE__)).ThrowAsJavaScriptException(); \
+    return env.Undefined();                                                         \
+  }
+
+// Macro to get c++ string from std::string (JS string via Utf8Value)
 #ifdef UNICODE
-#define GETCPPSTR(to, from, len)                           \
-  if (len > 0 && strcmp(*from, "null"))                    \
-  {                                                        \
-    to = (uint16_t *)malloc((len + 1) * sizeof(uint16_t)); \
-    MEMCHECK(to);                                          \
-    /*std::copy(*from, *from + len, (uint16_t*)to); */     \
-    memcpy(to, *from, len);                                \
-    ((uint16_t *)to)[len] = '\0';                          \
-  }                                                        \
-  else                                                     \
-  {                                                        \
-    len = 0;                                               \
+#define GETCPPSTR(to, from, len)                             \
+  if (len > 0 && from != "null")                             \
+  {                                                          \
+    to = (uint16_t *)malloc((len + 1) * sizeof(uint16_t));   \
+    MEMCHECK(to);                                            \
+    memcpy(to, from.c_str(), len);                           \
+    ((uint16_t *)to)[len] = '\0';                            \
+  }                                                          \
+  else                                                       \
+  {                                                          \
+    len = 0;                                                 \
   }
 #else
-#define GETCPPSTR(to, from, len)        \
-  if (len > 0 && strcmp(*from, "null")) \
-  {                                     \
-    to = (char *)malloc(len + 1);       \
-    MEMCHECK(to);                       \
-    memcpy(to, *from, len);             \
-    ((char *)to)[len] = '\0';           \
-  }                                     \
-  else                                  \
-  {                                     \
-    len = 0;                            \
+#define GETCPPSTR(to, from, len)     \
+  if (len > 0 && from != "null")     \
+  {                                  \
+    to = (char *)malloc(len + 1);    \
+    MEMCHECK(to);                    \
+    memcpy(to, from.c_str(), len);   \
+    ((char *)to)[len] = '\0';        \
+  }                                  \
+  else                               \
+  {                                  \
+    len = 0;                         \
   }
 #endif
 
-// Check memory allocated successfully or not.
+// Check memory allocated (goto exit variant)
 #define MEMCHECK2(buffer, errmsg)                          \
   if (!buffer)                                             \
   {                                                        \
-    Nan::LowMemoryNotification();                          \
     errmsg = "Could not allocate enough memory in ibm_db " \
              "file " __FILE__ ":" LINENO(__LINE__);        \
     goto exit;                                             \
   }
 
-// Macro to get c++ string from Utf8String(JS string)
+// Macro to get c++ string from std::string (goto exit variant)
 #ifdef UNICODE
 #define GETCPPSTR2(to, from, len, errmsg)                    \
-  if (len > 0 && strcmp(*from, "null"))                      \
+  if (len > 0 && from != "null")                             \
   {                                                          \
     to = (uint16_t *)malloc((len + 1) * sizeof(uint16_t));   \
     if (to)                                                  \
     {                                                        \
-      memcpy(to, *from, len);                                \
+      memcpy(to, from.c_str(), len);                         \
       ((uint16_t *)to)[len] = '\0';                          \
     }                                                        \
     else                                                     \
@@ -448,12 +449,12 @@ struct query_request
   }
 #else
 #define GETCPPSTR2(to, from, len, errmsg)                    \
-  if (len > 0 && strcmp(*from, "null"))                      \
+  if (len > 0 && from != "null")                             \
   {                                                          \
     to = (char *)malloc(len + 1);                            \
     if (to)                                                  \
     {                                                        \
-      memcpy(to, *from, len);                                \
+      memcpy(to, from.c_str(), len);                         \
       ((char *)to)[len] = '\0';                              \
     }                                                        \
     else                                                     \
@@ -469,25 +470,4 @@ struct query_request
   }
 #endif
 
-// From node v10 NODE_DEFINE_CONSTANT
-#define NODE_ODBC_DEFINE_CONSTANT(constructor_template, constant) \
-  (constructor_template)->Set(Nan::New<String>(#constant).ToLocalChecked(), Nan::New<Number>(constant), static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete))
-
-#endif
-
-// Macro to fee the memory allocated by GETCPPSTR
-#ifdef UNICODE
-#define FREE(var)          \
-  if (var != NULL)         \
-  {                        \
-    free((uint16_t *)var); \
-    var = NULL;            \
-  }
-#else
-#define FREE(var)      \
-  if (var != NULL)     \
-  {                    \
-    free((char *)var); \
-    var = NULL;        \
-  }
 #endif

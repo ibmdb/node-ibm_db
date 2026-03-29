@@ -17,77 +17,52 @@
 #ifndef _SRC_ODBC_STATEMENT_H
 #define _SRC_ODBC_STATEMENT_H
 
-#include <nan.h>
+#include <napi.h>
 
-class ODBCStatement : public Nan::ObjectWrap
+class ODBCStatement : public Napi::ObjectWrap<ODBCStatement>
 {
 public:
-  static Nan::Persistent<Function> constructor;
-  static NAN_MODULE_INIT(Init);
+  static Napi::FunctionReference constructor;
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
+  ODBCStatement(const Napi::CallbackInfo &info);
+  ~ODBCStatement();
   void Free();
 
-protected:
-  ODBCStatement() {};
+  // Instance methods
+  Napi::Value Execute(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteSync(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteDirect(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteDirectSync(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteNonQuery(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteNonQuerySync(const Napi::CallbackInfo &info);
+  Napi::Value Prepare(const Napi::CallbackInfo &info);
+  Napi::Value PrepareSync(const Napi::CallbackInfo &info);
+  Napi::Value Bind(const Napi::CallbackInfo &info);
+  Napi::Value BindSync(const Napi::CallbackInfo &info);
+  Napi::Value SetAttr(const Napi::CallbackInfo &info);
+  Napi::Value SetAttrSync(const Napi::CallbackInfo &info);
+  Napi::Value CloseSync(const Napi::CallbackInfo &info);
+  Napi::Value Close(const Napi::CallbackInfo &info);
 
-  explicit ODBCStatement(SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT) : Nan::ObjectWrap(),
-                                                                       m_hENV(hENV),
-                                                                       m_hDBC(hDBC),
-                                                                       m_hSTMT(hSTMT) {};
-
-  ~ODBCStatement();
-
-  // constructor
-  static NAN_METHOD(New);
-
-  // async methods
-  static NAN_METHOD(Execute);
+  // UV callbacks
   static void UV_Execute(uv_work_t *work_req);
   static void UV_AfterExecute(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(ExecuteDirect);
   static void UV_ExecuteDirect(uv_work_t *work_req);
   static void UV_AfterExecuteDirect(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(ExecuteNonQuery);
   static void UV_ExecuteNonQuery(uv_work_t *work_req);
   static void UV_AfterExecuteNonQuery(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(Prepare);
   static void UV_Prepare(uv_work_t *work_req);
   static void UV_AfterPrepare(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(Bind);
   static void UV_Bind(uv_work_t *work_req);
   static void UV_AfterBind(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(SetAttr);
   static void UV_SetAttr(uv_work_t *work_req);
   static void UV_AfterSetAttr(uv_work_t *work_req, int status);
-
-  static NAN_METHOD(Close);
   static void UV_Close(uv_work_t *work_req);
   static void UV_AfterClose(uv_work_t *work_req, int status);
 
-  // sync methods
-  static NAN_METHOD(CloseSync);
-  static NAN_METHOD(ExecuteSync);
-  static NAN_METHOD(ExecuteDirectSync);
-  static NAN_METHOD(ExecuteNonQuerySync);
-  static NAN_METHOD(PrepareSync);
-  static NAN_METHOD(BindSync);
-  static NAN_METHOD(SetAttrSync);
-
-  struct Fetch_Request
-  {
-    Nan::Callback *callback;
-    ODBCStatement *objResult;
-    SQLRETURN result;
-  };
-
   ODBCStatement *self(void) { return this; }
 
-protected:
   SQLHENV m_hENV;
   SQLHDBC m_hDBC;
   SQLHSTMT m_hSTMT;
@@ -103,7 +78,8 @@ protected:
 
 struct execute_direct_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -112,14 +88,16 @@ struct execute_direct_work_data
 
 struct execute_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
   int result;
 };
 
 struct prepare_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -128,25 +106,27 @@ struct prepare_work_data
 
 struct bind_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
   int result;
 };
 
-struct setattr_work_data
+struct stmt_setattr_work_data
 {
-  Nan::Callback *cb;
-  ODBCConnection *conn;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
-  int result;
   SQLINTEGER attr;
   SQLPOINTER valuePtr;
   SQLINTEGER stringLength;
+  int result;
 };
 
-struct close_statement_work_data
+struct stmt_close_work_data
 {
-  Nan::Callback *cb;
+  napi_env env;
+  Napi::FunctionReference *cb;
   ODBCStatement *stmt;
   SQLUSMALLINT closeOption;
   int result;
