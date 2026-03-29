@@ -164,7 +164,6 @@ static inline void PropagateCallbackException(Napi::Env env) {
   }
 }
 
-// Flag to indicate the Node.js environment is shutting down.
 class ODBC : public Napi::ObjectWrap<ODBC>
 {
 public:
