@@ -45,7 +45,7 @@
             'cflags' : ['-g'],
           }],
         [ 'OS == "aix"',
-          { 'ldflags' : ['-Wl,-brtl', '-Wl,-G', '-Wl,-bnoentry', '-Wl,-bexpfull'],
+          { 'ldflags' : ['-Wl,-binitfini:__ibmdb_aix_noop:__ibmdb_aix_noop'],
             'cflags' : ['-fno-use-cxa-atexit'],
           }],
         [ 'OS == "zos" ',

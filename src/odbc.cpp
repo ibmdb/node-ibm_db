@@ -19,6 +19,15 @@
 #include <_Nascii.h>
 #endif
 
+// On AIX, GCC auto-generates _GLOBAL__FI_*/_GLOBAL__FD_* init/fini functions
+// in every shared library via crtcxa.o. The fini function calls __cxa_finalize
+// which crashes with SIGILL (jump to 0x0) because atexit handlers registered
+// by libdb2.a become invalid during process exit. (#439, #1045)
+// We override the init/fini with this no-op to prevent the crash.
+#ifdef _AIX
+extern "C" void __ibmdb_aix_noop(void) {}
+#endif
+
 #include <string.h>
 #include <stdint.h>
 #include <type_traits>
@@ -26,6 +35,10 @@
 #include <cassert>
 #include <cstdlib>
 #include <uv.h>
+#ifdef _AIX
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 #include "odbc.h"
 #include "odbc_connection.h"
@@ -1362,10 +1375,48 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
 // Sets a global flag so that C++ destructors skip ODBC driver calls
 // (SQLFreeHandle, SQLDisconnect) which would segfault on AIX if the
 // ODBC driver shared library has already been unloaded. (#439, #1045)
+#ifdef _AIX
+// On AIX, GCC's _GLOBAL__FD_node calls __cxa_finalize(NULL) during exit()
+// which crashes with SIGILL (jump to 0x0) because libdb2's __cxa_atexit
+// handlers become invalid. We install a SIGILL handler during shutdown
+// to catch this crash and exit cleanly instead. (#439, #1045)
+static int g_exitCode = 0;
+
+static void AIX_SigillHandler(int sig)
+{
+  _exit(g_exitCode);
+}
+
+static void EnvironmentCleanupHook(void* arg)
+{
+  g_shuttingDown = true;
+
+  // Try to read process.exitCode before the environment is torn down.
+  napi_env env = (napi_env)arg;
+  napi_value global, process, exitCode;
+  if (napi_get_global(env, &global) == napi_ok &&
+      napi_get_named_property(env, global, "process", &process) == napi_ok &&
+      napi_get_named_property(env, process, "exitCode", &exitCode) == napi_ok) {
+    int32_t code = 0;
+    if (napi_get_value_int32(env, exitCode, &code) == napi_ok) {
+      g_exitCode = code;
+    }
+  }
+
+  // Install SIGILL handler to catch __cxa_finalize crash during exit.
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = AIX_SigillHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGILL, &sa, NULL);
+}
+#else
 static void EnvironmentCleanupHook(void* /*arg*/)
 {
   g_shuttingDown = true;
 }
+#endif
 
 // atexit handler: belt-and-suspenders to ensure g_shuttingDown is set
 // before __cxa_finalize runs static destructors during process exit.
@@ -1382,7 +1433,14 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCConnection::Init(env, exports);
   ODBCStatement::Init(env, exports);
 
-  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
+  // On AIX, pass the napi_env so the cleanup hook can read process.exitCode.
+  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook,
+#ifdef _AIX
+    (void*)(napi_env)env
+#else
+    nullptr
+#endif
+  );
   atexit(AtExitCleanupHandler);
 
   return exports;
