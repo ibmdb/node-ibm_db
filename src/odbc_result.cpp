@@ -66,7 +66,12 @@ void ODBCResult::Free()
   FreeBlockFetchBuffers();
 
   if (m_fileColBindings) { free(m_fileColBindings); m_fileColBindings = NULL; m_fileColCount = 0; }
-  if (m_hSTMT && m_canFreeHandle) { SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT); m_hSTMT = (SQLHSTMT)NULL; m_canFreeHandle = 0; }
+  if (m_hSTMT && m_canFreeHandle) {
+    if (!g_shuttingDown) {
+      SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    }
+    m_hSTMT = (SQLHSTMT)NULL; m_canFreeHandle = 0;
+  }
   if (buffer != NULL) { free((uint16_t *)buffer); buffer = NULL; }
   bufferLength = 0;
 }

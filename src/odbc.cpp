@@ -58,6 +58,8 @@ unsigned long long HandleToLogValue(HandleType handle)
 }
 }
 
+bool g_shuttingDown = false;
+
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
@@ -100,7 +102,9 @@ void ODBC::Free()
   DEBUG_PRINTF("ODBC::Free: m_hEnv = 0x%llx\n", HandleToLogValue(m_hEnv));
   if (m_hEnv)
   {
-    SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
+    if (!g_shuttingDown) {
+      SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
+    }
     m_hEnv = (SQLHENV)NULL;
   }
 }
@@ -1352,6 +1356,15 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
   return rows;
 }
 
+// Cleanup hook called when the Node.js environment is tearing down.
+// Sets a global flag so that C++ destructors skip ODBC driver calls
+// (SQLFreeHandle, SQLDisconnect) which would segfault on AIX if the
+// ODBC driver shared library has already been unloaded. (#439, #1045)
+static void EnvironmentCleanupHook(void* /*arg*/)
+{
+  g_shuttingDown = true;
+}
+
 // Module initialization
 Napi::Object InitAll(Napi::Env env, Napi::Object exports)
 {
@@ -1359,6 +1372,9 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCResult::Init(env, exports);
   ODBCConnection::Init(env, exports);
   ODBCStatement::Init(env, exports);
+
+  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
+
   return exports;
 }
 

@@ -164,6 +164,13 @@ static inline void PropagateCallbackException(Napi::Env env) {
   }
 }
 
+// Flag to indicate the Node.js environment is shutting down.
+// When true, destructors must not call ODBC driver functions
+// (SQLFreeHandle, SQLDisconnect, etc.) because the ODBC driver
+// shared library may already be unloaded, causing a segfault
+// on platforms like AIX. (See issues #439 and #1045.)
+extern bool g_shuttingDown;
+
 class ODBC : public Napi::ObjectWrap<ODBC>
 {
 public:
