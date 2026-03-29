@@ -77,7 +77,7 @@ bool g_shuttingDown = false;
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
-Napi::FunctionReference* ODBC::constructor = nullptr;
+Napi::FunctionReference ODBC::constructor;
 
 Napi::Object ODBC::Init(Napi::Env env, Napi::Object exports)
 {
@@ -95,9 +95,8 @@ Napi::Object ODBC::Init(Napi::Env env, Napi::Object exports)
     StaticValue("FETCH_OBJECT", Napi::Number::New(env, FETCH_OBJECT), napi_enumerable),
   });
 
-  constructor = new Napi::FunctionReference();
-  *constructor = Napi::Persistent(func);
-  constructor->SuppressDestruct();
+  constructor = Napi::Persistent(func);
+  constructor.SuppressDestruct();
   exports.Set("ODBC", func);
 
   // Initialize the cross platform mutex provided by libuv
@@ -219,7 +218,7 @@ void ODBC::UV_AfterCreateConnection(uv_work_t *req, int status)
       Napi::External<void>::New(env, (void *)(intptr_t)data->dbo->m_hEnv),
       Napi::External<void>::New(env, (void *)(intptr_t)data->hDBC)
     };
-    Napi::Object js_result = ODBCConnection::constructor->New({args[0], args[1]});
+    Napi::Object js_result = ODBCConnection::constructor.New({args[0], args[1]});
     data->cb->Call({env.Null(), js_result});
   }
   PropagateCallbackException(env);
@@ -251,7 +250,7 @@ Napi::Value ODBC::CreateConnectionSync(const Napi::CallbackInfo &info)
     Napi::External<void>::New(env, (void *)(intptr_t)m_hEnv),
     Napi::External<void>::New(env, (void *)(intptr_t)hDBC)
   };
-  Napi::Object js_result = ODBCConnection::constructor->New({params[0], params[1]});
+  Napi::Object js_result = ODBCConnection::constructor.New({params[0], params[1]});
 
   DEBUG_PRINTF("ODBC::CreateConnectionSync - Exit: hDBC = 0x%llx\n", HandleToLogValue(hDBC));
   return js_result;
@@ -1404,13 +1403,6 @@ static void EnvironmentCleanupHook(void* /*arg*/)
 }
 #endif
 
-// atexit handler: belt-and-suspenders to ensure g_shuttingDown is set
-// before __cxa_finalize runs static destructors during process exit.
-static void AtExitCleanupHandler()
-{
-  g_shuttingDown = true;
-}
-
 // Module initialization
 Napi::Object InitAll(Napi::Env env, Napi::Object exports)
 {
@@ -1419,9 +1411,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCConnection::Init(env, exports);
   ODBCStatement::Init(env, exports);
 
-  // On AIX, pass the napi_env so the cleanup hook can read process.exitCode.
   napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
-  atexit(AtExitCleanupHandler);
 
   return exports;
 }

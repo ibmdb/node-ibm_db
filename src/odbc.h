@@ -174,7 +174,7 @@ extern bool g_shuttingDown;
 class ODBC : public Napi::ObjectWrap<ODBC>
 {
 public:
-  static Napi::FunctionReference* constructor;
+  static Napi::FunctionReference constructor;
   static uv_mutex_t g_odbcMutex;
   static uv_async_t g_async;
 

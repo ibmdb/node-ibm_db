@@ -23,7 +23,7 @@
 #include "odbc_result.h"
 #include "odbc_statement.h"
 
-Napi::FunctionReference* ODBCResult::constructor = nullptr;
+Napi::FunctionReference ODBCResult::constructor;
 
 Napi::Object ODBCResult::Init(Napi::Env env, Napi::Object exports)
 {
@@ -49,9 +49,8 @@ Napi::Object ODBCResult::Init(Napi::Env env, Napi::Object exports)
     InstanceAccessor("fetchMode", &ODBCResult::FetchModeGetter, &ODBCResult::FetchModeSetter, napi_enumerable),
   });
 
-  constructor = new Napi::FunctionReference();
-  *constructor = Napi::Persistent(func);
-  constructor->SuppressDestruct();
+  constructor = Napi::Persistent(func);
+  constructor.SuppressDestruct();
   exports.Set("ODBCResult", func);
   return exports;
 }

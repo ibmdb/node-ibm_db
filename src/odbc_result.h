@@ -40,7 +40,7 @@ typedef struct {
 class ODBCResult : public Napi::ObjectWrap<ODBCResult>
 {
 public:
-  static Napi::FunctionReference* constructor;
+  static Napi::FunctionReference constructor;
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
   ODBCResult(const Napi::CallbackInfo &info);

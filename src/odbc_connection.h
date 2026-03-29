@@ -36,7 +36,7 @@
 class ODBCConnection : public Napi::ObjectWrap<ODBCConnection>
 {
 public:
-  static Napi::FunctionReference* constructor;
+  static Napi::FunctionReference constructor;
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
   ODBCConnection(const Napi::CallbackInfo &info);
