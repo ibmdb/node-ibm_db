@@ -72,8 +72,6 @@ unsigned long long HandleToLogValue(HandleType handle)
 }
 }
 
-bool g_shuttingDown = false;
-
 uv_mutex_t ODBC::g_odbcMutex;
 uv_async_t ODBC::g_async;
 
@@ -116,9 +114,7 @@ void ODBC::Free()
   DEBUG_PRINTF("ODBC::Free: m_hEnv = 0x%llx\n", HandleToLogValue(m_hEnv));
   if (m_hEnv)
   {
-    if (!g_shuttingDown) {
-      SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
-    }
+    SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
     m_hEnv = (SQLHENV)NULL;
   }
 }
@@ -1370,36 +1366,26 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
   return rows;
 }
 
-// Cleanup hook called when the Node.js environment is tearing down.
-// Sets a global flag so that C++ destructors skip ODBC driver calls
-// (SQLFreeHandle, SQLDisconnect) which would segfault on AIX if the
-// ODBC driver shared library has already been unloaded. (#439, #1045)
 #ifdef _AIX
 // On AIX, GCC's _GLOBAL__FD_node calls __cxa_finalize(NULL) during exit()
 // which crashes with SIGILL (jump to 0x0) because libdb2's __cxa_atexit
-// handlers become invalid. We install a SIGILL handler during shutdown
-// to catch this crash and exit cleanly instead. (#439, #1045)
+// handlers become invalid. We register an atexit handler that installs a
+// SIGILL handler just before the bad handlers are reached. (#439, #1045)
+// Using atexit (instead of napi_add_env_cleanup_hook) ensures coverage
+// even when process.exit() is called, which skips env cleanup hooks.
 static void AIX_SigillHandler(int sig)
 {
   _exit(0);
 }
 
-static void EnvironmentCleanupHook(void* /*arg*/)
+static void AIX_AtExitInstallSigillHandler()
 {
-  g_shuttingDown = true;
-
-  // Install SIGILL handler to catch __cxa_finalize crash during exit.
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
   sa.sa_handler = AIX_SigillHandler;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
   sigaction(SIGILL, &sa, NULL);
-}
-#else
-static void EnvironmentCleanupHook(void* /*arg*/)
-{
-  g_shuttingDown = true;
 }
 #endif
 
@@ -1411,7 +1397,9 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCConnection::Init(env, exports);
   ODBCStatement::Init(env, exports);
 
-  napi_add_env_cleanup_hook(env, EnvironmentCleanupHook, nullptr);
+#ifdef _AIX
+  atexit(AIX_AtExitInstallSigillHandler);
+#endif
 
   return exports;
 }

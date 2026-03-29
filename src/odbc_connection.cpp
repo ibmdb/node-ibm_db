@@ -78,10 +78,8 @@ void ODBCConnection::Free()
   DEBUG_PRINTF("ODBCConnection::Free m_hDBC = %i \n", m_hDBC);
   if (m_hDBC)
   {
-    if (!g_shuttingDown) {
-      SQLDisconnect(m_hDBC);
-      SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
-    }
+    SQLDisconnect(m_hDBC);
+    SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
     m_hDBC = (SQLHDBC)NULL;
   }
 }
