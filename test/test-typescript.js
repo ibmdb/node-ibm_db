@@ -2,9 +2,9 @@ const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
 const fs = require('fs');
 
-execSync('cd .. && npm install -g typescript');
-execSync('cd .. && npm install --save-dev @types/node');
-var yourscript = exec('tsc quick-example.ts && node quick-example.js',
+try { execSync('cd .. && npm install -g typescript'); } catch(e) { /* use local */ }
+try { execSync('cd .. && npm install --save-dev @types/node'); } catch(e) { /* use local */ }
+var yourscript = exec('npx tsc --skipLibCheck --types node quick-example.ts && node quick-example.js',
         (error, stdout, stderr) => {
             console.log(stdout);
             console.log(stderr);
@@ -19,7 +19,7 @@ var yourscript = exec('tsc quick-example.ts && node quick-example.js',
             }
         });
 
-yourscript = exec('tsc ../typescript/tests/test.ts && node ../typescript/tests/test.js',
+yourscript = exec('npx tsc --skipLibCheck --types node ../typescript/tests/test.ts && node ../typescript/tests/test.js',
         (error, stdout, stderr) => {
             console.log(stdout);
             console.log(stderr);
