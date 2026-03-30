@@ -25,7 +25,7 @@
       'conditions' : [
         [ '(OS == "linux" and (target_arch =="ia32" or target_arch == "s390" or target_arch == "ppc32")) or (OS == "aix" and target_arch == "ppc")',
           { 'conditions' : [
-              [ 'IS_DOWNLOADED == "true" ',
+              [ 'IS_DOWNLOADED == "true" and OS != "aix"',
                 { 'ldflags' : [ "-Wl,-R,'<(ORIGIN_LIB_PATH)' " ] }
               ]
             ],  
@@ -36,13 +36,17 @@
 
         [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")',
           { 'conditions' : [
-              [ 'IS_DOWNLOADED == "true" ',
+              [ 'IS_DOWNLOADED == "true" and OS != "aix"',
                 { 'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)',-rpath,'$$ORIGIN:$$ORIGIN/../../installer/clidriver/lib' " ], }
               ]
             ],    
             'libraries' : ['-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ','-ldb2' ],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g'],
+          }],
+        [ 'OS == "aix"',
+          { 'ldflags' : ['-Wl,-binitfini:__ibmdb_aix_noop:__ibmdb_aix_noop'],
+            'cflags' : ['-fno-use-cxa-atexit'],
           }],
         [ 'OS == "zos" ',
           { 'libraries' : ['dsnao64c.x'],

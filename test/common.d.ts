@@ -1,0 +1,10 @@
+export var testConnectionStrings: Array<{title: string; connectionString: string}>;
+export var benchConnectionStrings: Array<{title: string; connectionString: string}>;
+export var connectionObject: any;
+export var connectionString: string;
+export var isZOS: boolean;
+export var databaseName: string;
+export var tableName: string;
+export function dropTables(db: any, cb: Function): void;
+export function createTables(db: any, cb: Function): void;
+export function sanitizeSP(proc: string): string;

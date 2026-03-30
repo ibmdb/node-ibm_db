@@ -62,7 +62,10 @@ void ODBCStatement::Free()
 {
   DEBUG_PRINTF("ODBCStatement::Free - Entry: paramCount=%i, m_hSTMT=%X\n", paramCount, m_hSTMT);
   if (paramCount) { FREE_PARAMS(params, paramCount); }
-  if (m_hSTMT) { SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT); m_hSTMT = (SQLHSTMT)NULL; }
+  if (m_hSTMT) {
+    SQLFreeHandle(SQL_HANDLE_STMT, m_hSTMT);
+    m_hSTMT = (SQLHSTMT)NULL;
+  }
   if (buffer != NULL) { free((uint16_t *)buffer); buffer = NULL; }
   bufferLength = 0;
   DEBUG_PRINTF("ODBCStatement::Free - Exit\n");

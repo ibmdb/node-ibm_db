@@ -19,12 +19,26 @@
 #include <_Nascii.h>
 #endif
 
+// On AIX, GCC auto-generates _GLOBAL__FI_*/_GLOBAL__FD_* init/fini functions
+// in every shared library via crtcxa.o. The fini function calls __cxa_finalize
+// which crashes with SIGILL (jump to 0x0) because atexit handlers registered
+// by libdb2.a become invalid during process exit. (#439, #1045)
+// We override the init/fini with this no-op to prevent the crash.
+#ifdef _AIX
+extern "C" void __ibmdb_aix_noop(void) {}
+#endif
+
 #include <string.h>
 #include <stdint.h>
 #include <type_traits>
 #include <time.h>
 #include <cassert>
+#include <cstdlib>
 #include <uv.h>
+#ifdef _AIX
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 #include "odbc.h"
 #include "odbc_connection.h"
@@ -1352,6 +1366,20 @@ Napi::Array ODBC::GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC,
   return rows;
 }
 
+#ifdef _AIX
+// On AIX, GCC's _GLOBAL__FD_node calls __cxa_finalize(NULL) during exit()
+// which crashes with SIGILL (jump to 0x0) because libdb2's __cxa_atexit
+// handlers become invalid. We install a SIGILL handler at module load time
+// so it is in place before any exit path runs module finalization.
+// Note: atexit() runs AFTER __modfini64 on AIX, and env cleanup hooks
+// are skipped by process.exit(), so neither approach works alone.
+// Installing at load time covers all exit paths. (#439, #1045)
+static void AIX_SigillHandler(int sig)
+{
+  _exit(0);
+}
+#endif
+
 // Module initialization
 Napi::Object InitAll(Napi::Env env, Napi::Object exports)
 {
@@ -1359,6 +1387,18 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCResult::Init(env, exports);
   ODBCConnection::Init(env, exports);
   ODBCStatement::Init(env, exports);
+
+#ifdef _AIX
+  // Install SIGILL handler early — must be in place before exit() triggers
+  // __modfini64 → _GLOBAL__FD_node → __cxa_finalize(NULL) crash.
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = AIX_SigillHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGILL, &sa, NULL);
+#endif
+
   return exports;
 }
 
