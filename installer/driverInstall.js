@@ -636,6 +636,8 @@ var install_node_ibm_db = function(file_url) {
             console.log('32 bit platform is not supported. Please ' +
                     'install 64 bit NodeJS on 64 bit OS for ibm_db.\n');
             process.exit(1);
+        } else if(platform == 'aix' || (platform == 'linux' && arch == 's390x')) {
+            downloadBinaryFromGitHub();
         } else if(arch.indexOf("ppc") > 0 || arch.indexOf("s390") > 0) {
             console.log('There is no precompiled binary for platform = ' +
                 platform + ', architecture = ' + arch + '\n');
@@ -662,18 +664,23 @@ var install_node_ibm_db = function(file_url) {
               }
             } else if (platform == 'win32') {
               odbcBindingsNode = 'build\/Release\/odbc_bindings_win.node';
-            } else if (arch == 's390x') {
-              odbcBindingsNode = 'build\/Release\/odbc_bindings_zlinux.node';
             } else {
               odbcBindingsNode = 'build\/Release\/odbc_bindings_linux.node';
             }
 
             printMsg("Extracting " + odbcBindingsNode + " from build.zip");
 
+            if (!fs.existsSync(BUILD_FILE)) {
+                printMsg('build.zip not found. ' +
+                    'Attempting to download precompiled binary from GitHub...\n');
+                return downloadBinaryFromGitHub();
+            }
+
             // Removing the "build" directory created by Auto Installation Process.
             // "adm-zip" will create a fresh "build" directory for extraction of "build.zip".
             removeDir('build');
             var zip = new AdmZip(BUILD_FILE);
+            var binaryFound = false;
 
             /*
              * adm-zip will parse the build.zip file content and
@@ -685,10 +692,14 @@ var install_node_ibm_db = function(file_url) {
              */
             zip.forEach(function(entry) {
                 if (entry.entryName === odbcBindingsNode) {
+                    binaryFound = true;
                     try {
                         zip.extractEntryTo(entry, CURRENT_DIR, true, false, false, ODBC_BINDINGS);
                     } catch (e) {
-                        installationFailed(e);
+                        printMsg('\nExtraction of ' + odbcBindingsNode +
+                            ' from build.zip failed! ' +
+                            'Attempting to download precompiled binary from GitHub...\n');
+                        return downloadBinaryFromGitHub();
                     }
 
                     printMsg("\n" +
@@ -698,10 +709,128 @@ var install_node_ibm_db = function(file_url) {
                 }
             });
 
+            if (!binaryFound) {
+                printMsg('\n' + odbcBindingsNode + ' not found in build.zip. ' +
+                    'Attempting to download precompiled binary from GitHub...\n');
+                return downloadBinaryFromGitHub();
+            }
+
             return 1;
         } else {
             console.log('There is no precompiled binary for platform = ' +
                 platform + ', architecture = ' + arch + '\n');
+        }
+    }
+
+    // Function to download precompiled node add-on binary from github repository.
+    // Used for platforms like AIX and zLinux where build.zip is not available.
+    function downloadBinaryFromGitHub() {
+        var binaryUrl =
+            'https://raw.githubusercontent.com/ibmdb/ibmdb-binaries/refs/heads/main/';
+        var ODBC_BINDINGS = 'build/Release/odbc_bindings.node';
+        var outputFile = path.resolve(CURRENT_DIR, ODBC_BINDINGS);
+        var releaseDir = path.resolve(CURRENT_DIR, 'build/Release');
+        var binaryName;
+
+        if (!fs.existsSync(path.resolve(CURRENT_DIR, 'build'))) {
+            fs.mkdirSync(path.resolve(CURRENT_DIR, 'build'), 0o744);
+        }
+        if (!fs.existsSync(releaseDir)) {
+            fs.mkdirSync(releaseDir, 0o744);
+        }
+
+        if (platform == 'aix') {
+            binaryName = 'odbc_bindings_aix.node';
+        } else if (platform == 'linux' && arch == 's390x') {
+            binaryName = 'odbc_bindings_zlinux.node';
+        } else if (platform == 'linux') {
+            binaryName = 'odbc_bindings_linux.node';
+        } else if (platform == 'darwin') {
+            if (arch == 'arm64') {
+                binaryName = 'odbc_bindings_macarm.node';
+            } else {
+                binaryName = 'odbc_bindings_mac.node';
+            }
+        } else if (platform == 'win32') {
+            binaryName = 'odbc_bindings_win.node';
+        } else {
+            console.log('There is no precompiled binary for platform = ' +
+                platform + ', architecture = ' + arch + '\n');
+            return;
+        }
+
+        binaryUrl = binaryUrl + binaryName;
+        printMsg('\nDownloading precompiled binary from ' + binaryUrl + ' ...\n');
+
+        // Parse URL to use with https.request
+        var parsedUrl = new URL(binaryUrl);
+
+        var options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.pathname,
+            method: 'GET',
+            agent: httpsAgent,
+            headers: {
+                'User-Agent': 'Node.js HTTPS Client'
+            }
+        };
+
+        var req = https.request(options, function(res) {
+            // Handle redirects
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                var redirectUrl = new URL(res.headers.location);
+                options.hostname = redirectUrl.hostname;
+                options.path = redirectUrl.pathname;
+                res.resume();
+                var redirectReq = https.request(options, handleResponse);
+                redirectReq.on('error', function(err) {
+                    console.error('\nHTTPS request error:', err.message);
+                    installationFailed(err.message);
+                });
+                redirectReq.end();
+                return;
+            }
+            handleResponse(res);
+        });
+
+        req.on('error', function(err) {
+            console.error('\nHTTPS request error:', err.message);
+            installationFailed(err.message);
+        });
+
+        req.end();
+
+        function handleResponse(res) {
+            if (res.statusCode !== 200) {
+                console.error('Download failed: HTTP ' + res.statusCode);
+                res.resume();
+                installationFailed('Download failed: HTTP ' + res.statusCode);
+                return;
+            }
+
+            var total_bytes = parseInt(res.headers['content-length'], 10);
+            var outStream = fs.createWriteStream(outputFile);
+            var received_bytes = 0;
+
+            res.on('data', function(chunk) {
+                received_bytes += chunk.length;
+                showDownloadingProgress(received_bytes, total_bytes);
+            });
+
+            res.pipe(outStream);
+
+            outStream.on('finish', function() {
+                printMsg('\nDownload complete => ' + outputFile);
+                printMsg("\n" +
+                "===================================\n"+
+                "ibm_db installed successfully.\n"+
+                "===================================\n");
+            });
+
+            outStream.on('error', function(err) {
+                console.error('\nFile write error:', err.message);
+                installationFailed(err.message);
+            });
         }
     }
 
