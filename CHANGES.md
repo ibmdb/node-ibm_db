@@ -1,3 +1,37 @@
+2026-03-31, Version 4.0.0
+=========================
+
+ * feat: add mac and linux precompiled binaries in build.zip file (Bimal Jha)
+
+ * fix: Install a SIGILL handler at module load time to fix core dump on AIX #439, #1045 (#1063) (Bimal Kumar Jha)
+
+ * feat: update installer to use only one precompiled binary per platform after NAPI support (Bimal Jha)
+
+ * Migrate ibm_db driver from NAN to Node-API (N-API) for version independence (#1062) (Bimal Kumar Jha)
+
+ * update: typescript files for new APIs and add test case (Bimal Jha)
+
+ * fix: add strict mode in ibm_db js files for code optimization by V8, #269 (Bimal Jha)
+
+ * feat: Add support for Chunked LOB Insert (Array of Buffers or Readable Stream) using DATA_AT_EXEC #962 (Bimal Jha)
+
+ * feat: Add support for bindFileToCol() API to bind a result set column to a file (Bimal Jha)
+
+ * feat: add support for block fetch when SQL_ATTR_ROW_ARRAY_SIZE > 1 (Bimal Jha)
+
+ * test: add test case for issue #1059 (Bimal Jha)
+
+ * feat: Add support for fetchN() API to fetch multiple rows at once, #977 (Bimal Jha)
+
+ * fea: Support for Row Wise Array Input #698 (Bimal Jha)
+
+ * update stmt handle logs mechanism (Bimal Jha)
+
+ * Use native Promises in ibm_db instead of Q package (Bimal Jha)
+
+ * fix compilation warnings for Nan::Callback::Call in cpp files, issue #1060 (Bimal Jha)
+
+
 2026-03-09, Version 3.3.5
 =========================
 

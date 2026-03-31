@@ -3,7 +3,7 @@
 An asynchronous/synchronous interface for node.js to IBM DB2 and IBM Informix.
 Async APIs return promises if callback function is not used. Async APIs supports async-await programming style.
 
-- **Supported Platforms** - Windows64, MacOS64, MacARM64, Linuxx64, Linuxia32, AIX, Linux on IBM Z, Linux on Power PC and z/OS.
+- **Supported Platforms** - Windows64, MacOS64, MacARM64, Linuxx64, AIX64, Linux on IBM Z, Linux on Power PC and z/OS.
 
 - **MacOS with Silicon Chip** - Supported from ibm_db@3.3.0 onwards using v12.x clidriver.
 
@@ -27,7 +27,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - Make sure your system has C++ compiler installed that support C++11 standard.
 
-- **For Linuxx64, MacARM64, Mac-x64 and Windows-x64 platforms**: If a compiler or required dependency is missing, ibm_db automatically falls back to a precompiled binary (for Node.js v16.x and above), ensuring successful installation without native compilation. Note that compilation of native code is attempted first.
+- **For Linuxx64, MacARM64, Mac-x64 and Windows-x64 platforms**: If a compiler or required dependency is missing, ibm_db automatically falls back to a precompiled binary, ensuring successful installation without native compilation. Note that compilation of native code is attempted first.
 
 - Below prerequisite is applicable only if you need to compile the native C++ code of ibm_db or download of precompiled binary fail.
 
@@ -38,7 +38,9 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - UBI9 has deprecated libcrypt. You need to install libcrypt and libxcrypt-compat on UBI9 manually.
 
-- **For Windows**: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64 for node.js version >= 14.x. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio version >= 2017 is required.
+- **For Windows**: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio version >= 2022 is required.
+
+- From ibm_db v4.0.0 onwards, ibm_db started to use NAPI instead of NAN. So, precompiled binary should work with any version of Node.js or Electron.
 
 - Python version >= 3.8.0 is required by node-gyp.
 
@@ -53,9 +55,9 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 - On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
 
-- On **z/OS**, ODBC driver support is part of IBM Db2 for z/OS 11.0 and 12.0. Please ensure IBM Db2 for z/OS 11.0 or 12.0 is installed on your given LPAR. Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
+- On **z/OS**, ODBC driver support is part of IBM Db2 for z/OS. Please ensure IBM Db2 for z/OS version >= 11.0 is installed on your given LPAR. Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
 
-- On **z/OS** and other non-Windows platform, `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
+- On **z/OS** and other platforms where compilation of native code is required; `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
 
 - On **z/OS** only certain versions of node-gyp are supported. This was tested with:<br>
   z/OS v2.4
@@ -64,7 +66,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
   npm 3.10.10<br>
   ibm_db: 2.8.1
 
-- Recommended version of node.js is >= V16.X. For node.js version < 16.X and `ibm_db` version > 2.4.1, Visual Studio is required to install `ibm_db` on Windows. Use Developer Command Prompt for VS2022 on Windows.
+- To compile native code of ibm_db on Windows, Visual Studio is required. Use Developer Command Prompt for VS2022 on Windows to install ibm_db.
 
 - Node.js v24.x onwards uses `C++20` standards. To compile source code on MacOS, install `llvm` and use it.
 
