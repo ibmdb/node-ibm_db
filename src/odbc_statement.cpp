@@ -209,8 +209,8 @@ Napi::Value ODBCStatement::ExecuteSync(const Napi::CallbackInfo &info)
 
   if (ret == SQL_ERROR)
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-      (char *)"[node-odbc] Error in ODBCStatement::ExecuteSync").ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-odbc] Error in ODBCStatement::ExecuteSync"));
     return env.Null();
   }
   else
@@ -339,8 +339,8 @@ Napi::Value ODBCStatement::ExecuteNonQuerySync(const Napi::CallbackInfo &info)
 
   if (ret < SQL_SUCCESS)
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-      (char *)"[node-ibm_db] Error in ODBCStatement::ExecuteNonQuerySync").ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCStatement::ExecuteNonQuerySync"));
     SQLFreeStmt(m_hSTMT, SQL_CLOSE);
     return env.Null();
   }
@@ -441,8 +441,8 @@ Napi::Value ODBCStatement::ExecuteDirectSync(const Napi::CallbackInfo &info)
 
   if (ret == SQL_ERROR)
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-      (char *)"[node-odbc] Error in ODBCStatement::ExecuteDirectSync").ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-odbc] Error in ODBCStatement::ExecuteDirectSync"));
     return env.Null();
   }
 
@@ -475,8 +475,8 @@ Napi::Value ODBCStatement::PrepareSync(const Napi::CallbackInfo &info)
   if (SQL_SUCCEEDED(ret))
     return Napi::Boolean::New(env, true);
 
-  Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-    (char *)"[node-odbc] Error in ODBCStatement::PrepareSync").ToString()).ThrowAsJavaScriptException();
+  napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+    (char *)"[node-odbc] Error in ODBCStatement::PrepareSync"));
   return Napi::Boolean::New(env, false);
 }
 
@@ -562,8 +562,8 @@ Napi::Value ODBCStatement::BindSync(const Napi::CallbackInfo &info)
   if (SQL_SUCCEEDED(ret))
     return Napi::Boolean::New(env, true);
 
-  Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-    (char *)"[node-odbc] Error in ODBCStatement::BindSync").ToString()).ThrowAsJavaScriptException();
+  napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+    (char *)"[node-odbc] Error in ODBCStatement::BindSync"));
   return Napi::Boolean::New(env, false);
 }
 
@@ -666,8 +666,8 @@ Napi::Value ODBCStatement::SetAttrSync(const Napi::CallbackInfo &info)
   if (SQL_SUCCEEDED(ret))
     return Napi::Boolean::New(env, true);
 
-  Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
-    (char *)"[node-odbc] Error in ODBCStatement::SetAttrSync").ToString()).ThrowAsJavaScriptException();
+  napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+    (char *)"[node-odbc] Error in ODBCStatement::SetAttrSync"));
   return Napi::Boolean::New(env, false);
 }
 

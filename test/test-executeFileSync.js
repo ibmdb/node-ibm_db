@@ -10,6 +10,10 @@ ibmdb.open(cn, function (err, conn) {
         return console.log(err);
     }
 
+    // Clean up any stale tables from prior interrupted runs
+    try { conn.querySync("drop table sample"); } catch(e) {}
+    try { conn.querySync("drop table sample1"); } catch(e) {}
+
     var inputfile = __dirname + '/data/sample1.txt';
     var res = conn.executeFileSync(inputfile);
     assert.deepEqual(res, '[{"NO":1,"NAME":"pri"},{"NO":2,"NAME":"anbu"}];[{"NO":1},{"NO":2}];');
@@ -68,6 +72,7 @@ ibmdb.open(cn, function (err, conn) {
         err = e;
     }
     assert.equal(err.error, "[node-ibm_db] Error in ODBCConnection::QuerySync while executing query.");
+    assert.ok(err instanceof Error, "executeFileSync error should be an instance of Error");
 
     var inputfile30 = __dirname + '/data/sample100.txt';
     var err1 = null;

@@ -271,7 +271,7 @@ Napi::Value ODBCConnection::OpenSync(const Napi::CallbackInfo &info)
   {
     Napi::Value objError = ODBC::GetSQLError(env, SQL_HANDLE_DBC, self()->m_hDBC);
     FREE(connectionString);
-    Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, objError);
     return env.Undefined();
   }
 
@@ -398,7 +398,7 @@ Napi::Value ODBCConnection::CreateDbSync(const Napi::CallbackInfo &info)
 exit:
   FREE(databaseNameString); FREE(codeSetString); FREE(modeString);
   if (errmsg) { Napi::Error::New(env, errmsg).ThrowAsJavaScriptException(); return env.Undefined(); }
-  if (err) { Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException(); return env.Undefined(); }
+  if (err) { napi_throw(env, objError); return env.Undefined(); }
   return Napi::Boolean::New(env, true);
 #endif
 }
@@ -429,7 +429,7 @@ Napi::Value ODBCConnection::DropDbSync(const Napi::CallbackInfo &info)
     if (!SQL_SUCCEEDED(ret) && !err) { err = true; objError = ODBC::GetSQLError(env, SQL_HANDLE_DBC, self()->m_hDBC); }
   }
   FREE(databaseNameString);
-  if (err) { Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException(); return env.Undefined(); }
+  if (err) { napi_throw(env, objError); return env.Undefined(); }
   return Napi::Boolean::New(env, true);
 #endif
 }
@@ -996,7 +996,7 @@ Napi::Value ODBCConnection::BeginTransactionSync(const Napi::CallbackInfo &info)
   SQLRETURN ret = SQLSetConnectAttr(m_hDBC, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_OFF, SQL_NTS);
   if (!SQL_SUCCEEDED(ret))
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC).ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC));
     return Napi::Boolean::New(env, false);
   }
   return Napi::Boolean::New(env, true);
@@ -1068,7 +1068,7 @@ Napi::Value ODBCConnection::EndTransactionSync(const Napi::CallbackInfo &info)
 
   if (error)
   {
-    Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, objError);
     return Napi::Boolean::New(env, false);
   }
   return Napi::Boolean::New(env, true);
@@ -1145,7 +1145,7 @@ Napi::Value ODBCConnection::SetIsolationLevel(const Napi::CallbackInfo &info)
 
   if (!SQL_SUCCEEDED(ret))
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC).ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC));
     return Napi::Boolean::New(env, false);
   }
   return Napi::Boolean::New(env, true);
@@ -1169,7 +1169,7 @@ Napi::Value ODBCConnection::GetInfoSync(const Napi::CallbackInfo &info)
   if (!SQL_SUCCEEDED(ret))
   {
     free(rgbInfo);
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC).ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC));
     return Napi::Boolean::New(env, false);
   }
 
@@ -1253,7 +1253,7 @@ Napi::Value ODBCConnection::GetTypeInfoSync(const Napi::CallbackInfo &info)
   {
     Napi::Value err = ODBC::GetSQLError(env, SQL_HANDLE_STMT, hSTMT);
     SQLFreeHandle(SQL_HANDLE_STMT, hSTMT);
-    Napi::Error::New(env, err.ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, err);
     return Napi::Boolean::New(env, false);
   }
 
@@ -1350,7 +1350,7 @@ Napi::Value ODBCConnection::GetFunctionsSync(const Napi::CallbackInfo &info)
 
   if (!SQL_SUCCEEDED(ret))
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC).ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_DBC, m_hDBC));
     return Napi::Boolean::New(env, false);
   }
 

@@ -137,7 +137,7 @@ ODBC::ODBC(const Napi::CallbackInfo &info) : Napi::ObjectWrap<ODBC>(info)
   {
     DEBUG_PRINTF("ODBC::New - ERROR ALLOCATING ENV HANDLE!!\n");
     Napi::Value objError = ODBC::GetSQLError(env, SQL_HANDLE_ENV, m_hEnv);
-    Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, objError);
     return;
   }
 
@@ -149,7 +149,7 @@ ODBC::ODBC(const Napi::CallbackInfo &info) : Napi::ObjectWrap<ODBC>(info)
     Napi::Value objError = ODBC::GetSQLError(env, SQL_HANDLE_ENV, m_hEnv);
     SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
     m_hEnv = (SQLHENV)NULL;
-    Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, objError);
     return;
   }
 
@@ -470,7 +470,7 @@ Napi::Value ODBC::GetColumnValue(Napi::Env env, SQLHSTMT hStmt, Column column,
       if (buffer == NULL)
       {
         errmsg = (char *)"Failed to allocate memory buffer for column data.";
-        Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, hStmt, errmsg).ToString()).ThrowAsJavaScriptException();
+        napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, hStmt, errmsg));
         return env.Undefined();
       }
     }
@@ -549,7 +549,7 @@ Napi::Value ODBC::GetColumnValue(Napi::Env env, SQLHSTMT hStmt, Column column,
 #endif
         assert(ret != SQL_INVALID_HANDLE);
       }
-      Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, hStmt, errmsg).ToString()).ThrowAsJavaScriptException();
+      napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, hStmt, errmsg));
       return env.Undefined();
     }
   }
@@ -1287,50 +1287,41 @@ Napi::Value ODBC::GetSQLError(Napi::Env env, SQLSMALLINT handleType,
 {
   DEBUG_PRINTF("ODBC::GetSQLError : handleType=%i, handle=0x%llx\n", handleType, HandleToLogValue(handle));
 
-  Napi::Object objError = Napi::Object::New(env);
-
   SQLINTEGER i = 0;
   SQLINTEGER native;
   SQLSMALLINT len;
   SQLRETURN ret;
   char errorSQLState[14];
   char errorMessage[SQL_MAX_MESSAGE_LENGTH];
+  errorMessage[0] = '\0';
+  errorSQLState[0] = '\0';
+  native = 0;
 
-  do
+  ret = SQLGetDiagRec(handleType, handle, 1,
+                      (SQLTCHAR *)errorSQLState, &native,
+                      (SQLTCHAR *)errorMessage, sizeof(errorMessage), &len);
+
+  if (ret == -2)
   {
-    ret = SQLGetDiagRec(handleType, handle, i + 1,
-                        (SQLTCHAR *)errorSQLState, &native,
-                        (SQLTCHAR *)errorMessage, sizeof(errorMessage), &len);
+    strcpy(errorMessage, "CLI0600E Invalid connection handle or connection is closed. SQLSTATE=S1000");
+    strcpy(errorSQLState, "S1000");
+    native = -1;
+  }
 
-    if (ret == -2 && i == 0)
-    {
-      strcpy(errorMessage, "CLI0600E Invalid connection handle or connection is closed. SQLSTATE=S1000");
-      strcpy(errorSQLState, "S1000");
-      native = -1;
-      ret = 0;
-    }
-    if (SQL_SUCCEEDED(ret))
-    {
-      if (i == 0)
-      {
-        objError.Set("error", Napi::String::New(env, message));
-        objError.Set("sqlcode", Napi::Number::New(env, (double)native));
+  // Create a proper Error object so that (err instanceof Error) === true
 #ifdef UNICODE
-        objError.Set("message", Napi::String::New(env, (char16_t *)errorMessage));
-        objError.Set("sqlstate", Napi::String::New(env, (char16_t *)errorSQLState));
+  Napi::Error error = Napi::Error::New(env, Napi::String::New(env, (char16_t *)errorMessage));
 #else
-        objError.Set("message", Napi::String::New(env, errorMessage));
-        objError.Set("sqlstate", Napi::String::New(env, errorSQLState));
+  Napi::Error error = Napi::Error::New(env, Napi::String::New(env, errorMessage));
 #endif
-      }
-      if (native == -1) break;
-    }
-    else
-    {
-      break;
-    }
-    i++;
-  } while (ret != SQL_NO_DATA);
+  Napi::Object objError = error.Value();
+  objError.Set("error", Napi::String::New(env, message));
+  objError.Set("sqlcode", Napi::Number::New(env, (double)native));
+#ifdef UNICODE
+  objError.Set("sqlstate", Napi::String::New(env, (char16_t *)errorSQLState));
+#else
+  objError.Set("sqlstate", Napi::String::New(env, errorSQLState));
+#endif
 
   return objError;
 }

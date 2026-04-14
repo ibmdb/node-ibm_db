@@ -387,7 +387,7 @@ Napi::Value ODBCResult::FetchSync(const Napi::CallbackInfo &info)
     FREE(buffer);
     if (error)
     {
-      Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+      napi_throw(env, objError);
       return env.Null();
     }
     return env.Null();
@@ -658,7 +658,7 @@ Napi::Value ODBCResult::FetchAllSync(const Napi::CallbackInfo &info)
   ODBC::FreeColumns(columns, &colCount);
   FREE(buffer);
 
-  if (errorCount > 0) Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+  if (errorCount > 0) napi_throw(env, objError);
   return rows;
 }
 
@@ -926,7 +926,7 @@ Napi::Value ODBCResult::FetchNSync(const Napi::CallbackInfo &info)
     }
   }
 
-  if (errorCount > 0) Napi::Error::New(env, objError.ToString()).ThrowAsJavaScriptException();
+  if (errorCount > 0) napi_throw(env, objError);
   return rows;
 }
 
@@ -1157,7 +1157,7 @@ Napi::Value ODBCResult::MoreResultsSync(const Napi::CallbackInfo &info)
   SQLRETURN ret = SQLMoreResults(m_hSTMT);
 
   if (ret == SQL_ERROR)
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT, (char *)"[node-odbc] Error in ODBCResult::MoreResultsSync").ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT, (char *)"[node-odbc] Error in ODBCResult::MoreResultsSync"));
 
   return Napi::Boolean::New(env, SQL_SUCCEEDED(ret) || ret == SQL_ERROR);
 }
@@ -1506,7 +1506,7 @@ Napi::Value ODBCResult::BindFileToColSync(const Napi::CallbackInfo &info)
 
   if (!SQL_SUCCEEDED(ret))
   {
-    Napi::Error::New(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT, (char *)"Error in ODBCResult::BindFileToColSync").ToString()).ThrowAsJavaScriptException();
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT, (char *)"Error in ODBCResult::BindFileToColSync"));
     return env.Undefined();
   }
 
