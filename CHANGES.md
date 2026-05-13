@@ -1,3 +1,17 @@
+2026-05-13, Version 4.0.1
+=========================
+
+ * fix: update axios version to fix high severity vulnerability (Bimal Jha)
+
+ * build(deps): bump follow-redirects from 1.15.11 to 1.16.0 (#1067) (dependabot[bot])
+
+ * fix: throw error as Error instances instead of object, issue #1066 (Bimal Jha)
+
+ * build(deps): bump axios from 1.13.5 to 1.15.0 (#1065) (dependabot[bot])
+
+ * Upgrade lodash (#1064) (Sebastian Wilczek)
+
+
 2026-03-31, Version 4.0.0
 =========================
 
