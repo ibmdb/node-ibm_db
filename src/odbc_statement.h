@@ -48,6 +48,8 @@ public:
   // Instance methods
   Napi::Value PrimaryKeys(const Napi::CallbackInfo &info);
   Napi::Value PrimaryKeysSync(const Napi::CallbackInfo &info);
+  Napi::Value ForeignKeys(const Napi::CallbackInfo &info);
+  Napi::Value ForeignKeysSync(const Napi::CallbackInfo &info);
 
   // UV callbacks
   static void UV_Execute(uv_work_t *work_req);
@@ -66,6 +68,8 @@ public:
   static void UV_AfterClose(uv_work_t *work_req, int status);
   static void UV_PrimaryKeys(uv_work_t *work_req);
   static void UV_AfterPrimaryKeys(uv_work_t *work_req, int status);
+  static void UV_ForeignKeys(uv_work_t *work_req);
+  static void UV_AfterForeignKeys(uv_work_t *work_req, int status);
 
   ODBCStatement *self(void) { return this; }
 
@@ -138,6 +142,20 @@ struct primary_keys_work_data
   void *catalog;
   void *schema;
   void *table;
+};
+
+struct foreign_keys_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  int result;
+  void *pkCatalog;
+  void *pkSchema;
+  void *pkTable;
+  void *fkCatalog;
+  void *fkSchema;
+  void *fkTable;
 };
 
 struct stmt_close_work_data

@@ -51,6 +51,8 @@
 * [closeSync([closeOption])](#-19-odbcstatement-closesynccloseoption)
 * [.primaryKeys(catalog, schema, table [, callback])](#-20-odbcstatement-primarykeyscatalog-schema-table--callback)
 * [.primaryKeysSync(catalog, schema, table)](#-21-odbcstatement-primarykeyssyncatalog-schema-table)
+* [.foreignKeys(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable [, callback])](#-22-odbcstatement-foreignkeyspkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable--callback)
+* [.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)](#-23-odbcstatement-foreignkeysyncpkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable)
 
 **ODBCResult APIs**
 * [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
@@ -849,6 +851,107 @@ ibmdb.open(cn, function(err, db) {
 ibmdb.open(cn, function(err, db) {
   const stmt = db.conn.createStatementSync();
   const keys = stmt.primaryKeysSync(null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  stmt.closeSync(); // free the statement handle when done
+  db.closeSync();
+});
+```
+
+### <a name="foreignKeysApi"></a> 22) (ODBCStatement) .foreignKeys(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable [, callback])
+
+Returns foreign key relationships between two tables by calling `SQLForeignKeys()` via the ODBC CLI.
+The result set describes which columns in one table reference primary key columns in another.
+
+* **pkCatalog** - String or `null`. Catalog qualifier of the primary-key table.
+* **pkSchema** - String or `null`. Schema of the primary-key table.
+* **pkTable** - String or `null`. Name of the primary-key table (exact match).
+* **fkCatalog** - String or `null`. Catalog qualifier of the foreign-key table.
+* **fkSchema** - String or `null`. Schema of the foreign-key table.
+* **fkTable** - String or `null`. Name of the foreign-key table (exact match).
+* **callback** - _OPTIONAL_ - `callback (err, rows)`. If omitted a Promise is returned.
+
+At least one of `pkTable` or `fkTable` must be non-null (ODBC requirement).
+
+Behavior when only one table is specified:
+- Only `pkTable` given: returns all foreign keys in other tables that reference it.
+- Only `fkTable` given: returns all foreign keys in that table and the primary keys they reference.
+- Both given: returns the specific foreign key relationship between the two tables.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.foreignKeys(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable [, callback])`
+
+Each row in the result set contains the columns returned by `SQLForeignKeys`, including:
+`PKTABLE_SCHEM`, `PKTABLE_NAME`, `PKCOLUMN_NAME`, `FKTABLE_SCHEM`, `FKTABLE_NAME`,
+`FKCOLUMN_NAME`, `KEY_SEQ`, `UPDATE_RULE`, `DELETE_RULE`, `FK_NAME`, `PK_NAME`.
+
+> **Note:** After all rows are fetched, `foreignKeys()` calls `SQLFreeStmt(SQL_CLOSE)` internally to
+> close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Async callback form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  // Get the FK in ORDERS that references CUSTOMERS
+  db.foreignKeys(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS", function(err, keys) {
+    if (err) console.log(err);
+    else console.log(keys);
+    // e.g. [ { PKTABLE_SCHEM: 'MYSCHEMA', PKTABLE_NAME: 'CUSTOMERS',
+    //          PKCOLUMN_NAME: 'CUST_ID',  FKTABLE_NAME: 'ORDERS',
+    //          FKCOLUMN_NAME: 'CUST_REF', KEY_SEQ: 1, FK_NAME: 'FK_ORDERS_CUST' } ]
+    db.closeSync();
+  });
+});
+
+// Promise form via Database convenience method
+async function run() {
+  const db = await ibmdb.open(cn);
+  const keys = await db.foreignKeys(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  db.closeSync();
+}
+
+// Direct use on a bare statement handle obtained via db.conn.createStatement()
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    stmt.foreignKeys(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS", function(err, keys) {
+      console.log(keys);
+      stmt.closeSync(); // free the statement handle when done
+      db.closeSync();
+    });
+  });
+});
+```
+
+### <a name="foreignKeysSyncApi"></a> 23) (ODBCStatement) .foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)
+
+Synchronously returns foreign key relationships between two tables.
+Parameters and return value are the same as `foreignKeys()`.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)`
+
+> **Note:** After all rows are fetched, `foreignKeysSync()` calls `SQLFreeStmt(SQL_CLOSE)` internally
+> to close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Sync form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  const keys = db.foreignKeysSync(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  db.closeSync();
+});
+
+// Direct use on a bare statement handle obtained via db.conn.createStatementSync()
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  const keys = stmt.foreignKeysSync(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS");
   console.log(keys);
   stmt.closeSync(); // free the statement handle when done
   db.closeSync();
