@@ -49,6 +49,8 @@
 * [.executeNonQuerySync([bindingParameters])](#-17-odbcstatement-executenonquerysyncbindingparameters)
 * [close([closeOption] [, callback])](#-18-odbcstatement-closecloseoption--callback)
 * [closeSync([closeOption])](#-19-odbcstatement-closesynccloseoption)
+* [.primaryKeys(catalog, schema, table [, callback])](#-20-odbcstatement-primarykeyscatalog-schema-table--callback)
+* [.primaryKeysSync(catalog, schema, table)](#-21-odbcstatement-primarykeyssyncatalog-schema-table)
 
 **ODBCResult APIs**
 * [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
@@ -763,6 +765,94 @@ Synchronously close the currently opened statement object and free resources.
 
 ```javascript
     stmt.closeSync();
+```
+
+### <a name="primaryKeysApi"></a> 20) (ODBCStatement) .primaryKeys(catalog, schema, table [, callback])
+
+Returns the primary key column(s) for a table by calling `SQLPrimaryKeys()` via the ODBC CLI.
+The result is an array of row objects, each containing the standard ODBC catalog columns:
+`TABLE_CAT`, `TABLE_SCHEM`, `TABLE_NAME`, `COLUMN_NAME`, `KEY_SEQ`, `PK_NAME`.
+
+* **catalog** - String or `null`. The catalog (database) name, or `null` to use the current catalog.
+* **schema** - String or `null`. The schema name, or `null` for all schemas.
+* **table** - String. The table name (exact match; search patterns are not supported by `SQLPrimaryKeys`).
+* **callback** - _OPTIONAL_ - `callback (err, rows)`. If not provided, returns a Promise.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.primaryKeys(catalog, schema, table [, callback])`
+
+> **Note:** After all rows are fetched, `primaryKeys()` calls `SQLFreeStmt(SQL_CLOSE)` internally to
+> close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Async callback form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  db.primaryKeys(null, "MYSCHEMA", "ORDERS", function(err, keys) {
+    if (err) console.log(err);
+    else console.log(keys);
+    // e.g. [ { TABLE_CAT: null, TABLE_SCHEM: 'MYSCHEMA', TABLE_NAME: 'ORDERS',
+    //          COLUMN_NAME: 'ORDER_ID', KEY_SEQ: 1, PK_NAME: 'PK_ORDERS' } ]
+    db.closeSync();
+  });
+});
+
+// Promise form via Database convenience method
+async function run() {
+  const db = await ibmdb.open(cn);
+  const keys = await db.primaryKeys(null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  db.closeSync();
+}
+
+// Direct use on a bare statement handle obtained via db.conn.createStatement()
+// No SQL needs to be prepared — createStatement() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    stmt.primaryKeys(null, "MYSCHEMA", "ORDERS", function(err, keys) {
+      console.log(keys);
+      stmt.closeSync(); // free the statement handle when done
+      db.closeSync();
+    });
+  });
+});
+```
+
+### <a name="primaryKeysSyncApi"></a> 21) (ODBCStatement) .primaryKeysSync(catalog, schema, table)
+
+Synchronously returns the primary key column(s) for a table.
+Parameters and return value are the same as `primaryKeys()`.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.primaryKeysSync(catalog, schema, table)`
+
+> **Note:** After all rows are fetched, `primaryKeysSync()` calls `SQLFreeStmt(SQL_CLOSE)` internally
+> to close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Sync form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  const keys = db.primaryKeysSync(null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  db.closeSync();
+});
+
+// Direct use on a bare statement handle obtained via db.conn.createStatementSync()
+// No SQL needs to be prepared — createStatementSync() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  const keys = stmt.primaryKeysSync(null, "MYSCHEMA", "ORDERS");
+  console.log(keys);
+  stmt.closeSync(); // free the statement handle when done
+  db.closeSync();
+});
 ```
 
 ### <a name="fetchApi"></a> 20) (ODBCResult) .fetch([option] [, callback])

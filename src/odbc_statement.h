@@ -45,6 +45,10 @@ public:
   Napi::Value CloseSync(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
 
+  // Instance methods
+  Napi::Value PrimaryKeys(const Napi::CallbackInfo &info);
+  Napi::Value PrimaryKeysSync(const Napi::CallbackInfo &info);
+
   // UV callbacks
   static void UV_Execute(uv_work_t *work_req);
   static void UV_AfterExecute(uv_work_t *work_req, int status);
@@ -60,6 +64,8 @@ public:
   static void UV_AfterSetAttr(uv_work_t *work_req, int status);
   static void UV_Close(uv_work_t *work_req);
   static void UV_AfterClose(uv_work_t *work_req, int status);
+  static void UV_PrimaryKeys(uv_work_t *work_req);
+  static void UV_AfterPrimaryKeys(uv_work_t *work_req, int status);
 
   ODBCStatement *self(void) { return this; }
 
@@ -121,6 +127,17 @@ struct stmt_setattr_work_data
   SQLPOINTER valuePtr;
   SQLINTEGER stringLength;
   int result;
+};
+
+struct primary_keys_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  int result;
+  void *catalog;
+  void *schema;
+  void *table;
 };
 
 struct stmt_close_work_data

@@ -44,6 +44,8 @@ Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("setAttrSync", &ODBCStatement::SetAttrSync, NAPI_METHOD_ATTR),
     InstanceMethod("close", &ODBCStatement::Close, NAPI_METHOD_ATTR),
     InstanceMethod("closeSync", &ODBCStatement::CloseSync, NAPI_METHOD_ATTR),
+    InstanceMethod("primaryKeys", &ODBCStatement::PrimaryKeys, NAPI_METHOD_ATTR),
+    InstanceMethod("primaryKeysSync", &ODBCStatement::PrimaryKeysSync, NAPI_METHOD_ATTR),
   });
 
   constructor = Napi::Persistent(func);
@@ -858,4 +860,153 @@ Napi::Value ODBCStatement::CloseSync(const Napi::CallbackInfo &info)
     SQLFreeStmt(m_hSTMT, closeOption);
 
   return Napi::Boolean::New(env, true);
+}
+
+/*
+ * PrimaryKeys
+ */
+Napi::Value ODBCStatement::PrimaryKeys(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::PrimaryKeys - Entry\n");
+  Napi::Env env = info.Env();
+  const char *errmsg = NULL;
+  uv_work_t *work_req = NULL;
+  primary_keys_work_data *data = NULL;
+
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+  REQ_FUN_ARG(3, cb);
+
+  work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK2(work_req, errmsg);
+  data = (primary_keys_work_data *)calloc(1, sizeof(primary_keys_work_data));
+  MEMCHECK2(data, errmsg);
+
+  data->catalog = NULL; data->schema = NULL; data->table = NULL;
+
+  int len;
+  len = (int)catalog.length(); GETCPPSTR2(data->catalog, catalog, len, errmsg);
+  len = (int)schema.length();  GETCPPSTR2(data->schema,  schema,  len, errmsg);
+  len = (int)table.length();   GETCPPSTR2(data->table,   table,   len, errmsg);
+
+  data->cb   = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->stmt = this;
+  data->env  = env;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(), work_req, UV_PrimaryKeys, (uv_after_work_cb)UV_AfterPrimaryKeys);
+  this->Ref();
+
+exit:
+  if (errmsg)
+  {
+    if (data) { FREE(data->catalog); FREE(data->schema); FREE(data->table); free(data); }
+    free(work_req);
+    Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  }
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_PrimaryKeys(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_PrimaryKeys - Entry\n");
+  primary_keys_work_data *data = (primary_keys_work_data *)(req->data);
+
+  data->result = SQLPrimaryKeys(data->stmt->m_hSTMT,
+#ifdef __MVS__
+    NULL, 0,
+#else
+    (SQLTCHAR *)data->catalog, SQL_NTS,
+#endif
+    (SQLTCHAR *)data->schema, SQL_NTS,
+    (SQLTCHAR *)data->table,  SQL_NTS);
+
+  FREE(data->catalog); FREE(data->schema); FREE(data->table);
+  DEBUG_PRINTF("ODBCStatement::UV_PrimaryKeys - Exit\n");
+}
+
+void ODBCStatement::UV_AfterPrimaryKeys(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPrimaryKeys - Entry\n");
+  primary_keys_work_data *data = (primary_keys_work_data *)(req->data);
+  Napi::Env env(data->env);
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt->self();
+
+  if (data->result == SQL_ERROR)
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+  }
+  else
+  {
+    {
+      Napi::Array rows = ODBC::GetAllRecordsSync(env, stmt->m_hENV, stmt->m_hDBC,
+                                                 stmt->m_hSTMT, NULL, MAX_VALUE_SIZE);
+      SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+      data->cb->Call({env.Null(), rows});
+    }
+  }
+  PropagateCallbackException(env);
+
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPrimaryKeys - Exit\n");
+}
+
+/*
+ * PrimaryKeysSync
+ */
+Napi::Value ODBCStatement::PrimaryKeysSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::PrimaryKeysSync - Entry\n");
+  Napi::Env env = info.Env();
+  void *cppCatalog = NULL, *cppSchema = NULL, *cppTable = NULL;
+  int len;
+  const char *errmsg = NULL;
+
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, table);
+
+  len = (int)catalog.length(); GETCPPSTR2(cppCatalog, catalog, len, errmsg);
+  len = (int)schema.length();  GETCPPSTR2(cppSchema,  schema,  len, errmsg);
+  len = (int)table.length();   GETCPPSTR2(cppTable,   table,   len, errmsg);
+
+  {
+    SQLRETURN ret = SQLPrimaryKeys(m_hSTMT,
+#ifdef __MVS__
+      NULL, 0,
+#else
+      (SQLTCHAR *)cppCatalog, SQL_NTS,
+#endif
+      (SQLTCHAR *)cppSchema, SQL_NTS,
+      (SQLTCHAR *)cppTable,  SQL_NTS);
+
+    FREE(cppCatalog); FREE(cppSchema); FREE(cppTable);
+
+    if (ret == SQL_ERROR)
+    {
+      napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+        (char *)"[node-ibm_db] Error in ODBCStatement::PrimaryKeysSync"));
+      SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+      return env.Null();
+    }
+  }
+
+  {
+    Napi::Array rows = ODBC::GetAllRecordsSync(env, m_hENV, m_hDBC, m_hSTMT, NULL, MAX_VALUE_SIZE);
+    SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+    DEBUG_PRINTF("ODBCStatement::PrimaryKeysSync - Exit\n");
+    return rows;
+  }
+
+exit:
+  FREE(cppCatalog); FREE(cppSchema); FREE(cppTable);
+  if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  return env.Null();
 }
