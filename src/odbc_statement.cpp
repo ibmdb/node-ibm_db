@@ -48,6 +48,8 @@ Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("primaryKeysSync", &ODBCStatement::PrimaryKeysSync, NAPI_METHOD_ATTR),
     InstanceMethod("foreignKeys", &ODBCStatement::ForeignKeys, NAPI_METHOD_ATTR),
     InstanceMethod("foreignKeysSync", &ODBCStatement::ForeignKeysSync, NAPI_METHOD_ATTR),
+    InstanceMethod("procedures", &ODBCStatement::Procedures, NAPI_METHOD_ATTR),
+    InstanceMethod("proceduresSync", &ODBCStatement::ProceduresSync, NAPI_METHOD_ATTR),
   });
 
   constructor = Napi::Persistent(func);
@@ -1190,6 +1192,155 @@ Napi::Value ODBCStatement::ForeignKeysSync(const Napi::CallbackInfo &info)
 exit:
   FREE(cppPkCatalog); FREE(cppPkSchema); FREE(cppPkTable);
   FREE(cppFkCatalog); FREE(cppFkSchema); FREE(cppFkTable);
+  if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+/*
+ * Procedures
+ */
+Napi::Value ODBCStatement::Procedures(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::Procedures - Entry\n");
+  Napi::Env env = info.Env();
+  const char *errmsg = NULL;
+  uv_work_t *work_req = NULL;
+  procedures_work_data *data = NULL;
+
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, procedure);
+  REQ_FUN_ARG(3, cb);
+
+  work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK2(work_req, errmsg);
+  data = (procedures_work_data *)calloc(1, sizeof(procedures_work_data));
+  MEMCHECK2(data, errmsg);
+
+  data->catalog = NULL; data->schema = NULL; data->procedure = NULL;
+
+  int len;
+  len = (int)catalog.length();   GETCPPSTR2(data->catalog,   catalog,   len, errmsg);
+  len = (int)schema.length();    GETCPPSTR2(data->schema,    schema,    len, errmsg);
+  len = (int)procedure.length(); GETCPPSTR2(data->procedure, procedure, len, errmsg);
+
+  data->cb   = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->stmt = this;
+  data->env  = env;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(), work_req, UV_Procedures, (uv_after_work_cb)UV_AfterProcedures);
+  this->Ref();
+
+exit:
+  if (errmsg)
+  {
+    if (data) { FREE(data->catalog); FREE(data->schema); FREE(data->procedure); free(data); }
+    free(work_req);
+    Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  }
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_Procedures(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_Procedures - Entry\n");
+  procedures_work_data *data = (procedures_work_data *)(req->data);
+
+  data->result = SQLProcedures(data->stmt->m_hSTMT,
+#ifdef __MVS__
+    NULL, 0,
+#else
+    (SQLTCHAR *)data->catalog, SQL_NTS,
+#endif
+    (SQLTCHAR *)data->schema, SQL_NTS,
+    (SQLTCHAR *)data->procedure, SQL_NTS);
+
+  FREE(data->catalog); FREE(data->schema); FREE(data->procedure);
+  DEBUG_PRINTF("ODBCStatement::UV_Procedures - Exit\n");
+}
+
+void ODBCStatement::UV_AfterProcedures(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterProcedures - Entry\n");
+  procedures_work_data *data = (procedures_work_data *)(req->data);
+  Napi::Env env(data->env);
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt->self();
+
+  if (data->result == SQL_ERROR)
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+    SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+  }
+  else
+  {
+    {
+      Napi::Array rows = ODBC::GetAllRecordsSync(env, stmt->m_hENV, stmt->m_hDBC,
+                                                 stmt->m_hSTMT, NULL, MAX_VALUE_SIZE);
+      SQLFreeStmt(stmt->m_hSTMT, SQL_CLOSE);
+      data->cb->Call({env.Null(), rows});
+    }
+  }
+  PropagateCallbackException(env);
+
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterProcedures - Exit\n");
+}
+
+/*
+ * ProceduresSync
+ */
+Napi::Value ODBCStatement::ProceduresSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::ProceduresSync - Entry\n");
+  Napi::Env env = info.Env();
+  void *cppCatalog = NULL, *cppSchema = NULL, *cppProcedure = NULL;
+  int len;
+  const char *errmsg = NULL;
+
+  REQ_STRO_OR_NULL_ARG(0, catalog);
+  REQ_STRO_OR_NULL_ARG(1, schema);
+  REQ_STRO_OR_NULL_ARG(2, procedure);
+
+  len = (int)catalog.length();   GETCPPSTR2(cppCatalog,   catalog,   len, errmsg);
+  len = (int)schema.length();    GETCPPSTR2(cppSchema,    schema,    len, errmsg);
+  len = (int)procedure.length(); GETCPPSTR2(cppProcedure, procedure, len, errmsg);
+
+  {
+    SQLRETURN ret = SQLProcedures(m_hSTMT,
+#ifdef __MVS__
+      NULL, 0,
+#else
+      (SQLTCHAR *)cppCatalog, SQL_NTS,
+#endif
+      (SQLTCHAR *)cppSchema, SQL_NTS,
+      (SQLTCHAR *)cppProcedure, SQL_NTS);
+
+    FREE(cppCatalog); FREE(cppSchema); FREE(cppProcedure);
+
+    if (ret == SQL_ERROR)
+    {
+      napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+        (char *)"[node-ibm_db] Error in ODBCStatement::ProceduresSync"));
+      SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+      return env.Null();
+    }
+  }
+
+  {
+    Napi::Array rows = ODBC::GetAllRecordsSync(env, m_hENV, m_hDBC, m_hSTMT, NULL, MAX_VALUE_SIZE);
+    SQLFreeStmt(m_hSTMT, SQL_CLOSE);
+    DEBUG_PRINTF("ODBCStatement::ProceduresSync - Exit\n");
+    return rows;
+  }
+
+exit:
+  FREE(cppCatalog); FREE(cppSchema); FREE(cppProcedure);
   if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
   return env.Null();
 }

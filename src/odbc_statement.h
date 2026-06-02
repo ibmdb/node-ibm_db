@@ -50,6 +50,8 @@ public:
   Napi::Value PrimaryKeysSync(const Napi::CallbackInfo &info);
   Napi::Value ForeignKeys(const Napi::CallbackInfo &info);
   Napi::Value ForeignKeysSync(const Napi::CallbackInfo &info);
+  Napi::Value Procedures(const Napi::CallbackInfo &info);
+  Napi::Value ProceduresSync(const Napi::CallbackInfo &info);
 
   // UV callbacks
   static void UV_Execute(uv_work_t *work_req);
@@ -70,6 +72,8 @@ public:
   static void UV_AfterPrimaryKeys(uv_work_t *work_req, int status);
   static void UV_ForeignKeys(uv_work_t *work_req);
   static void UV_AfterForeignKeys(uv_work_t *work_req, int status);
+  static void UV_Procedures(uv_work_t *work_req);
+  static void UV_AfterProcedures(uv_work_t *work_req, int status);
 
   ODBCStatement *self(void) { return this; }
 
@@ -165,6 +169,17 @@ struct stmt_close_work_data
   ODBCStatement *stmt;
   SQLUSMALLINT closeOption;
   int result;
+};
+
+struct procedures_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  int result;
+  void *catalog;
+  void *schema;
+  void *procedure;
 };
 
 #endif

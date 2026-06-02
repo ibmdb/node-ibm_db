@@ -53,6 +53,8 @@
 * [.primaryKeysSync(catalog, schema, table)](#-21-odbcstatement-primarykeyssyncatalog-schema-table)
 * [.foreignKeys(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable [, callback])](#-22-odbcstatement-foreignkeyspkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable--callback)
 * [.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)](#-23-odbcstatement-foreignkeysyncpkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable)
+* [.procedures(catalog, schema, procedure [, callback])](#-24-odbcstatement-procedurescatalog-schema-procedure--callback)
+* [.proceduresSync(catalog, schema, procedure)](#-25-odbcstatement-proceduressynccatalog-schema-procedure)
 
 **ODBCResult APIs**
 * [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
@@ -953,6 +955,97 @@ ibmdb.open(cn, function(err, db) {
   const stmt = db.conn.createStatementSync();
   const keys = stmt.foreignKeysSync(null, "MYSCHEMA", "CUSTOMERS", null, "MYSCHEMA", "ORDERS");
   console.log(keys);
+  stmt.closeSync(); // free the statement handle when done
+  db.closeSync();
+});
+```
+
+### <a name="proceduresApi"></a> 24) (ODBCStatement) .procedures(catalog, schema, procedure [, callback])
+
+Returns a list of procedure names stored in a specific catalog by calling `SQLProcedures()` via the ODBC CLI.
+The result is an array of row objects, each containing the standard ODBC catalog columns:
+`PROCEDURE_CAT`, `PROCEDURE_SCHEM`, `PROCEDURE_NAME`, `NUM_INPUT_PARAMS`, `NUM_OUTPUT_PARAMS`,
+`NUM_RESULT_SETS`, `REMARKS`, `PROCEDURE_TYPE`.
+
+* **catalog** - String or `null`. The catalog (database) name, or `null` to use the current catalog.
+* **schema** - String or `null`. The schema name pattern. Search patterns (% and _) are supported.
+* **procedure** - String or `null`. The procedure name pattern. Search patterns (% and _) are supported.
+* **callback** - _OPTIONAL_ - `callback (err, rows)`. If not provided, returns a Promise.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.procedures(catalog, schema, procedure [, callback])`
+
+> **Note:** After all rows are fetched, `procedures()` calls `SQLFreeStmt(SQL_CLOSE)` internally to
+> close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Async callback form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  // Get all procedures in schema MYSCHEMA
+  db.procedures(null, "MYSCHEMA", "%", function(err, procs) {
+    if (err) console.log(err);
+    else console.log(procs);
+    // e.g. [ { PROCEDURE_CAT: null, PROCEDURE_SCHEM: 'MYSCHEMA', PROCEDURE_NAME: 'MY_PROC',
+    //          NUM_INPUT_PARAMS: 2, NUM_OUTPUT_PARAMS: 1, NUM_RESULT_SETS: 0,
+    //          REMARKS: null, PROCEDURE_TYPE: 1 } ]
+    db.closeSync();
+  });
+});
+
+// Promise form via Database convenience method
+async function run() {
+  const db = await ibmdb.open(cn);
+  const procs = await db.procedures(null, "MYSCHEMA", "%");
+  console.log(procs);
+  db.closeSync();
+}
+
+// Direct use on a bare statement handle obtained via db.conn.createStatement()
+// No SQL needs to be prepared — createStatement() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    stmt.procedures(null, "MYSCHEMA", "%", function(err, procs) {
+      console.log(procs);
+      stmt.closeSync(); // free the statement handle when done
+      db.closeSync();
+    });
+  });
+});
+```
+
+### <a name="proceduresSyncApi"></a> 25) (ODBCStatement) .proceduresSync(catalog, schema, procedure)
+
+Synchronously returns a list of procedure names stored in a specific catalog.
+Parameters and return value are the same as `procedures()`.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.proceduresSync(catalog, schema, procedure)`
+
+> **Note:** After all rows are fetched, `proceduresSync()` calls `SQLFreeStmt(SQL_CLOSE)` internally
+> to close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Sync form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  const procs = db.proceduresSync(null, "MYSCHEMA", "%");
+  console.log(procs);
+  db.closeSync();
+});
+
+// Direct use on a bare statement handle obtained via db.conn.createStatementSync()
+// No SQL needs to be prepared — createStatementSync() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  const procs = stmt.proceduresSync(null, "MYSCHEMA", "%");
+  console.log(procs);
   stmt.closeSync(); // free the statement handle when done
   db.closeSync();
 });

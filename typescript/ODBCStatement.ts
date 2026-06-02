@@ -85,4 +85,73 @@ export class ODBCStatement {
   close(cb: (err: DB2Error | null) => void): void;
   close(closeOption?: number): Promise<false>;
   close(): any {}
+
+  primaryKeys(
+    catalog: string | null,
+    schema: string | null,
+    table: string,
+    cb: (err: DB2Error | null, rows?: object[]) => void
+  ): void;
+  primaryKeys(
+    catalog: string | null,
+    schema: string | null,
+    table: string
+  ): Promise<object[]>;
+  primaryKeys(): any {}
+
+  primaryKeysSync(
+    catalog: string | null,
+    schema: string | null,
+    table: string
+  ): object[];
+  primaryKeysSync(): any {}
+
+  foreignKeys(
+    pkCatalog: string | null,
+    pkSchema: string | null,
+    pkTable: string | null,
+    fkCatalog: string | null,
+    fkSchema: string | null,
+    fkTable: string | null,
+    cb: (err: DB2Error | null, rows?: object[]) => void
+  ): void;
+  foreignKeys(
+    pkCatalog: string | null,
+    pkSchema: string | null,
+    pkTable: string | null,
+    fkCatalog: string | null,
+    fkSchema: string | null,
+    fkTable: string | null
+  ): Promise<object[]>;
+  foreignKeys(): any {}
+
+  foreignKeysSync(
+    pkCatalog: string | null,
+    pkSchema: string | null,
+    pkTable: string | null,
+    fkCatalog: string | null,
+    fkSchema: string | null,
+    fkTable: string | null
+  ): object[];
+  foreignKeysSync(): any {}
+
+  procedures(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null,
+    cb: (err: DB2Error | null, rows?: object[]) => void
+  ): void;
+  procedures(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null
+  ): Promise<object[]>;
+  procedures(): any {}
+
+  proceduresSync(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null
+  ): object[];
+  proceduresSync(): any {}
 }

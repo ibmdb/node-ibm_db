@@ -60,60 +60,55 @@ ibmdb.open(cn, function(err, db) {
     }
   }
 
-  function verifyKeys(rows, label) {
-    var ok = Array.isArray(rows) &&
-             rows.length === 1 &&
-             rows[0].COLUMN_NAME === "ID";
-    done(label, ok, JSON.stringify(rows));
+  function verifyKeys(rows) {
+    return Array.isArray(rows) &&
+           rows.length === 1 &&
+           rows[0].COLUMN_NAME === "ID";
   }
 
-  function verifyFKs(rows, label) {
-    var ok = Array.isArray(rows) &&
-             rows.length === 1 &&
-             rows[0].PKCOLUMN_NAME === "ID" &&
-             rows[0].FKCOLUMN_NAME === "PK_REF";
-    done(label, ok, JSON.stringify(rows));
+  function verifyFKs(rows) {
+    return Array.isArray(rows) &&
+           rows.length === 1 &&
+           rows[0].PKCOLUMN_NAME === "ID" &&
+           rows[0].FKCOLUMN_NAME === "PK_REF";
   }
 
   // 1 — async callback via Database.primaryKeys()
   db.primaryKeys(null, schema, baseTableName, function(err, rows) {
-    done("1 db.primaryKeys callback - no error", !err, err);
-    verifyKeys(rows, "1 db.primaryKeys callback - rows");
+    var ok = !err && verifyKeys(rows);
+    done("1 db.primaryKeys callback", ok, err || JSON.stringify(rows));
     console.log("rows = ", rows);
 
     // 2 — async Promise via Database.primaryKeys()
     db.primaryKeys(null, schema, baseTableName).then(function(rows) {
-      done("2 db.primaryKeys Promise - resolved", true);
-      verifyKeys(rows, "2 db.primaryKeys Promise - rows");
+      done("2 db.primaryKeys Promise", verifyKeys(rows), JSON.stringify(rows));
       console.log("rows = ", rows);
 
       // 3 — sync via Database.primaryKeysSync()
       var rows3;
       try {
         rows3 = db.primaryKeysSync(null, schema, baseTableName);
-        done("3 db.primaryKeysSync - no throw", true);
+        done("3 db.primaryKeysSync", verifyKeys(rows3), JSON.stringify(rows3));
       } catch(e) {
-        done("3 db.primaryKeysSync - no throw", false, e);
+        done("3 db.primaryKeysSync", false, e);
         rows3 = [];
       }
-      verifyKeys(rows3, "3 db.primaryKeysSync - rows");
       console.log("rows = ", rows3);
 
       // 4 — async callback via ODBCStatement.primaryKeys()
       db.conn.createStatement(function(err, stmt) {
-        if (err) { done("4 createStatement", false, err); return finish(); }
+        if (err) { done("4 stmt.primaryKeys callback", false, err); return finish(); }
         stmt.primaryKeys(null, schema, baseTableName, function(err, rows) {
-          done("4 stmt.primaryKeys callback - no error", !err, err);
-          verifyKeys(rows, "4 stmt.primaryKeys callback - rows");
+          var ok = !err && verifyKeys(rows);
+          done("4 stmt.primaryKeys callback", ok, err || JSON.stringify(rows));
           console.log("rows = ", rows);
           stmt.closeSync();
 
           // 5 — async Promise via ODBCStatement.primaryKeys()
           db.conn.createStatement(function(err, stmt) {
-            if (err) { done("5 createStatement", false, err); return finish(); }
+            if (err) { done("5 stmt.primaryKeys Promise", false, err); return finish(); }
             stmt.primaryKeys(null, schema, baseTableName).then(function(rows) {
-              done("5 stmt.primaryKeys Promise - resolved", true);
-              verifyKeys(rows, "5 stmt.primaryKeys Promise - rows");
+              done("5 stmt.primaryKeys Promise", verifyKeys(rows), JSON.stringify(rows));
               console.log("rows = ", rows);
               stmt.closeSync();
 
@@ -122,20 +117,18 @@ ibmdb.open(cn, function(err, db) {
               var rows6;
               try {
                 rows6 = stmt6.primaryKeysSync(null, schema, baseTableName);
-                done("6 stmt.primaryKeysSync - no throw", true);
+                done("6 stmt.primaryKeysSync", verifyKeys(rows6), JSON.stringify(rows6));
               } catch(e) {
-                done("6 stmt.primaryKeysSync - no throw", false, e);
+                done("6 stmt.primaryKeysSync", false, e);
                 rows6 = [];
               }
               console.log("rows = ", rows6);
-              verifyKeys(rows6, "6 stmt.primaryKeysSync - rows");
               stmt6.closeSync();
 
               // 7 — error case: non-existent table should return empty array
               var rows7;
               try {
                 rows7 = db.primaryKeysSync(null, schema, "NONEXISTENT_TABLE_XYZ");
-                done("7 non-existent table - no throw", true);
                 done("7 non-existent table - empty array", Array.isArray(rows7) && rows7.length === 0, JSON.stringify(rows7));
               } catch(e) {
                 // some servers may throw; that is also acceptable
@@ -146,43 +139,40 @@ ibmdb.open(cn, function(err, db) {
 
               // 8 — async callback via Database.foreignKeys() — specify both pk and fk table
               db.foreignKeys(null, schema, basePkTableName, null, schema, baseFkTableName, function(err, rows) {
-                done("8 db.foreignKeys callback - no error", !err, err);
-                verifyFKs(rows, "8 db.foreignKeys callback - rows");
+                var ok = !err && verifyFKs(rows);
+                done("8 db.foreignKeys callback", ok, err || JSON.stringify(rows));
                 console.log("rows = ", rows);
 
                 // 9 — async Promise via Database.foreignKeys()
                 db.foreignKeys(null, schema, basePkTableName, null, schema, baseFkTableName).then(function(rows) {
-                  done("9 db.foreignKeys Promise - resolved", true);
-                  verifyFKs(rows, "9 db.foreignKeys Promise - rows");
+                  done("9 db.foreignKeys Promise", verifyFKs(rows), JSON.stringify(rows));
                   console.log("rows = ", rows);
 
                   // 10 — sync via Database.foreignKeysSync()
                   var rows10;
                   try {
                     rows10 = db.foreignKeysSync(null, schema, basePkTableName, null, schema, baseFkTableName);
-                    done("10 db.foreignKeysSync - no throw", true);
+                    done("10 db.foreignKeysSync", verifyFKs(rows10), JSON.stringify(rows10));
                   } catch(e) {
-                    done("10 db.foreignKeysSync - no throw", false, e);
+                    done("10 db.foreignKeysSync", false, e);
                     rows10 = [];
                   }
-                  verifyFKs(rows10, "10 db.foreignKeysSync - rows");
                   console.log("rows = ", rows10);
 
                   // 11 — async callback via ODBCStatement.foreignKeys()
                   db.conn.createStatement(function(err, stmt11) {
-                    if (err) { done("11 createStatement", false, err); return finish(); }
+                    if (err) { done("11 stmt.foreignKeys callback", false, err); return finish(); }
                     stmt11.foreignKeys(null, schema, basePkTableName, null, schema, baseFkTableName, function(err, rows) {
-                      done("11 stmt.foreignKeys callback - no error", !err, err);
-                      verifyFKs(rows, "11 stmt.foreignKeys callback - rows");
+                      var ok = !err && verifyFKs(rows);
+                      done("11 stmt.foreignKeys callback", ok, err || JSON.stringify(rows));
                       console.log("rows = ", rows);
                       stmt11.closeSync();
 
                       // 12 — async Promise via ODBCStatement.foreignKeys()
                       db.conn.createStatement(function(err, stmt12) {
-                        if (err) { done("12 createStatement", false, err); return finish(); }
+                        if (err) { done("12 stmt.foreignKeys Promise", false, err); return finish(); }
                         stmt12.foreignKeys(null, schema, basePkTableName, null, schema, baseFkTableName).then(function(rows) {
-                          done("12 stmt.foreignKeys Promise - resolved", true);
-                          verifyFKs(rows, "12 stmt.foreignKeys Promise - rows");
+                          done("12 stmt.foreignKeys Promise", verifyFKs(rows), JSON.stringify(rows));
                           console.log("rows = ", rows);
                           stmt12.closeSync();
 
@@ -191,12 +181,11 @@ ibmdb.open(cn, function(err, db) {
                           var rows13;
                           try {
                             rows13 = stmt13.foreignKeysSync(null, schema, basePkTableName, null, schema, baseFkTableName);
-                            done("13 stmt.foreignKeysSync - no throw", true);
+                            done("13 stmt.foreignKeysSync", verifyFKs(rows13), JSON.stringify(rows13));
                           } catch(e) {
-                            done("13 stmt.foreignKeysSync - no throw", false, e);
+                            done("13 stmt.foreignKeysSync", false, e);
                             rows13 = [];
                           }
-                          verifyFKs(rows13, "13 stmt.foreignKeysSync - rows");
                           console.log("rows = ", rows13);
                           stmt13.closeSync();
 
@@ -204,20 +193,17 @@ ibmdb.open(cn, function(err, db) {
                           var rows14;
                           try {
                             rows14 = db.foreignKeysSync(null, null, null, null, schema, baseFkTableName);
-                            done("14 foreignKeysSync fkTable-only - no throw", true);
-                            done("14 foreignKeysSync fkTable-only - has rows",
-                                 Array.isArray(rows14) && rows14.length >= 1, JSON.stringify(rows14));
+                            var ok14 = Array.isArray(rows14) && rows14.length >= 1;
+                            done("14 foreignKeysSync fkTable-only", ok14, JSON.stringify(rows14));
                           } catch(e) {
-                            done("14 foreignKeysSync fkTable-only - handled", true);
+                            done("14 foreignKeysSync fkTable-only", false, e);
                           }
 
                           // 15 — non-existent tables should return empty array
                           var rows15;
                           try {
                             rows15 = db.foreignKeysSync(null, schema, "NONEXISTENT_XYZ", null, schema, "NONEXISTENT_XYZ");
-                            done("15 non-existent tables - no throw", true);
-                            done("15 non-existent tables - empty array",
-                                 Array.isArray(rows15) && rows15.length === 0, JSON.stringify(rows15));
+                            done("15 non-existent tables - empty array", Array.isArray(rows15) && rows15.length === 0, JSON.stringify(rows15));
                           } catch(e) {
                             done("15 non-existent tables - handled", true);
                           }
