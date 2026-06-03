@@ -55,6 +55,8 @@
 * [.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)](#-23-odbcstatement-foreignkeysyncpkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable)
 * [.procedures(catalog, schema, procedure [, callback])](#-24-odbcstatement-procedurescatalog-schema-procedure--callback)
 * [.proceduresSync(catalog, schema, procedure)](#-25-odbcstatement-proceduressynccatalog-schema-procedure)
+* [.procedureColumns(catalog, schema, procedure, column [, callback])](#-26-odbcstatement-procedurecolumnscatalog-schema-procedure-column--callback)
+* [.procedureColumnsSync(catalog, schema, procedure, column)](#-27-odbcstatement-procedurecolumnssynccatalog-schema-procedure-column)
 
 **ODBCResult APIs**
 * [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
@@ -1046,6 +1048,100 @@ ibmdb.open(cn, function(err, db) {
   const stmt = db.conn.createStatementSync();
   const procs = stmt.proceduresSync(null, "MYSCHEMA", "%");
   console.log(procs);
+  stmt.closeSync(); // free the statement handle when done
+  db.closeSync();
+});
+```
+
+### <a name="procedureColumnsApi"></a> 26) (ODBCStatement) .procedureColumns(catalog, schema, procedure, column [, callback])
+
+Returns parameter information for stored procedures by calling `SQLProcedureColumns()` via the ODBC CLI.
+The result is an array of row objects, each containing the standard ODBC catalog columns:
+`PROCEDURE_CAT`, `PROCEDURE_SCHEM`, `PROCEDURE_NAME`, `COLUMN_NAME`, `COLUMN_TYPE`,
+`DATA_TYPE`, `TYPE_NAME`, `COLUMN_SIZE`, `BUFFER_LENGTH`, `DECIMAL_DIGITS`, `NUM_PREC_RADIX`,
+`NULLABLE`, `REMARKS`, `COLUMN_DEF`, `SQL_DATA_TYPE`, `SQL_DATETIME_SUB`, `CHAR_OCTET_LENGTH`,
+`ORDINAL_POSITION`, `IS_NULLABLE`.
+
+* **catalog** - String or `null`. The catalog (database) name, or `null` to use the current catalog.
+* **schema** - String or `null`. The schema name pattern. Search patterns (% and _) are supported.
+* **procedure** - String or `null`. The procedure name pattern. Search patterns (% and _) are supported.
+* **column** - String or `null`. The column/parameter name pattern. Search patterns (% and _) are supported. Use `%` to retrieve all parameters.
+* **callback** - _OPTIONAL_ - `callback (err, rows)`. If not provided, returns a Promise.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.procedureColumns(catalog, schema, procedure, column [, callback])`
+
+> **Note:** After all rows are fetched, `procedureColumns()` calls `SQLFreeStmt(SQL_CLOSE)` internally to
+> close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Async callback form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  // Get all parameters for procedure MY_PROC in schema MYSCHEMA
+  db.procedureColumns(null, "MYSCHEMA", "MY_PROC", "%", function(err, cols) {
+    if (err) console.log(err);
+    else console.log(cols);
+    // e.g. [ { PROCEDURE_CAT: null, PROCEDURE_SCHEM: 'MYSCHEMA', PROCEDURE_NAME: 'MY_PROC',
+    //          COLUMN_NAME: 'P_INPUT', COLUMN_TYPE: 1, DATA_TYPE: 4, TYPE_NAME: 'INTEGER',
+    //          COLUMN_SIZE: 10, ... } ]
+    db.closeSync();
+  });
+});
+
+// Promise form via Database convenience method
+async function run() {
+  const db = await ibmdb.open(cn);
+  const cols = await db.procedureColumns(null, "MYSCHEMA", "MY_PROC", "%");
+  console.log(cols);
+  db.closeSync();
+}
+
+// Direct use on a bare statement handle obtained via db.conn.createStatement()
+// No SQL needs to be prepared — createStatement() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    stmt.procedureColumns(null, "MYSCHEMA", "MY_PROC", "%", function(err, cols) {
+      console.log(cols);
+      stmt.closeSync(); // free the statement handle when done
+      db.closeSync();
+    });
+  });
+});
+```
+
+### <a name="procedureColumnsSyncApi"></a> 27) (ODBCStatement) .procedureColumnsSync(catalog, schema, procedure, column)
+
+Synchronously returns parameter information for stored procedures.
+Parameters and return value are the same as `procedureColumns()`.
+
+Can also be called directly on a `Database` object as a convenience:
+`db.procedureColumnsSync(catalog, schema, procedure, column)`
+
+> **Note:** After all rows are fetched, `procedureColumnsSync()` calls `SQLFreeStmt(SQL_CLOSE)` internally
+> to close the result cursor. The statement handle itself remains valid — call `stmt.closeSync()` when
+> you are done with the statement to release it.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Sync form via Database convenience method
+ibmdb.open(cn, function(err, db) {
+  const cols = db.procedureColumnsSync(null, "MYSCHEMA", "MY_PROC", "%");
+  console.log(cols);
+  db.closeSync();
+});
+
+// Direct use on a bare statement handle obtained via db.conn.createStatementSync()
+// No SQL needs to be prepared — createStatementSync() allocates a fresh handle.
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  const cols = stmt.procedureColumnsSync(null, "MYSCHEMA", "MY_PROC", "%");
+  console.log(cols);
   stmt.closeSync(); // free the statement handle when done
   db.closeSync();
 });

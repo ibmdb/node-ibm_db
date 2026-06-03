@@ -340,6 +340,29 @@ export class Database {
   ): object[];
   proceduresSync(): any {}
 
+  procedureColumns(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null,
+    column: string | null,
+    cb: (err: DB2Error | null, rows?: object[]) => void
+  ): void;
+  procedureColumns(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null,
+    column: string | null
+  ): Promise<object[]>;
+  procedureColumns(): any {}
+
+  procedureColumnsSync(
+    catalog: string | null,
+    schema: string | null,
+    procedure: string | null,
+    column: string | null
+  ): object[];
+  procedureColumnsSync(): any {}
+
   describe(
     obj: DescribeObject,
     cb: (
