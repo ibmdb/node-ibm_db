@@ -10,7 +10,7 @@
 
 * [.open(connectionString [, options] [, callback])](#-1-ibmdb-openconnectionstring-options-callback)
 * [.openSync(connectionString [,options])](#-2-ibmdb-opensyncconnectionstring-options)
-* [.debug(value)](#-38-ibmdb-debugvalue)
+* [.debug(value)](#-57-ibmdb-debugvalue)
 
 **Database APIs**
 * [.query(sqlQuery [, bindingParameters] [, callback])](#-3-database-querysqlquery--bindingparameters--callback)
@@ -22,23 +22,23 @@
 * [.closeSync()](#-9-database-closesync)
 * [.prepare(sql [, callback])](#-10-database-preparesql--callback)
 * [.prepareSync(sql)](#-11-database-preparesyncsql)
-* [.beginTransaction([callback])](#-28-database-begintransactioncallback)
-* [.beginTransactionSync()](#-29-database-begintransactionsync)
-* [.commitTransaction([callback])](#-30-database-committransactioncallback)
-* [.commitTransactionSync()](#-31-database-committransactionsync)
-* [.rollbackTransaction([callback])](#-32-database-rollbacktransactioncallback)
-* [.rollbackTransactionSync()](#-33-database-rollbacktransactionsync)
-* [.setIsolationLevel(isolationLevel)](#-34-database-setisolationlevelisolationlevel)
-* [.executeFileSync(sqlFile, [delimiter], [outputFile])](#-39-database-executefilesyncsqlfile-delimiteroutputfile)
-* [.executeFile(sqlFile, [delimiter], [outputFile])](#-40-database-executefilesqlfile-delimiter-outputfile)
-* [.setAttr(attributeName, value [, callback])](#-41-database-setattrattributename-value--callback)
-* [.setAttrSync(attributeName, value)](#-42-database-setattrsyncattributename-value)
-* [.getInfo(infoType, [infoLength] [, callback])](#-43-database-getinfoinfotype-infolength--callback)
-* [.getInfoSync(infoType, [infoLength])](#-44-database-getinfosyncinfotype-infolength)
-* [.getTypeInfo(dataType [, callback])](#-45-database-gettypeinfodatatype--callback)
-* [.getTypeInfoSync(dataType)](#-46-database-gettypeinfosyncdatatype)
-* [.getFunctions(functionId, callback)](#-47-database-getfunctionsfunctionid-callback)
-* [.getFunctionsSync(functionId)](#-48-database-getfunctionssyncfunctionid)
+* [.beginTransaction([callback])](#-50-database-begintransactioncallback)
+* [.beginTransactionSync()](#-51-database-begintransactionsync)
+* [.commitTransaction([callback])](#-52-database-committransactioncallback)
+* [.commitTransactionSync()](#-53-database-committransactionsync)
+* [.rollbackTransaction([callback])](#-54-database-rollbacktransactioncallback)
+* [.rollbackTransactionSync()](#-55-database-rollbacktransactionsync)
+* [.setIsolationLevel(isolationLevel)](#-56-database-setisolationlevelisolationlevel)
+* [.executeFileSync(sqlFile, [delimiter], [outputFile])](#-58-database-executefilesyncsqlfile-delimiteroutputfile)
+* [.executeFile(sqlFile, [delimiter], [outputFile])](#-59-database-executefilesqlfile-delimiter-outputfile)
+* [.setAttr(attributeName, value [, callback])](#-60-database-setattrattributename-value--callback)
+* [.setAttrSync(attributeName, value)](#-61-database-setattrsyncattributename-value)
+* [.getInfo(infoType, [infoLength] [, callback])](#-62-database-getinfoinfotype-infolength--callback)
+* [.getInfoSync(infoType, [infoLength])](#-63-database-getinfosyncinfotype-infolength)
+* [.getTypeInfo(dataType [, callback])](#-64-database-gettypeinfodatatype--callback)
+* [.getTypeInfoSync(dataType)](#-65-database-gettypeinfosyncdatatype)
+* [.getFunctions(functionId, callback)](#-66-database-getfunctionsfunctionid-callback)
+* [.getFunctionsSync(functionId)](#-67-database-getfunctionssyncfunctionid)
 
 **ODBCStatement APIs**
 * [.bind(bindingParameters [, callback])](#-12-odbcstatement-bindbindingparameters--callback)
@@ -47,33 +47,40 @@
 * [.executeSync([bindingParameters])](#-15-odbcstatement-executesyncbindingparameters)
 * [.executeNonQuery([bindingParameters] [, callback])](#-16-odbcstatement-executenonquerybindingparameters--callback)
 * [.executeNonQuerySync([bindingParameters])](#-17-odbcstatement-executenonquerysyncbindingparameters)
-* [close([closeOption] [, callback])](#-18-odbcstatement-closecloseoption--callback)
-* [closeSync([closeOption])](#-19-odbcstatement-closesynccloseoption)
+* [.close([closeOption] [, callback])](#-18-odbcstatement-closecloseoption--callback)
+* [.closeSync([closeOption])](#-19-odbcstatement-closesynccloseoption)
 * [.primaryKeys(catalog, schema, table [, callback])](#-20-odbcstatement-primarykeyscatalog-schema-table--callback)
-* [.primaryKeysSync(catalog, schema, table)](#-21-odbcstatement-primarykeyssyncatalog-schema-table)
+* [.primaryKeysSync(catalog, schema, table)](#-21-odbcstatement-primarykeyssynccatalog-schema-table)
 * [.foreignKeys(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable [, callback])](#-22-odbcstatement-foreignkeyspkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable--callback)
-* [.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)](#-23-odbcstatement-foreignkeysyncpkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable)
+* [.foreignKeysSync(pkCatalog, pkSchema, pkTable, fkCatalog, fkSchema, fkTable)](#-23-odbcstatement-foreignkeyssyncpkcatalog-pkschema-pktable-fkcatalog-fkschema-fktable)
 * [.procedures(catalog, schema, procedure [, callback])](#-24-odbcstatement-procedurescatalog-schema-procedure--callback)
 * [.proceduresSync(catalog, schema, procedure)](#-25-odbcstatement-proceduressynccatalog-schema-procedure)
 * [.procedureColumns(catalog, schema, procedure, column [, callback])](#-26-odbcstatement-procedurecolumnscatalog-schema-procedure-column--callback)
 * [.procedureColumnsSync(catalog, schema, procedure, column)](#-27-odbcstatement-procedurecolumnssynccatalog-schema-procedure-column)
+* [.paramData([callback])](#-28-odbcstatement-paramdatacallback)
+* [.paramDataSync()](#-29-odbcstatement-paramdatasync)
+* [.putData(data [, length] [, callback])](#-30-odbcstatement-putdatadata--length--callback)
+* [.putDataSync(data [, length])](#-31-odbcstatement-putdatasyncdata--length)
+* [.executeForStreaming([callback])](#-32-odbcstatement-executeforstreamingcallback)
+* [.executeForStreamingSync()](#-33-odbcstatement-executeforstreamingsync)
+* [.executeWithStream(streamParamIndex, stream [, callback])](#-34-odbcstatement-executewithstreamstreamparamindex-stream--callback)
 
 **ODBCResult APIs**
-* [.fetch([option] [, callback])](#-20-odbcresult-fetchoption--callback)
-* [.fetchSync([option])](#-21-odbcresult-fetchsyncoption)
-* [.fetchAll([option] [, callback])](#-22-odbcresult-fetchalloption--callback)
-* [.fetchAllSync([option])](#-23-odbcresult-fetchallsyncoption)
-* [.fetchN(count [, option] [, callback])](#fetchNApi)
-* [.fetchNSync(count [, option])](#fetchNSyncApi)
-* [.getData([colNum] [, size] [, callback])](#-24-odbcresult-getdatacolnum--size--callback)
-* [.getDataSync(colNum, size)](#-25-odbcresult-getdatasynccolnum-size)
-* [.close([closeOption] [, callback])](#-26-odbcresult-closecloseoption--callback)
-* [.closeSync([closeOption])](#-27-odbcresult-closesynccloseoption)
-* [.getColumnNamesSync()](#-35-odbcresult-getcolumnnamessync)
-* [.getColumnMetadataSync()](#-36-odbcresult-getcolumnmetadatasync)
-* [.getSQLErrorSync()](#-37-odbcresult-getsqlerrorsync)
-* [.bindFileToCol(colNum, filePath [, fileOption] [, callback])](#bindFileToColApi)
-* [.bindFileToColSync(colNum, filePath [, fileOption])](#bindFileToColSyncApi)
+* [.fetch([option] [, callback])](#-35-odbcresult-fetchoption--callback)
+* [.fetchSync([option])](#-36-odbcresult-fetchsyncoption)
+* [.fetchAll([option] [, callback])](#-37-odbcresult-fetchalloption--callback)
+* [.fetchAllSync([option])](#-38-odbcresult-fetchallsyncoption)
+* [.fetchN(count [, option] [, callback])](#-39-odbcresult-fetchncount--option--callback)
+* [.fetchNSync(count [, option])](#-40-odbcresult-fetchnsynccount--option)
+* [.getData([colNum] [, size] [, callback])](#-41-odbcresult-getdatacolnum--size--callback)
+* [.getDataSync(colNum, size)](#-42-odbcresult-getdatasynccolnum-size)
+* [.close([closeOption] [, callback])](#-43-odbcresult-closecloseoption--callback)
+* [.closeSync([closeOption])](#-44-odbcresult-closesynccloseoption)
+* [.getColumnNamesSync()](#-45-odbcresult-getcolumnnamessync)
+* [.getColumnMetadataSync()](#-46-odbcresult-getcolumnmetadatasync)
+* [.getSQLErrorSync()](#-47-odbcresult-getsqlerrorsync)
+* [.bindFileToCol(colNum, filePath [, fileOption] [, callback])](#-48-odbcresult-bindfiletocolcolnum-filepath--fileoption--callback)
+* [.bindFileToColSync(colNum, filePath [, fileOption])](#-49-odbcresult-bindfiletocolsynccolnum-filepath--fileoption)
 
 
 [**Connection Pooling APIs**](#connection-pooling-apis)
@@ -1147,7 +1154,313 @@ ibmdb.open(cn, function(err, db) {
 });
 ```
 
-### <a name="fetchApi"></a> 20) (ODBCResult) .fetch([option] [, callback])
+### <a name="paramDataApi"></a> 28) (ODBCStatement) .paramData([callback])
+
+Calls `SQLParamData()` to get the next parameter for which a data value is needed.
+This function is used in conjunction with `putData()` for sending large data in chunks
+or for handling data-at-execution parameters.
+
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If not provided, returns a Promise.
+
+Returns an object with:
+* **needsData** - `boolean` - `true` if `SQL_NEED_DATA` was returned, meaning more data is needed for a parameter.
+* **paramIndex** - `number | null` - The index/token of the parameter that needs data (only set when `needsData` is `true`).
+
+> **Note:** The typical workflow for data-at-execution is:
+> 1. Bind parameters with `SQL_DATA_AT_EXEC` indicator
+> 2. Execute the statement (returns with SQL_NEED_DATA state)
+> 3. Call `paramData()` to get the parameter that needs data
+> 4. Call `putData()` one or more times to send the data
+> 5. Call `paramData()` again to proceed to the next parameter or complete execution
+> 6. Repeat steps 4-5 until `paramData()` returns `{ needsData: false }`
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Example using paramData with callback
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    // After binding data-at-execution parameters and executing...
+    stmt.paramData(function(err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (result.needsData) {
+        console.log("Need data for parameter:", result.paramIndex);
+        // Call putData() to send the data...
+      } else {
+        console.log("All parameters satisfied, statement executed.");
+      }
+      stmt.closeSync();
+      db.closeSync();
+    });
+  });
+});
+
+// Promise form
+async function run() {
+  const db = await ibmdb.open(cn);
+  const stmt = db.conn.createStatementSync();
+  // ... after binding and executing ...
+  const result = await stmt.paramData();
+  if (result.needsData) {
+    console.log("Need data for parameter:", result.paramIndex);
+  }
+  stmt.closeSync();
+  db.closeSync();
+}
+```
+
+### <a name="paramDataSyncApi"></a> 29) (ODBCStatement) .paramDataSync()
+
+Synchronously calls `SQLParamData()` to get the next parameter for which a data value is needed.
+
+Returns an object with:
+* **needsData** - `boolean` - `true` if `SQL_NEED_DATA` was returned.
+* **paramIndex** - `number | null` - The index/token of the parameter that needs data.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  // ... after binding and executing ...
+  const result = stmt.paramDataSync();
+  if (result.needsData) {
+    console.log("Need data for parameter:", result.paramIndex);
+    // Call putDataSync() to send the data...
+  }
+  stmt.closeSync();
+  db.closeSync();
+});
+```
+
+### <a name="putDataApi"></a> 30) (ODBCStatement) .putData(data [, length] [, callback])
+
+Calls `SQLPutData()` to send data for a parameter. This function is used in conjunction
+with `paramData()` for sending large data in chunks or for handling data-at-execution parameters.
+
+* **data** - `Buffer | string | null` - The data to send for the parameter. Use `null` to send `SQL_NULL_DATA`.
+* **length** - _OPTIONAL_ - `number` - The length of the data. Defaults to the buffer/string length.
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If not provided, returns a Promise.
+
+Returns `true` on success.
+
+> **Note:** `putData()` can be called multiple times to send large data in chunks.
+> After sending all chunks for a parameter, call `paramData()` to proceed to the next parameter
+> or to complete the statement execution.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Example: Send data in chunks
+ibmdb.open(cn, function(err, db) {
+  db.conn.createStatement(function(err, stmt) {
+    // ... after paramData() returns needsData: true ...
+    const chunk1 = Buffer.from("First part of data");
+    const chunk2 = Buffer.from("Second part of data");
+
+    stmt.putData(chunk1, function(err, result) {
+      if (err) return console.log(err);
+      stmt.putData(chunk2, function(err, result) {
+        if (err) return console.log(err);
+        // Call paramData() to proceed...
+        stmt.closeSync();
+        db.closeSync();
+      });
+    });
+  });
+});
+
+// Promise form
+async function sendData() {
+  const db = await ibmdb.open(cn);
+  const stmt = db.conn.createStatementSync();
+  // ... after paramData() returns needsData: true ...
+  await stmt.putData(Buffer.from("First chunk"));
+  await stmt.putData(Buffer.from("Second chunk"));
+  // Call paramData() to proceed...
+  stmt.closeSync();
+  db.closeSync();
+}
+```
+
+### <a name="putDataSyncApi"></a> 31) (ODBCStatement) .putDataSync(data [, length])
+
+Synchronously calls `SQLPutData()` to send data for a parameter.
+
+* **data** - `Buffer | string | null` - The data to send for the parameter.
+* **length** - _OPTIONAL_ - `number` - The length of the data.
+
+Returns `true` on success.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.conn.createStatementSync();
+  // ... after paramDataSync() returns needsData: true ...
+  stmt.putDataSync(Buffer.from("Data chunk 1"));
+  stmt.putDataSync(Buffer.from("Data chunk 2"));
+  // Call paramDataSync() to proceed...
+  stmt.closeSync();
+  db.closeSync();
+});
+```
+
+### <a name="executeForStreamingApi"></a> 32) (ODBCStatement) .executeForStreaming([callback])
+
+Executes the prepared statement but does **NOT** automatically complete the data-at-execution
+loop. Returns an object `{ needsData: boolean }` indicating whether `paramData()`/`putData()` calls
+are required to send data for data-at-execution parameters.
+
+This method is the foundation for true streaming support, where data can be sent incrementally
+as it arrives from a stream, without buffering the entire content in memory first.
+
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If not provided, returns a Promise.
+
+Returns an object with:
+* **needsData** - `boolean` - `true` if data-at-execution parameters exist and require data.
+
+> **Note:** After calling `executeForStreaming()`, if `needsData` is `true`:
+> 1. Call `paramData()` to get which parameter needs data
+> 2. Call `putData()` one or more times to send data chunks
+> 3. Call `paramData()` again to proceed to the next parameter or complete execution
+> 4. Repeat until `paramData()` returns `{ needsData: false }`
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Example: True streaming with executeForStreaming
+ibmdb.open(cn, async function(err, db) {
+  const stmt = db.prepareSync("INSERT INTO mytable (id, data) VALUES (?, ?)");
+
+  // Bind with data-at-execution parameter
+  stmt.bindSync([1, { ParamType: "INPUT", DataType: "BLOB", Data: [Buffer.alloc(0)], Length: 1024 }]);
+
+  const result = await stmt.executeForStreaming();
+
+  if (result.needsData) {
+    console.log("Statement needs data - use paramData/putData to send");
+    // Now use paramData/putData loop to send data incrementally
+  } else {
+    console.log("Execution completed without needing additional data");
+  }
+
+  stmt.closeSync();
+  db.closeSync();
+});
+```
+
+### <a name="executeForStreamingSyncApi"></a> 33) (ODBCStatement) .executeForStreamingSync()
+
+Synchronous version of `executeForStreaming()`. Returns `{ needsData: boolean }`.
+
+```javascript
+const ibmdb = require("ibm_db");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.prepareSync("INSERT INTO mytable (id, data) VALUES (?, ?)");
+  stmt.bindSync([1, { ParamType: "INPUT", DataType: "BLOB", Data: [Buffer.alloc(0)], Length: 1024 }]);
+
+  const result = stmt.executeForStreamingSync();
+  console.log("needsData:", result.needsData);
+
+  if (result.needsData) {
+    // Use paramDataSync/putDataSync loop
+    let paramResult = stmt.paramDataSync();
+    while (paramResult.needsData) {
+      stmt.putDataSync(Buffer.from("chunk of data"));
+      paramResult = stmt.paramDataSync();
+    }
+  }
+
+  stmt.closeSync();
+  db.closeSync();
+});
+```
+
+### <a name="executeWithStreamApi"></a> 34) (ODBCStatement) .executeWithStream(streamParamIndex, stream [, callback])
+
+High-level helper for true streaming. Executes the statement and streams data from a
+Node.js `Readable` stream to a data-at-execution parameter **without buffering the entire
+stream in memory**.
+
+This method combines `executeForStreaming()`, `paramData()`, and `putData()` into a
+single convenient API for streaming large data to the database.
+
+* **streamParamIndex** - `number` - Index (0-based) of the parameter that will receive streamed data.
+* **stream** - `NodeJS.ReadableStream` - A Readable stream to read data from.
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If not provided, returns a Promise.
+
+Returns an object with:
+* **streamed** - `boolean` - `true` if streaming was performed.
+* **paramIndex** - `number` - Index of the parameter that received streamed data (if streamed).
+
+> **Note:**
+> - The parameter at `streamParamIndex` must be bound with data-at-execution indicator.
+> - Use `{ ParamType: "INPUT", DataType: "BLOB"|"CLOB", Data: [Buffer.alloc(0)], Length: totalSize }` format.
+> - Backpressure is handled automatically - the stream is paused while each chunk is being sent.
+
+```javascript
+const ibmdb = require("ibm_db");
+const fs = require("fs");
+const cn = "DATABASE=dbname;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=dbuser;PWD=xxx";
+
+// Example: Stream a large file to BLOB column without loading into memory
+ibmdb.open(cn, async function(err, db) {
+  const stmt = db.prepareSync("INSERT INTO documents (id, content) VALUES (?, ?)");
+
+  // Get file size for the Length parameter
+  const stats = fs.statSync("largefile.bin");
+
+  // Bind with data-at-execution indicator
+  stmt.bindSync([
+    1,
+    { ParamType: "INPUT", DataType: "BLOB", Data: [Buffer.alloc(0)], Length: stats.size }
+  ]);
+
+  // Create a read stream
+  const stream = fs.createReadStream("largefile.bin", { highWaterMark: 65536 });
+
+  // Stream data to database
+  const result = await stmt.executeWithStream(1, stream);
+
+  if (result.streamed) {
+    console.log("Successfully streamed data to parameter", result.paramIndex);
+  }
+
+  stmt.closeSync();
+  db.closeSync();
+});
+
+// Callback style
+ibmdb.open(cn, function(err, db) {
+  const stmt = db.prepareSync("INSERT INTO logs (id, data) VALUES (?, ?)");
+  const stream = fs.createReadStream("logfile.txt");
+
+  stmt.bindSync([1, { ParamType: "INPUT", DataType: "CLOB", Data: [Buffer.alloc(0)], Length: 10000 }]);
+
+  stmt.executeWithStream(1, stream, function(err, result) {
+    if (err) {
+      console.log("Streaming error:", err);
+    } else {
+      console.log("Streaming complete:", result);
+    }
+    stmt.closeSync();
+    db.closeSync();
+  });
+});
+```
+
+### <a name="fetchApi"></a> 35) (ODBCResult) .fetch([option] [, callback])
 
 Fetch a row of data from an ODBCResult object asynchronously.
 
@@ -1193,7 +1506,7 @@ ibmdb.open(cn,function(err, conn){
 });
 ```
 
-### <a name="fetchSyncApi"></a> 21) (ODBCResult) .fetchSync([option])
+### <a name="fetchSyncApi"></a> 36) (ODBCResult) .fetchSync([option])
 
 Fetch a row of data from the ODBCResult object synchronously.
 
@@ -1223,7 +1536,7 @@ ibmdb.open(cn,function(err, conn){
 });
 ```
 
-### <a name="fetchAllApi"></a> 22) (ODBCResult) .fetchAll([option] [, callback])
+### <a name="fetchAllApi"></a> 37) (ODBCResult) .fetchAll([option] [, callback])
 
 Fetch all rows from ODBCResult object asynchronously for the executed statement.
 
@@ -1264,7 +1577,7 @@ ibmdb.open(cn,function(err, conn){
 });
 ```
 
-### <a name="fetchAllSyncApi"></a> 23) (ODBCResult) .fetchAllSync([option])
+### <a name="fetchAllSyncApi"></a> 38) (ODBCResult) .fetchAllSync([option])
 
 Fetch all rows from ODBCResult object Synchronously for the executed statement.
 
@@ -1289,7 +1602,7 @@ ibmdb.open(cn,function(err, conn){
 ```
 For example of prepare once and execute many times with above fetch APIs, please see test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js).
 
-### <a name="fetchNApi"></a> (ODBCResult) .fetchN(count [, option] [, callback])
+### <a name="fetchNApi"></a> 39) (ODBCResult) .fetchN(count [, option] [, callback])
 
 Fetch up to `count` rows from ODBCResult object asynchronously. Returns an array of rows. If fewer than `count` rows remain, only the available rows are returned. Returns an empty array when no more rows are available. Unlike `fetchAll()`, this method does not close the cursor or free columns after fetching, so you can call it repeatedly to process a large result set in batches.
 
@@ -1325,7 +1638,7 @@ ibmdb.open(cn, async function(err, conn) {
 });
 ```
 
-### <a name="fetchNSyncApi"></a> (ODBCResult) .fetchNSync(count [, option])
+### <a name="fetchNSyncApi"></a> 40) (ODBCResult) .fetchNSync(count [, option])
 
 Fetch up to `count` rows from ODBCResult object synchronously. Returns an array of rows. If fewer than `count` rows remain, only the available rows are returned. Returns an empty array when no more rows are available. Unlike `fetchAllSync()`, this method does not close the cursor or free columns after fetching, so you can call it repeatedly to process a large result set in batches.
 
@@ -1424,7 +1737,7 @@ ibmdb.open(cn, function(err, conn) {
 
 **Note:** Block fetch uses `SQLBindCol` to pre-allocate array buffers for each column. For columns with very large declared sizes (e.g., CLOB/BLOB), the buffer size per element is capped at 64KB. If you need to retrieve larger LOB values, use the default single-row fetch (do not set `SQL_ATTR_ROW_ARRAY_SIZE`).
 
-### <a name="getDataApi"></a> 24) (ODBCResult) .getData([colNum] [, size] [, callback])
+### <a name="getDataApi"></a> 41) (ODBCResult) .getData([colNum] [, size] [, callback])
 
 Retrive data for colNum of specified size from ODBCResult object asynchronously.
 
@@ -1462,7 +1775,7 @@ ibmdb.open(cn,function(err, conn){
 ```
 See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
 
-### <a name="getDataSyncApi"></a> 25) (ODBCResult) .getDataSync(colNum, size)
+### <a name="getDataSyncApi"></a> 42) (ODBCResult) .getDataSync(colNum, size)
 
 Retrive data for colNum of specified size from ODBCResult object synchronously.
 
@@ -1498,7 +1811,7 @@ ibmdb.open(cn,function(err, conn){
 ```
 See test file [test-fetch-apis.js](https://github.com/ibmdb/node-ibm_db/blob/master/test/test-fetch-apis.js) for detail example.
 
-### <a name="resultCloseApi"></a> 26) (ODBCResult) close([closeOption] [, callback])
+### <a name="resultCloseApi"></a> 43) (ODBCResult) close([closeOption] [, callback])
 
 Close the currently opened ODBC Result object and free resources.
 
@@ -1512,7 +1825,7 @@ Close the currently opened ODBC Result object and free resources.
     await result.close();
 ```
 
-### <a name="resultCloseSyncApi"></a> 27) (ODBCResult) closeSync([closeOption])
+### <a name="resultCloseSyncApi"></a> 44) (ODBCResult) closeSync([closeOption])
 
 Synchronously close the currently opened ODBC Result object and free resources.
 
@@ -1520,17 +1833,17 @@ Synchronously close the currently opened ODBC Result object and free resources.
     result.closeSync();
 ```
 
-### <a name="beginTransactionApi"></a> 28) (Database) .beginTransaction([callback])
+### <a name="beginTransactionApi"></a> 50) (Database) .beginTransaction([callback])
 
 Begin a transaction
 
 * **callback** - _OPTIONAL_ - `callback (err)`. If callback is not provided, a Promise will be returned.
 
-### <a name="beginTransactionSyncApi"></a> 29) (Database) .beginTransactionSync()
+### <a name="beginTransactionSyncApi"></a> 51) (Database) .beginTransactionSync()
 
 Synchronously begin a transaction
 
-### <a name="commitTransactionApi"></a> 30) (Database) .commitTransaction([callback])
+### <a name="commitTransactionApi"></a> 52) (Database) .commitTransaction([callback])
 
 Commit a transaction
 
@@ -1567,7 +1880,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="commitTransactionSyncApi"></a> 31) (Database) .commitTransactionSync()
+### <a name="commitTransactionSyncApi"></a> 53) (Database) .commitTransactionSync()
 
 Synchronously commit a transaction
 
@@ -1596,7 +1909,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="rollbackTransactionApi"></a> 32) (Database) .rollbackTransaction([callback])
+### <a name="rollbackTransactionApi"></a> 54) (Database) .rollbackTransaction([callback])
 
 Rollback a transaction
 
@@ -1633,7 +1946,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="rollbackTransactionSyncApi"></a> 33) (Database) .rollbackTransactionSync()
+### <a name="rollbackTransactionSyncApi"></a> 55) (Database) .rollbackTransactionSync()
 
 Synchronously rollback a transaction
 
@@ -1662,7 +1975,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="setIsolationLevelApi"></a> 34) (Database) .setIsolationLevel(isolationLevel)
+### <a name="setIsolationLevelApi"></a> 56) (Database) .setIsolationLevel(isolationLevel)
 
 Synchronously sets the default isolation level passed as argument. It is only applicable when the default isolation level is used. It will have no effect if the application has specifically set the isolation level for a transaction.
 
@@ -1679,7 +1992,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getColumnNamesSyncApi"></a> 35) (ODBCResult) .getColumnNamesSync()
+### <a name="getColumnNamesSyncApi"></a> 45) (ODBCResult) .getColumnNamesSync()
 
 Synchronously retrieve the name of columns returned by the resulset.
 
@@ -1693,7 +2006,7 @@ Synchronously retrieve the name of columns returned by the resulset.
   });
 ```
 
-### <a name="getColumnMetadataSyncApi"></a> 36) (ODBCResult) .getColumnMetadataSync()
+### <a name="getColumnMetadataSyncApi"></a> 46) (ODBCResult) .getColumnMetadataSync()
 
 Synchronously retrieve the metadata about columns returned by the resulset.
 
@@ -1710,7 +2023,7 @@ Synchronously retrieve the metadata about columns returned by the resulset.
   });
 ```
 
-### <a name="getSQLErrorSyncApi"></a> 37) (ODBCResult) .getSQLErrorSync()
+### <a name="getSQLErrorSyncApi"></a> 47) (ODBCResult) .getSQLErrorSync()
 
 Synchronously retrieve the sqlerror message and codes for last instruction executed on a statement handle using SQLGetDiagRec ODBC API.
 
@@ -1731,7 +2044,7 @@ Synchronously retrieve the sqlerror message and codes for last instruction execu
   });
 ```
 
-### <a name="bindFileToColApi"></a> 38) (ODBCResult) .bindFileToCol(colNum, filePath [, fileOption] [, callback])
+### <a name="bindFileToColApi"></a> 48) (ODBCResult) .bindFileToCol(colNum, filePath [, fileOption] [, callback])
 
 Asynchronously bind a result set column to a file so that LOB data (BLOB, CLOB, DBCLOB) is written directly to the file during fetch. Uses the ODBC `SQLBindFileToCol` API internally. Must be called **after** execute and **before** fetch.
 
@@ -1768,7 +2081,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="bindFileToColSyncApi"></a> 39) (ODBCResult) .bindFileToColSync(colNum, filePath [, fileOption])
+### <a name="bindFileToColSyncApi"></a> 49) (ODBCResult) .bindFileToColSync(colNum, filePath [, fileOption])
 
 Synchronously bind a result set column to a file so that LOB data (BLOB, CLOB, DBCLOB) is written directly to the file during fetch. Uses the ODBC `SQLBindFileToCol` API internally. Must be called **after** execute and **before** fetch.
 
@@ -1795,7 +2108,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="enableDebugLogs"></a> 40) (ibmdb) .debug(value)
+### <a name="enableDebugLogs"></a> 57) (ibmdb) .debug(value)
 
 Enable console logs. debug(true) do not log params that may have sensitive data. Support for debug(2) added to dump bind params.
 
@@ -1827,7 +2140,7 @@ ibmdb.open(cn, function (err, conn) {
 });
 ```
 
-### <a name="executeFileSyncApi"></a> 41) (Database) .executeFileSync(sqlFile, [delimiter], [outputFile])
+### <a name="executeFileSyncApi"></a> 58) (Database) .executeFileSync(sqlFile, [delimiter], [outputFile])
 
 Synchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -1850,7 +2163,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="executeFileApi"></a> 42) (Database) .executeFile(sqlFile, [delimiter], [outputFile])
+### <a name="executeFileApi"></a> 59) (Database) .executeFile(sqlFile, [delimiter], [outputFile])
 
 Asynchronously issue multiple SQL query from the file to the database that is currently open.
 
@@ -1884,7 +2197,7 @@ ibmdb.open(cn, function(err, conn){
 });
 ```
 
-### <a name="setAttrApi"></a> 43) (Database) .setAttr(attributeName, value [, callback])
+### <a name="setAttrApi"></a> 60) (Database) .setAttr(attributeName, value [, callback])
 
 Set connection and statement level attributes asynchronously. It requires attributeName and corresponding value.
 `conn.setAttr()` - sets connection level attributes post connection.
@@ -1899,7 +2212,7 @@ stmt.setAttr(ibmdb.SQL_ATTR_PARAMSET_SIZE, 4, function(err, result) {
 });
 ```
 
-### <a name="setAttrSyncApi"></a> 44) (Database) .setAttrSync(attributeName, value)
+### <a name="setAttrSyncApi"></a> 61) (Database) .setAttrSync(attributeName, value)
 
 Set connection and statement level attributes synchronously. It requires attributeName and corresponding value.
 `conn.setAttrSync()` - sets connection level attributes post connection.
@@ -1916,7 +2229,7 @@ err = stmt.setAttrSync(3, 2); //SQL_ATTR_MAX_LENGTH = 3
 err = stmt.setAttrSync(ibmdb.SQL_ATTR_ROW_ARRAY_SIZE, 10);
 ```
 
-### <a name="getInfoApi"></a> 45) (Database) .getInfo(infoType, [infoLength] [, callback])
+### <a name="getInfoApi"></a> 62) (Database) .getInfo(infoType, [infoLength] [, callback])
 
 Asynchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
@@ -1943,7 +2256,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getInfoSyncApi"></a> 46) (Database) .getInfoSync(infoType, [infoLength])
+### <a name="getInfoSyncApi"></a> 63) (Database) .getInfoSync(infoType, [infoLength])
 
 Synchronously retrieve the general information about the database management system (DBMS) that the application is connected to. It also retrives the information about ODBC driver used for connection.
 
@@ -1963,7 +2276,7 @@ ibmdb.open(cn, function(err, conn)
 });
 ```
 
-### <a name="getTypeInfoApi"></a> 47) (Database) .getTypeInfo(dataType [, callback])
+### <a name="getTypeInfoApi"></a> 64) (Database) .getTypeInfo(dataType [, callback])
 
 Asynchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
@@ -1993,7 +2306,7 @@ async function main()
 }
 ```
 
-### <a name="getTypeInfoSyncApi"></a> 48) (Database) .getTypeInfoSync(dataType)
+### <a name="getTypeInfoSyncApi"></a> 65) (Database) .getTypeInfoSync(dataType)
 
 Synchronously retrieve the information about the SQL data types that are supported by the connected database server.
 If `ibmdb.SQL_ALL_TYPES` is specified, information about all supported data types would be returned in ascending order by `TYPE_NAME`. All unsupported data types would be absent from the result set.
@@ -2011,7 +2324,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getFunctionsApi"></a> 49) (Database) .getFunctions(functionId, callback)
+### <a name="getFunctionsApi"></a> 66) (Database) .getFunctions(functionId, callback)
 
 Asynchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 
@@ -2034,7 +2347,7 @@ ibmdb.open(cn, function(err, conn) {
 });
 ```
 
-### <a name="getFunctionsSyncApi"></a> 50) (Database) .getFunctionsSync(functionId)
+### <a name="getFunctionsSyncApi"></a> 67) (Database) .getFunctionsSync(functionId)
 
 Synchronously determines whether a specific CLI or ODBC function is supported. This allows applications to adapt to varying levels of support when connecting to different database servers.
 

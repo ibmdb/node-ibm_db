@@ -54,6 +54,12 @@ public:
   Napi::Value ProceduresSync(const Napi::CallbackInfo &info);
   Napi::Value ProcedureColumns(const Napi::CallbackInfo &info);
   Napi::Value ProcedureColumnsSync(const Napi::CallbackInfo &info);
+  Napi::Value ParamData(const Napi::CallbackInfo &info);
+  Napi::Value ParamDataSync(const Napi::CallbackInfo &info);
+  Napi::Value PutData(const Napi::CallbackInfo &info);
+  Napi::Value PutDataSync(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteForStreaming(const Napi::CallbackInfo &info);
+  Napi::Value ExecuteForStreamingSync(const Napi::CallbackInfo &info);
 
   // UV callbacks
   static void UV_Execute(uv_work_t *work_req);
@@ -78,6 +84,12 @@ public:
   static void UV_AfterProcedures(uv_work_t *work_req, int status);
   static void UV_ProcedureColumns(uv_work_t *work_req);
   static void UV_AfterProcedureColumns(uv_work_t *work_req, int status);
+  static void UV_ParamData(uv_work_t *work_req);
+  static void UV_AfterParamData(uv_work_t *work_req, int status);
+  static void UV_PutData(uv_work_t *work_req);
+  static void UV_AfterPutData(uv_work_t *work_req, int status);
+  static void UV_ExecuteForStreaming(uv_work_t *work_req);
+  static void UV_AfterExecuteForStreaming(uv_work_t *work_req, int status);
 
   ODBCStatement *self(void) { return this; }
 
@@ -196,6 +208,35 @@ struct procedure_columns_work_data
   void *schema;
   void *procedure;
   void *column;
+};
+
+struct param_data_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  SQLRETURN result;
+  SQLPOINTER valuePtr;
+};
+
+struct put_data_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  SQLRETURN result;
+  void *data;
+  SQLLEN dataLen;
+  bool freeData;
+};
+
+struct execute_streaming_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  SQLRETURN result;
+  bool needsData;
 };
 
 #endif

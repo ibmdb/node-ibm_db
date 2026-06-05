@@ -52,6 +52,12 @@ Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("proceduresSync", &ODBCStatement::ProceduresSync, NAPI_METHOD_ATTR),
     InstanceMethod("procedureColumns", &ODBCStatement::ProcedureColumns, NAPI_METHOD_ATTR),
     InstanceMethod("procedureColumnsSync", &ODBCStatement::ProcedureColumnsSync, NAPI_METHOD_ATTR),
+    InstanceMethod("paramData", &ODBCStatement::ParamData, NAPI_METHOD_ATTR),
+    InstanceMethod("paramDataSync", &ODBCStatement::ParamDataSync, NAPI_METHOD_ATTR),
+    InstanceMethod("putData", &ODBCStatement::PutData, NAPI_METHOD_ATTR),
+    InstanceMethod("putDataSync", &ODBCStatement::PutDataSync, NAPI_METHOD_ATTR),
+    InstanceMethod("executeForStreaming", &ODBCStatement::ExecuteForStreaming, NAPI_METHOD_ATTR),
+    InstanceMethod("executeForStreamingSync", &ODBCStatement::ExecuteForStreamingSync, NAPI_METHOD_ATTR),
   });
 
   constructor = Napi::Persistent(func);
@@ -1500,4 +1506,453 @@ exit:
   FREE(cppCatalog); FREE(cppSchema); FREE(cppProcedure); FREE(cppColumn);
   if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
   return env.Null();
+}
+
+/*
+ * ParamData
+ * Calls SQLParamData to get the next parameter for which a data value is needed.
+ * Returns an object: { needsData: boolean, paramIndex: number|null }
+ */
+Napi::Value ODBCStatement::ParamData(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::ParamData - Entry\n");
+  Napi::Env env = info.Env();
+  const char *errmsg = NULL;
+  uv_work_t *work_req = NULL;
+  param_data_work_data *data = NULL;
+
+  REQ_FUN_ARG(0, cb);
+
+  work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK2(work_req, errmsg);
+  data = (param_data_work_data *)calloc(1, sizeof(param_data_work_data));
+  MEMCHECK2(data, errmsg);
+
+  data->env = env;
+  data->cb = new Napi::FunctionReference();
+  *(data->cb) = Napi::Persistent(cb);
+  data->stmt = this;
+  data->valuePtr = NULL;
+
+  work_req->data = data;
+
+  this->Ref();
+
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_ParamData,
+    (uv_after_work_cb)UV_AfterParamData);
+
+  DEBUG_PRINTF("ODBCStatement::ParamData - Exit\n");
+  return env.Undefined();
+
+exit:
+  if (data) { delete data->cb; free(data); }
+  if (work_req) free(work_req);
+  if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_ParamData(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_ParamData - Entry\n");
+  param_data_work_data *data = (param_data_work_data *)(req->data);
+
+  data->result = SQLParamData(data->stmt->m_hSTMT, &data->valuePtr);
+
+  DEBUG_PRINTF("ODBCStatement::UV_ParamData - Exit, result=%d\n", data->result);
+}
+
+void ODBCStatement::UV_AfterParamData(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterParamData - Entry\n");
+  param_data_work_data *data = (param_data_work_data *)(req->data);
+  Napi::Env env = data->env;
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt;
+
+  if (data->result == SQL_ERROR)
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+  }
+  else
+  {
+    Napi::Object result = Napi::Object::New(env);
+    if (data->result == SQL_NEED_DATA)
+    {
+      result.Set("needsData", Napi::Boolean::New(env, true));
+      // valuePtr is the token passed to SQLBindParameter (usually parameter index)
+      result.Set("paramIndex", Napi::Number::New(env, (double)(intptr_t)data->valuePtr));
+    }
+    else
+    {
+      // SQL_SUCCESS or SQL_SUCCESS_WITH_INFO - all parameters satisfied
+      result.Set("needsData", Napi::Boolean::New(env, false));
+      result.Set("paramIndex", env.Null());
+    }
+    data->cb->Call({env.Null(), result});
+  }
+
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterParamData - Exit\n");
+}
+
+/*
+ * ParamDataSync
+ */
+Napi::Value ODBCStatement::ParamDataSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::ParamDataSync - Entry\n");
+  Napi::Env env = info.Env();
+
+  SQLPOINTER valuePtr = NULL;
+  SQLRETURN ret = SQLParamData(m_hSTMT, &valuePtr);
+
+  if (ret == SQL_ERROR)
+  {
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCStatement::ParamDataSync"));
+    return env.Null();
+  }
+
+  Napi::Object result = Napi::Object::New(env);
+  if (ret == SQL_NEED_DATA)
+  {
+    result.Set("needsData", Napi::Boolean::New(env, true));
+    result.Set("paramIndex", Napi::Number::New(env, (double)(intptr_t)valuePtr));
+  }
+  else
+  {
+    result.Set("needsData", Napi::Boolean::New(env, false));
+    result.Set("paramIndex", env.Null());
+  }
+
+  DEBUG_PRINTF("ODBCStatement::ParamDataSync - Exit\n");
+  return result;
+}
+
+/*
+ * PutData
+ * Calls SQLPutData to send data for a parameter.
+ */
+Napi::Value ODBCStatement::PutData(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::PutData - Entry\n");
+  Napi::Env env = info.Env();
+  const char *errmsg = NULL;
+  uv_work_t *work_req = NULL;
+  put_data_work_data *data = NULL;
+
+  if (info.Length() < 1)
+  {
+    Napi::Error::New(env, "putData requires at least 1 argument").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  // Get callback (last argument)
+  int cbIndex = info.Length() - 1;
+  if (!info[cbIndex].IsFunction())
+  {
+    Napi::Error::New(env, "Last argument must be a callback function").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  Napi::Function cb = info[cbIndex].As<Napi::Function>();
+
+  work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK2(work_req, errmsg);
+  data = (put_data_work_data *)calloc(1, sizeof(put_data_work_data));
+  MEMCHECK2(data, errmsg);
+
+  data->env = env;
+  data->cb = new Napi::FunctionReference();
+  *(data->cb) = Napi::Persistent(cb);
+  data->stmt = this;
+  data->freeData = false;
+
+  // Get data from first argument
+  if (info[0].IsBuffer())
+  {
+    Napi::Buffer<char> buf = info[0].As<Napi::Buffer<char>>();
+    data->dataLen = buf.Length();
+    data->data = malloc(data->dataLen);
+    if (!data->data) { errmsg = "Memory allocation failed"; goto exit; }
+    memcpy(data->data, buf.Data(), data->dataLen);
+    data->freeData = true;
+  }
+  else if (info[0].IsString())
+  {
+    std::string str = info[0].As<Napi::String>().Utf8Value();
+    data->dataLen = str.length();
+    data->data = malloc(data->dataLen + 1);
+    if (!data->data) { errmsg = "Memory allocation failed"; goto exit; }
+    memcpy(data->data, str.c_str(), data->dataLen + 1);
+    data->freeData = true;
+  }
+  else if (info[0].IsNull())
+  {
+    data->data = NULL;
+    data->dataLen = SQL_NULL_DATA;
+  }
+  else
+  {
+    errmsg = "First argument must be a Buffer, String, or null";
+    goto exit;
+  }
+
+  // Optional length argument
+  if (cbIndex > 1 && info[1].IsNumber())
+  {
+    data->dataLen = info[1].As<Napi::Number>().Int64Value();
+  }
+
+  work_req->data = data;
+
+  this->Ref();
+
+  uv_queue_work(
+    uv_default_loop(),
+    work_req,
+    UV_PutData,
+    (uv_after_work_cb)UV_AfterPutData);
+
+  DEBUG_PRINTF("ODBCStatement::PutData - Exit\n");
+  return env.Undefined();
+
+exit:
+  if (data) {
+    if (data->freeData && data->data) free(data->data);
+    delete data->cb;
+    free(data);
+  }
+  if (work_req) free(work_req);
+  if (errmsg) Napi::Error::New(env, errmsg).ThrowAsJavaScriptException();
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_PutData(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_PutData - Entry\n");
+  put_data_work_data *data = (put_data_work_data *)(req->data);
+
+  data->result = SQLPutData(data->stmt->m_hSTMT, data->data, data->dataLen);
+
+  DEBUG_PRINTF("ODBCStatement::UV_PutData - Exit, result=%d\n", data->result);
+}
+
+void ODBCStatement::UV_AfterPutData(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPutData - Entry\n");
+  put_data_work_data *data = (put_data_work_data *)(req->data);
+  Napi::Env env = data->env;
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt;
+
+  if (!SQL_SUCCEEDED(data->result))
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+  }
+  else
+  {
+    data->cb->Call({env.Null(), Napi::Boolean::New(env, true)});
+  }
+
+  if (data->freeData && data->data) free(data->data);
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterPutData - Exit\n");
+}
+
+/*
+ * PutDataSync
+ */
+Napi::Value ODBCStatement::PutDataSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::PutDataSync - Entry\n");
+  Napi::Env env = info.Env();
+
+  if (info.Length() < 1)
+  {
+    Napi::Error::New(env, "putDataSync requires at least 1 argument").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  void *dataPtr = NULL;
+  SQLLEN dataLen = 0;
+  bool freeData = false;
+
+  // Get data from first argument
+  if (info[0].IsBuffer())
+  {
+    Napi::Buffer<char> buf = info[0].As<Napi::Buffer<char>>();
+    dataLen = buf.Length();
+    dataPtr = buf.Data();
+  }
+  else if (info[0].IsString())
+  {
+    std::string str = info[0].As<Napi::String>().Utf8Value();
+    dataLen = str.length();
+    dataPtr = malloc(dataLen + 1);
+    if (!dataPtr)
+    {
+      Napi::Error::New(env, "Memory allocation failed").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    memcpy(dataPtr, str.c_str(), dataLen + 1);
+    freeData = true;
+  }
+  else if (info[0].IsNull())
+  {
+    dataPtr = NULL;
+    dataLen = SQL_NULL_DATA;
+  }
+  else
+  {
+    Napi::Error::New(env, "First argument must be a Buffer, String, or null").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  // Optional length argument
+  if (info.Length() > 1 && info[1].IsNumber())
+  {
+    dataLen = info[1].As<Napi::Number>().Int64Value();
+  }
+
+  SQLRETURN ret = SQLPutData(m_hSTMT, dataPtr, dataLen);
+
+  if (freeData && dataPtr) free(dataPtr);
+
+  if (!SQL_SUCCEEDED(ret))
+  {
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCStatement::PutDataSync"));
+    return env.Null();
+  }
+
+  DEBUG_PRINTF("ODBCStatement::PutDataSync - Exit\n");
+  return Napi::Boolean::New(env, true);
+}
+
+/*
+ * ExecuteForStreaming
+ *
+ * Like Execute but does NOT auto-complete PutDataLoop when SQL_NEED_DATA.
+ * Returns { needsData: boolean } to let JS layer drive the paramData/putData loop.
+ */
+Napi::Value ODBCStatement::ExecuteForStreaming(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::ExecuteForStreaming - Entry\n");
+  Napi::Env env = info.Env();
+
+  Napi::Function cb;
+
+  if (info.Length() < 1 || !info[0].IsFunction())
+  {
+    Napi::Error::New(env, "executeForStreaming requires a callback function").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  cb = info[0].As<Napi::Function>();
+
+  uv_work_t *work_req = (uv_work_t *)calloc(1, sizeof(uv_work_t));
+  MEMCHECK(work_req);
+
+  execute_streaming_work_data *data = (execute_streaming_work_data *)calloc(1, sizeof(execute_streaming_work_data));
+  if (!data) free(work_req);
+  MEMCHECK(data);
+
+  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->stmt = this;
+  data->env = env;
+  data->needsData = false;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(), work_req, UV_ExecuteForStreaming, (uv_after_work_cb)UV_AfterExecuteForStreaming);
+  this->Ref();
+  DEBUG_PRINTF("ODBCStatement::ExecuteForStreaming - Exit\n");
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_ExecuteForStreaming(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_ExecuteForStreaming - Entry\n");
+  execute_streaming_work_data *data = (execute_streaming_work_data *)(req->data);
+
+  SQLRETURN ret = SQLExecute(data->stmt->m_hSTMT);
+
+  // If SQL_NEED_DATA, do NOT call PutDataLoop - let JS handle it
+  if (ret == SQL_NEED_DATA)
+  {
+    data->needsData = true;
+    data->result = ret;
+  }
+  else
+  {
+    data->needsData = false;
+    data->result = ret;
+  }
+
+  DEBUG_PRINTF("ODBCStatement::UV_ExecuteForStreaming - Exit, ret=%d, needsData=%d\n", ret, data->needsData);
+}
+
+void ODBCStatement::UV_AfterExecuteForStreaming(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteForStreaming - Entry\n");
+  execute_streaming_work_data *data = (execute_streaming_work_data *)(req->data);
+  Napi::Env env(data->env);
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt->self();
+
+  if (data->result == SQL_ERROR)
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+  }
+  else
+  {
+    // Return { needsData: bool } to indicate if paramData/putData loop is required
+    Napi::Object result = Napi::Object::New(env);
+    result.Set("needsData", Napi::Boolean::New(env, data->needsData));
+    data->cb->Call({env.Null(), result});
+  }
+
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterExecuteForStreaming - Exit\n");
+}
+
+/*
+ * ExecuteForStreamingSync
+ *
+ * Synchronous version of ExecuteForStreaming.
+ * Returns { needsData: boolean } to let JS layer drive the paramData/putData loop.
+ */
+Napi::Value ODBCStatement::ExecuteForStreamingSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::ExecuteForStreamingSync - Entry\n");
+  Napi::Env env = info.Env();
+
+  SQLRETURN ret = SQLExecute(m_hSTMT);
+
+  if (ret == SQL_ERROR)
+  {
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCStatement::ExecuteForStreamingSync"));
+    return env.Null();
+  }
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("needsData", Napi::Boolean::New(env, ret == SQL_NEED_DATA));
+
+  DEBUG_PRINTF("ODBCStatement::ExecuteForStreamingSync - Exit, needsData=%d\n", ret == SQL_NEED_DATA);
+  return result;
 }

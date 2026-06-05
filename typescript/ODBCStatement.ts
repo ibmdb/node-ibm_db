@@ -177,4 +177,113 @@ export class ODBCStatement {
     column: string | null
   ): object[];
   procedureColumnsSync(): any {}
+
+  /**
+   * Result object returned by paramData/paramDataSync
+   */
+  // ParamDataResult interface is defined below
+
+  /**
+   * Get next parameter for which a data value is needed.
+   * Used with putData for sending large data in chunks.
+   */
+  paramData(
+    cb: (err: DB2Error | null, result?: ParamDataResult) => void
+  ): void;
+  paramData(): Promise<ParamDataResult>;
+  paramData(): any {}
+
+  /**
+   * Synchronously get next parameter for which a data value is needed.
+   */
+  paramDataSync(): ParamDataResult;
+  paramDataSync(): any {}
+
+  /**
+   * Send data value for a parameter.
+   * Used with paramData for sending large data in chunks.
+   */
+  putData(
+    data: Buffer | string | null,
+    length: number,
+    cb: (err: DB2Error | null, result?: boolean) => void
+  ): void;
+  putData(
+    data: Buffer | string | null,
+    cb: (err: DB2Error | null, result?: boolean) => void
+  ): void;
+  putData(data: Buffer | string | null, length?: number): Promise<boolean>;
+  putData(): any {}
+
+  /**
+   * Synchronously send data value for a parameter.
+   */
+  putDataSync(data: Buffer | string | null, length?: number): boolean;
+  putDataSync(): any {}
+
+  /**
+   * Execute the prepared statement for streaming.
+   * Does NOT auto-complete the data-at-execution loop.
+   * Returns { needsData: boolean } to indicate if paramData/putData calls are required.
+   */
+  executeForStreaming(
+    cb: (err: DB2Error | null, result?: ExecuteStreamingResult) => void
+  ): void;
+  executeForStreaming(): Promise<ExecuteStreamingResult>;
+  executeForStreaming(): any {}
+
+  /**
+   * Synchronous version of executeForStreaming.
+   */
+  executeForStreamingSync(): ExecuteStreamingResult;
+  executeForStreamingSync(): any {}
+
+  /**
+   * High-level streaming helper.
+   * Executes the statement and streams data from a Readable stream
+   * to a data-at-execution parameter without buffering.
+   */
+  executeWithStream(
+    streamParamIndex: number,
+    stream: NodeJS.ReadableStream,
+    cb: (err: DB2Error | null, result?: StreamResult) => void
+  ): void;
+  executeWithStream(
+    stream: NodeJS.ReadableStream,
+    cb: (err: DB2Error | null, result?: StreamResult) => void
+  ): void;
+  executeWithStream(
+    streamParamIndex: number,
+    stream: NodeJS.ReadableStream
+  ): Promise<StreamResult>;
+  executeWithStream(stream: NodeJS.ReadableStream): Promise<StreamResult>;
+  executeWithStream(): any {}
+}
+
+/**
+ * Result object returned by executeForStreaming/executeForStreamingSync
+ */
+export interface ExecuteStreamingResult {
+  /** True if data-at-execution parameters need data via paramData/putData */
+  needsData: boolean;
+}
+
+/**
+ * Result object returned by executeWithStream
+ */
+export interface StreamResult {
+  /** True if streaming was performed */
+  streamed: boolean;
+  /** Index of the parameter that received streamed data */
+  paramIndex?: number;
+}
+
+/**
+ * Result object returned by paramData/paramDataSync
+ */
+export interface ParamDataResult {
+  /** True if SQL_NEED_DATA was returned, meaning more data is needed */
+  needsData: boolean;
+  /** The parameter index that needs data (only set when needsData is true) */
+  paramIndex: number | null;
 }
