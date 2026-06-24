@@ -56,6 +56,8 @@ Napi::Object ODBCConnection::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("setAttrSync", &ODBCConnection::SetAttrSync, NAPI_METHOD_ATTR),
     InstanceMethod("columns", &ODBCConnection::Columns, NAPI_METHOD_ATTR),
     InstanceMethod("tables", &ODBCConnection::Tables, NAPI_METHOD_ATTR),
+    InstanceMethod("cancel", &ODBCConnection::Cancel, NAPI_METHOD_ATTR),
+    InstanceMethod("cancelSync", &ODBCConnection::CancelSync, NAPI_METHOD_ATTR),
     InstanceAccessor("connected", &ODBCConnection::ConnectedGetter, nullptr, napi_enumerable),
     InstanceAccessor("connectTimeout", &ODBCConnection::ConnectTimeoutGetter, &ODBCConnection::ConnectTimeoutSetter, napi_enumerable),
     InstanceAccessor("systemNaming", &ODBCConnection::SystemNamingGetter, &ODBCConnection::SystemNamingSetter, napi_enumerable),
@@ -1609,4 +1611,133 @@ Napi::Value getInfoValue(Napi::Env env, SQLUSMALLINT fInfoType, SQLPOINTER info)
   default:
     return Napi::Number::New(env, *((SQLINTEGER *)info));
   }
+}
+
+/*
+ * Cancel
+ * Calls SQLCancel on a statement handle to cancel an executing SQL statement.
+ * Requires a statement object as the first argument.
+ * 
+ * Usage:
+ *   cancel(statement, callback) - cancel the specified statement
+ */
+Napi::Value ODBCConnection::Cancel(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCConnection::Cancel - Entry\n");
+  Napi::Env env = info.Env();
+  
+  if (info.Length() < 2 || !info[0].IsObject() || !info[1].IsFunction())
+  {
+    Napi::Error::New(env, "cancel() requires a statement object and a callback function").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  
+  Napi::Object stmtObj = info[0].As<Napi::Object>();
+  Napi::Function cb = info[1].As<Napi::Function>();
+  
+  napi_status status;
+  ODBCStatement *stmt = nullptr;
+  status = napi_unwrap(env, stmtObj, reinterpret_cast<void**>(&stmt));
+  
+  if (status != napi_ok || !stmt || !stmt->m_hSTMT)
+  {
+    Napi::Error::New(env, "Invalid statement object or statement handle is null").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  
+  SQLHSTMT hSTMT = stmt->m_hSTMT;
+
+  uv_work_t *work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK(work_req);
+  cancel_work_data *data = (cancel_work_data *)calloc(1, sizeof(cancel_work_data));
+  if (!data) free(work_req);
+  MEMCHECK(data);
+
+  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->conn = this;
+  data->hSTMT = hSTMT;
+  data->env = env;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(), work_req, UV_Cancel, (uv_after_work_cb)UV_AfterCancel);
+  this->Ref();
+  DEBUG_PRINTF("ODBCConnection::Cancel - Exit\n");
+  return env.Undefined();
+}
+
+void ODBCConnection::UV_Cancel(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_Cancel - Entry\n");
+  cancel_work_data *data = (cancel_work_data *)(req->data);
+  data->result = SQLCancel(data->hSTMT);
+  DEBUG_PRINTF("ODBCConnection::UV_Cancel - Exit, result=%d\n", data->result);
+}
+
+void ODBCConnection::UV_AfterCancel(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCConnection::UV_AfterCancel - Entry\n");
+  cancel_work_data *data = (cancel_work_data *)(req->data);
+  Napi::Env env(data->env);
+  Napi::HandleScope scope(env);
+
+  if (!SQL_SUCCEEDED(data->result))
+  {
+    data->cb->Call({ODBC::GetSQLError(env, SQL_HANDLE_STMT, data->hSTMT)});
+  }
+  else
+  {
+    data->cb->Call({env.Null(), Napi::Boolean::New(env, true)});
+  }
+  PropagateCallbackException(env);
+
+  data->conn->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCConnection::UV_AfterCancel - Exit\n");
+}
+
+/*
+ * CancelSync
+ * Synchronous version of Cancel. Calls SQLCancel on a statement handle.
+ * Requires a statement object as argument.
+ * 
+ * Usage:
+ *   cancelSync(statement) - cancel the specified statement
+ */
+Napi::Value ODBCConnection::CancelSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCConnection::CancelSync - Entry\n");
+  Napi::Env env = info.Env();
+  
+  if (info.Length() < 1 || !info[0].IsObject())
+  {
+    Napi::Error::New(env, "cancelSync() requires a statement object").ThrowAsJavaScriptException();
+    return Napi::Boolean::New(env, false);
+  }
+  
+  Napi::Object stmtObj = info[0].As<Napi::Object>();
+  napi_status status;
+  ODBCStatement *stmt = nullptr;
+  status = napi_unwrap(env, stmtObj, reinterpret_cast<void**>(&stmt));
+  
+  if (status != napi_ok || !stmt || !stmt->m_hSTMT)
+  {
+    Napi::Error::New(env, "Invalid statement object or statement handle is null").ThrowAsJavaScriptException();
+    return Napi::Boolean::New(env, false);
+  }
+  
+  SQLHSTMT hSTMT = stmt->m_hSTMT;
+
+  SQLRETURN ret = SQLCancel(hSTMT);
+
+  if (!SQL_SUCCEEDED(ret))
+  {
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCConnection::CancelSync"));
+    return Napi::Boolean::New(env, false);
+  }
+
+  DEBUG_PRINTF("ODBCConnection::CancelSync - Exit\n");
+  return Napi::Boolean::New(env, true);
 }

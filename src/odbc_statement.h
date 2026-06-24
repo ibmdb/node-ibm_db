@@ -44,6 +44,8 @@ public:
   Napi::Value SetAttrSync(const Napi::CallbackInfo &info);
   Napi::Value CloseSync(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
+  Napi::Value Cancel(const Napi::CallbackInfo &info);
+  Napi::Value CancelSync(const Napi::CallbackInfo &info);
 
   // Instance methods
   Napi::Value PrimaryKeys(const Napi::CallbackInfo &info);
@@ -76,6 +78,8 @@ public:
   static void UV_AfterSetAttr(uv_work_t *work_req, int status);
   static void UV_Close(uv_work_t *work_req);
   static void UV_AfterClose(uv_work_t *work_req, int status);
+  static void UV_Cancel(uv_work_t *work_req);
+  static void UV_AfterCancel(uv_work_t *work_req, int status);
   static void UV_PrimaryKeys(uv_work_t *work_req);
   static void UV_AfterPrimaryKeys(uv_work_t *work_req, int status);
   static void UV_ForeignKeys(uv_work_t *work_req);
@@ -237,6 +241,14 @@ struct execute_streaming_work_data
   ODBCStatement *stmt;
   SQLRETURN result;
   bool needsData;
+};
+
+struct stmt_cancel_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCStatement *stmt;
+  SQLRETURN result;
 };
 
 #endif

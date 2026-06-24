@@ -69,6 +69,8 @@ public:
   Napi::Value SetAttrSync(const Napi::CallbackInfo &info);
   Napi::Value Columns(const Napi::CallbackInfo &info);
   Napi::Value Tables(const Napi::CallbackInfo &info);
+  Napi::Value Cancel(const Napi::CallbackInfo &info);
+  Napi::Value CancelSync(const Napi::CallbackInfo &info);
 
   // Property getter/setters
   Napi::Value ConnectedGetter(const Napi::CallbackInfo &info);
@@ -101,6 +103,8 @@ public:
   static void UV_AfterGetFunctions(uv_work_t *work_req, int status);
   static void UV_SetAttr(uv_work_t *work_req);
   static void UV_AfterSetAttr(uv_work_t *work_req, int status);
+  static void UV_Cancel(uv_work_t *work_req);
+  static void UV_AfterCancel(uv_work_t *work_req, int status);
 
   ODBCConnection *self(void) { return this; }
 
@@ -207,6 +211,15 @@ struct setattr_work_data
   SQLINTEGER attr;
   SQLPOINTER valuePtr;
   SQLINTEGER stringLength;
+  SQLRETURN result;
+};
+
+struct cancel_work_data
+{
+  napi_env env;
+  Napi::FunctionReference *cb;
+  ODBCConnection *conn;
+  SQLHSTMT hSTMT;
   SQLRETURN result;
 };
 

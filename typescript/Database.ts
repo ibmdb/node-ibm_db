@@ -439,4 +439,25 @@ export class Database {
 
   setAttrSync(attr: number, value: number | null | string): boolean;
   setAttrSync(): any {}
+
+  /**
+   * Cancel an executing SQL statement on the specified statement handle.
+   * Calls SQLCancel ODBC API.
+   * @param statement - The statement object to cancel
+   * @param cb - Optional callback. If not provided, returns a Promise.
+   */
+  cancel(
+    statement: ODBCStatement,
+    cb: (err: DB2Error | null, result?: boolean) => void
+  ): void;
+  cancel(statement: ODBCStatement): Promise<boolean>;
+  cancel(): any {}
+
+  /**
+   * Synchronous version of cancel.
+   * @param statement - The statement object to cancel
+   * @returns true on success
+   */
+  cancelSync(statement: ODBCStatement): boolean | Error;
+  cancelSync(): any {}
 }

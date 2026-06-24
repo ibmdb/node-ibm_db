@@ -39,6 +39,8 @@
 * [.getTypeInfoSync(dataType)](#-65-database-gettypeinfosyncdatatype)
 * [.getFunctions(functionId, callback)](#-66-database-getfunctionsfunctionid-callback)
 * [.getFunctionsSync(functionId)](#-67-database-getfunctionssyncfunctionid)
+* [.cancel(statement [, callback])](#-68-database-cancelstatement--callback)
+* [.cancelSync(statement)](#-69-database-cancelsyncstatement)
 
 **ODBCStatement APIs**
 * [.bind(bindingParameters [, callback])](#-12-odbcstatement-bindbindingparameters--callback)
@@ -64,6 +66,8 @@
 * [.executeForStreaming([callback])](#-32-odbcstatement-executeforstreamingcallback)
 * [.executeForStreamingSync()](#-33-odbcstatement-executeforstreamingsync)
 * [.executeWithStream(streamParamIndex, stream [, callback])](#-34-odbcstatement-executewithstreamstreamparamindex-stream--callback)
+* [.cancel([callback])](#-70-odbcstatement-cancelcallback)
+* [.cancelSync()](#-71-odbcstatement-cancelsync)
 
 **ODBCResult APIs**
 * [.fetch([option] [, callback])](#-35-odbcresult-fetchoption--callback)
@@ -1460,6 +1464,84 @@ ibmdb.open(cn, function(err, db) {
 });
 ```
 
+### <a name="stmtCancelApi"></a> 70) (ODBCStatement) .cancel([callback])
+
+Cancel an executing SQL statement on this statement handle. This calls `SQLCancel` ODBC API to cancel a long-running query. The cancel can be called from another thread or asynchronously while a statement is executing.
+
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If callback is not provided, a Promise will be returned.
+
+Returns `true` on success.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn)
+{
+    conn.prepare("SELECT * FROM LARGE_TABLE", function(err, stmt) {
+        if (err) {
+            console.log(err);
+            return;
+        }
+
+        // Start execution
+        stmt.execute(function(err, result) {
+            if (err) {
+                console.log("Query cancelled or error:", err);
+            } else {
+                console.log("Result:", result);
+                result.closeSync();
+            }
+            stmt.closeSync();
+        });
+
+        // Cancel the statement after 5 seconds
+        setTimeout(function() {
+            stmt.cancel(function(err, result) {
+                if (err) console.log("Cancel error:", err);
+                else console.log("Statement cancelled successfully");
+            });
+        }, 5000);
+    });
+});
+
+// Using Promises:
+async function cancelExample() {
+    const conn = await ibmdb.open(cn);
+    const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
+    try {
+        const result = await stmt.cancel();
+        console.log("Cancel result:", result);
+    } catch (err) {
+        console.log("Cancel error:", err);
+    }
+    stmt.closeSync();
+    conn.closeSync();
+}
+```
+
+### <a name="stmtCancelSyncApi"></a> 71) (ODBCStatement) .cancelSync()
+
+Synchronous version of cancel. Calls `SQLCancel` ODBC API to cancel an executing statement.
+
+Returns `true` on success, or throws an error on failure.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+const conn = ibmdb.openSync(cn);
+const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
+try {
+    let result = stmt.cancelSync();
+    console.log("Cancel result:", result);
+} catch (err) {
+    console.log("Cancel error:", err);
+}
+stmt.closeSync();
+conn.closeSync();
+```
+
 ### <a name="fetchApi"></a> 35) (ODBCResult) .fetch([option] [, callback])
 
 Fetch a row of data from an ODBCResult object asynchronously.
@@ -2363,6 +2445,88 @@ ibmdb.open(cn, function(err, conn)
     console.log("Function SQLFreeConnect Exist : ", fExists);
     conn.closeSync();
 });
+```
+
+### <a name="cancelApi"></a> 68) (Database) .cancel(statement [, callback])
+
+Cancel an executing SQL statement on the connection. This calls `SQLCancel` ODBC API to cancel a long-running query. The cancel can be called from another thread or asynchronously while a query is executing.
+
+* **statement** - _REQUIRED_ - The statement object to cancel (returned from `prepareSync` or `prepare`).
+* **callback** - _OPTIONAL_ - `callback (err, result)`. If callback is not provided, a Promise will be returned.
+
+Returns `true` on success.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+ibmdb.open(cn, function(err, conn)
+{
+    // Prepare a statement for a long-running query
+    const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
+    
+    // Start executing asynchronously
+    stmt.execute(function(err, result) {
+        if (err) {
+            console.log("Query cancelled or error: ", err);
+        } else {
+            console.log("Data: ", result.fetchAllSync());
+            result.closeSync();
+        }
+        stmt.closeSync();
+    });
+
+    // Cancel the query after 5 seconds from another context
+    setTimeout(function() {
+        conn.cancel(stmt, function(err, result) {
+            if (err) console.log("Cancel error: ", err);
+            else console.log("Query cancelled successfully");
+        });
+    }, 5000);
+});
+
+// Using Promises:
+async function cancelExample() {
+    const conn = await ibmdb.open(cn);
+    const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
+    try {
+        const result = await conn.cancel(stmt);
+        console.log("Cancel result:", result);
+    } catch (err) {
+        console.log("Cancel error:", err);
+    }
+    stmt.closeSync();
+}
+```
+
+### <a name="cancelSyncApi"></a> 69) (Database) .cancelSync(statement)
+
+Synchronous version of cancel. Calls `SQLCancel` ODBC API to cancel an executing statement.
+
+* **statement** - _REQUIRED_ - The statement object to cancel (returned from `prepareSync` or `prepare`).
+
+Returns `true` on success, or throws an error on failure.
+
+```javascript
+const ibmdb = require("ibm_db")
+  , cn = "DATABASE=database;HOSTNAME=hostname;PORT=port;PROTOCOL=TCPIP;UID=username;PWD=password";
+
+const conn = ibmdb.openSync(cn);
+const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
+
+// Start executing in background and cancel synchronously
+stmt.execute(function(err, result) {
+    // This may return with a cancel error
+});
+
+try {
+    let result = conn.cancelSync(stmt);
+    console.log("Cancel result:", result);
+} catch (err) {
+    console.log("Cancel error:", err);
+}
+stmt.closeSync();
+conn.closeSync();
 ```
 
 ## Create and Drop Database APIs

@@ -58,6 +58,8 @@ Napi::Object ODBCStatement::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("putDataSync", &ODBCStatement::PutDataSync, NAPI_METHOD_ATTR),
     InstanceMethod("executeForStreaming", &ODBCStatement::ExecuteForStreaming, NAPI_METHOD_ATTR),
     InstanceMethod("executeForStreamingSync", &ODBCStatement::ExecuteForStreamingSync, NAPI_METHOD_ATTR),
+    InstanceMethod("cancel", &ODBCStatement::Cancel, NAPI_METHOD_ATTR),
+    InstanceMethod("cancelSync", &ODBCStatement::CancelSync, NAPI_METHOD_ATTR),
   });
 
   constructor = Napi::Persistent(func);
@@ -1955,4 +1957,87 @@ Napi::Value ODBCStatement::ExecuteForStreamingSync(const Napi::CallbackInfo &inf
 
   DEBUG_PRINTF("ODBCStatement::ExecuteForStreamingSync - Exit, needsData=%d\n", ret == SQL_NEED_DATA);
   return result;
+}
+
+/*
+ * Cancel
+ * Calls SQLCancel to cancel an executing SQL statement on this statement handle.
+ * This can be called from another thread to cancel a long-running query.
+ */
+Napi::Value ODBCStatement::Cancel(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::Cancel - Entry\n");
+  Napi::Env env = info.Env();
+  REQ_FUN_ARG(0, cb);
+
+  uv_work_t *work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
+  MEMCHECK(work_req);
+  stmt_cancel_work_data *data = (stmt_cancel_work_data *)calloc(1, sizeof(stmt_cancel_work_data));
+  if (!data) free(work_req);
+  MEMCHECK(data);
+
+  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->stmt = this;
+  data->env = env;
+  work_req->data = data;
+
+  uv_queue_work(uv_default_loop(), work_req, UV_Cancel, (uv_after_work_cb)UV_AfterCancel);
+  this->Ref();
+  DEBUG_PRINTF("ODBCStatement::Cancel - Exit\n");
+  return env.Undefined();
+}
+
+void ODBCStatement::UV_Cancel(uv_work_t *req)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_Cancel - Entry\n");
+  stmt_cancel_work_data *data = (stmt_cancel_work_data *)(req->data);
+  data->result = SQLCancel(data->stmt->m_hSTMT);
+  DEBUG_PRINTF("ODBCStatement::UV_Cancel - Exit, result=%d\n", data->result);
+}
+
+void ODBCStatement::UV_AfterCancel(uv_work_t *req, int status)
+{
+  DEBUG_PRINTF("ODBCStatement::UV_AfterCancel - Entry\n");
+  stmt_cancel_work_data *data = (stmt_cancel_work_data *)(req->data);
+  Napi::Env env(data->env);
+  Napi::HandleScope scope(env);
+
+  ODBCStatement *stmt = data->stmt->self();
+
+  if (!SQL_SUCCEEDED(data->result))
+  {
+    ODBC::CallbackSQLError(env, SQL_HANDLE_STMT, stmt->m_hSTMT, data->cb);
+  }
+  else
+  {
+    data->cb->Call({env.Null(), Napi::Boolean::New(env, true)});
+  }
+
+  stmt->Unref();
+  delete data->cb;
+  free(data);
+  free(req);
+  DEBUG_PRINTF("ODBCStatement::UV_AfterCancel - Exit\n");
+}
+
+/*
+ * CancelSync
+ * Synchronous version of Cancel. Calls SQLCancel to cancel an executing statement.
+ */
+Napi::Value ODBCStatement::CancelSync(const Napi::CallbackInfo &info)
+{
+  DEBUG_PRINTF("ODBCStatement::CancelSync - Entry\n");
+  Napi::Env env = info.Env();
+
+  SQLRETURN ret = SQLCancel(m_hSTMT);
+
+  if (!SQL_SUCCEEDED(ret))
+  {
+    napi_throw(env, ODBC::GetSQLError(env, SQL_HANDLE_STMT, m_hSTMT,
+      (char *)"[node-ibm_db] Error in ODBCStatement::CancelSync"));
+    return Napi::Boolean::New(env, false);
+  }
+
+  DEBUG_PRINTF("ODBCStatement::CancelSync - Exit\n");
+  return Napi::Boolean::New(env, true);
 }

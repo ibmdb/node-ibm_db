@@ -258,6 +258,22 @@ export class ODBCStatement {
   ): Promise<StreamResult>;
   executeWithStream(stream: NodeJS.ReadableStream): Promise<StreamResult>;
   executeWithStream(): any {}
+
+  /**
+   * Cancel this executing SQL statement.
+   * Calls SQLCancel ODBC API.
+   * @param cb - Optional callback. If not provided, returns a Promise.
+   */
+  cancel(cb: (err: DB2Error | null, result?: boolean) => void): void;
+  cancel(): Promise<boolean>;
+  cancel(): any {}
+
+  /**
+   * Synchronous version of cancel.
+   * @returns true on success
+   */
+  cancelSync(): boolean;
+  cancelSync(): any {}
 }
 
 /**
