@@ -38,6 +38,10 @@ extern "C" void __ibmdb_aix_noop(void) {}
 #ifdef _AIX
 #include <signal.h>
 #include <unistd.h>
+#include <exception>
+#include <cstdio>
+#include <typeinfo>
+#include <cxxabi.h>
 #endif
 
 #include "odbc.h"
@@ -1369,6 +1373,77 @@ static void AIX_SigillHandler(int sig)
 {
   _exit(0);
 }
+
+// GSKit v9.x throws C++ exceptions (gsk09000006::GSKException) from internal
+// threads during SSL handshake failures. Since those threads have no exception
+// handler, std::terminate() is called, leading to abort() and coredump.
+// We install a custom terminate handler to convert this to a graceful exit
+// with an error message instead of a coredump.
+static std::terminate_handler g_oldTerminateHandler = nullptr;
+
+// Helper to demangle C++ type names
+static const char* DemangleTypeName(const char* mangledName)
+{
+  int status = 0;
+  char* demangled = abi::__cxa_demangle(mangledName, nullptr, nullptr, &status);
+  if (status == 0 && demangled) {
+    return demangled; // Caller should free this
+  }
+  return mangledName;
+}
+
+static void AIX_TerminateHandler()
+{
+  // Try to get exception info
+  std::exception_ptr eptr = std::current_exception();
+  if (eptr) {
+    try {
+      std::rethrow_exception(eptr);
+    } catch (const std::exception& e) {
+      fprintf(stderr, "[ibm_db] GSKit SSL exception: %s\n", e.what());
+    } catch (...) {
+      // Try to get the exception type using GCC's internal ABI
+      std::type_info* ti = abi::__cxa_current_exception_type();
+      if (ti) {
+        const char* typeName = DemangleTypeName(ti->name());
+        fprintf(stderr, "\n[ibm_db] ERROR: GSKit v9.x SSL connection failed.\n");
+        fprintf(stderr, "Exception type: %s\n\n", typeName);
+        fprintf(stderr, "This is a known incompatibility between GSKit v9.x (compiled with IBM XLC)\n");
+        fprintf(stderr, "and GCC-compiled applications like Node.js on AIX. GSKit v9 throws C++\n");
+        fprintf(stderr, "exceptions from internal threads using XLC's exception handling ABI,\n");
+        fprintf(stderr, "which is incompatible with GCC's libstdc++ runtime.\n\n");
+        fprintf(stderr, "SOLUTION: Use a Db2 CLI driver (clidriver) that includes GSKit v8.x instead\n");
+        fprintf(stderr, "of GSKit v9.x. GSKit v8.x does not have this incompatibility.\n\n");
+        fprintf(stderr, "Db2 client from version 12.1.5.0 onwards comes with GSKit v9.x library.\n");
+        fprintf(stderr, "Use an older Db2 CLI driver (clidriver) to avoid this issue.\n\n");
+        fprintf(stderr, "To check your GSKit version:\n");
+        fprintf(stderr, "  ls $IBM_DB_HOME/lib/icc/libgsk*.so\n");
+        fprintf(stderr, "  - libgsk8*.so = GSKit v8 (compatible)\n");
+        fprintf(stderr, "  - libgsk9*.so = GSKit v9 (incompatible with GCC-compiled Node.js)\n\n");
+      } else {
+        fprintf(stderr, "[ibm_db] GSKit SSL exception (unknown type)\n");
+      }
+    }
+  } else {
+    fprintf(stderr, "[ibm_db] Terminate called without active exception\n");
+  }
+
+  // Exit without coredump - use _exit to avoid running atexit handlers
+  // which could cause additional crashes
+  _exit(1);
+}
+
+// SIGABRT handler as a fallback - catches abort() calls from GSKit threads
+static void AIX_SigabrtHandler(int sig)
+{
+  fprintf(stderr, "\n[ibm_db] ERROR: SIGABRT received - GSKit v9.x SSL connection failed.\n\n");
+  fprintf(stderr, "This is a known incompatibility between GSKit v9.x and GCC-compiled\n");
+  fprintf(stderr, "Node.js on AIX. Use a clidriver older than v12.1.5.0 instead.\n\n");
+  fprintf(stderr, "Check: ls $IBM_DB_HOME/lib/icc/libgsk*.so\n");
+  fprintf(stderr, "  - libgsk8*.so = GSKit v8 (compatible)\n");
+  fprintf(stderr, "  - libgsk9*.so = GSKit v9 (incompatible)\n\n");
+  _exit(1);
+}
 #endif
 
 // Module initialization
@@ -1380,6 +1455,18 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
   ODBCStatement::Init(env, exports);
 
 #ifdef _AIX
+  // Install custom terminate handler to catch GSKit v9.x exceptions thrown
+  // from internal threads. This converts coredumps to graceful error exits.
+  g_oldTerminateHandler = std::set_terminate(AIX_TerminateHandler);
+
+  // Install SIGABRT handler as fallback for abort() calls
+  struct sigaction sa_abrt;
+  memset(&sa_abrt, 0, sizeof(sa_abrt));
+  sa_abrt.sa_handler = AIX_SigabrtHandler;
+  sigemptyset(&sa_abrt.sa_mask);
+  sa_abrt.sa_flags = 0;
+  sigaction(SIGABRT, &sa_abrt, NULL);
+
   // Install SIGILL handler early — must be in place before exit() triggers
   // __modfini64 → _GLOBAL__FD_node → __cxa_finalize(NULL) crash.
   struct sigaction sa;
