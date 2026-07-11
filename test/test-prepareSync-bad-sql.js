@@ -19,9 +19,9 @@ try {
   process.exit(0);
 }
 assert.equal(stmt.constructor.name, "ODBCStatement");
-  
+
 stmt.bindSync(["hello world", 1, null]);
-    
+
 stmt.execute(function (err, result) {
   assert.ok(err);
 

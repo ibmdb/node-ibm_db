@@ -50,7 +50,7 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
       }
       else console.log("Inserted row count = " + ret);
       assert.equal(ret, 1);
-      
+
       // Call SP Synchronously.
       var param2 = {ParamType:"INPUT", DataType: "DECIMAL", Data: 89.23365};
       var param3 = {ParamType: 'OUTPUT', CType: 8, DataType: 3, Data: 0, Length:15};
@@ -70,7 +70,7 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
           console.log("Result for Async call of proc1 ==>");
           console.log(result);
         }
-      
+
       conn.prepare("select * from mytab1", function (err, stmt) {
         if(err) {
           console.log(err);
@@ -97,7 +97,7 @@ ibmdb.open(cn, function(err, conn) { // 3 means FETCH_ARRARY
             ibmdb.close();
           }
         });
-      });  
+      });
     });
     });
   });

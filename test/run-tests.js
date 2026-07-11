@@ -53,7 +53,7 @@ function doTest(file, connectionString) {
 
   testCount += 1;
 
-  process.stdout.write("Running test \033[01;29m" + testCount + "\033[01;0m for [\033[01;29m" + 
+  process.stdout.write("Running test \033[01;29m" + testCount + "\033[01;0m for [\033[01;29m" +
                        connectionString.title + "\033[01;0m] : " + file.replace(/\.js$/, ""));
   process.stdout.write(" ... ");
 

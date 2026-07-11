@@ -1,4 +1,4 @@
-// Test case to test the OUT parameters and Result set returned by 
+// Test case to test the OUT parameters and Result set returned by
 // Stored Procedure when Async and Sync forms of Prepare and Execute
 // APIs are used.
 
@@ -191,7 +191,7 @@ function callbackTestSP() {
     conn.prepare(query1, function (err, stmt) {
       if (err) console.log(err);
       stmt.execute([1, param2], function(err, result, outparams) {
-        if( err ) console.log(err);  
+        if( err ) console.log(err);
         else {
           data = result.fetchAllSync();
           console.log("\nTest 7: Result for Async call of PROC1 (1 OUT param and 2 Result Sets) ==>");
@@ -211,7 +211,7 @@ function callbackTestSP() {
         conn.prepare(query2, function (err, stmt) {
           if (err) console.log(err);
           stmt.execute([1, param2], function(err, result, outparams) {
-            if( err ) console.log(err);  
+            if( err ) console.log(err);
             else {
               result.closeSync();
               console.log("\nTest 8: Result for Async call of PROC2 (1 OUT param and no Result Set) ==>");
@@ -224,7 +224,7 @@ function callbackTestSP() {
             conn.prepare(query3, function (err, stmt) {
               if (err) console.log(err);
               stmt.execute([1, 'abc'], function(err, result, outparams) {
-                if( err ) console.log(err);  
+                if( err ) console.log(err);
                 else {
                   data = result.fetchAllSync();
                   console.log("\nTest 9: Result for Async call of PROC3 (only 2 Result Sets) ==>");

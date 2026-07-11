@@ -1,4 +1,4 @@
-// Test case to test the OUT parameters and Result set returned by 
+// Test case to test the OUT parameters and Result set returned by
 // Stored Procedure when Async and Sync forms of Prepare and Execute
 // APIs are used.
 
@@ -13,7 +13,7 @@ if (process.env.IBM_DB_SERVER_TYPE !== "ZOS") {
     return;
 }
 
-var proc = "CREATE PROCEDURE SYSPROC.TBV8930 (in vlog_header varchar(200), out  return_code char(05), out sql_code integer, out result varchar(200)) language sql commit on return no query acceleration NONE asutime LIMIT 5002 reads sql data dynamic result sets 1 package owner DVLPP with explain MAIN: BEGIN declare sqlcode integer; declare sqlstate char(5); declare c1 cursor with return for select lower(vlog_header) as vlog_header from sysibm.sysdummy1; set result = upper(vlog_header) ; set return_code = '00000' , sql_code = 0 ; open c1; END MAIN"; 
+var proc = "CREATE PROCEDURE SYSPROC.TBV8930 (in vlog_header varchar(200), out  return_code char(05), out sql_code integer, out result varchar(200)) language sql commit on return no query acceleration NONE asutime LIMIT 5002 reads sql data dynamic result sets 1 package owner DVLPP with explain MAIN: BEGIN declare sqlcode integer; declare sqlstate char(5); declare c1 cursor with return for select lower(vlog_header) as vlog_header from sysibm.sysdummy1; set result = upper(vlog_header) ; set return_code = '00000' , sql_code = 0 ; open c1; END MAIN";
 
 var query = "call SYSPROC.TBV8930(?, ?, ?, ?)";
 var result;
@@ -21,7 +21,7 @@ var dropProc = "drop procedure SYSPROC.TBV8930";
 
 ibmdb.debug(true);
 ibmdb.open(connStr, function (err, conn) {
-    if(err) { 
+    if(err) {
       console.log(err);
       process.exit(-1);
     }
@@ -62,7 +62,7 @@ ibmdb.open(connStr, function (err, conn) {
     conn.prepare(query, function (err, stmt) {
       if (err) console.log(err);
       stmt.execute([param1, param2, param3, param4], function(err, result, outparams) {
-        if( err ) console.log(err);  
+        if( err ) console.log(err);
         else {
           data = result.fetchAllSync();
           console.log("\nResult for Async call of PROC (3 OUT param and 1 Result Sets) ==>");

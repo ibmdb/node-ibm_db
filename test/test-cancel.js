@@ -214,7 +214,7 @@ ibmdb.open(cn, function(err, conn) {
   function runCancelWithExecutionTests() {
     // Test 7: Connection cancel during SQL execution
     console.log("\n=== Test 7: Connection cancel(stmt) during SQL execution ===");
-    
+
     var stmt7 = conn.prepareSync("SELECT * FROM CANCEL_TEST");
     var executeCompleted = false;
     var cancelCompleted = false;
@@ -231,7 +231,7 @@ ibmdb.open(cn, function(err, conn) {
             try { result.closeSync(); } catch(e) {}
           }
         }
-        
+
         if (cancelCompleted) {
           finishTest7();
         }
@@ -257,7 +257,7 @@ ibmdb.open(cn, function(err, conn) {
       runValidationTests();
       return;
     }
-    
+
     function finishTest7() {
       // Small delay to ensure everything is cleaned up
       setTimeout(function() {
@@ -266,7 +266,7 @@ ibmdb.open(cn, function(err, conn) {
         } catch (e) {
           // Statement may already be closed or in error state
         }
-        
+
         runValidationTests();
       }, 100);
     }

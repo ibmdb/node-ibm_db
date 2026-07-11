@@ -5,10 +5,10 @@ var common = require("./common")
   ;
 
 db.openSync(common.connectionString);
-  
+
 common.dropTables(db, function () {
   common.createTables(db, function () {
-    
+
     db.describe({
       database : common.databaseName
       , table : common.tableName

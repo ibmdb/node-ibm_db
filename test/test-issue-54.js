@@ -7,7 +7,7 @@ var common = require("./common")
   , util = require('util')
   , count = 0
   ;
- 
+
 var sql =
 "declare @t table (x int); \
 insert @t values (1); \

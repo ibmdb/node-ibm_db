@@ -9,11 +9,11 @@ db.open(common.connectionString, function(err) {
   common.dropTables(db, function () {
     common.createTables(db, function (err) {
       assert.equal(err, null);
-      
+
       db.query("insert into " + common.tableName + " (COLTEXT) values ('sandwich')", insertCallback);
       db.query("insert into " + common.tableName + " (COLTEXT) values ('fish')", insertCallback);
       db.query("insert into " + common.tableName + " (COLTEXT) values ('scarf')", insertCallback);
-      
+
     });
   });
 });
@@ -21,9 +21,9 @@ db.open(common.connectionString, function(err) {
 function insertCallback(err, data) {
   assert.equal(err, null);
   assert.deepEqual(data, []);
-  
+
   insertCount += 1;
-  
+
   if (insertCount === 3) {
     let param1 = {ParamType: "IN", DataType: "SQL_CHAR", Data: 'rocket'};
     let data = db.querySync("select COLTEXT from final table (insert into " + common.tableName + " (COLTEXT) values (?))", [param1]);

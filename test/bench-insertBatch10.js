@@ -5,13 +5,13 @@ var common = require("./common")
 var insertString = "";
 var batchSize = 10;
 
-db.open(common.connectionString, function(err){ 
+db.open(common.connectionString, function(err){
 	if (err) {
 		console.log(err);
 		process.exit(1);
 	}
         createInsertString(batchSize);
-	dropTable();	
+	dropTable();
 	createTable();
 });
 
@@ -28,13 +28,13 @@ function createTable() {
 			console.log(err);
 			return finish();
 		}
-		
+
 		return insertData();
 	});
 }
 
 function dropTable() {
-    try { 
+    try {
         db.querySync("drop table bench_insert")
     }catch(e){
     //    console.log(e);
@@ -46,10 +46,10 @@ function insertData() {
 	var count = 0
 		, iterations = 100
 		, time = new Date().getTime();
-	
+
 	for (var x = 0; x < iterations; x++) {
 		db.query(insertString, cb);
-		
+
 	}
 
 	function cb (err) {
@@ -57,10 +57,10 @@ function insertData() {
 			console.log(err);
 			return finish();
 		}
-		
+
 		if (++count == iterations) {
 			var elapsed = (new Date().getTime() - time)/1000;
-            process.stdout.write("(" + batchSize * iterations + " records inserted in " + elapsed + " seconds, " + 
+            process.stdout.write("(" + batchSize * iterations + " records inserted in " + elapsed + " seconds, " +
                                  (batchSize * iterations/elapsed).toFixed(4) + " records/sec)");
 			return dropTable();
 		}

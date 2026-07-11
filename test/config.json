@@ -3,5 +3,5 @@
   "PWD" : "xxxxxx",
   "HOSTNAME" : "waldevdbclnxtst06.dev.rocketsoftware.com",
   "PORT" : 60000,
-  "PROTOCOL" : "TCPIP" 
+  "PROTOCOL" : "TCPIP"
 }

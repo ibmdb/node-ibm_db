@@ -7,11 +7,11 @@ db.open(common.connectionString, function(err)
 	if (err) {
 		console.log(err);
 		process.exit(1);
-	}	
-	
+	}
+
 	process.stdout.write('> ');
 	process.stdin.resume();
-	
+
 	process.stdin.on('data',function (strInput) {
 		db.query(strInput.toString(), function (err, rs, moreResultSets) {
 			if (err) {
@@ -21,7 +21,7 @@ db.open(common.connectionString, function(err)
 			else {
 				console.log(rs);
 			}
-			
+
 			process.stdout.write('> ');
 		});
 	});

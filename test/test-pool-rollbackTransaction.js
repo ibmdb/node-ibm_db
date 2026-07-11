@@ -15,7 +15,7 @@ pool.open(cn, function (err, conn) {
   } catch(e) {};
   conn.beginTransaction(function (err) {
     if (err) {
-      //could not begin a transaction for some reason. 
+      //could not begin a transaction for some reason.
       console.log(err);
       return conn.closeSync();
     }
@@ -24,7 +24,7 @@ pool.open(cn, function (err, conn) {
     console.log(conn.querySync("select * from mytab4"));
     conn.rollbackTransaction(function (err) {
       if (err) {
-        //error during commit 
+        //error during commit
         console.log(err);
         return conn.closeSync();
       }

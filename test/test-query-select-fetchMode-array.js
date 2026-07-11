@@ -10,7 +10,7 @@ assert.equal(db.connected, true);
 
 db.query("select 1 as COLINT, 'some test' as COLTEXT FROM SYSIBM.SYSDUMMY1", function (err, data) {
   assert.equal(err, null);
-  
+
   db.closeSync();
   assert.deepEqual(data, [[1,"some test"]]);
 });

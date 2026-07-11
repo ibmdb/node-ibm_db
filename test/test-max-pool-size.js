@@ -9,7 +9,7 @@ pool.setMaxPoolSize(5); // Max no of active connections.
 //pool.setConnectTimeout(8); // No timeout. connection request will remain in queue.
 
 var elapsedTime = ibmdb.getElapsedTime;
-var ret = pool.init(3, connectionString); 
+var ret = pool.init(3, connectionString);
 if(typeof ret === 'object') assert.equal(ret.message, undefined);
 
 //moment().format("YYYY-MM-DD HH:mm:ss.SSS"));
@@ -69,7 +69,7 @@ function openConnectionsUsingPool() {
             if(err) console.log(err);
             var totalTime = (new Date() - startTime)/1000;
             //var qtime = parseInt(totalTime%60);
-            console.log(elapsedTime(), "Total execution time for Query"+connectionIndex+" = ", totalTime, "sec."); 
+            console.log(elapsedTime(), "Total execution time for Query"+connectionIndex+" = ", totalTime, "sec.");
 
             if (connectionIndex == connectCount) {
               connection.querySync("drop table mtab1");

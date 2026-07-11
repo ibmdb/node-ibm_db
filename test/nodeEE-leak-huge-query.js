@@ -1,6 +1,6 @@
-var common = require("./common"), 
-  odbc = require("../"), 
-  db = new odbc.Database(), 
+var common = require("./common"),
+  odbc = require("../"),
+  db = new odbc.Database(),
   assert = require("assert"),
   util = require('util'),
   tableOne = "leaktable1",
@@ -13,21 +13,21 @@ var common = require("./common"),
   insertCallBackCount=0,
   initialMemHeap = 0,
   maxDiff = 1000000;
-  
+
   try
   {
     global.gc();
     initialMemHeap = util.inspect(process.memoryUsage().heapUsed);
     db.open(common.connectionString, function(err) {
-      
+
       createTablesQuery();
 
-      while(insertCount < tableLimit) 
+      while(insertCount < tableLimit)
       {
         insertCount++;
         insertQueries();
       }
-      
+
       if(insertCount === tableLimit)
       {
         finalQueries();
@@ -41,9 +41,9 @@ var common = require("./common"),
     db.close(function () {
       console.log("Connection closed on error");
     });
-    
+
   }
-  
+
   function createTablesQuery()
   {
     db.query("create table " + tableOne + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
@@ -51,10 +51,10 @@ var common = require("./common"),
       {
         //console.log("Table " + tableOne + " created");
       }
-        
+
       else
       {
-        console.log(err);  
+        console.log(err);
       }
     });
 
@@ -63,10 +63,10 @@ var common = require("./common"),
       {
         //console.log("Table " + tableTwo + " created");
       }
-        
+
       else
       {
-        console.log(err);  
+        console.log(err);
       }
     });
   }
@@ -89,45 +89,45 @@ var common = require("./common"),
 
   function icback(err, data)
   {
-    
+
     if (err == null)
     {
       insertCallBackCount++;
       //console.log("INSERT", insertCallBackCount);
     }
-      
+
     else
     {
-      console.log(err);  
+      console.log(err);
     }
   }
 
   function scback(err, data)
   {
-    
+
     if (err == null)
     {
       //console.log ("SELECT STATEMENT SUCCESSFUL");
     }
-      
+
     else
     {
-      console.log(err);  
+      console.log(err);
     }
   }
 
   function drcback(err, data)
   {
-    
+
     dropCount++;
     if (err == null)
     {
       //console.log ("DROP TABLE " + this.tableName + " SUCCESSFUL");
     }
-      
+
     else
     {
-      console.log(err);  
+      console.log(err);
     }
 
     if(dropCount == 2)

@@ -9,7 +9,7 @@ var common = require("./common")
 
 var startTime1, startTime2, totalTime1, totalTime2, dropTable = 0;
 var elapsedTime = ibmdb.getElapsedTime;
-var ret = pool.init(connectCount, connectionString); 
+var ret = pool.init(connectCount, connectionString);
 if(typeof ret === 'object') assert.equal(ret.message, undefined);
 
 //moment().format("YYYY-MM-DD HH:mm:ss.SSS"));
@@ -55,7 +55,7 @@ pool.open(connectionString, function (err, connection) {
             if(err) console.log(err);
             totalTime1 = (new Date() - startTime1)/1000;
             q1time = parseInt(totalTime1%60);
-            console.log(elapsedTime(), "Total execution time for Query1 = ", q1time, "sec."); 
+            console.log(elapsedTime(), "Total execution time for Query1 = ", q1time, "sec.");
             dropTable++;
             if(dropTable == 2) {
                 if( q2time > 1 ) {
@@ -72,7 +72,7 @@ pool.open(connectionString, function (err, connection) {
             if(err) console.log(err);
             totalTime2 = (new Date() - startTime2)/1000;
             q2time = parseInt(totalTime2%60);
-            console.log(elapsedTime(), "Total execution time for Query2 = ", q2time, "sec."); 
+            console.log(elapsedTime(), "Total execution time for Query2 = ", q2time, "sec.");
             dropTable++;
             if(dropTable == 2) {
                 if( q1time > 1 ) {

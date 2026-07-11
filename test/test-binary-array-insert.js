@@ -4,7 +4,7 @@ var common = require("./common")
     , assert = require('assert')
     , cn = common.connectionString;
 
-async function main() {	
+async function main() {
     const BLOB_LENGTH = 1024 * 16;
     const conn = await ibmdb.open(cn)
     let results;
@@ -14,7 +14,7 @@ async function main() {
 
     results = await conn.querySync(`create table BINARY_TAB (id int, B1 BINARY(12), VB1 VARBINARY(12), C4B1 CHAR(12) FOR BIT DATA )`);
 	console.log(results)
-	
+
 	const data = [
       '628bacf012d4628bacd4',
       '628bacf012d5628bacf012d5',
@@ -51,16 +51,16 @@ async function main() {
 	  ,	params: parameters
 	  , ArraySize: data.length
 	  }
-	  
+
       results = await conn.query(query);
   	  console.log(results)
 	} catch (e) {
 	  console.log(1,e)
 	}
-	
+
 	results = await conn.query(`select ID, B1, VB1, C4B1 from BINARY_TAB`)
     console.log("BINARY_TAB contents:\n", results);
-     
+
     results.forEach( (row) => { console.log(row.ID, data[row.ID], Buffer.from(data[row.ID],'hex'), row.B1, (row.B1.toString('hex') === data[row.ID]), row.VB1, (row.VB1.toString('hex') === data[row.ID]), row.C4B1, (row.C4B1.toString('hex') === data[row.ID]))})
 
 

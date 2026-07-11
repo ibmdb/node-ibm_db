@@ -200,7 +200,7 @@ ibmdb.open(cn, function(err, db) {
         }
         stmt9.closeSync();
 
-        // Test 10: putDataSync with length parameter  
+        // Test 10: putDataSync with length parameter
         try {
           var stmt10 = db.conn.createStatementSync();
           stmt10.prepareSync("SELECT 1 FROM SYSIBM.SYSDUMMY1");
@@ -225,11 +225,11 @@ ibmdb.open(cn, function(err, db) {
         try {
           var stmt11 = db.conn.createStatementSync();
           stmt11.prepareSync("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)");
-          
+
           // Standard bind - not data-at-execution, so paramDataSync won't return needsData
           stmt11.bindSync([1, "Normal data"]);
           stmt11.executeSync();
-          
+
           // Verify data was inserted
           var rows = db.querySync("SELECT * FROM " + tableName + " WHERE ID = 1");
           if (rows && rows.length === 1 && rows[0].DATA === "Normal data") {
@@ -247,7 +247,7 @@ ibmdb.open(cn, function(err, db) {
         var stmt12 = db.conn.createStatementSync();
         stmt12.prepareSync("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)");
         stmt12.bindSync([2, "Async test data"]);
-        
+
         // Demonstrate async API chaining pattern
         stmt12.executeNonQuery(function(execErr, affectedRows) {
           if (execErr) {
@@ -256,7 +256,7 @@ ibmdb.open(cn, function(err, db) {
             runTest13();
             return;
           }
-          
+
           // After normal execution, paramData should return needsData: false
           stmt12.paramData()
             .then(function(result) {
@@ -283,12 +283,12 @@ ibmdb.open(cn, function(err, db) {
           console.log("\n--- Test 13: putData chunked data simulation ---");
           var stmt13 = db.conn.createStatementSync();
           stmt13.prepareSync("SELECT 1 FROM SYSIBM.SYSDUMMY1");
-          
+
           // Simulate sending data in chunks (will error since not in need-data state)
           var chunk1 = Buffer.from("First chunk of large data ");
           var chunk2 = Buffer.from("Second chunk of large data ");
           var chunk3 = Buffer.from("Final chunk");
-          
+
           // Chain putData calls to simulate chunked upload pattern
           stmt13.putData(chunk1)
             .then(function() {
@@ -317,18 +317,18 @@ ibmdb.open(cn, function(err, db) {
             var stmt14 = db.conn.createStatementSync();
             stmt14.prepareSync("SELECT 1 FROM SYSIBM.SYSDUMMY1");
             stmt14.executeSync();
-            
+
             var result = stmt14.paramDataSync();
-            
+
             // Check that result has expected properties
             var hasNeedsData = typeof result.needsData !== 'undefined';
             var hasParamIndex = result.hasOwnProperty('paramIndex');
-            
+
             if (hasNeedsData && hasParamIndex) {
               console.log("  Result structure:", JSON.stringify(result));
               done("14 paramData result structure - has needsData and paramIndex", true);
             } else {
-              done("14 paramData result structure", false, 
+              done("14 paramData result structure", false,
                    "Missing properties. Got: " + JSON.stringify(result));
             }
             stmt14.closeSync();
@@ -347,7 +347,7 @@ ibmdb.open(cn, function(err, db) {
             var allRows = db.querySync("SELECT * FROM " + tableName + " ORDER BY ID");
             console.log("  Rows in table:", allRows.length);
             for (var i = 0; i < allRows.length; i++) {
-              console.log("    ID:", allRows[i].ID, "DATA:", 
+              console.log("    ID:", allRows[i].ID, "DATA:",
                           allRows[i].DATA ? allRows[i].DATA.substring(0, 30) + "..." : null);
             }
             done("15 Data integrity check", allRows.length >= 1);
@@ -388,7 +388,7 @@ ibmdb.open(cn, function(err, db) {
               done("16 Chunked CLOB insert (sync) - data verified", true);
             } else {
               var actualLen = rows && rows[0] && rows[0].DATA ? rows[0].DATA.length : 0;
-              done("16 Chunked CLOB insert (sync)", false, 
+              done("16 Chunked CLOB insert (sync)", false,
                    "Expected " + largeData.length + " bytes, got " + actualLen);
             }
           } catch(e) {
@@ -438,7 +438,7 @@ ibmdb.open(cn, function(err, db) {
               // paramDataSync should now indicate no more data needed
               var result = stmt18.paramDataSync();
               console.log("  paramDataSync after execute:", JSON.stringify(result));
-              
+
               // After successful execute, driver has already handled all data-at-exec
               // So paramDataSync may return needsData: false or throw HY010
               if (result && result.needsData === false) {
@@ -464,7 +464,7 @@ ibmdb.open(cn, function(err, db) {
             console.log("\n--- Test 19: paramData (async) workflow ---");
             var stmt19 = db.prepareSync("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)");
             var chunks19 = [Buffer.from("AsyncTest1"), Buffer.from("AsyncTest2")];
-            
+
             stmt19.execute([
               103,
               { ParamType: "INPUT", DataType: "CLOB", Data: chunks19 }
@@ -505,12 +505,12 @@ ibmdb.open(cn, function(err, db) {
             function insertNext() {
               if (inserted >= insertCount) {
                 // Verify all inserts
-                var rows = db.querySync("SELECT COUNT(*) AS CNT FROM " + tableName + 
+                var rows = db.querySync("SELECT COUNT(*) AS CNT FROM " + tableName +
                                         " WHERE ID >= 200 AND ID < 210");
                 if (rows && rows[0].CNT >= insertCount) {
                   done("20 Multiple chunked inserts - " + insertCount + " inserts verified", true);
                 } else {
-                  done("20 Multiple chunked inserts", false, 
+                  done("20 Multiple chunked inserts", false,
                        "Expected " + insertCount + " rows, got " + (rows && rows[0].CNT));
                 }
                 runTest21();
@@ -519,7 +519,7 @@ ibmdb.open(cn, function(err, db) {
 
               var data = generateData(20 * 1024);
               var chunks = splitIntoChunks(data, 5 * 1024);
-              
+
               db.query("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)",
                 [
                   200 + inserted,
@@ -575,10 +575,10 @@ ibmdb.open(cn, function(err, db) {
             try {
               var stmt22 = db.prepareSync("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)");
               stmt22.bindSync([300, "Normal data for streaming test"]);
-              
+
               var result = stmt22.executeForStreamingSync();
               console.log("  executeForStreamingSync result:", JSON.stringify(result));
-              
+
               // With normal params (not data-at-exec), needsData should be false
               if (result && typeof result.needsData !== 'undefined') {
                 done("22 executeForStreamingSync - returns valid result", true);
@@ -622,7 +622,7 @@ ibmdb.open(cn, function(err, db) {
           function runTest24() {
             // Test 24: True streaming with executeWithStream using a simple stream
             console.log("\n--- Test 24: executeWithStream with manual stream ---");
-            
+
             // Create a simple Readable stream
             var Readable = require('stream').Readable;
             var chunks = [
@@ -632,7 +632,7 @@ ibmdb.open(cn, function(err, db) {
             ];
             var chunkIndex = 0;
             var expectedData = Buffer.concat(chunks).toString();
-            
+
             var stream = new Readable({
               read: function() {
                 if (chunkIndex < chunks.length) {
@@ -644,7 +644,7 @@ ibmdb.open(cn, function(err, db) {
             });
 
             var stmt24 = db.prepareSync("INSERT INTO " + tableName + " (ID, DATA) VALUES (?, ?)");
-            
+
             // Bind with data-at-exec indicator
             try {
               stmt24.bindSync([
@@ -664,7 +664,7 @@ ibmdb.open(cn, function(err, db) {
             stmt24.executeWithStream(0, stream, function(err, result) {
               if (err) {
                 // Streaming may not work with current bind - that's ok for this test
-                console.log("  executeWithStream error (may be expected):", 
+                console.log("  executeWithStream error (may be expected):",
                             err.message ? err.message.substring(0, 50) : err);
                 done("24 executeWithStream - API callable", true);
               } else {
@@ -680,12 +680,12 @@ ibmdb.open(cn, function(err, db) {
             // Test 25: Verify final data integrity
             console.log("\n--- Test 25: Final data integrity verification ---");
             try {
-              var allRows = db.querySync("SELECT ID, LENGTH(DATA) AS DATALEN FROM " + 
+              var allRows = db.querySync("SELECT ID, LENGTH(DATA) AS DATALEN FROM " +
                                          tableName + " ORDER BY ID");
               console.log("  Total rows in table:", allRows.length);
-              
-              var largeRows = allRows.filter(function(r) { 
-                return r.DATALEN && r.DATALEN > 10000; 
+
+              var largeRows = allRows.filter(function(r) {
+                return r.DATALEN && r.DATALEN > 10000;
               });
               console.log("  Rows with large data (>10KB):", largeRows.length);
 

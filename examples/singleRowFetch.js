@@ -1,6 +1,6 @@
 /*
  * This example demonstrates how to fetch a single row from a large table
- * one by one and get processed by application. It avoids allocation of 
+ * one by one and get processed by application. It avoids allocation of
  * large memory by the ibm_db and data processing becomes easier.
  *
  * This example has used Sync methods, but async methods also exist.
@@ -24,7 +24,7 @@ conn.queryResult("select * from mytab", function (err, result) {
     console.log(err);
     return;
   }
-  
+
   // Fetch single row at once and process it.
   // Note that queryResult will bring only 64k data from server and result.fetchSync
   // will return each row from this 64k client buffer. Once all data is read from

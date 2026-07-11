@@ -3,7 +3,7 @@
 //  npm install --save-dev @types/node
 // update database connection info in ../test/config.json file or
 // set environment variables DB2_USER, DB2_PASSWD, etc.
-//  tsc quick-example.ts --target ES2016 --lib ES2016 
+//  tsc quick-example.ts --target ES2016 --lib ES2016
 //  node quick-example.js
 // OR, run:
 //  tsc quick-example.ts && node quick-example.js && rm quick-example.js
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
     // Close resources
     await result.close();
     await stmt.close();
-    
+
     // Drop table (ignore errors)
     await conn.query("drop table mytab").catch((e: Error) => console.error("Drop table error:", e));
 

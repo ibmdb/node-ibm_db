@@ -1,4 +1,4 @@
-var common = require("./common"), 
+var common = require("./common"),
 	odbc = require("../"),
 	maxConnections = 5,
 	connections = [],
@@ -16,7 +16,7 @@ var common = require("./common"),
 		{ (function (i) {
 			var db = new odbc.Database();
 			connections.push(db);
-			
+
 			db.open(common.connectionString, function(err) {
 				runQueries(db, "T1Leak" + i);
 			});
@@ -30,7 +30,7 @@ var common = require("./common"),
 					console.log("Connection closed on error");
 					});
 	}
-	
+
 	function runQueries(db, tableName)
 	{
 		db.query("create table "+ tableName + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
@@ -38,21 +38,21 @@ var common = require("./common"),
 			{
 				console.log("Table "+ tableName + " created");
 			}
-					
+
 			else
 			{
-				console.log(err);	
+				console.log(err);
 			}
 		});
-				
+
 		db.query("INSERT into " + tableName + " values (1, 'PersonA', 'LastNameA', 'QA')", icback);
 		db.query("INSERT into " + tableName + " values (2, 'PersonB', 'LastNameB', 'Dev')", icback);
 		db.query("INSERT into " + tableName + " values (3, 'PersonC', 'LastNameC', 'QA')", icback);
 		db.query("INSERT into " + tableName + " values (4, 'PersonD', 'LastNameD', 'QA')", icback);
 		db.query("INSERT into " + tableName + " values (5, 'PersonE', 'LastNameE', 'QA')", icback);
-		
+
 		db.query("SELECT * from " + tableName, scback);
-		
+
 		db.query("UPDATE " + tableName + " SET C3 = 'QA Intern' where C2 = 'LastNameD'", ucback);
 		db.query("SELECT * from " + tableName + " where C3 = 'QA Intern'", scback);
 		db.query("SELECT count(*) from " + tableName + " where PID = 7", scback);
@@ -66,34 +66,34 @@ var common = require("./common"),
 	{
 		if (err == null)
 		{
-		}		
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
-			
+
 	function scback(err, data)
 	{
 		if (err == null)
 		{
 			console.log("Select statement successful");
-		}	
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
-	
+
 	function ucback(err, data)
 	{
 		if (err == null)
 		{
 			console.log("Update statement successful");
-		}	
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 
@@ -102,10 +102,10 @@ var common = require("./common"),
 		if (err == null)
 		{
 			console.log("Delete row(s) successful");
-		}	
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 
@@ -114,10 +114,10 @@ var common = require("./common"),
 		if (err == null)
 		{
 			console.log("Drop table " + this.tableName + " successful");
-		}		
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 
 		dropCallback++;

@@ -13,15 +13,15 @@ var db = new odbc.Database({ connectTimeout : 10, systemNaming : true })
 
 db.open(common.connectionString, function(err) {
   assert.equal(db.conn.connectTimeout, 10);
-  
+
   assert.equal(err, null);
   assert.equal(db.connected, true);
 
   assert.equal(db.conn.systemNaming, true);
-  
+
   db.close(function () {
     assert.equal(db.connected, false);
-    
+
     db.query("select * from " + common.tableName, function (err, rs, sqlca) {
       assert.deepEqual(err.message, 'Connection not open.');
       assert.deepEqual(rs, []);

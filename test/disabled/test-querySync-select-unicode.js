@@ -11,7 +11,7 @@ try {
   data = db.querySync("select 'ꜨꜢ' as UNICODETEXT FROM SYSIBM.SYSDUMMY1");
 }
 catch (e) {
-  console.log(e); 
+  console.log(e);
 }
 
 db.closeSync();

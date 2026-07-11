@@ -6,7 +6,7 @@ var common = require("./common")
   ;
 
 db.openSync(common.connectionString);
-  
+
 issueQuery3(function () {
   finish();
 });
@@ -15,9 +15,9 @@ issueQuery3(function () {
 function issueQuery3(done) {
   var count = 0
     , time = new Date().getTime();
-  
+
   var stmt = db.prepareSync('select ? as test');
-  
+
   for (var x = 0; x < iterations; x++) {
     (function (x) {
       stmt.bind([x], function (err) {
@@ -25,31 +25,31 @@ function issueQuery3(done) {
           console.log(err);
           return finish();
         }
-        
+
         //console.log(x);
-        
+
         stmt.execute(function (err, result) {
           cb(err, result, x);
         });
       });
     })(x);
   }
-  
+
   function cb (err, result, x) {
     if (err) {
       console.error(err);
       return finish();
     }
-    
+
     var a = result.fetchAllSync();
-    
+
     assert.deepEqual(a, [{ test : x }]);
-    
+
     result.closeSync();
 
     if (++count == iterations) {
       var elapsed = new Date().getTime() - time;
-      
+
       console.log("%d queries issued in %d seconds, %d/sec : Prepare - Bind - Execute - CloseSync", count, elapsed/1000, Math.floor(count/(elapsed/1000)));
       return done();
     }

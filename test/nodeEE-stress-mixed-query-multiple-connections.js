@@ -1,4 +1,4 @@
-var common = require("./common"), 
+var common = require("./common"),
 	odbc = require("../"),
 	maxConnections = 5,
 	connections = [],
@@ -20,7 +20,7 @@ var common = require("./common"),
 				runQueries(db, "T1" + i, "T2" + i);
 			});
 		})(i);
-			
+
 		}
 	}
 	catch(e)
@@ -29,9 +29,9 @@ var common = require("./common"),
 		db.close(function () {
 					console.log("Connection closed on error");
 					});
-		
+
 	}
-	
+
 	function runQueries(db, tableOne, tableTwo)
 	{
 		db.query("create table " + tableOne + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
@@ -39,43 +39,43 @@ var common = require("./common"),
 			{
 				console.log("Table " + tableOne + " created");
 			}
-				
+
 				else
 				{
-					console.log(err);	
+					console.log(err);
 				}
 		});
-			
+
 		db.query("create table " + tableTwo + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
 			if (err == null)
 			{
 				console.log("Table " + tableTwo + " created");
 			}
-			
+
 			else
 			{
-				console.log(err);	
+				console.log(err);
 			}
 		});
-				
+
 		db.query("INSERT into " + tableOne + " values (1, 'PersonA', 'LastNameA', 'QA')", icback);
 		db.query("INSERT into " + tableOne + " values (2, 'PersonB', 'LastNameB', 'Dev')", icback);
 		db.query("INSERT into " + tableOne + " values (3, 'PersonC', 'LastNameC', 'QA')", icback);
 		db.query("INSERT into " + tableOne + " values (4, 'PersonD', 'LastNameD', 'QA')", icback);
 		db.query("INSERT into " + tableOne + " values (5, 'PersonE', 'LastNameE', 'QA')", icback);
-		
+
 		db.query("INSERT into " + tableTwo + " values (6, 'PersonF', 'LastNameF', 'QA Lead')", icback);
 		db.query("INSERT into " + tableTwo + " values (7, 'PersonG', 'LastNameG', 'Dev Lead')", icback);
-		
+
 		db.query("SELECT * from " + tableOne, scback.bind({done: false, expected: expected1}));
 		db.query("SELECT * from " + tableTwo , scback.bind({done: false, expected: expected2}));
-		
+
 		db.query("UPDATE " + tableOne + " SET C3 = 'QA Intern' where C2 = 'LastNameD'", ucback);
 		db.query("SELECT * from " + tableOne + " where C3 = 'QA Intern'", scback.bind({done: false, expected: expected3}));
-		
+
 		db.query("DELETE from " + tableTwo + " where PID = 7", dcback);
 		db.query("SELECT * from " + tableTwo + " where PID = 7", scback.bind({done: false, expected: []}));
-		db.query("DROP table " + tableTwo, drcback.bind({tableName: tableTwo})); 
+		db.query("DROP table " + tableTwo, drcback.bind({tableName: tableTwo}));
 		db.query("SELECT tabname from syscat.tables where tabschema='ELKOREHP' and TABNAME='" + tableTwo + "'", scback.bind({done: false, expected: []}));
 		db.query("DELETE from " + tableOne + " where PID = 5", dcback);
 		db.query("SELECT * from " + tableOne + " where PID = 5", scback.bind({done: false, expected: []}));
@@ -91,10 +91,10 @@ var common = require("./common"),
 		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
-			
+
 	function scback(err, data)
 	{
 		assert.deepEqual(data, this.expected);
@@ -104,7 +104,7 @@ var common = require("./common"),
 		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 
 		if(this.done)
@@ -116,16 +116,16 @@ var common = require("./common"),
 			}
 		}
 	}
-	
+
 	function ucback(err, data)
 	{
 		if (err == null)
 		{
 			console.log("Update statement successful");
-		}		
+		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 	function dcback(err, data)
@@ -136,18 +136,18 @@ var common = require("./common"),
 		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 	function drcback(err, data){
 		if (err == null)
 		{
 			console.log("Drop table " + this.tableName + " successful");
-			
+
 		}
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 	function closedbConnections()

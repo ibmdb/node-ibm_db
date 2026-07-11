@@ -6,7 +6,7 @@ var common = require("./common")
 
 db.open(common.connectionString, function (err) {
   assert.equal(err, null);
-  
+
   db.query("select ? as \"TEXTCOL1\", ? as \"TEXTCOL2\", ? as \"NULLCOL1\" "
     , ["something", "something", null]
     , function (err, data, more) {
@@ -16,7 +16,7 @@ db.open(common.connectionString, function (err) {
           assert.deepEqual(data, [{
             TEXTCOL1: "something",
             TEXTCOL2: "something",
-            NULLCOL1: null 
+            NULLCOL1: null
           }]);
         });
     });

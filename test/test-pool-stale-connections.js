@@ -30,7 +30,7 @@ var timer = setInterval(function() {
         }
 
         connection.beginTransactionSync();
-        connection.query("select 1 from sysibm.sysdummy1", 
+        connection.query("select 1 from sysibm.sysdummy1",
           function (err, results) {
             if (err) {
                console.log(err.toString());
@@ -44,7 +44,7 @@ var timer = setInterval(function() {
               console.log('Connection closed');
               console.log('done'+j);
               if(j == 0) {
-                console.log("<=== Now restart the server using " + 
+                console.log("<=== Now restart the server using " +
                             "'db2stop force; db2start' command. ====>");
               }
               if( j == 3 ) openMultipleConnections();
@@ -85,7 +85,7 @@ function testStaleConnection()
 {
   console.log("\n Test 2:\n", "=======");
   console.log("Test Stale Connections...\n");
-  console.log("<=== Restart the server using " + 
+  console.log("<=== Restart the server using " +
               "'db2stop force; db2start' command. ====>\n");
   var query = "select 1 from sysibm.sysdummy1";
   var result;

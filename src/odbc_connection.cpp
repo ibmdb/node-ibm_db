@@ -1617,7 +1617,7 @@ Napi::Value getInfoValue(Napi::Env env, SQLUSMALLINT fInfoType, SQLPOINTER info)
  * Cancel
  * Calls SQLCancel on a statement handle to cancel an executing SQL statement.
  * Requires a statement object as the first argument.
- * 
+ *
  * Usage:
  *   cancel(statement, callback) - cancel the specified statement
  */
@@ -1625,26 +1625,26 @@ Napi::Value ODBCConnection::Cancel(const Napi::CallbackInfo &info)
 {
   DEBUG_PRINTF("ODBCConnection::Cancel - Entry\n");
   Napi::Env env = info.Env();
-  
+
   if (info.Length() < 2 || !info[0].IsObject() || !info[1].IsFunction())
   {
     Napi::Error::New(env, "cancel() requires a statement object and a callback function").ThrowAsJavaScriptException();
     return env.Undefined();
   }
-  
+
   Napi::Object stmtObj = info[0].As<Napi::Object>();
   Napi::Function cb = info[1].As<Napi::Function>();
-  
+
   napi_status status;
   ODBCStatement *stmt = nullptr;
   status = napi_unwrap(env, stmtObj, reinterpret_cast<void**>(&stmt));
-  
+
   if (status != napi_ok || !stmt || !stmt->m_hSTMT)
   {
     Napi::Error::New(env, "Invalid statement object or statement handle is null").ThrowAsJavaScriptException();
     return env.Undefined();
   }
-  
+
   SQLHSTMT hSTMT = stmt->m_hSTMT;
 
   uv_work_t *work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
@@ -1701,7 +1701,7 @@ void ODBCConnection::UV_AfterCancel(uv_work_t *req, int status)
  * CancelSync
  * Synchronous version of Cancel. Calls SQLCancel on a statement handle.
  * Requires a statement object as argument.
- * 
+ *
  * Usage:
  *   cancelSync(statement) - cancel the specified statement
  */
@@ -1709,24 +1709,24 @@ Napi::Value ODBCConnection::CancelSync(const Napi::CallbackInfo &info)
 {
   DEBUG_PRINTF("ODBCConnection::CancelSync - Entry\n");
   Napi::Env env = info.Env();
-  
+
   if (info.Length() < 1 || !info[0].IsObject())
   {
     Napi::Error::New(env, "cancelSync() requires a statement object").ThrowAsJavaScriptException();
     return Napi::Boolean::New(env, false);
   }
-  
+
   Napi::Object stmtObj = info[0].As<Napi::Object>();
   napi_status status;
   ODBCStatement *stmt = nullptr;
   status = napi_unwrap(env, stmtObj, reinterpret_cast<void**>(&stmt));
-  
+
   if (status != napi_ok || !stmt || !stmt->m_hSTMT)
   {
     Napi::Error::New(env, "Invalid statement object or statement handle is null").ThrowAsJavaScriptException();
     return Napi::Boolean::New(env, false);
   }
-  
+
   SQLHSTMT hSTMT = stmt->m_hSTMT;
 
   SQLRETURN ret = SQLCancel(hSTMT);

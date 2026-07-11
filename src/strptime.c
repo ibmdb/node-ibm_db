@@ -25,60 +25,60 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 /*
  * Inclusion in node-odbc note:
- * 
+ *
  * This code was found here: http://social.msdn.microsoft.com/forums/en-US/vcgeneral/thread/25a654f9-b6b6-490a-8f36-c87483bb36b7
  * One user posted what looks to be a scaled down version of the NetBSD code
  * but did not include any header with their work. Since it seems pretty obvious
- * that the user took much of the code from NetBSD, that is why the NetBSD header 
- * is displayed above. 
+ * that the user took much of the code from NetBSD, that is why the NetBSD header
+ * is displayed above.
  */
 
 #include "strptime.h"
- 
+
 static int conv_num(const char **, int *, int, int);
 static int strncasecmp(char *s1, char *s2, size_t n);
- 
+
 char * strptime(const char *buf, const char *fmt, struct tm *tm)
 {
   char c;
   const char *bp;
   size_t len = 0;
   int alt_format, i, split_year = 0;
- 
+
   bp = buf;
 
-  while ((c = *fmt) != '\0') 
+  while ((c = *fmt) != '\0')
   {
     /* Clear `alternate' modifier prior to new conversion. */
     alt_format = 0;
-   
+
     /* Eat up white-space. */
-    if (isspace(c)) 
+    if (isspace(c))
     {
       while (isspace(*bp))
         bp++;
- 
+
       fmt++;
       continue;
     }
-          
+
        if ((c = *fmt++) != '%')
           goto literal;
- 
- 
-again:    switch (c = *fmt++) 
+
+
+again:    switch (c = *fmt++)
     {
       case '%': /* "%%" is converted to "%". */
         literal:
           if (c != *bp++)
             return (0);
           break;
- 
-        /* 
+
+        /*
          * "Alternative" modifiers. Just set the appropriate flag
          * and start over again.
          */
@@ -86,12 +86,12 @@ again:    switch (c = *fmt++)
         LEGAL_ALT(0);
         alt_format |= ALT_E;
         goto again;
- 
+
       case 'O': /* "%O?" alternative conversion modifier. */
         LEGAL_ALT(0);
         alt_format |= ALT_O;
         goto again;
-       
+
       /*
        * "Complex" conversion rules, implemented through recursion.
        */
@@ -100,101 +100,101 @@ again:    switch (c = *fmt++)
         if (!(bp = strptime(bp, "%x %X", tm)))
           return (0);
         break;
- 
+
       case 'D': /* The date as "%m/%d/%y". */
         LEGAL_ALT(0);
         if (!(bp = strptime(bp, "%m/%d/%y", tm)))
           return (0);
         break;
- 
+
       case 'R': /* The time as "%H:%M". */
         LEGAL_ALT(0);
         if (!(bp = strptime(bp, "%H:%M", tm)))
           return (0);
         break;
-     
+
       case 'r': /* The time in 12-hour clock representation. */
         LEGAL_ALT(0);
         if (!(bp = strptime(bp, "%I:%M:%S %p", tm)))
           return (0);
         break;
- 
+
       case 'T': /* The time as "%H:%M:%S". */
         LEGAL_ALT(0);
         if (!(bp = strptime(bp, "%H:%M:%S", tm)))
           return (0);
         break;
- 
+
       case 'X': /* The time, using the locale's format. */
         LEGAL_ALT(ALT_E);
         if (!(bp = strptime(bp, "%H:%M:%S", tm)))
           return (0);
         break;
- 
+
       case 'x': /* The date, using the locale's format. */
         LEGAL_ALT(ALT_E);
         if (!(bp = strptime(bp, "%m/%d/%y", tm)))
           return (0);
         break;
- 
+
       /*
        * "Elementary" conversion rules.
        */
       case 'A': /* The day of week, using the locale's form. */
       case 'a':
         LEGAL_ALT(0);
-        for (i = 0; i < 7; i++) 
+        for (i = 0; i < 7; i++)
         {
           /* Full name. */
           len = strlen(day[i]);
           if (strncasecmp((char *)(day[i]), (char *)bp, len) == 0)
             break;
-     
+
           /* Abbreviated name. */
           len = strlen(abday[i]);
           if (strncasecmp((char *)(abday[i]), (char *)bp, len) == 0)
             break;
         }
- 
+
         /* Nothing matched. */
         if (i == 7)
           return (0);
- 
+
         tm->tm_wday = i;
         bp += len;
         break;
- 
+
       case 'B': /* The month, using the locale's form. */
       case 'b':
       case 'h':
         LEGAL_ALT(0);
-        for (i = 0; i < 12; i++) 
+        for (i = 0; i < 12; i++)
         {
            /* Full name. */
 
           len = strlen(mon[i]);
           if (strncasecmp((char *)(mon[i]), (char *)bp, len) == 0)
             break;
- 
+
           /* Abbreviated name. */
           len = strlen(abmon[i]);
           if (strncasecmp((char *)(abmon[i]),(char *) bp, len) == 0)
             break;
         }
- 
+
         /* Nothing matched. */
         if (i == 12)
           return (0);
- 
+
         tm->tm_mon = i;
         bp += len;
         break;
- 
+
       case 'C': /* The century number. */
         LEGAL_ALT(ALT_E);
         if (!(conv_num(&bp, &i, 0, 99)))
           return (0);
- 
+
         if (split_year)
         {
           tm->tm_year = (tm->tm_year % 100) + (i * 100);
@@ -203,14 +203,14 @@ again:    switch (c = *fmt++)
           split_year = 1;
         }
         break;
- 
+
       case 'd': /* The day of month. */
       case 'e':
         LEGAL_ALT(ALT_O);
         if (!(conv_num(&bp, &tm->tm_mday, 1, 31)))
           return (0);
         break;
- 
+
       case 'k': /* The hour (24-hour clock representation). */
         LEGAL_ALT(0);
         /* FALLTHROUGH */
@@ -219,7 +219,7 @@ again:    switch (c = *fmt++)
         if (!(conv_num(&bp, &tm->tm_hour, 0, 23)))
           return (0);
         break;
- 
+
       case 'l': /* The hour (12-hour clock representation). */
         LEGAL_ALT(0);
         /* FALLTHROUGH */
@@ -230,31 +230,31 @@ again:    switch (c = *fmt++)
         if (tm->tm_hour == 12)
           tm->tm_hour = 0;
         break;
-     
+
       case 'j': /* The day of year. */
         LEGAL_ALT(0);
         if (!(conv_num(&bp, &i, 1, 366)))
           return (0);
         tm->tm_yday = i - 1;
         break;
-     
+
       case 'M': /* The minute. */
         LEGAL_ALT(ALT_O);
         if (!(conv_num(&bp, &tm->tm_min, 0, 59)))
           return (0);
         break;
-     
+
       case 'm': /* The month. */
         LEGAL_ALT(ALT_O);
         if (!(conv_num(&bp, &i, 1, 12)))
           return (0);
         tm->tm_mon = i - 1;
         break;
- 
+
 //      case 'p': /* The locale's equivalent of AM/PM. */
 //        LEGAL_ALT(0);
 //        /* AM? */
-//        if (strcasecmp(am_pm[0], bp) == 0) 
+//        if (strcasecmp(am_pm[0], bp) == 0)
 //        {
 //          if (tm->tm_hour > 11)
 //            return (0);
@@ -263,7 +263,7 @@ again:    switch (c = *fmt++)
 //          break;
 //        }
 //        /* PM? */
-//        else if (strcasecmp(am_pm[1], bp) == 0) 
+//        else if (strcasecmp(am_pm[1], bp) == 0)
 //        {
 //          if (tm->tm_hour > 11)
 //            return (0);
@@ -275,13 +275,13 @@ again:    switch (c = *fmt++)
 //
 //        /* Nothing matched. */
 //        return (0);
-     
+
       case 'S': /* The seconds. */
         LEGAL_ALT(ALT_O);
         if (!(conv_num(&bp, &tm->tm_sec, 0, 61)))
           return (0);
         break;
-     
+
       case 'U': /* The week of year, beginning on sunday. */
       case 'W': /* The week of year, beginning on monday. */
         LEGAL_ALT(ALT_O);
@@ -294,27 +294,27 @@ again:    switch (c = *fmt++)
         if (!(conv_num(&bp, &i, 0, 53)))
           return (0);
         break;
- 
+
       case 'w': /* The day of week, beginning on sunday. */
         LEGAL_ALT(ALT_O);
         if (!(conv_num(&bp, &tm->tm_wday, 0, 6)))
           return (0);
         break;
- 
+
       case 'Y': /* The year. */
         LEGAL_ALT(ALT_E);
         if (!(conv_num(&bp, &i, 0, 9999)))
           return (0);
- 
+
         tm->tm_year = i - TM_YEAR_BASE;
         break;
-     
+
       case 'y': /* The year within 100 years of the epoch. */
         LEGAL_ALT(ALT_E | ALT_O);
         if (!(conv_num(&bp, &i, 0, 99)))
           return (0);
- 
-        if (split_year) 
+
+        if (split_year)
         {
           tm->tm_year = ((tm->tm_year / 100) * 100) + i;
           break;
@@ -325,7 +325,7 @@ again:    switch (c = *fmt++)
         else
           tm->tm_year = i + 1900 - TM_YEAR_BASE;
         break;
- 
+
         /*
           * Miscellaneous conversions.
           */
@@ -335,48 +335,48 @@ again:    switch (c = *fmt++)
         while (isspace(*bp))
           bp++;
         break;
- 
- 
+
+
       default: /* Unknown/unsupported conversion. */
         return (0);
     }
- 
- 
+
+
   }
- 
+
   /* LINTED functional specification */
   return ((char *)bp);
 }
- 
- 
+
+
 static int conv_num(const char **buf, int *dest, int llim, int ulim)
 {
   int result = 0;
- 
+
   /* The limit also determines the number of valid digits. */
   int rulim = ulim;
- 
+
   if (**buf < '0' || **buf > '9')
     return (0);
- 
+
   do {
     result *= 10;
     result += *(*buf)++ - '0';
     rulim /= 10;
   } while ((result * 10 <= ulim) && rulim && **buf >= '0' && **buf <= '9');
- 
+
   if (result < llim || result > ulim)
     return (0);
- 
+
   *dest = result;
   return (1);
 }
- 
+
 int strncasecmp(char *s1, char *s2, size_t n)
 {
   if (n == 0)
     return 0;
- 
+
   while (n-- != 0 && tolower(*s1) == tolower(*s2))
   {
     if (n == 0 || *s1 == '\0' || *s2 == '\0')
@@ -384,6 +384,6 @@ int strncasecmp(char *s1, char *s2, size_t n)
     s1++;
     s2++;
   }
- 
+
   return tolower(*(unsigned char *) s1) - tolower(*(unsigned char *) s2);
 }

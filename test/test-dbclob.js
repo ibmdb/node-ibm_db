@@ -4,7 +4,7 @@ var common = require("./common")
     , assert = require('assert')
     , cn = common.connectionString;
 
-async function main() {	
+async function main() {
     const BLOB_LENGTH = 1024 * 16;
     const conn = await ibmdb.open(cn)
     let results;

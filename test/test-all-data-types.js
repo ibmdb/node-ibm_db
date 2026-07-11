@@ -71,7 +71,7 @@ ibmdb.open(cn, function(err, conn) {
       else {
             assert.deepEqual(data, expectedData);
       }
-     
+
       conn.querySync("delete from mytab1");
       var blobParam = {DataType: "BLOB", Data: Buffer.from('abc')};
         if (iszos) {

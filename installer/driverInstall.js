@@ -19,7 +19,7 @@ var license_agreement2 = '. Check for additional dependencies, which may come wi
 
 var CURRENT_DIR = process.cwd();
 var DOWNLOAD_DIR = path.resolve(CURRENT_DIR, 'installer');
-var INSTALLER_FILE; 
+var INSTALLER_FILE;
 var deleteInstallerFile = false;
 var platform = os.platform();
 var arch = os.arch();
@@ -128,16 +128,16 @@ var install_node_ibm_db = function(file_url) {
      * Installer steps: Generic for all platforms :
      * 1: Check IBM_DB_HOME path first, if present then install accordingly.
      * 2: If IBM_DB_HOME is not set, then download "clidriver" and then install.
-     * 
+     *
      * Installer Steps: For windows only :
      * Step 1 and Step 2 are same.
      * There are two kinds of windows installation now:
      * 1: Auto Installation (Compilation and building - required Visual Studio).
      * 2: Pre-compiled Binary Installation.
-     * 
+     *
      * If in any case "Auto Installation" fails, then the Installer will
-     * automatically pick up the "Pre-compiled Binary Installation"" process. 
-     * 
+     * automatically pick up the "Pre-compiled Binary Installation"" process.
+     *
      */
 
     //If environment variable DOWNLOAD_CLIDRIVER is set to true, then remove Clidriver folder and get it freshly
@@ -289,7 +289,7 @@ var install_node_ibm_db = function(file_url) {
                 odbc_driver = 'ntx64_odbc_cli.zip';
             }
         }
-        else if(platform == 'linux') 
+        else if(platform == 'linux')
         {
             if(arch == 'x64') {
                 odbc_driver = 'linuxx64_odbc_cli.tar.gz';
@@ -307,8 +307,8 @@ var install_node_ibm_db = function(file_url) {
             } else {
                 odbc_driver = 'linuxia32_odbc_cli.tar.gz';
             }
-        } 
-        else if(platform == 'darwin') 
+        }
+        else if(platform == 'darwin')
         {
             if(arch == 'x64') {
                 odbc_driver = 'macos64_odbc_cli.tar.gz';
@@ -319,7 +319,7 @@ var install_node_ibm_db = function(file_url) {
                             '64 bit MacOS system.\n');
                 process.exit(1);
             }
-        } 
+        }
         else if(platform == 'aix')
         {
             if(arch == 'ppc')
@@ -337,7 +337,7 @@ var install_node_ibm_db = function(file_url) {
             // specify IBM_DB_HOME environment variable to the Db2 datasets
             // to allow the installer to access the necessary header files and
             // sidedeck definitions to build the node binding.
-            console.log('Please set the environment variable IBM_DB_HOME to the ' + 
+            console.log('Please set the environment variable IBM_DB_HOME to the ' +
                         'High Level Qualifier (HLQ) of your Db2 libraries.\n');
             process.exit(1);
         }
@@ -394,7 +394,7 @@ var install_node_ibm_db = function(file_url) {
                 }
             });
         }
-        else 
+        else
         {
             var targz = require('targz');
             var compress = targz.decompress({src: INSTALLER_FILE, dest: DOWNLOAD_DIR}, function(err){
@@ -415,7 +415,7 @@ var install_node_ibm_db = function(file_url) {
         }
     }
 
-    function buildBinary(isDownloaded) 
+    function buildBinary(isDownloaded)
     {
         var buildString = "node-gyp configure build ";
 
@@ -459,7 +459,7 @@ var install_node_ibm_db = function(file_url) {
                     }
                     installPreCompiledBinary();
                     return;
-                }    
+                }
 
                 else
                 {
@@ -492,7 +492,7 @@ var install_node_ibm_db = function(file_url) {
                     if (fs.existsSync(CURRENT_DIR + "/build/odbc_bindings.vcxproj"))
                     {
                         var ODBC_BINDINGS_VCXPROJ_FILE = path.resolve(CURRENT_DIR, 'build/odbc_bindings.vcxproj');
-                        
+
                         fs.readFile(ODBC_BINDINGS_VCXPROJ_FILE, 'utf8', function (err,data) {
                             if (err)
                             {
@@ -507,7 +507,7 @@ var install_node_ibm_db = function(file_url) {
                             // More flexible pattern to handle variations in formatting
                             var kernelLibsPattern = /kernel32\.lib[;\s]*user32\.lib[;\s]*gdi32\.lib[;\s]*winspool\.lib[;\s]*comdlg32\.lib[;\s]*advapi32\.lib[;\s]*shell32\.lib[;\s]*ole32\.lib[;\s]*oleaut32\.lib[;\s]*uuid\.lib[;\s]*odbc32\.lib[;\s]*DelayImp\.lib[;\s]*/gi;
                             var result = data.replace(kernelLibsPattern, '');
-                            
+
                             // Check if replacement was successful
                             if (data !== result) {
                                 printMsg("Successfully updated file build/odbc_bindings.vcxproj");
@@ -592,7 +592,7 @@ var install_node_ibm_db = function(file_url) {
                     {
                       nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib " + addonBinary;
                     }
-                    var nameToolCmdProcess = exec(nameToolCommand , 
+                    var nameToolCmdProcess = exec(nameToolCommand ,
                     function (error1, stdout1, stderr1) {
                         if (error1 !== null) {
                             console.log('Error setting up the lib path to ' +
@@ -606,12 +606,12 @@ var install_node_ibm_db = function(file_url) {
         }
     } //buildBinary
 
-    function removeWinBuildArchive() 
+    function removeWinBuildArchive()
     {
         var WIN_BUILD_FILE = path.resolve(CURRENT_DIR, 'build.zip');
-        fs.exists(WIN_BUILD_FILE, function(exists) 
+        fs.exists(WIN_BUILD_FILE, function(exists)
         {
-            if (exists) 
+            if (exists)
             {
                 fs.unlinkSync(WIN_BUILD_FILE);
             }
@@ -621,9 +621,9 @@ var install_node_ibm_db = function(file_url) {
     function removeInstallerFile()
     {
         // Delete downloaded odbc_cli.tar.gz file.
-        fs.exists(INSTALLER_FILE, function(exists) 
+        fs.exists(INSTALLER_FILE, function(exists)
         {
-            if (exists) 
+            if (exists)
             {
                 fs.unlinkSync(INSTALLER_FILE);
             }

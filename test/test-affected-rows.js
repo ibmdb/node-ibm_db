@@ -22,7 +22,7 @@ ibmdb.open(cn, function(err, conn) {
     console.log("No of Inserted rows = ", result.getAffectedRowsSync());
     result.closeSync();
     stmt.closeSync();
-    conn.prepare("update mytab1 set c2 = 'jha' where c1 > 3", 
+    conn.prepare("update mytab1 set c2 = 'jha' where c1 > 3",
       function(err, stmt) {
         if(err) {
           console.log(err);
@@ -40,7 +40,7 @@ ibmdb.open(cn, function(err, conn) {
             stmt.execute([4], function(err, result) {
               if(err) { console.log(err); }
               else {
-                console.log("No of deleted rows = ", 
+                console.log("No of deleted rows = ",
                     result.getAffectedRowsSync());
                 result.closeSync();
               }

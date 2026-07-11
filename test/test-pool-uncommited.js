@@ -14,7 +14,7 @@ var request =  function (err, conn) {
   } catch(e) {};
   conn.beginTransaction(function (err) {
     if (err) {
-      //could not begin a transaction for some reason. 
+      //could not begin a transaction for some reason.
       console.log(err);
       return conn.closeSync();
     }

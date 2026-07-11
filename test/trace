@@ -1,4 +1,4 @@
-# Script file to enable db2trc and run node.js script to collect 
+# Script file to enable db2trc and run node.js script to collect
 # db2trace files to diagnose the issue and make sure setup is proper.
 # This script is only for non-Windows platform.
 

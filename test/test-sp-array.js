@@ -18,7 +18,7 @@ ibmdb.open(common.connectionString, function (err, conn) {
     var arr2 = ["Row 10", "Row 20", "Row 30", "Row 40", "Row 50"];
     var param1= { ParamType: "ARRAY", DataType: "INTEGER", Data: arr1 } ;
     var param2= { ParamType: "ARRAY", DataType: "VARCHAR", Data: arr2, Length:6 } ;
-    var queryOptions = {sql: "CALL ARRAYPROCEDURE(?, ?)", 
+    var queryOptions = {sql: "CALL ARRAYPROCEDURE(?, ?)",
                         params: [param1, param2],
                         ArraySize: 5};
 

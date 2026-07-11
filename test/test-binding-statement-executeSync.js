@@ -7,10 +7,10 @@ var common = require("./common")
 
 db.createConnection(function (err, conn) {
   conn.openSync(common.connectionString);
-  
+
   conn.createStatement(function (err, stmt) {
     var r, result, caughtError={};
-    
+
     //try excuting without preparing or binding.
     try {
       result = stmt.executeSync();
@@ -18,7 +18,7 @@ db.createConnection(function (err, conn) {
     catch (e) {
       caughtError = e;
     }
-    
+
     try {
       assert.ok(caughtError);
     }
@@ -26,7 +26,7 @@ db.createConnection(function (err, conn) {
       console.log(e.message);
       exitCode = 1;
     }
-    
+
     //try incorrectly binding a string and then executeSync
     try {
       r = stmt.bind("select 1 + 1 as col1");
@@ -34,51 +34,51 @@ db.createConnection(function (err, conn) {
     catch (e) {
       caughtError = e;
     }
-    
+
     try {
       assert.equal(caughtError.message, "Argument 1 must be an Array");
-      
+
       r = stmt.prepareSync("select 1 + ? as col1 from SYSIBM.SYSDUMMY1");
       assert.equal(r, true, "prepareSync did not return true");
-      
+
       r = stmt.bindSync([2]);
       assert.equal(r, true, "bindSync did not return true");
-      
+
       result = stmt.executeSync();
       assert.equal(result.constructor.name, "ODBCResult");
-      
+
       r = result.fetchAllSync();
       assert.deepEqual(r, [ { COL1: 3 } ]);
-      
+
       r = result.closeSync();
       assert.equal(r, true, "closeSync did not return true");
-      
+
       r = stmt.bindSync([7]);
       assert.equal(r, true, "bindSync did not return true");
 
       result = stmt.executeSync();
       assert.equal(result.constructor.name, "ODBCResult");
-      
+
       r = result.fetchAllSync();
       console.log(r);
       assert.deepEqual(r, [ { COL1: 8 } ]);
     }
     catch (e) {
       console.log(e);
-      
+
       exitCode = 1;
     }
-    
+
     stmt.closeSync();
     conn.closeSync();
-    
+
     if (exitCode) {
       console.log("failed");
     }
     else {
       console.log("success");
     }
-    
+
     process.exit(exitCode);
   });
 });

@@ -32,7 +32,7 @@ function doClose() {
 	connections.forEach(function (db) {
 		db.close(function () {
 			closeCallback += 1;
-			
+
 			maybeFinish();
 		});
 	});

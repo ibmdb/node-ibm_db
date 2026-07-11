@@ -31,14 +31,14 @@ pool.open(cn, function(err, conn) {
     try{
         conn.querySync("create table imgtab (id int, filename varchar(50), image BLOB(200K))");
     } catch (e) {};
-    
+
     conn.prepare("insert into imgtab (id, filename, image) values(?, ? , ?)", function(err, stmt){
         if(err) return console.log(err);
-        stmt.execute([1, 'img1.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img1}], 
+        stmt.execute([1, 'img1.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img1}],
             function(err, result){
               if(err) return console.log(err);
               console.log("image 1 inserted.");
-            stmt.execute([2, 'img2.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img2}], 
+            stmt.execute([2, 'img2.jpg', {ParamType:"FILE", DataType:"BLOB", Data:img2}],
             function(err, result){
               if(err) return console.log(err);
               else {result.closeSync();

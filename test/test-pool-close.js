@@ -8,11 +8,11 @@ var common = require("./common")
 
 openConnectionsUsingPool(connections);
 
-function openConnectionsUsingPool(connections) 
+function openConnectionsUsingPool(connections)
 {
   console.log("\n Test 1:\n", "=======");
   console.log("Open", connectCount, "connections from pool.\n");
-  for (var x = 0; x <= connectCount; x++) 
+  for (var x = 0; x <= connectCount; x++)
   {
     (function (connectionIndex) {
       console.error("Opening connection #", connectionIndex + 1);
@@ -33,7 +33,7 @@ function openConnectionsUsingPool(connections)
   }
 }
 
-function closeConnections (connections) 
+function closeConnections (connections)
 {
   console.log("\n Test 2:\n", "=======");
   console.log("Close all connections using pool.close().");

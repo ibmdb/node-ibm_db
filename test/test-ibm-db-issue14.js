@@ -9,7 +9,7 @@ var testValues = [10205152031467301, 10205152031467303];
 
 
 /*Connect to the database server
-  param 1: The DSN string which has the details of database name to connect to, user id, password, hostname, portnumber 
+  param 1: The DSN string which has the details of database name to connect to, user id, password, hostname, portnumber
   param 2: The Callback function to execute when connection attempt to the specified database is completed
 */
 ibmdb.open(common.connectionString, function(err, conn)
@@ -20,7 +20,7 @@ ibmdb.open(common.connectionString, function(err, conn)
         } else {
 
 		console.log('Connection to DB2 machine successful');
-		
+
         try {
 		    conn.querySync("create table " + testTable + " (COLINT BIGINT)");
         } catch (e) {};

@@ -45,7 +45,7 @@ var timer = setInterval(function() {
                     console.log('Connection closed');
                     console.log('done' + j);
                     if (j == 0) {
-                        console.log("<=== Now restart the server using " + 
+                        console.log("<=== Now restart the server using " +
                                     "'db2stop force; db2start' command. ====>");
                     }
                 });

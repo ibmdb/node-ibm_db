@@ -8,11 +8,11 @@ var common = require("./common")
 db.createConnection(function (err, conn) {
   //connectionTimeout should be 30 by default as set in C++
   assert.equal(conn.connectTimeout, 30);
-  
+
   //test the setter and getter
   conn.connectTimeout = 1234;
   assert.equal(conn.connectTimeout, 1234);
-  
+
   //set the time out to something small
   conn.connectTimeout = 1;
   assert.equal(conn.connectTimeout, 1);

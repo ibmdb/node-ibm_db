@@ -48,20 +48,20 @@ function doTest(file, connectionString) {
       , timer = null
       , timedOut = false;
       ;
-    
+
     process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : " + file.replace(/\.js$/, ""));
     process.stdout.write(" ... ");
 
     testCount += 1;
-    
+
     test.on("exit", function (code, signal) {
       clearTimeout(timer);
-      
+
       if (code != 0) {
         errorCount += 1;
-        
+
         process.stdout.write("\033[01;31mfail \033[01;0m ");
-        
+
         if (timedOut) {
           process.stdout.write("(Timed Out)");
         }
@@ -69,12 +69,12 @@ function doTest(file, connectionString) {
       else {
         process.stdout.write("\033[01;32msuccess \033[01;0m ");
       }
-      
+
       process.stdout.write("\n");
-      
+
       doNextTest(connectionString);
     });
-    
+
     var timer = setTimeout(function () {
       timedOut = true;
       test.kill();
@@ -85,7 +85,7 @@ function doTest(file, connectionString) {
 function doNextTest(connectionString) {
   if (files.length) {
     var testFile = files.shift();
-    
+
     doTest(testFile, connectionString);
   }
   else {
@@ -97,7 +97,7 @@ function doNextTest(connectionString) {
 function doNextConnectionString() {
   if (connectionStrings.length) {
     var connectionString = connectionStrings.shift();
-    
+
     if (requestedTest) {
       files = [requestedTest];
     }
@@ -111,7 +111,7 @@ function doNextConnectionString() {
 
       files.sort();
     }
-    
+
     doNextTest(connectionString);
   }
   else {
@@ -122,7 +122,7 @@ function doNextConnectionString() {
     else {
       console.log("Results : All tests were successful. Total %s tests executed.", testCount);
     }
-    console.log("Total execution time = %s min %s sec.", 
+    console.log("Total execution time = %s min %s sec.",
                 parseInt(totalTime/60), parseInt(totalTime%60));
 
     if (errorCount) {

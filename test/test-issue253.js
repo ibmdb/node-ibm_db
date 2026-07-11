@@ -12,14 +12,14 @@ var dropSQL   =  "drop table issue253";
 ibmdb.open(cn, function (err,conn) {
   if (err) console.log(err);
   assert.equal(err, null);
-  
+
   conn.querySync(createSQL);
-  
+
   conn.query(selectSQL, function (err, data) {
       conn.querySync(dropSQL);
       conn.closeSync();
       var errorFound = false;
-     
+
       if (err.message) {
         if (common.isZOS) {
           // zOS Db2 returns SQLCode -181 and SQLState 22007 for

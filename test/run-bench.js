@@ -27,13 +27,13 @@ doNextConnectionString();
 
 function doBench(file, connectionString) {
   var bench = spawn("node", ['--expose_gc',file, connectionString.connectionString]);
-  
-  process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : \033[01;33m" + 
+
+  process.stdout.write("Running test for [\033[01;29m" + connectionString.title + "\033[01;0m] : \033[01;33m" +
                        file.replace(/\.js$/, "") + "\033[01;0m");
   process.stdout.write(" ... ");
 
   testCount += 1;
-  
+
   bench.on("exit", function (code, signal) {
     process.stdout.write(" ... ");
     if (code != 0) {
@@ -47,7 +47,7 @@ function doBench(file, connectionString) {
 
     doNextBench(connectionString);
   });
-  
+
   bench.stdout.on("data", function (data) {
     process.stdout.write(data);
   });
@@ -56,7 +56,7 @@ function doBench(file, connectionString) {
 function doNextBench(connectionString) {
   if (files.length) {
     var benchFile = files.shift();
-    
+
     doBench(benchFile, connectionString);
   }
   else {
@@ -68,7 +68,7 @@ function doNextBench(connectionString) {
 function doNextConnectionString() {
   if (connectionStrings.length) {
     var connectionString = connectionStrings.shift();
-    
+
     if (requestedBench) {
       files = [requestedBench];
     }
@@ -82,7 +82,7 @@ function doNextConnectionString() {
 
       files.sort();
     }
-    
+
     doNextBench(connectionString);
   }
   else {

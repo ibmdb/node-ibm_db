@@ -4,7 +4,7 @@ var common = require("./common")
     , assert = require("assert")
     , connStr = common.connectionString;
 
-var sql = "insert into testtab (col1,col2) values('一二三四', '五六七八')"; 
+var sql = "insert into testtab (col1,col2) values('一二三四', '五六七八')";
 
 ibmdb.open(connStr,(err,conn)=>{
   if(err){ console.log(err); return; }

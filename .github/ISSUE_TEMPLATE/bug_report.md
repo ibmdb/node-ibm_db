@@ -22,7 +22,7 @@ title: 'Bug Report'
   echo $IBM_DB_HOME
   echo $PATH
   echo $LD_LIBRARY_PATH $DYLD_LIBRARY_PATH
-  
+
 ### For Windows system, output of below commands from windows command prompt:
   node -v
   npm ls ibm_db
@@ -30,7 +30,7 @@ title: 'Bug Report'
   echo %IBM_DB_HOME%
   echo %PATH%
   echo %LIB%
- 
+
 - Value of any other ibm_db specific environment variable if in use.
 
 ## Please provide below problem specific info:

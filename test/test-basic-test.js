@@ -64,7 +64,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
       //else ret.closeSync(); // call closeSync() for execute().
       else console.log("Inserted row count = " + ret);
       assert.equal(ret, 1);
-      
+
       conn.prepare("select * from mytab1", function (err, stmt) {
         if(err) {
           console.log(err);
@@ -128,7 +128,7 @@ ibmdb.open(cn, {"fetchMode": 3}, function(err, conn) { // 3 means FETCH_ARRARY
             });  // conn.query
           }
         });
-      });  
+      });
     });
   });
       });

@@ -23,7 +23,7 @@ ibmdb.open(common.connectionString, function(err, conn) {
   var param3 = {ParamType:"ARRAY", DataType:1, Data:[0,1,null,false,true]};
   var namearr = ["", "Row 200", null, "Row 4000", "Last Row"];
   var param4 = {ParamType:"ARRAY", DataType:1, Data:namearr, Length:9};
-  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)", 
+  var queryOptions = {sql:"insert into arrtab values (?, ?, ?, ?)",
                       params: [param1, param2, param3, param4],
                       ArraySize:5};
 
@@ -106,10 +106,10 @@ ibmdb.open(common.connectionString, function(err, conn) {
   if(err.length) { console.log(err); return; }
   var params1 = [{ParamType:"ARRAY", DataType:1, Data: ["","Hello"], Length:5}];
   var params2 = [{ParamType:"ARRAY", DataType:1, Data: ["Hello",""], Length:5}];
-  var queryOptions1 = {sql:"insert into arrtab3 values (?)", 
+  var queryOptions1 = {sql:"insert into arrtab3 values (?)",
                       params: [{ParamType:"ARRAY", DataType:1, Data: ["","Hello"], Length:5}],
                       ArraySize:2};
-  var queryOptions2 = {sql:"insert into arrtab3 values (?)", 
+  var queryOptions2 = {sql:"insert into arrtab3 values (?)",
                       params: [{ParamType:"ARRAY", DataType:1, Data: ["Hello"," "], Length:5}],
                       ArraySize:2};
 

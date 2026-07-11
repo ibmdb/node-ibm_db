@@ -5,12 +5,12 @@ var common = require("./common")
   , iterations = 100
   ;
 
-db.open(common.connectionString, function(err){ 
+db.open(common.connectionString, function(err){
   if (err) {
     console.error(err);
     process.exit(1);
   }
-  
+
   issueQuery2(function () {
     finish();
   });
@@ -19,22 +19,22 @@ db.open(common.connectionString, function(err){
 function issueQuery2(done) {
   var count = 0
     , time = new Date().getTime();
-  
+
   var stmt = db.prepareSync('select cast(? as INTEGER) as test from sysibm.sysdummy1');
-    
+
   for (var x = 0; x < iterations; x++) {
     (function (x) {
       stmt.bindSync([x]);
       stmt.executeNonQuery(cb);
     })(x);
   }
-  
+
   function cb (err, data) {
     if (err) {
       console.error(err);
       return finish();
     }
-    
+
     if (++count == iterations) {
       var elapsed = (new Date().getTime() - time)/1000;
       process.stdout.write("(" + count + " queries issued in " + elapsed + " seconds, " + (count/elapsed).toFixed(2) + " query/sec)");

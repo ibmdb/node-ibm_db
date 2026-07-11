@@ -1,7 +1,7 @@
 /*
   Copyright (c) 2012, Dan VerWeire<dverweire@gmail.com>
   Copyright (c) 2011, Lee Smith<notwink@gmail.com>
-  
+
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
   copyright notice and this permission notice appear in all copies.
@@ -36,9 +36,9 @@ int main() {
   SQLUSMALLINT canHaveMoreResults;
   //SQLCHAR outstr[1024];
   //SQLSMALLINT outstrlen;
-  
+
   if( SQL_SUCCEEDED(SQLAllocEnv( &m_hEnv )) ) {
-    
+
     if( SQL_SUCCEEDED(SQLAllocHandle( SQL_HANDLE_DBC, m_hEnv, &m_hDBC )) ) {
       SQLSetConnectOption( m_hDBC, SQL_LOGIN_TIMEOUT,5 );
 
@@ -57,26 +57,26 @@ int main() {
         int iterations = 10000;
         int i = 0;
         struct timeb start;
-        
+
         ftime(&start);
-        
+
         for (i =0 ; i <= iterations; i ++) {
           SQLAllocHandle(SQL_HANDLE_STMT, m_hDBC, &m_hStmt);
-          
+
           SQLExecDirect(m_hStmt, "select 1 + 1 as test;", SQL_NTS);
-          
+
           while ( SQL_SUCCEEDED(SQLFetch(m_hStmt) )) {
             //printf("sql query succeeded\n");
           }
-          
+
           SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
         }
-        
+
         struct timeb stop;
         ftime(&stop);
-        
+
         double elapsed = ((stop.time * 1000 + stop.millitm) - (start.time * 1000 + start.millitm));
-        
+
         printf("%d queries issued in %f seconds, %f/sec\n", iterations, (double) elapsed / 1000, iterations/((double) elapsed / 1000));
       }
       else {
@@ -91,10 +91,10 @@ int main() {
   else {
     printError("SQLAllocHandle - env", m_hEnv, SQL_HANDLE_ENV);
   }
-  
+
   //SQLFreeHandle(SQL_HANDLE_DBC, m_hDBC);
   //SQLFreeHandle(SQL_HANDLE_ENV, m_hEnv);
-  
+
   return 0;
 }
 

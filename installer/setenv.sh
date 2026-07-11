@@ -1,4 +1,4 @@
-# Script file to set environment variables to use db2cli executable from 
+# Script file to set environment variables to use db2cli executable from
 # ibm_db/installer/clidriver/bin folder
 # This script is only for non-Windows platform.
 

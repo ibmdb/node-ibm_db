@@ -28,18 +28,18 @@
               [ 'IS_DOWNLOADED == "true" and OS != "aix"',
                 { 'ldflags' : [ "-Wl,-R,'<(ORIGIN_LIB_PATH)' " ] }
               ]
-            ],  
+            ],
             'libraries' : [ '-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib32 ', '-ldb2' ],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g'],
-          }],  
+          }],
 
         [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")',
           { 'conditions' : [
               [ 'IS_DOWNLOADED == "true" and OS != "aix"',
                 { 'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)',-rpath,'$$ORIGIN:$$ORIGIN/../../installer/clidriver/lib' " ], }
               ]
-            ],    
+            ],
             'libraries' : ['-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ','-ldb2' ],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g'],
@@ -83,12 +83,12 @@
             'libraries' : ['-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib32 ', '-ldb2'],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g']
-          }], 
+          }],
 
         [ 'OS != "linux" and OS != "win" and OS != "mac" and target_arch == "x64" ',
           { 'conditions' : [
               ['IS_DOWNLOADED == "true" ', {'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)' "]}]
-            ],    
+            ],
             'libraries' : ['-L$(IBM_DB_HOME)/lib -L$(IBM_DB_HOME)/lib64 ', '-ldb2'],
             'include_dirs': ['$(IBM_DB_HOME)/include'],
             'cflags' : ['-g']

@@ -9,7 +9,7 @@ var connString = 'DRIVER={DB2 ODBC Driver};DATABASE=SAMPLE;UID=db2admin;PWD=db2a
 console.log("Test program to access DB2 sample database");
 
 /*Connect to the database server
-  param 1: The DSN string which has the details of database name to connect to, user id, password, hostname, portnumber 
+  param 1: The DSN string which has the details of database name to connect to, user id, password, hostname, portnumber
   param 2: The Callback function to execute when connection attempt to the specified database is completed
 */
 ibmdb.open(common.connectionString, function(err, conn)
@@ -27,7 +27,7 @@ ibmdb.open(common.connectionString, function(err, conn)
 			param 2: The callback function to execute when the database server responds
 		*/
 		conn.query("SELECT TIMESTAMP_FORMAT('1999-12-31 23:59:59.123', 'YYYY-MM-DD HH24:MI:SS.FF') AS TD FROM SYSIBM.SYSDUMMY1;", function(err, nodetest, moreResultSets) {
-		
+
 			if(err) {
 				console.log('Error: '+err);
 				process.exit(0);

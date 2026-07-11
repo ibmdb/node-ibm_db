@@ -2464,7 +2464,7 @@ ibmdb.open(cn, function(err, conn)
 {
     // Prepare a statement for a long-running query
     const stmt = conn.prepareSync("SELECT * FROM LARGE_TABLE");
-    
+
     // Start executing asynchronously
     stmt.execute(function(err, result) {
         if (err) {

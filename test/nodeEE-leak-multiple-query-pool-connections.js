@@ -1,4 +1,4 @@
-var common = require("./common"), 
+var common = require("./common"),
 	odbc = require("../"),
 	pool = new odbc.Pool(),
 	maxConnections = 10,
@@ -13,7 +13,7 @@ var common = require("./common"),
 		initialMemHeap = util.inspect(process.memoryUsage().heapUsed);
 		for (var i = 0; i <= maxConnections; i++)
 		{ (function (i) {
-				if (i == maxConnections) 
+				if (i == maxConnections)
 				{
 	          		closeConnections();
 	        	}
@@ -21,11 +21,11 @@ var common = require("./common"),
 	        	{
 					console.log("Opening connection #", i);
 	        		pool.open(common.connectionString, function (err, connection) {
-						if (err) 
+						if (err)
 						{
 							console.error("error: ", err.message);
 					    }
-						
+
 		        		else
 		        		{
 		        			runQueries(connection, "T1Leak" + i);
@@ -38,12 +38,12 @@ var common = require("./common"),
 	catch(e)
 	{
 		console.log(e);
-		pool.close(function () 
+		pool.close(function ()
 		{
     		console.log("pool closed on error");
     	});
 	}
-	
+
 	function runQueries(connection, tableName)
 	{
 		connection.query("create table "+ tableName + " (PID INTEGER, C1 VARCHAR(255), C2 VARCHAR(255), C3 VARCHAR(255))", function(err, data){
@@ -51,10 +51,10 @@ var common = require("./common"),
 			{
 				console.log("Table "+ tableName + " created");
 			}
-					
+
 			else
 			{
-				console.log(err);	
+				console.log(err);
 			}
 		});
 		connection.query("INSERT into " + tableName + " values (1, 'PersonA', 'LastNameA', 'QA')", icback);
@@ -62,9 +62,9 @@ var common = require("./common"),
 		connection.query("INSERT into " + tableName + " values (3, 'PersonC', 'LastNameC', 'QA')", icback);
 		connection.query("INSERT into " + tableName + " values (4, 'PersonD', 'LastNameD', 'QA')", icback);
 		connection.query("INSERT into " + tableName + " values (5, 'PersonE', 'LastNameE', 'QA')", icback);
-				
+
 		connection.query("SELECT * from " + tableName, scback);
-				
+
 		connection.query("UPDATE " + tableName + " SET C3 = 'QA Intern' where C2 = 'LastNameD'", ucback);
 		connection.query("SELECT * from " + tableName + " where C3 = 'QA Intern'", scback);
 		connection.query("SELECT count(*) from " + tableName + " where PID = 7", scback);
@@ -79,36 +79,36 @@ var common = require("./common"),
 		if (err == null)
 		{
 		}
-					
+
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
-			
+
 	function scback(err, data)
 	{
 		if (err == null)
 		{
 			console.log("Select statement successful");
 		}
-					
+
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
-	
+
 	function ucback(err, data)
 	{
 		if (err == null)
 		{
 			console.log("Update statement successful");
 		}
-					
+
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 
@@ -118,10 +118,10 @@ var common = require("./common"),
 		{
 			console.log("Delete row(s) successful");
 		}
-					
+
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 
@@ -131,21 +131,21 @@ var common = require("./common"),
 		{
 			console.log("Drop table " + this.tableName + " successful");
 		}
-					
+
 		else
 		{
-			console.log(err);	
+			console.log(err);
 		}
 	}
 
-	function closeConnections() 
+	function closeConnections()
 	{
 		pool.close(function () {
     		console.log("Database connection pool closed");
     		checkMemory();
     	});
 	}
-	
+
 	function checkMemory()
 	{
 		global.gc();

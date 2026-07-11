@@ -30,7 +30,7 @@ ibmdb.open(cn, function(err, conn1) {
 
   stmt0.sql = "INSERT INTO T1 VALUES (1, 'ABCDEF', 'GHIJK')";
   conn1.querySync(stmt0.sql);
-  
+
   ibmdb.open(cn, function(err, conn2) {
       if (err) return console.log(err);
 

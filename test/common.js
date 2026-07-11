@@ -77,7 +77,7 @@ if (isZOS) {
   }
 }
 
-exports.testConnectionStrings = [{ title : "DB2", 
+exports.testConnectionStrings = [{ title : "DB2",
                         connectionString : connectionString }];
 exports.benchConnectionStrings = exports.testConnectionStrings;
 
@@ -85,7 +85,7 @@ if (process.argv.length === 3) {
   //look through the testConnectionStrings to see if there is a title that matches
   //what was requested.
   var lookup = process.argv[2];
-  
+
   exports.testConnectionStrings.forEach(function (connectionString) {
     if (connectionString && connectionString.title &&
         connectionString.title == lookup) {
