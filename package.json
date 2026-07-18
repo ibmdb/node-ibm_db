@@ -43,7 +43,7 @@
     "prepare": "npm run build:types"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "axios": "^1.16.1",
     "big-integer": "^1.6.51",
     "bindings": "^1.5.0",
