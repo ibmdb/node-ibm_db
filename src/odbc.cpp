@@ -787,6 +787,11 @@ Parameter *ODBC::GetParametersFromArray(Napi::Env env, Napi::Array values, int *
     {
       GetBoolParam(env, value, &params[i], i + 1);
     }
+
+    if (env.IsExceptionPending())
+    {
+      return params;
+    }
   }
   return params;
 }
@@ -797,6 +802,12 @@ void ODBC::GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, in
   int bufflen = 0;
   int terCharLen = 1;
   bool isBinary = (param->c_type == SQL_C_BINARY);
+
+  Napi::String stringValue = value.ToString();
+  if (stringValue.IsEmpty())
+  {
+    return;
+  }
 
   // Determine string length using encoding that matches NAN behavior:
   // SQL_C_BINARY -> Latin-1 (WriteOneByte), UNICODE -> UTF-16 (Write), else -> UTF-8
@@ -813,7 +824,7 @@ void ODBC::GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, in
   }
 #else
   else {
-    std::string utf8str = value.ToString().Utf8Value();
+    std::string utf8str = stringValue.Utf8Value();
     length = (int)utf8str.length();
   }
 #endif
@@ -834,7 +845,7 @@ void ODBC::GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, in
     param->type = (length >= 8000) ? SQL_LONGVARCHAR : SQL_VARCHAR;
   if (!isBinary)
   {
-    std::string utf8str = value.ToString().Utf8Value();
+    std::string utf8str = stringValue.Utf8Value();
     bufflen = (int)utf8str.length() + 1;
     param->length = bufflen - 1;
   }
@@ -855,7 +866,7 @@ void ODBC::GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, in
   // Copy string data using correct encoding (matching NAN behavior)
   if (param->paramtype == FILE_PARAM) {
     // FILE_PARAM: use UTF-8 (matches NAN's WriteUtf8)
-    std::string utf8str = value.ToString().Utf8Value();
+    std::string utf8str = stringValue.Utf8Value();
     memcpy(param->buffer, utf8str.c_str(), utf8str.length());
   } else if (isBinary) {
     // SQL_C_BINARY: use Latin-1 (matches NAN's WriteOneByte)
@@ -868,7 +879,7 @@ void ODBC::GetStringParam(Napi::Env env, Napi::Value value, Parameter *param, in
     napi_get_value_string_utf16(env, value, (char16_t *)param->buffer, length + 1, &copied);
 #else
     // Non-UNICODE text: use UTF-8 (matches NAN's WriteUtf8)
-    std::string utf8str = value.ToString().Utf8Value();
+    std::string utf8str = stringValue.Utf8Value();
     memcpy(param->buffer, utf8str.c_str(), utf8str.length());
 #endif
   }
@@ -1154,6 +1165,7 @@ void ODBC::GetArrayParam(Napi::Env env, Napi::Value value, Parameter *param, int
         else
         {
           GetStringParam(env, val, param, num);
+          if (env.IsExceptionPending()) break;
 #ifdef UNICODE
           param->buffer_length -= 2;
 #else
