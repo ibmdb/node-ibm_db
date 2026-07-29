@@ -19,6 +19,9 @@
 
 #include <napi.h>
 
+static constexpr napi_type_tag ODBC_STATEMENT_TYPE_TAG = {
+    0x4f8c1a6b3d92e705ULL, 0xb17e05c8fa63d249ULL};
+
 class ODBCStatement : public Napi::ObjectWrap<ODBCStatement>
 {
 public:
