@@ -534,6 +534,7 @@ Napi::Value ODBCConnection::Query(const Napi::CallbackInfo &info)
     len = (int)sql.length();
     GETCPPSTR2(data->sql, sql, len, errmsg);
     data->params = ODBC::GetParametersFromArray(env, info[1].As<Napi::Array>(), &data->paramCount);
+    if (env.IsExceptionPending()) { FREE_PARAMS(data->params, data->paramCount); free(data->sql); free(data); return env.Undefined(); }
     cb = info[2].As<Napi::Function>();
   }
   else if (info.Length() == 2)
@@ -561,6 +562,7 @@ Napi::Value ODBCConnection::Query(const Napi::CallbackInfo &info)
       if (obj.Has("params") && obj.Get("params").IsArray())
       {
         data->params = ODBC::GetParametersFromArray(env, obj.Get("params").As<Napi::Array>(), &data->paramCount);
+        if (env.IsExceptionPending()) { FREE_PARAMS(data->params, data->paramCount); free(data->sql); free(data); return env.Undefined(); }
       }
       if (obj.Has("noResults") && obj.Get("noResults").IsBoolean())
       {
@@ -736,6 +738,7 @@ Napi::Value ODBCConnection::QuerySync(const Napi::CallbackInfo &info)
     len = (int)sql1.length();
     GETCPPSTR(sql, sql1, len);
     params = ODBC::GetParametersFromArray(env, info[1].As<Napi::Array>(), &paramCount);
+    if (env.IsExceptionPending()) { FREE_PARAMS(params, paramCount); free(sql); return env.Undefined(); }
   }
   else if (info.Length() == 1)
   {
@@ -754,7 +757,10 @@ Napi::Value ODBCConnection::QuerySync(const Napi::CallbackInfo &info)
         GETCPPSTR(sql, sql3, len);
       }
       if (obj.Has("params") && obj.Get("params").IsArray())
+      {
         params = ODBC::GetParametersFromArray(env, obj.Get("params").As<Napi::Array>(), &paramCount);
+        if (env.IsExceptionPending()) { FREE_PARAMS(params, paramCount); free(sql); return env.Undefined(); }
+      }
       if (obj.Has("noResults") && obj.Get("noResults").IsBoolean())
         noResultObject = obj.Get("noResults").As<Napi::Boolean>().Value();
       if (obj.Has("ArraySize") && obj.Get("ArraySize").IsNumber())

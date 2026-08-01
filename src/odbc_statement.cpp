@@ -575,6 +575,7 @@ Napi::Value ODBCStatement::BindSync(const Napi::CallbackInfo &info)
 
   if (paramCount) { FREE_PARAMS(params, paramCount); }
   params = ODBC::GetParametersFromArray(env, info[0].As<Napi::Array>(), &paramCount);
+  if (env.IsExceptionPending()) { FREE_PARAMS(params, paramCount); return env.Undefined(); }
   SQLRETURN ret = ODBC::BindParameters(m_hSTMT, params, paramCount);
 
   if (SQL_SUCCEEDED(ret))
@@ -613,6 +614,7 @@ Napi::Value ODBCStatement::Bind(const Napi::CallbackInfo &info)
   data->env = env;
 
   params = ODBC::GetParametersFromArray(env, info[0].As<Napi::Array>(), &paramCount);
+  if (env.IsExceptionPending()) { FREE_PARAMS(params, paramCount); delete data->cb; free(data); free(work_req); return env.Undefined(); }
   work_req->data = data;
 
   uv_queue_work(uv_default_loop(), work_req, UV_Bind, (uv_after_work_cb)UV_AfterBind);
