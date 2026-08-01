@@ -19,12 +19,12 @@
 
 #include <napi.h>
 
-static constexpr napi_type_tag ODBC_STATEMENT_TYPE_TAG = {
-    0x4f8c1a6b3d92e705ULL, 0xb17e05c8fa63d249ULL};
-
 class ODBCStatement : public Napi::ObjectWrap<ODBCStatement>
 {
 public:
+  static constexpr napi_type_tag type_tag = {
+      0x4f8c1a6b3d92e705ULL, 0xb17e05c8fa63d249ULL};
+
   static Napi::FunctionReference constructor;
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
 

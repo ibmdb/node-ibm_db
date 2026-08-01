@@ -292,12 +292,24 @@ ibmdb.open(cn, function(err, conn) {
       console.log("cancelSync(null) correctly threw:", e.message);
     }
 
-    // Test cancelSync with invalid object - returns error (native check)
+    // Test cancelSync with invalid object - returns TypeError (type-tag check)
     var result8c = conn.cancelSync({});
-    if (result8c instanceof Error) {
+    if (result8c instanceof TypeError) {
+      console.log("cancelSync({}) correctly returned TypeError:", result8c.message);
+    } else if (result8c instanceof Error) {
       console.log("cancelSync({}) correctly returned error:", result8c.message);
     } else {
       console.log("Test 8c FAILED: cancelSync({}) should have returned an error");
+    }
+
+    // Test cancelSync with a non-statement wrapped object (type-confusion fix)
+    var result8e = conn.cancelSync(conn.conn);
+    if (result8e instanceof TypeError) {
+      console.log("cancelSync(conn) correctly returned TypeError:", result8e.message);
+      assert.ok(result8e.message.indexOf("ODBCStatement") !== -1,
+        "Error should mention ODBCStatement");
+    } else {
+      console.log("Test 8e FAILED: cancelSync(conn) should have returned TypeError, got:", result8e);
     }
 
     // Test cancel without statement - when passed a function, calls it with error

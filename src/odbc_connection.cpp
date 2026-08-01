@@ -1635,7 +1635,7 @@ Napi::Value ODBCConnection::Cancel(const Napi::CallbackInfo &info)
   Napi::Object stmtObj = info[0].As<Napi::Object>();
   Napi::Function cb = info[1].As<Napi::Function>();
 
-  if (!stmtObj.CheckTypeTag(&ODBC_STATEMENT_TYPE_TAG))
+  if (!stmtObj.CheckTypeTag(&ODBCStatement::type_tag))
   {
     Napi::TypeError::New(env, "cancel() requires an ODBCStatement object").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -1724,7 +1724,7 @@ Napi::Value ODBCConnection::CancelSync(const Napi::CallbackInfo &info)
 
   Napi::Object stmtObj = info[0].As<Napi::Object>();
 
-  if (!stmtObj.CheckTypeTag(&ODBC_STATEMENT_TYPE_TAG))
+  if (!stmtObj.CheckTypeTag(&ODBCStatement::type_tag))
   {
     Napi::TypeError::New(env, "cancelSync() requires an ODBCStatement object").ThrowAsJavaScriptException();
     return Napi::Boolean::New(env, false);

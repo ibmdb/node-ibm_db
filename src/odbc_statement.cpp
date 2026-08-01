@@ -102,7 +102,7 @@ ODBCStatement::ODBCStatement(const Napi::CallbackInfo &info) : Napi::ObjectWrap<
   m_hDBC = (SQLHDBC)((intptr_t)info[1].As<Napi::External<void>>().Data());
   m_hSTMT = (SQLHSTMT)((intptr_t)info[2].As<Napi::External<void>>().Data());
 
-  Value().TypeTag(&ODBC_STATEMENT_TYPE_TAG);
+  Value().TypeTag(&ODBCStatement::type_tag);
 
   bufferLength = MAX_VALUE_SIZE;
   buffer = NULL;
