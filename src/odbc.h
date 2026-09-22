@@ -389,8 +389,9 @@ struct query_request
 
 // Macro to get c++ string from std::string (JS string via Utf8Value)
 #ifdef UNICODE
-#define GETCPPSTR(to, from, len)                             \
-  if (len > 0 && from != "null")                             \
+#define GETCPPSTR(to, from, len)                                     \
+  if (len > 0 && (size_t)(len) <= (SIZE_MAX / sizeof(uint16_t)) - 1 && \
+      from != "null")                                                \
   {                                                          \
     to = (uint16_t *)malloc((len + 1) * sizeof(uint16_t));   \
     MEMCHECK(to);                                            \
@@ -402,8 +403,9 @@ struct query_request
     len = 0;                                                 \
   }
 #else
-#define GETCPPSTR(to, from, len)     \
-  if (len > 0 && from != "null")     \
+#define GETCPPSTR(to, from, len)                 \
+  if (len > 0 && (size_t)(len) <= SIZE_MAX - 1 && \
+      from != "null")                             \
   {                                  \
     to = (char *)malloc(len + 1);    \
     MEMCHECK(to);                    \
@@ -427,8 +429,9 @@ struct query_request
 
 // Macro to get c++ string from std::string (goto exit variant)
 #ifdef UNICODE
-#define GETCPPSTR2(to, from, len, errmsg)                    \
-  if (len > 0 && from != "null")                             \
+#define GETCPPSTR2(to, from, len, errmsg)                            \
+  if (len > 0 && (size_t)(len) <= (SIZE_MAX / sizeof(uint16_t)) - 1 && \
+      from != "null")                                                \
   {                                                          \
     to = (uint16_t *)malloc((len + 1) * sizeof(uint16_t));   \
     if (to)                                                  \
@@ -448,8 +451,9 @@ struct query_request
     len = 0;                                                 \
   }
 #else
-#define GETCPPSTR2(to, from, len, errmsg)                    \
-  if (len > 0 && from != "null")                             \
+#define GETCPPSTR2(to, from, len, errmsg)                  \
+  if (len > 0 && (size_t)(len) <= SIZE_MAX - 1 &&           \
+      from != "null")                                       \
   {                                                          \
     to = (char *)malloc(len + 1);                            \
     if (to)                                                  \
