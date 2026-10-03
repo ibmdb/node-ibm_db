@@ -268,7 +268,6 @@ var install_node_ibm_db = function(file_url) {
                 fs.symlinkSync(IBM_DB_LIB, path.resolve(IBM_DB_HOME, 'lib'));
 
               if((platform == 'linux') || (platform =='aix') || (platform == 'darwin')) {
-                  removeWinBuildArchive();
                   buildBinary(!IS_ENVIRONMENT_VAR);
               }
             }
@@ -408,7 +407,6 @@ var install_node_ibm_db = function(file_url) {
                 IBM_DB_HOME = path.resolve(DOWNLOAD_DIR, 'clidriver');
                 process.env.IBM_DB_HOME = IBM_DB_HOME.replace(/\s/g,'\\ ');
                 buildBinary(true);
-                removeWinBuildArchive();
                 if(deleteInstallerFile) removeInstallerFile();
               }
             });
@@ -554,6 +552,7 @@ var install_node_ibm_db = function(file_url) {
                         }
                         else
                         {
+                            removeWinBuildArchive();
                             printMsg("\nibm_db installed successfully.\n");
                         }
                     });
@@ -601,6 +600,7 @@ var install_node_ibm_db = function(file_url) {
                         }
                     });
                 }
+                removeWinBuildArchive();
                 printMsg("ibm_db installed successfully.");
             });
         }
