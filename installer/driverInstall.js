@@ -552,7 +552,6 @@ var install_node_ibm_db = function(file_url) {
                         }
                         else
                         {
-                            removeWinBuildArchive();
                             printMsg("\nibm_db installed successfully.\n");
                         }
                     });
@@ -702,6 +701,19 @@ var install_node_ibm_db = function(file_url) {
                         return downloadBinaryFromGitHub();
                     }
 
+                    if (platform == 'darwin') {
+                        // Precompiled binaries still carry the build machine's
+                        // absolute libdb2.dylib path; repoint it at the bundled clidriver.
+                        try {
+                            execSync("install_name_tool -change libdb2.dylib " +
+                                "@loader_path/../../installer/clidriver/lib/libdb2.dylib \"" +
+                                path.resolve(CURRENT_DIR, ODBC_BINDINGS) + "\"");
+                        } catch (e) {
+                            printMsg('\nWarning: Failed to set the libdb2.dylib path on ' +
+                                'the precompiled binary. Error trace:\n' + e + '\n');
+                        }
+                    }
+
                     printMsg("\n" +
                     "===================================\n"+
                     "ibm_db installed successfully.\n"+
@@ -821,6 +833,20 @@ var install_node_ibm_db = function(file_url) {
 
             outStream.on('finish', function() {
                 printMsg('\nDownload complete => ' + outputFile);
+
+                if (platform == 'darwin') {
+                    // Precompiled binaries still carry the build machine's
+                    // absolute libdb2.dylib path; repoint it at the bundled clidriver.
+                    try {
+                        execSync("install_name_tool -change libdb2.dylib " +
+                            "@loader_path/../../installer/clidriver/lib/libdb2.dylib \"" +
+                            outputFile + "\"");
+                    } catch (e) {
+                        printMsg('\nWarning: Failed to set the libdb2.dylib path on ' +
+                            'the precompiled binary. Error trace:\n' + e + '\n');
+                    }
+                }
+
                 printMsg("\n" +
                 "===================================\n"+
                 "ibm_db installed successfully.\n"+
