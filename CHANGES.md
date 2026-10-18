@@ -1,3 +1,51 @@
+2026-10-18, Version 4.1.0
+=========================
+
+ * update precompiled binaries for win, mac and linux platforms (Bimal Jha)
+
+ * fix: exclude ParamType:ARRAY from data-at-exec Buffer-array detection in parseParams(), #1080 (Bimal Jha)
+
+ * Fix macOS libdb2.dylib path not repointed when falling back to precompiled binary install, #1079 (Bimal Jha)
+
+ * fix: offline install error for Linux/Mac/AIX platforms, issue #1078 (Bimal Jha)
+
+ * harden: add buffer-length check in odbc.h (#1077) (Anupam Mediratta)
+
+ * update code to stream input data as BLOB (Bimal Jha)
+
+ * test: consolidate test files and remove unwanted files (Bimal Jha)
+
+ * fix: Check pending exception after GetParametersFromArray to prevent use of partially-initialized params when string coercion fails (Bimal Jha)
+
+ * fix: cancel error for napi_type_tag properly (Bimal Jha)
+
+ * type-tag ODBCStatement and verify the tag before unwrapping in cancel (#1073) (Thodoris Sotiropoulos)
+
+ * coerce a bind parameter to a string once and stop when the coercion fails (#1072) (Thodoris Sotiropoulos)
+
+ * build(deps): bump axios from 1.16.1 to 1.18.0 (#1071) (dependabot[bot])
+
+ * build(deps): bump adm-zip from 0.5.16 to 0.6.0 (#1070) (dependabot[bot])
+
+ * remove trailing white spaces (Bimal Jha)
+
+ * fix: Handle GSKit v9.x/AIX/GCC incompatibility - detect exception and provide clear error message (Bimal Jha)
+
+ * feat: add support for cancel() API to cancel long running sql and premature termination of the data-at-execution sequence (Bimal Jha)
+
+ * build(deps): bump form-data from 4.0.5 to 4.0.6 (#1069) (dependabot[bot])
+
+ * feat: add support to insert data from stream in db2 (Bimal Jha)
+
+ * feat: add support for procedureColumns() API to get input/output parameter information for a procedure (Bimal Jha)
+
+ * feat: add support for procedures() APIs to get list of procedure names (Bimal Jha)
+
+ * feat: add support for foreignKeys() API to get the list of foreign key columns (Bimal Jha)
+
+ * feat: add support for primaryKeys API to get list of column names that comprise the primary key for a table. (Bimal Jha)
+
+
 2026-05-13, Version 4.0.1
 =========================
 
