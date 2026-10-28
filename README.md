@@ -25,52 +25,32 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 ## Prerequisite
 
-- Make sure your system has C++ compiler installed that support C++11 standard.
+`ibm_db` installs **precompiled binaries** for Windows x64, Linux x64, macOS (Intel and Apple Silicon), AIX, and Linux on IBM Z (`s390x`). No compiler or build tools are normally required on these platforms. During `npm install`, `ibm_db` also downloads and installs the matching IBM Db2 ODBC/CLI driver, so no separate Db2 client install is needed.
 
-- **For Linuxx64, MacARM64, Mac-x64 and Windows-x64 platforms**: If a compiler or required dependency is missing, ibm_db automatically falls back to a precompiled binary, ensuring successful installation without native compilation. Note that compilation of native code is attempted first.
+- **Node.js**: any version works (v4.0.0+ uses NAPI, which is binary-compatible across Node.js/Electron versions). Latest version tested: **26.12.0**.
+- **Linux**: just needs the standard C/C++ runtime libraries that ship with most distros (`libstdc++`, `libc`, `libgcc`, `libz`). On **UBI9**-based images, also install `libcrypt` and `libxcrypt-compat` (`libcrypt` was dropped from the base image).
+- **Alpine Linux** is not supported (musl libc, no precompiled binary available).
+- **Windows / macOS**: nothing extra needed beyond Node.js itself.
 
-- Below prerequisite is applicable only if you need to compile the native C++ code of ibm_db or download of precompiled binary fail.
+Just run `npm install ibm_db` as shown below. AIX and Linux on IBM Z obtain their precompiled binary from GitHub, so installation on those systems requires access to the binary download.
 
-- **For non-windows platforms**: gcc compiler version >= 8.4, python3, nodejs and `make` is required to install `ibm_db`. Default compiler on RHEL 6 does not have the required support. Install a newer compiler or upgrade older one.
+<details>
+<summary>Building from source (Linux on Power, z/OS, or if you need to compile manually)</summary>
 
-- Other required system libraries for Linux OS are: `libcrypt, libpam, libxml2, libstdc++, libc, libgcc, libaudit, libeconf, libz, liblzma and libcap-ng`.
-  These libraries should come by default with OS. If it is not present in your system, please install it.
+Native compilation is only required on platforms without an available precompiled binary (such as Linux on Power and z/OS), or if you explicitly want to build from source. AIX and Linux on IBM Z (`s390x`) use downloaded precompiled binaries and do not normally require a compiler.
 
-- UBI9 has deprecated libcrypt. You need to install libcrypt and libxcrypt-compat on UBI9 manually.
-
-- **For Windows**: compiler is optional as `ibm_db` comes with pre-compiled binary on Windows64. To compile code on Windows, VC++ 2015.3 v14.00 (v140) or Visual Studio version >= 2022 is required.
-
-- From ibm_db v4.0.0 onwards, ibm_db started to use NAPI instead of NAN. So, precompiled binary should work with any version of Node.js or Electron.
-
-- Python version >= 3.8.0 is required by node-gyp.
-
-- **For Docker Linux Container:** make sure you have installed **make, gcc, g++(gcc-c++), python3.9 and node** before installing `ibm_db`. For `root` user, use `npm install --unsafe-perm ibm_db` to install `ibm_db`.
-
-- While installing `ibm_db` under a container, if you get libcrypt error, add a line in your scrip to install `libcrypt` and `libxcrypt-compat` as this library is not present in most of the container OS. f.e. add a line like below in docker script:
+- A C++ compiler supporting C++11 is required (gcc >= 8.4 on non-Windows; Node.js v24+ requires C++20, so install `llvm` on macOS).
+- `python3` (>= 3.8, required by `node-gyp`), `make`/`GNU make`, and `node` must be on `PATH`.
+- **Windows source builds**: use Visual Studio 2022 or newer with the C++ build tools installed, from a Visual Studio Developer Command Prompt. VC++ 2015.3 (v140) is a legacy option only for Node.js/node-gyp versions compatible with that toolset. This is not needed for the normal Windows x64 install, which uses a precompiled binary.
+- **macOS**: install Xcode from the App Store.
+- **Docker/containers**: install `make gcc g++(gcc-c++) python3 node`; for `root`, use `npm install --unsafe-perm ibm_db`. If you hit a `libcrypt` error, also install `libxcrypt-compat`, e.g.:
   `RUN apt-get update && apt-get install gcc g++ libcrypt libxcrypt-compat python3 make -y`
+- **WSL**: install the `build-essential` package first.
+- **z/OS**: ODBC support is part of IBM Db2 for z/OS >= 11.0; follow the setup [here](#configure-odbc-driver-on-zos). Tested with node-gyp 3.4.0 / npm 3.10.10 / ibm_db 2.8.1 on z/OS v2.4, Db2 v12.0.
 
-- **For Windows Subsystem for Linux (WSL):** Install `build-essentials` package before installing `ibm_db`.
+On platforms with a precompiled binary, `ibm_db` falls back to that binary if native compilation fails. For AIX and Linux on IBM Z, the installer downloads the binary directly.
 
-- **For MacOS:** Install XCode from appstore before installing `ibm_db`. Also, gcc@12 and `make` is required.
-
-- On distributed platforms, you do need not to install any Db2 ODBC client driver for connectivity. `ibm_db` itself downloads and installs an odbc/cli driver from IBM website during installation. Just install `ibm_db` and it is ready for use.
-
-- On **z/OS**, ODBC driver support is part of IBM Db2 for z/OS. Please ensure IBM Db2 for z/OS version >= 11.0 is installed on your given LPAR. Ensure you follow the instructions to configure your ODBC driver [here](#configure-odbc-driver-on-zos).
-
-- On **z/OS** and other platforms where compilation of native code is required; `GNU make` is required to install `ibm_db`. Execute `make -v` command before installing `ibm_db` to make sure you have correct `make` set in PATH.
-
-- On **z/OS** only certain versions of node-gyp are supported. This was tested with:<br>
-  z/OS v2.4
-  Db2 v12.0
-  node-gyp 3.4.0<br>
-  npm 3.10.10<br>
-  ibm_db: 2.8.1
-
-- To compile native code of ibm_db on Windows, Visual Studio is required. Use Developer Command Prompt for VS2022 on Windows to install ibm_db.
-
-- Node.js v24.x onwards uses `C++20` standards. To compile source code on MacOS, install `llvm` and use it.
-
-- The latest node.js version using which `ibm_db` is tested: **26.12.0**
+</details>
 
 ## Install
 
@@ -129,7 +109,7 @@ package.json:
 }
 ```
 
-For **Docker Linux Container**, use below commands:
+For **Docker Linux Container** (building from source), use below commands:
 
 ```
 yum install make gcc gcc-c++ kernel-devel openssl-devel bzip2-devel
