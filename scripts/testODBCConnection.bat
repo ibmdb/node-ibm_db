@@ -14,10 +14,12 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-if "%IBM_DB_HOME%" == "" (SET IBM_DB_HOME=%cd%\clidriver)
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "IBMDB_DIR=%%~fI"
+if "%IBM_DB_HOME%" == "" (SET "IBM_DB_HOME=%IBMDB_DIR%\installer\clidriver")
 
-SET PATH=%IBM_DB_HOME%\bin;%IBM_DB_HOME%\adm;%IBM_DB_HOME%\lib;%PATH%
-SET LIB=%IBM_DB_HOME%\lib;%LIB%
+SET "PATH=%IBM_DB_HOME%\bin;%IBM_DB_HOME%\adm;%IBM_DB_HOME%\lib;%PATH%"
+SET "LIB=%IBM_DB_HOME%\lib;%LIB%"
 
 DEL /F 1.trc 1.flw 1.fmt 1.fmtc 1.cli
 db2trc on -t -f 1.trc

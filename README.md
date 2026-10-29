@@ -506,8 +506,7 @@ npm install ibm_db
 
 ## How to verify database connectivity using ODBC and generate db2trace?
 
-cd to `ibm_db/installer` directory and update database connection information for `db2cli validate` command in `testODBCConnection.sh` file for non-Windows platform and execute it.
-For Windows platform, update connection info for `db2cli validate` command in `testODBCConnection.bat` file and execute it from Administrator Command Prompt.
+Change to the `ibm_db/scripts` directory, update the database connection information for `db2cli validate` in `testODBCConnection.sh` (non-Windows) or `testODBCConnection.bat` (Windows), and execute the corresponding script. On Windows, use an Administrator Command Prompt.
 Script `testODBCConnection` set the required environment variables, validate database connectivity and gerate db2trace files.
 
 ## How to get db2trace for any node.js test file?
@@ -520,7 +519,7 @@ cd ibm_db/test
 ./trace test.js
 ```
 
-**trace** script works only on non-windows platform. For Windows, use `testODBCConnection.bat` script. You can replace `db2cli validate` command with `node test.js`in `testODBCConnection.bat` script and execute it.
+**trace** script works only on non-windows platform. For Windows, use `testODBCConnection.bat` from `ibm_db/scripts`. You can replace `db2cli validate` command with `node test.js` in the batch script and execute it.
 
 ## Issues while connecting to Informix Server
 

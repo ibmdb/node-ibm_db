@@ -38,9 +38,9 @@ if(downloadProgress == 0) {
   printMsg("INFO: platform = " + platform + ", arch = " + arch +
            ", node.js version = " + process.version);
 }
-if(platform != 'darwin' && arch == 'arm64') {
+if(arch == 'arm64' && platform != 'darwin' && platform != 'linux') {
     console.log('ERROR: ARM64 processor is not supported on ' + platform + ' platform.\n' +
-                'Only MacOS with arm64 processor is supported.\n');
+                'Only Linux and MacOS with arm64 processor are supported.\n');
     process.exit(1);
 }
 
@@ -292,6 +292,8 @@ var install_node_ibm_db = function(file_url) {
         {
             if(arch == 'x64') {
                 odbc_driver = 'linuxx64_odbc_cli.tar.gz';
+            } else if(arch == 'arm64') {
+                odbc_driver = 'linuxarm64_odbc_cli.tar.gz';
             } else if(arch == 's390x') {
                 odbc_driver = 's390x64_odbc_cli.tar.gz';
             } else if(arch == 's390') {
@@ -652,6 +654,7 @@ var install_node_ibm_db = function(file_url) {
              * Node.js versions. build.zip contains 4 binaries:
              *   odbc_bindings_win.node
              *   odbc_bindings_linux.node
+             *   odbc_bindings_linuxarm.node
              *   odbc_bindings_mac.node
              *   odbc_bindings_macarm.node
              */
@@ -663,6 +666,8 @@ var install_node_ibm_db = function(file_url) {
               }
             } else if (platform == 'win32') {
               odbcBindingsNode = 'build\/Release\/odbc_bindings_win.node';
+            } else if (arch == 'arm64') {
+              odbcBindingsNode = 'build\/Release\/odbc_bindings_linuxarm.node';
             } else {
               odbcBindingsNode = 'build\/Release\/odbc_bindings_linux.node';
             }
@@ -755,6 +760,8 @@ var install_node_ibm_db = function(file_url) {
             binaryName = 'odbc_bindings_aix.node';
         } else if (platform == 'linux' && arch == 's390x') {
             binaryName = 'odbc_bindings_zlinux.node';
+        } else if (platform == 'linux' && arch == 'arm64') {
+            binaryName = 'odbc_bindings_linuxarm.node';
         } else if (platform == 'linux') {
             binaryName = 'odbc_bindings_linux.node';
         } else if (platform == 'darwin') {
@@ -981,4 +988,3 @@ function printMsg(msg) {
         console.log(msg);
     }
 }
-

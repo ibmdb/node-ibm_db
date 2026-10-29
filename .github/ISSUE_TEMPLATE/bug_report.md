@@ -50,7 +50,7 @@ title: 'Bug Report'
   * cd .../node_modules/ibm_db
   * npm install
   * node test/test-basic-test.js
-  7. For non-SSL connection, update connection info for `db2cli validate` command in file `ibm_db/installer/testODBCConnection.bat` for windows or `ibm_db/installer/testODBCConnection.sh` for non-Windows. Then execute `testODBCConnection.bat` from Administrator command prompt on Windows or `testODBCConnection.sh` script from terminal on non-Windows and share complete output of script along will all generated 1.* files in zip file.
+  7. For non-SSL connection, update connection info for `db2cli validate` command in `ibm_db/scripts/testODBCConnection.bat` for Windows or `ibm_db/scripts/testODBCConnection.sh` for non-Windows. Then execute `testODBCConnection.bat` from an Administrator command prompt on Windows or `testODBCConnection.sh` from a terminal on non-Windows and share the complete script output along with all generated 1.* files in a zip file.
   8. Complete output of `db2cli validate` command.
 
 

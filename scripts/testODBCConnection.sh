@@ -3,9 +3,11 @@
 # connection related issue and make sure setup is proper.
 # This script is only for non-Windows platform.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+IBMDB_DIR="$(dirname "$SCRIPT_DIR")"
 if [ "$IBM_DB_HOME" = "" ]
 then
-  IBM_DB_HOME=`pwd`/clidriver
+  IBM_DB_HOME="$IBMDB_DIR/installer/clidriver"
 fi
 OS=`uname`
 
@@ -58,4 +60,3 @@ db2trc flw -t 1.trc 1.flw
 db2trc fmt 1.trc 1.fmt
 db2trc fmt -c 1.trc 1.fmtc
 db2trc fmt -cli 1.trc 1.cli
-
