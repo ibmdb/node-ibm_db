@@ -9,6 +9,21 @@ if "!CURR_DIR:~-1!"=="\" set "CURR_DIR=!CURR_DIR:~0,-1!"
 for %%I in ("!CURR_DIR!\..") do set "IBMDB_DIR=%%~fI"
 for %%I in ("!IBMDB_DIR!\..") do set "BINARY_DIR=%%~fI\ibmdb-binaries"
 for %%I in ("!CURR_DIR!\..\..\..") do set "NODEWORK=%%~fI"
+set "NODE_EXE="
+set "PATH_NODE_VERSION="
+for /f "delims=" %%N in ('where node 2^>nul') do if not defined NODE_EXE set "NODE_EXE=%%~fN"
+if defined NODE_EXE (
+    for /f "tokens=*" %%v in ('"!NODE_EXE!" -v 2^>nul') do set "PATH_NODE_VERSION=%%v"
+    if defined PATH_NODE_VERSION (
+        for %%I in ("!NODE_EXE!") do set "NODEJS_DIR=%%~dpI"
+        if "!NODEJS_DIR:~-1!"=="\" set "NODEJS_DIR=!NODEJS_DIR:~0,-1!"
+        for %%I in ("!NODEJS_DIR!") do set "NODEJS_DIR_NAME=%%~nxI"
+        if /i "!NODEJS_DIR_NAME!"=="nodejs" (
+            for %%I in ("!NODEJS_DIR!\..") do set "NODEWORK=%%~fI"
+        )
+    )
+)
+echo Node work directory = !NODEWORK!
 
 if not exist "!IBMDB_DIR!\installer\driverInstall.js" (
     echo Error: unable to find ibm_db directory at !IBMDB_DIR!

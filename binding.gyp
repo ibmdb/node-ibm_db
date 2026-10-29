@@ -34,7 +34,7 @@
             'cflags' : ['-g'],
           }],
 
-        [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "s390x" or target_arch == "ppc64")',
+        [ '(OS == "linux" or OS == "aix") and (target_arch =="x64"  or target_arch == "arm64" or target_arch == "s390x" or target_arch == "ppc64")',
           { 'conditions' : [
               [ 'IS_DOWNLOADED == "true" and OS != "aix"',
                 { 'ldflags' : ["-Wl,-R,'<(ORIGIN_LIB_PATH)',-rpath,'$$ORIGIN:$$ORIGIN/../../installer/clidriver/lib' " ], }
