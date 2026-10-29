@@ -27,7 +27,7 @@ Async APIs return promises if callback function is not used. Async APIs supports
 
 `ibm_db` installs **precompiled binaries** for Windows x64, Linux x64, macOS (Intel and Apple Silicon), AIX, and Linux on IBM Z (`s390x`). No compiler or build tools are normally required on these platforms. During `npm install`, `ibm_db` also downloads and installs the matching IBM Db2 ODBC/CLI driver, so no separate Db2 client install is needed.
 
-- **Node.js**: any version works (v4.0.0+ uses NAPI, which is binary-compatible across Node.js/Electron versions). Latest version tested: **26.12.0**.
+- **Node.js**: any version works (v4.0.0+ uses NAPI, which is binary-compatible across Node.js/Electron versions). Latest version tested: **26.13.0**.
 - **Linux**: just needs the standard C/C++ runtime libraries that ship with most distros (`libstdc++`, `libc`, `libgcc`, `libz`). On **UBI9**-based images, also install `libcrypt` and `libxcrypt-compat` (`libcrypt` was dropped from the base image).
 - **Alpine Linux** is not supported (musl libc, no precompiled binary available).
 - **Windows / macOS**: nothing extra needed beyond Node.js itself.

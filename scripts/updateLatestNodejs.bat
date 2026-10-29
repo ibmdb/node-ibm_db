@@ -134,8 +134,8 @@ if not "!CHECK_VERSION!"=="!LATEST_VERSION!" (
 set "PATH=!NODEDIR!;!PATH!"
 echo Using node !CHECK_VERSION!
 
-set "IBM_DB_HOME="
-set "DOWNLOAD_CLIDRIVER=true"
+REM set "IBM_DB_HOME="
+REM set "DOWNLOAD_CLIDRIVER=true"
 cd /d "!IBMDB_DIR!" || exit /b 1
 call npm install
 if errorlevel 1 (

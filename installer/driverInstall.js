@@ -417,6 +417,14 @@ var install_node_ibm_db = function(file_url) {
 
     function buildBinary(isDownloaded)
     {
+        if (platform == 'win32' && process.allowedNodeEnvironmentFlags &&
+            process.allowedNodeEnvironmentFlags.has('--use-system-ca')) {
+            var nodeOptions = process.env.NODE_OPTIONS || '';
+            if (nodeOptions.split(/\s+/).indexOf('--use-system-ca') == -1) {
+                process.env.NODE_OPTIONS = (nodeOptions + ' --use-system-ca').trim();
+            }
+        }
+
         var buildString = "node-gyp configure build ";
 
         if(isDownloaded) {

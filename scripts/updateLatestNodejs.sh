@@ -195,8 +195,8 @@ echo "Using node $LATEST_VERSION"
 
 PATTERN="${osname} ${arch} NAPI Node Version = "
 
-export IBM_DB_HOME=
-export DOWNLOAD_CLIDRIVER=true
+#export IBM_DB_HOME=
+#export DOWNLOAD_CLIDRIVER=true
 cd "$IBMDB_DIR" || exit 1
 if ! npm install; then
   echo "npm install failed!"
