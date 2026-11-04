@@ -48,6 +48,8 @@
           { 'ldflags' : ['-Wl,-binitfini:__ibmdb_aix_noop:__ibmdb_aix_noop'],
             'cflags' : ['-fno-use-cxa-atexit', '-fexceptions'],
             'cflags_cc' : ['-fexceptions'],
+            'cflags!': [ "-fno-integrated-as", "-fno-xl-pragma-pack" ],
+            'cflags_cc!': [ "-fno-integrated-as", "-fno-xl-pragma-pack" ],
           }],
         [ 'OS == "zos" ',
           { 'libraries' : ['dsnao64c.x'],
