@@ -116,7 +116,7 @@ public:
 struct execute_direct_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -126,7 +126,7 @@ struct execute_direct_work_data
 struct execute_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
 };
@@ -134,7 +134,7 @@ struct execute_work_data
 struct prepare_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *sql;
@@ -144,7 +144,7 @@ struct prepare_work_data
 struct bind_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
 };
@@ -152,7 +152,7 @@ struct bind_work_data
 struct stmt_setattr_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLINTEGER attr;
   SQLPOINTER valuePtr;
@@ -163,7 +163,7 @@ struct stmt_setattr_work_data
 struct primary_keys_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *catalog;
@@ -174,7 +174,7 @@ struct primary_keys_work_data
 struct foreign_keys_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *pkCatalog;
@@ -188,7 +188,7 @@ struct foreign_keys_work_data
 struct stmt_close_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLUSMALLINT closeOption;
   int result;
@@ -197,7 +197,7 @@ struct stmt_close_work_data
 struct procedures_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *catalog;
@@ -208,7 +208,7 @@ struct procedures_work_data
 struct procedure_columns_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   int result;
   void *catalog;
@@ -220,7 +220,7 @@ struct procedure_columns_work_data
 struct param_data_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLRETURN result;
   SQLPOINTER valuePtr;
@@ -229,7 +229,7 @@ struct param_data_work_data
 struct put_data_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLRETURN result;
   void *data;
@@ -240,7 +240,7 @@ struct put_data_work_data
 struct execute_streaming_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLRETURN result;
   bool needsData;
@@ -249,7 +249,7 @@ struct execute_streaming_work_data
 struct stmt_cancel_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCStatement *stmt;
   SQLRETURN result;
 };

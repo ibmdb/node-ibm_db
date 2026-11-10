@@ -156,7 +156,7 @@ Napi::Value ODBCConnection::Open(const Napi::CallbackInfo &info)
   data->connectionLength = len + 1;
   GETCPPSTR2(data->connection, connection, len, errmsg);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -304,7 +304,7 @@ Napi::Value ODBCConnection::Close(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -467,7 +467,7 @@ Napi::Value ODBCConnection::CreateStatement(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -595,7 +595,7 @@ Napi::Value ODBCConnection::Query(const Napi::CallbackInfo &info)
   work_req = (uv_work_t *)(calloc(1, sizeof(uv_work_t)));
   MEMCHECK2(work_req, errmsg);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -889,7 +889,7 @@ Napi::Value ODBCConnection::Tables(const Napi::CallbackInfo &info)
   len = (int)table.length(); GETCPPSTR2(data->table, table, len, errmsg);
   len = (int)type.length(); GETCPPSTR2(data->type, type, len, errmsg);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -957,7 +957,7 @@ Napi::Value ODBCConnection::Columns(const Napi::CallbackInfo &info)
   len = (int)table.length(); GETCPPSTR2(data->table, table, len, errmsg);
   len = (int)column.length(); GETCPPSTR2(data->column, column, len, errmsg);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -1024,7 +1024,7 @@ Napi::Value ODBCConnection::BeginTransaction(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -1098,7 +1098,7 @@ Napi::Value ODBCConnection::EndTransaction(const Napi::CallbackInfo &info)
   MEMCHECK(data);
 
   data->completionType = rollback ? SQL_ROLLBACK : SQL_COMMIT;
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->env = env;
   work_req->data = data;
@@ -1203,7 +1203,7 @@ Napi::Value ODBCConnection::GetInfo(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->infoType = infotype;
   data->buffLen = infolen;
@@ -1288,7 +1288,7 @@ Napi::Value ODBCConnection::GetTypeInfo(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->dataType = (SQLSMALLINT)dataType;
   data->env = env;
@@ -1384,7 +1384,7 @@ Napi::Value ODBCConnection::GetFunctions(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->functionId = (SQLUSMALLINT)functionId;
   data->env = env;
@@ -1505,7 +1505,7 @@ Napi::Value ODBCConnection::SetAttr(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->attr = attr;
   data->valuePtr = valuePtr;
@@ -1665,7 +1665,7 @@ Napi::Value ODBCConnection::Cancel(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->conn = this;
   data->hSTMT = hSTMT;
   data->env = env;

@@ -164,6 +164,25 @@ static inline void PropagateCallbackException(Napi::Env env) {
   }
 }
 
+class ODBCAsyncCallback : public Napi::FunctionReference
+{
+public:
+  ODBCAsyncCallback(Napi::Env env, Napi::Function callback)
+      : Napi::FunctionReference(Napi::Persistent(callback)),
+        m_env(env), m_asyncContext(env, "ibm_db", callback) {}
+
+  Napi::MaybeOrValue<Napi::Value> Call(
+      const std::initializer_list<napi_value> &args) const
+  {
+    Napi::CallbackScope scope(m_env, m_asyncContext);
+    return Napi::FunctionReference::Call(args);
+  }
+
+private:
+  Napi::Env m_env;
+  Napi::AsyncContext m_asyncContext;
+};
+
 class ODBC : public Napi::ObjectWrap<ODBC>
 {
 public:
@@ -182,8 +201,8 @@ public:
   static Napi::Value GetOutputParameter(Napi::Env env, Parameter *prm);
   static Napi::Object GetRecordTuple(Napi::Env env, SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
   static Napi::Value GetRecordArray(Napi::Env env, SQLHSTMT hStmt, Column *columns, short *colCount, uint16_t *buffer, size_t bufferLength);
-  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, Napi::FunctionReference *cb);
-  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, char *message, Napi::FunctionReference *cb);
+  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, ODBCAsyncCallback *cb);
+  static Napi::Value CallbackSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, char *message, ODBCAsyncCallback *cb);
   static Napi::Value GetSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle);
   static Napi::Value GetSQLError(Napi::Env env, SQLSMALLINT handleType, SQLHANDLE handle, char *message);
   static Napi::Array GetAllRecordsSync(Napi::Env env, SQLHENV hENV, SQLHDBC hDBC, SQLHSTMT hSTMT, uint16_t *buffer, size_t bufferLength);
@@ -217,7 +236,7 @@ protected:
 struct create_connection_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBC *dbo;
   SQLHDBC hDBC;
   int result;
@@ -225,7 +244,7 @@ struct create_connection_work_data
 
 struct open_request
 {
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBC *dbo;
   int result;
   char connection[1];
@@ -233,14 +252,14 @@ struct open_request
 
 struct close_request
 {
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBC *dbo;
   int result;
 };
 
 struct query_request
 {
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBC *dbo;
   SQLHSTMT hSTMT;
   int affectedRows;

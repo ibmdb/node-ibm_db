@@ -120,7 +120,7 @@ public:
 struct create_statement_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLHSTMT hSTMT;
   int result;
@@ -129,7 +129,7 @@ struct create_statement_work_data
 struct query_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLHSTMT hSTMT;
 
@@ -155,7 +155,7 @@ struct query_work_data
 struct open_connection_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   int result;
   void *connection;
@@ -165,7 +165,7 @@ struct open_connection_work_data
 struct close_connection_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   int result;
 };
@@ -173,7 +173,7 @@ struct close_connection_work_data
 struct getinfo_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLUSMALLINT infoType;
   SQLSMALLINT buffLen;
@@ -185,7 +185,7 @@ struct getinfo_work_data
 struct gettypeinfo_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLSMALLINT dataType;
   SQLHSTMT hSTMT;
@@ -195,7 +195,7 @@ struct gettypeinfo_work_data
 struct getfunctions_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLUSMALLINT functionId;
   SQLUSMALLINT supportedPtr;
@@ -206,7 +206,7 @@ struct getfunctions_work_data
 struct setattr_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLINTEGER attr;
   SQLPOINTER valuePtr;
@@ -217,7 +217,7 @@ struct setattr_work_data
 struct cancel_work_data
 {
   napi_env env;
-  Napi::FunctionReference *cb;
+  ODBCAsyncCallback *cb;
   ODBCConnection *conn;
   SQLHSTMT hSTMT;
   SQLRETURN result;

@@ -178,7 +178,7 @@ Napi::Value ODBC::CreateConnection(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->dbo = this;
   data->env = env;
 
@@ -1276,14 +1276,14 @@ SQLRETURN ODBC::PutDataLoop(SQLHSTMT hSTMT, Parameter params[], int count)
  * CallbackSQLError
  */
 Napi::Value ODBC::CallbackSQLError(Napi::Env env, SQLSMALLINT handleType,
-                                    SQLHANDLE handle, Napi::FunctionReference *cb)
+                                    SQLHANDLE handle, ODBCAsyncCallback *cb)
 {
   return CallbackSQLError(env, handleType, handle, (char *)"[node-ibm_db] SQL_ERROR", cb);
 }
 
 Napi::Value ODBC::CallbackSQLError(Napi::Env env, SQLSMALLINT handleType,
                                     SQLHANDLE handle, char *message,
-                                    Napi::FunctionReference *cb)
+                                    ODBCAsyncCallback *cb)
 {
   Napi::Value objError = ODBC::GetSQLError(env, handleType, handle, message);
   cb->Call({objError});

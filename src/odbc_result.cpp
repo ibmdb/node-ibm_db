@@ -153,7 +153,7 @@ Napi::Value ODBCResult::Fetch(const Napi::CallbackInfo &info)
     return env.Undefined();
   }
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->objResult = this;
   data->useBlockFetch = false;
   data->blockRowIndex = 0;
@@ -434,7 +434,7 @@ Napi::Value ODBCResult::FetchAll(const Napi::CallbackInfo &info)
   data->count = 0;
   data->objError = new Napi::Reference<Napi::Object>(Napi::Persistent(Napi::Object::New(env)));
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->objResult = this;
   data->useBlockFetch = false;
   data->blockRowIndex = 0;
@@ -711,7 +711,7 @@ Napi::Value ODBCResult::FetchN(const Napi::CallbackInfo &info)
   data->count = 0;
   data->objError = new Napi::Reference<Napi::Object>(Napi::Persistent(Napi::Object::New(env)));
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->objResult = this;
   data->useBlockFetch = false;
   data->blockRowIndex = 0;
@@ -968,7 +968,7 @@ Napi::Value ODBCResult::GetData(const Napi::CallbackInfo &info)
     return env.Undefined();
   }
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->objResult = this;
   data->env = env;
   work_req->data = data;
@@ -1069,7 +1069,7 @@ Napi::Value ODBCResult::Close(const Napi::CallbackInfo &info)
   if (!data) free(work_req);
   MEMCHECK(data);
 
-  data->cb = new Napi::FunctionReference(Napi::Persistent(cb));
+  data->cb = new ODBCAsyncCallback(env, cb);
   data->objResult = this;
   data->closeOption = closeOption;
   data->env = env;

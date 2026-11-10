@@ -86,7 +86,7 @@ public:
   struct fetch_work_data
   {
     napi_env env;
-    Napi::FunctionReference *cb;
+    ODBCAsyncCallback *cb;
     ODBCResult *objResult;
     SQLRETURN result;
     uint16_t fetchMode;
@@ -102,7 +102,7 @@ public:
   struct getdata_work_data
   {
     napi_env env;
-    Napi::FunctionReference *cb;
+    ODBCAsyncCallback *cb;
     ODBCResult *objResult;
     SQLUINTEGER colNum;
     SQLUINTEGER dataSize;
@@ -111,7 +111,7 @@ public:
   struct close_result_work_data
   {
     napi_env env;
-    Napi::FunctionReference *cb;
+    ODBCAsyncCallback *cb;
     ODBCResult *objResult;
     SQLUSMALLINT closeOption;
     int result;
