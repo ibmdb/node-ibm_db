@@ -436,6 +436,36 @@ npm install ibm_db
 
 If `npm install ibm_db` aborts with "Out Of Memory" error on AIX, first run `ulimit -d unlimited` and then `npm install ibm_db`.
 
+## AIX SSL Connection Issues (GSKit v9.x Incompatibility)
+
+<a name="aixgskit"></a>
+
+**Issue**: On AIX, SSL/TLS connections may fail with errors when using Db2 CLI driver v12.1.5.0 or later (which includes GSKit v9.x).
+
+**Root Cause**: GSKit v9.x (compiled with IBM XLC compiler) throws unhandled C++ exceptions from internal threads during SSL handshake failures. These exceptions use IBM's exception handling ABI, which is incompatible with GCC-compiled applications like Node.js on AIX. When these exceptions are not caught, they trigger `std::terminate()` → `abort()`, resulting in a coredump instead of a graceful error.
+
+**Mitigation** (ibm_db v4.1.0 and later):
+- ibm_db v4.1.0+ detects GSKit v9.x exceptions via a custom terminate handler and SIGABRT handler
+- Exceptions are caught and converted to graceful error exits with diagnostic messages
+- If you encounter a GSKit v9.x SSL error, the error message will include instructions for resolution
+
+**Solution**: Use a Db2 CLI driver **version 11.5.9 or earlier** (which includes GSKit v8.x), which does not have this incompatibility:
+
+```bash
+npm install ibm_db -clidriver=v11.5.9
+```
+
+**To check your installed GSKit version**:
+
+```bash
+ls $IBM_DB_HOME/lib/icc/libgsk*.so
+```
+
+- `libgsk8*.so` = GSKit v8 (compatible with GCC-compiled Node.js on AIX)
+- `libgsk9*.so` = GSKit v9 (incompatible; use clidriver v11.5.9 instead)
+
+**Note**: Node.js v26.x and later do not reproduce this issue, likely due to improved C++ exception handling ABI alignment with newer compiler versions.
+
 ## If installation fails while downloading clidriver
 
 <a name="downloadCliFailed"></a>

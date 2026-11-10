@@ -608,7 +608,7 @@ var install_node_ibm_db = function(file_url) {
                         process.exit(1);
                     }
                 }
-                removeWinBuildArchive();
+                if(platform == 'win32') removeWinBuildArchive();
                 printMsg("ibm_db installed successfully.");
             });
         }
@@ -636,6 +636,33 @@ var install_node_ibm_db = function(file_url) {
                 fs.unlinkSync(INSTALLER_FILE);
             }
         });
+    }
+
+    // Dylib path to embed in precompiled mac binaries: absolute IBM_DB_HOME
+    // path when user supplied it, else relative to the bundled clidriver.
+    function getLibdb2Path()
+    {
+        if (IS_ENVIRONMENT_VAR && IBM_DB_HOME &&
+            fs.existsSync(path.resolve(IBM_DB_HOME, 'lib/libdb2.dylib'))) {
+            return path.resolve(IBM_DB_HOME, 'lib/libdb2.dylib');
+        }
+        return '@loader_path/../../installer/clidriver/lib/libdb2.dylib';
+    }
+
+    // Precompiled binaries already carry a libdb2.dylib path (not the bare name),
+    // so look up the current one before repointing it.
+    function setLibdb2Path(binary)
+    {
+        var oldPath = 'libdb2.dylib';
+        var m = execSync("otool -L \"" + binary + "\"").toString()
+                    .match(/^\s*(\S*libdb2\.dylib)/m);
+        if (m) oldPath = m[1];
+        var newPath = getLibdb2Path();
+        if (oldPath == newPath) return;
+        execSync("install_name_tool -change \"" + oldPath + "\" \"" +
+                 newPath + "\" \"" + binary + "\"");
+        // The edit invalidates the signature; arm64 requires a valid (ad-hoc) one.
+        try { execSync("codesign --force --sign - \"" + binary + "\""); } catch (e) {}
     }
 
     function installPreCompiledBinary()
@@ -714,12 +741,9 @@ var install_node_ibm_db = function(file_url) {
                     }
 
                     if (platform == 'darwin') {
-                        // Precompiled binaries still carry the build machine's
-                        // absolute libdb2.dylib path; repoint it at the bundled clidriver.
+                        // Repoint the binary's libdb2.dylib reference at the clidriver in use.
                         try {
-                            execSync("install_name_tool -change libdb2.dylib " +
-                                "@loader_path/../../installer/clidriver/lib/libdb2.dylib \"" +
-                                path.resolve(CURRENT_DIR, ODBC_BINDINGS) + "\"");
+                            setLibdb2Path(path.resolve(CURRENT_DIR, ODBC_BINDINGS));
                         } catch (e) {
                             printMsg('\nWarning: Failed to set the libdb2.dylib path on ' +
                                 'the precompiled binary. Error trace:\n' + e + '\n');
@@ -849,12 +873,9 @@ var install_node_ibm_db = function(file_url) {
                 printMsg('\nDownload complete => ' + outputFile);
 
                 if (platform == 'darwin') {
-                    // Precompiled binaries still carry the build machine's
-                    // absolute libdb2.dylib path; repoint it at the bundled clidriver.
+                    // Repoint the binary's libdb2.dylib reference at the clidriver in use.
                     try {
-                        execSync("install_name_tool -change libdb2.dylib " +
-                            "@loader_path/../../installer/clidriver/lib/libdb2.dylib \"" +
-                            outputFile + "\"");
+                        setLibdb2Path(outputFile);
                     } catch (e) {
                         printMsg('\nWarning: Failed to set the libdb2.dylib path on ' +
                             'the precompiled binary. Error trace:\n' + e + '\n');
