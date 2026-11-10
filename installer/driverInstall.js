@@ -590,7 +590,7 @@ var install_node_ibm_db = function(file_url) {
                 }
 
                 if(platform == 'darwin') {
-                    // Run the install_name_tool
+                    // Run the install_name_tool synchronously
                     var addonBinary = "./build/Release/odbc_bindings.node";
                     if (!fs.existsSync(addonBinary)) {
                       addonBinary = "./build/Debug/odbc_bindings.node";
@@ -600,14 +600,13 @@ var install_node_ibm_db = function(file_url) {
                     {
                       nameToolCommand = "install_name_tool -change libdb2.dylib @loader_path/../../installer/clidriver/lib/libdb2.dylib " + addonBinary;
                     }
-                    var nameToolCmdProcess = exec(nameToolCommand ,
-                    function (error1, stdout1, stderr1) {
-                        if (error1 !== null) {
-                            console.log('Error setting up the lib path to ' +
-                            'odbc_bindings.node file.Error trace:\n'+error1);
-                            process.exit(1);
-                        }
-                    });
+                    try {
+                        execSync(nameToolCommand);
+                    } catch (error1) {
+                        console.log('Error setting up the lib path to ' +
+                        'odbc_bindings.node file.Error trace:\n'+error1);
+                        process.exit(1);
+                    }
                 }
                 removeWinBuildArchive();
                 printMsg("ibm_db installed successfully.");
