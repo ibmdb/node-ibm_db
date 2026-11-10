@@ -63,6 +63,21 @@
             'cflags' : ['-g']
           }],
 
+        # Node's common.gypi adds clang-only LTO/PGO flags that MSVC cl/link reject (D9002, LNK4044).
+        [ 'OS=="win" and clang==0',
+          { 'msvs_settings': {
+              'VCCLCompilerTool': {
+                'AdditionalOptions!': ['-flto=thin', '-flto=full', '-fprofile-use=$(SolutionDir)node.profdata']
+              },
+              'VCLibrarianTool': {
+                'AdditionalOptions!': ['-flto=thin', '-flto=full']
+              },
+              'VCLinkerTool': {
+                'AdditionalOptions!': ['-flto=thin', '-flto=full', '-fprofile-use=$(SolutionDir)node.profdata']
+              }
+            }
+          }],
+
         [ 'OS=="win" and target_arch =="ia32"',
           { 'sources' : ['src/strptime.c', 'src/odbc.cpp'],
             'libraries': [
