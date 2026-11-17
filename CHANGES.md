@@ -1,3 +1,25 @@
+2026-11-13, Version 4.1.1
+=========================
+
+ * update: precompiled binaries in build.zip file (Bimal Jha)
+
+ * fix: Synchronize install_name_tool call on macOS for proper dylib path rewriting, #1081 (Bimal Jha)
+
+ * fix: Suppress clang-only LTO/PGO flags from Node's common.gypi in MSVC Windows builds to remove D9002/LNK4044 warnings (Bimal Jha)
+
+ * fix: run native async callbacks in a Node callback scope so promise APIs resolve on Node >= 26.4, #1082 (Bimal Jha)
+
+ * fix: override cflags for AIX to build using nodev26.x (Bimal Jha)
+
+ * Use the Windows system CA store for node-gyp builds when supported by Node.js. (Bimal Jha)
+
+ * Add Linux ARM64 GYP support and reorganize utility scripts (Bimal Jha)
+
+ * Support Linux ARM64 builds and organize cross-platform maintenance scripts (Bimal Jha)
+
+ * docs: clarify precompiled binary support and source build prerequisites in README (Bimal Jha)
+
+
 2026-10-18, Version 4.1.0
 =========================
 
